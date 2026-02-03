@@ -77,6 +77,8 @@ docker compose -f docker-compose.yml up -d --force-recreate
 docker compose -f docker-compose.yml up -d --force-recreate n8n-import
 ```
 
+Note: n8n data is stored in `deploy/n8n-data` (bind‑mount). Ensure this directory exists and is persisted across deploys.
+
 ### 1.7 Verify
 
 ```bash
@@ -114,6 +116,7 @@ docker compose -f docker-compose.yml up -d --force-recreate n8n-import
 ## 3) Optional: Remote deploy from local machine
 
 Use `scripts/deploy-remote.sh` to SSH into the server, run `git pull`, migrations, restarts, and health checks.
+Note: SSH access requires VPN to be connected.
 
 ```bash
 ./scripts/deploy-remote.sh
@@ -126,4 +129,12 @@ DEPLOY_HOST=languagebot \
 DEPLOY_DIR=/opt/ai-speaking-bot \
 DEPLOY_BRANCH=main \
 ./scripts/deploy-remote.sh
+```
+
+## 4) n8n UI access (SSH tunnel)
+
+SSH access requires VPN. Use this tunnel to reach n8n locally:
+
+```bash
+ssh -L 5678:127.0.0.1:5678 languagebot -N
 ```

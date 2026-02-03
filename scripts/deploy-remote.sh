@@ -8,6 +8,11 @@ DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
 APP_COMPOSE="${APP_COMPOSE:-deploy/docker-compose.app.yml}"
 N8N_COMPOSE="${N8N_COMPOSE:-deploy/docker-compose.yml}"
 MIGRATE_SCRIPT="${MIGRATE_SCRIPT:-deploy/migrate.sh}"
+APP_PROJECT="${APP_PROJECT:-languagebot-app}"
+N8N_PROJECT="${N8N_PROJECT:-languagebot-n8n}"
+HEALTH_ATTEMPTS="${HEALTH_ATTEMPTS:-10}"
+HEALTH_DELAY_SEC="${HEALTH_DELAY_SEC:-3}"
+HEALTH_TIMEOUT_SEC="${HEALTH_TIMEOUT_SEC:-5}"
 
 log() {
   echo "==> $1"
@@ -18,7 +23,7 @@ ssh -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >/dev
 
 log "🚀 Step 2/7: Run remote deploy commands"
 ssh "${DEPLOY_HOST}" \
-  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' APP_COMPOSE='${APP_COMPOSE}' N8N_COMPOSE='${N8N_COMPOSE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' bash -se" <<'REMOTE'
+  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' APP_COMPOSE='${APP_COMPOSE}' N8N_COMPOSE='${N8N_COMPOSE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' APP_PROJECT='${APP_PROJECT}' N8N_PROJECT='${N8N_PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' bash -se" <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
@@ -50,21 +55,43 @@ for f in deploy/.env deploy/.env.api deploy/.env.miniapp; do
   fi
 done
 
+step "🌱 2.3.1/7: Load env for build args"
+set -a
+source deploy/.env.api
+source deploy/.env.miniapp
+set +a
+
 step "🗄️ 2.4/7: Run DB migrations"
 bash "${MIGRATE_SCRIPT}"
 
 step "🐳 2.5/7: Build & restart API + miniapp + caddy"
-docker compose -f "${APP_COMPOSE}" build
+docker compose -p "${APP_PROJECT}" -f "${APP_COMPOSE}" build
 
-docker compose -f "${APP_COMPOSE}" up -d --remove-orphans
+docker compose -p "${APP_PROJECT}" -f "${APP_COMPOSE}" up -d --remove-orphans
 
 step "🔄 2.6/7: Start/refresh n8n"
-docker compose -f "${N8N_COMPOSE}" up -d --remove-orphans
+docker compose -p "${N8N_PROJECT}" -f "${N8N_COMPOSE}" up -d --remove-orphans
 
 step "✅ 2.7/7: Health checks"
 if command -v curl >/dev/null 2>&1; then
-  curl -fsS https://learn-language-api.notarobot.dev/healthz >/dev/null
-  curl -fsS https://learn-language-app.notarobot.dev/ >/dev/null
+  check_url() {
+    local url="$1"
+    local attempts="${HEALTH_ATTEMPTS}"
+    local delay="${HEALTH_DELAY_SEC}"
+    local timeout="${HEALTH_TIMEOUT_SEC}"
+    for i in $(seq 1 "${attempts}"); do
+      if curl -fsS --max-time "${timeout}" "${url}" >/dev/null; then
+        echo "✅ ${url} OK"
+        return 0
+      fi
+      echo "⏳ ${url} not ready (attempt ${i}/${attempts})"
+      sleep "${delay}"
+    done
+    return 1
+  }
+
+  check_url https://learn-language-api.notarobot.dev/healthz
+  check_url https://learn-language-app.notarobot.dev/
   echo "✅ Health checks OK"
 else
   echo "⚠️ curl not found; skipping health checks"
