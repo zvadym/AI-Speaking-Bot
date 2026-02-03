@@ -1,4 +1,5 @@
 .env.local
+.env.dev
 node_modules
 apps/**/node_modules
 apps/miniapp/dist
