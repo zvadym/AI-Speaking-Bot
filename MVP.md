@@ -1,206 +1,107 @@
-# Telegram AI Speaking Bot (UA UI) — n8n MVP Plan (EN + DE)
+## 🎯 Project Goal
 
-**Scope (phase 1):** Telegram-only, built in **n8n**.
-**Core feature:** User sends **voice** in English or German → bot transcribes → generates a natural reply + corrections explained in **Ukrainian** → sends back to Telegram.
-**Later:** Payments via Telegram, PRO limits.
+Build a **Telegram bot** for **learning English and German**, using **voice messages** and **AI feedback**. The bot should:
 
-## 0) One-time setup
-
-1. Create a Telegram bot via **BotFather** → get `BOT_TOKEN`.
-2. In BotFather:
-
-   * `/setcommands` (minimal):
-
-     * `start` — onboarding
-     * `lang` — choose English/German
-     * `help` — usage
-     * `pro` — explain PRO
-     * `buy` — start payment
-3. Deploy **n8n** (local or server) and open UI.
+* Automatically **transcribe and analyze** user voice messages
+* Check for **mistakes** in the message
+* If errors are found: send a friendly **correction with explanations and examples**
+* Continue conversation in a natural tone, adapted to the user’s language level
+* Handle **multi-language input** (e.g., reject messages in the wrong language)
+* Allow users to select **voice or text** replies
+* Track user **history** and **usage**
+* Support **paid plans** (Plus, Pro)
 
 ---
 
-## 1) Workflow #1 — “Telegram In → Voice → Transcribe → AI Reply+Corrections → Send Back”
+## ✅ Tech Stack & Tools
 
-Goal: validate the end-to-end pipeline today.
-
-### 1.1 Nodes (minimum)
-
-1. **Telegram Trigger**
-
-   * Update types: `message`
-2. **IF** node: check if incoming message contains voice
-
-   * Condition: `{{$json.message.voice}}` exists
-   * **true** → voice branch
-   * **false** → text branch (for now: ask user to send a voice message)
+* **Telegram bot** (using BotFather, Telegram API)
+* **n8n (v2+)** for automation and workflow building
+* **Docker + Ngrok** for local testing
+* **OpenAI Whisper** for transcription and error checking
+* **PostgreSQL** for user/message/history/payments database
+* **Telegram Payments / Stars** for monetization
 
 ---
 
-### 1.2 Voice branch — get audio file from Telegram
+## 💡 Key Features Implemented
 
-3. **HTTP Request** → Telegram `getFile`
+### 🎙 Voice Message Workflow
 
-   * Method: `GET`
-   * URL:
-     `https://api.telegram.org/bot{{$env.BOT_TOKEN}}/getFile?file_id={{$json.message.voice.file_id}}`
+* Receive Telegram voice message via trigger
+* Transcribe using OpenAI “Transcribe a recording” node
+* Store and parse transcript
+* Check if language matches the target language
+* Detect mistakes using GPT
+* Send one of:
+  * ✅ Friendly follow-up if correct
+  * ❌ Explanation + corrected version + continue
+* Markdown/HTML formatting used for clarity
 
-4. **HTTP Request** → download file binary
+### 🔄 Conversation Flow
 
-   * Method: `GET`
-   * URL:
-     `https://api.telegram.org/file/bot{{$env.BOT_TOKEN}}/{{$json.result.file_path}}`
-   * Response: **Binary** (store as binary data in n8n)
+* Tracks recent history (20–30 messages or summarized)
+* Level and language are selected in `/start`
+* Includes emoji indicators for correct/incorrect/explanation
+* Supports optional voice replies using TTS
+* Shows progress ("Thinking...", "Almost done...") during long processing
 
----
+### 📦 Payment and Plans
 
-### 1.3 STT — transcribe audio to text
+* Free: 20 messages (~5 min)
+* Plus (€5/month): 1h/week
+* Pro (€15/month): 10h/week
+* Users can **upgrade**, **downgrade**, or **cancel auto-renew**
+* Payments processed using **Telegram Stars**
 
-5. **HTTP Request** → OpenAI Audio Transcriptions (multipart/form-data)
+  * Stripe rejected due to App Store rules
+* Plans table and usage tracking implemented
+* Workflow handles:
 
-   * URL: `https://api.openai.com/v1/audio/transcriptions`
-   * Headers:
-
-     * `Authorization: Bearer {{$env.OPENAI_API_KEY}}`
-   * Body type: `Form-Data`
-   * Fields:
-
-     * `model` = `gpt-4o-mini-transcribe`
-     * `file` = binary from step 4
-   * Output: `text` (the transcript)
-
----
-
-### 1.4 LLM — produce reply + corrections (UA explanations)
-
-6. **OpenAI call** (HTTP Request to Responses / Chat Completions)
-
-   * Inputs:
-
-     * `target_language`: `"EN"` or `"DE"`
-     * `transcript`: string from STT
-     * (optional) `level`: `"A1"..."C1"`
-   * Output must be stable and structured.
-
-**Recommended response format (plain text):**
-
-* `Reply:` (target language, 2–5 sentences)
-* `Corrections (UA):` 2–4 bullet points
-* `Try again:` 1 sentence to repeat correctly
-* `Next question:` 1 follow-up question (target language)
-
-**System prompt (starter, short):**
-
-* You are a friendly conversation partner.
-* First respond naturally in the **target language**.
-* Then provide **2–4 corrections in Ukrainian** with brief explanations.
-* Don’t be dry. Keep it short and practical.
+  * `/plans` UI with buttons and descriptions
+  * `pay:sub:plus` and `pay:sub:pro` actions
+  * `successful_payment` activation
+  * Edge cases (e.g., upgrades mid-period, downgrades delayed)
 
 ---
 
-### 1.5 Send result back to Telegram
+## 🔧 Implementation Notes
 
-7. **Telegram** → `sendMessage`
-
-   * `chat_id` = `{{$json.message.chat.id}}`
-   * `text` = LLM output (from step 6)
-
-✅ After this workflow works, you have a functional MVP:
-**voice → transcript → AI conversation + UA corrections → Telegram message back**.
-
----
-
-## 2) Add language selection (EN/DE) + user state
-
-Goal: store user preference per chat.
-
-### 2.1 Command `/lang` with inline buttons
-
-* Implement inline keyboard:
-
-  * “🇬🇧 English”
-  * “🇩🇪 Deutsch”
-
-### 2.2 Persistence (choose one)
-
-* **Option A (fastest):** n8n **Data Store**
-
-  * key: `chat_id`
-  * value: `{ target_language: "EN" | "DE" }`
-* **Option B (more scalable):** Postgres/SQLite
-
-  * table: `users(chat_id PRIMARY KEY, target_language, level, pro_until, created_at, updated_at)`
-
-### 2.3 Use preference in Workflow #1
-
-Before the LLM node, fetch `target_language` for the chat_id and pass it into step 6.
+* Voice transcription sometimes “corrected” grammar — problematic for error detection
+* Language detection and enforcement are done using GPT
+* Telegram Stars required for iOS compliance
+* Created Telegram UI messages, buttons, and error handlers
+* Handled DB cases like empty message history, new user joins, etc.
+* Built `/plans`, `pay:*`, `successful_payment` branches
 
 ---
 
-## 3) Add Free tier usage limits (prep for PRO)
+## 🧪 Experiments & Problems Solved
 
-Goal: enforce a daily voice limit using Telegram voice metadata.
-
-### 3.1 Measure usage
-
-Use Telegram `message.voice.duration` (seconds).
-
-### 3.2 Store daily usage
-
-* key: `${chat_id}:${YYYY-MM-DD}`
-* value: `total_seconds_used_today`
-
-### 3.3 Enforce
-
-* If `total_seconds_used_today + new_duration > DAILY_LIMIT_SECONDS`:
-
-  * send a paywall message
-  * suggest `/buy`
-* Else:
-
-  * proceed with STT + LLM
-  * increment usage counter
+* Made OpenAI response formatting Telegram-safe (switched to HTML for explanation blocks)
+* Used Telegram “Edit Message” to simulate progress bar
+* Resolved issues with file handling and binary input in n8n
+* Handled errors like `"Bad Request: can't parse entities"` or invalid response_format schemas
+* Designed DB schema: `users`, `messages`, `plans`, `payments`, `usage`
 
 ---
 
-## 4) Payments via Telegram (after MVP is stable)
+## 🖼 Design and Visuals
 
-Two parts: send invoice + handle confirmations.
+* Generated custom **bot icon** (Ukrainian female, flags, soft Eve-like look)
+* Used emoji consistently for correction flow:
 
-### 4.1 Workflow #2 — “/buy → sendInvoice”
-
-* Telegram Trigger: `message`
-* IF message text == `/buy`
-* Call Telegram `sendInvoice`
-
-  * Requires a Telegram-supported payment provider token (e.g., Stripe via Telegram payments)
-  * Price options:
-
-    * Monthly
-    * Yearly
-
-### 4.2 Workflow #3 — Payment updates
-
-Listen for:
-
-* `pre_checkout_query`
-* `successful_payment` (inside message payload)
-
-**Actions:**
-
-* On `pre_checkout_query`: answer with `answerPreCheckoutQuery(ok=true)`
-* On `successful_payment`:
-
-  * set `pro_until = now + 30d` (or 365d)
-  * send confirmation message: “Payment successful ✅”
+  * ✅ / ❌ for right/wrong
+  * 💡 or 🧠 for explanation
+* Planned to build a Telegram mini-app page (but postponed due to iOS/Stripe limitations)
 
 ---
 
-## “Today” validation checklist (6 hours)
+## 🔜 Planned / Next Features
 
-1. Telegram Trigger receives messages ✅
-2. Voice branch: `getFile` → download binary ✅
-3. OpenAI transcription returns transcript ✅
-4. LLM generates “Reply + Corrections (UA)” ✅
-5. sendMessage returns result to Telegram ✅
+* Add better UI for `/plans` and `/profile` command
+* Implement "pause auto-renew", "remind before next payment"
+* Build analytics and dashboard
+* Multi-language interface (Ukrainian/German)
+* Dynamic leveling system (A1 → C1)
 

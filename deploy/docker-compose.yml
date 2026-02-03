@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
+    env_file:
+      - .env
+    volumes:
+      - n8n_data:/home/node/.n8n
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=512
+
+volumes:
+  n8n_data:
