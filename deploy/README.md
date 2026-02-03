@@ -1,30 +1,129 @@
-# n8n Deploy (Linode + Caddy)
+# Deploy Guide
 
-1) Copy files to server (example):
+This repo deploys three services:
+- API (Node/Express)
+- Mini‑app (Vue + nginx)
+- n8n (workflow engine)
 
-```bash
-scp -r deploy/* root@YOUR_SERVER:/opt/n8n/
-```
+It also uses Caddy as the edge proxy.
 
-2) Edit `/opt/n8n/.env` and fill secrets.
+## 1) First Install
 
-3) Start n8n:
-
-```bash
-cd /opt/n8n
-docker compose up -d
-```
-
-4) Configure Caddy:
+### 1.1 Server prerequisites
+Install Docker + Docker Compose plugin (Ubuntu/Debian example):
 
 ```bash
-sudo cp /opt/n8n/Caddyfile /etc/caddy/Caddyfile
-sudo systemctl reload caddy
+sudo apt-get update -y
+sudo apt-get install -y ca-certificates curl gnupg lsb-release git
+
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+sudo apt-get update -y
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
 ```
 
-5) Open https://learn-language.notarobot.dev and import `n8n.json`.
+Re‑login so Docker group changes apply.
 
-Notes:
-- Ensure DNS A record for `learn-language.notarobot.dev` points to your Linode.
-- Telegram webhooks use `WEBHOOK_URL`.
-- If Postgres requires IP allow-listing, allow your Linode's IP.
+### 1.2 DNS
+Point these domains to the server IP:
+- `learn-language-api.notarobot.dev`
+- `learn-language-app.notarobot.dev`
+- (optional) `learn-language.notarobot.dev` for redirect
+
+### 1.3 Clone repo
+
+```bash
+mkdir -p /opt/ai-speaking-bot
+cd /opt/ai-speaking-bot
+
+git clone <YOUR_REPO_URL> .
+```
+
+### 1.4 Create env files (do not commit)
+
+```bash
+cp deploy/.env.api.example deploy/.env.api
+cp deploy/.env.miniapp.example deploy/.env.miniapp
+# for n8n
+cp deploy/.env.example deploy/.env
+```
+
+Fill these on the server:
+- `deploy/.env.api`: `DATABASE_URL`, `WEBAPP_URL`, `TELEGRAM_BOT_TOKEN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`
+- `deploy/.env.miniapp`: `VITE_API_BASE=https://learn-language-api.notarobot.dev`
+- `deploy/.env`: n8n secrets (`N8N_*`, `WEBHOOK_URL`, DB creds if used)
+
+### 1.5 Run migrations + deploy app
+
+```bash
+./deploy/deploy.sh
+```
+
+This runs dbmate migrations, builds API/miniapp images, and starts API + miniapp + Caddy.
+
+### 1.6 Start n8n and import workflows
+
+```bash
+cd /opt/ai-speaking-bot/deploy
+
+docker compose -f docker-compose.yml up -d --force-recreate
+# re-import workflows from deploy/workflows
+# (this overwrites existing workflows with same IDs)
+docker compose -f docker-compose.yml up -d --force-recreate n8n-import
+```
+
+### 1.7 Verify
+
+```bash
+curl -s https://learn-language-api.notarobot.dev/healthz
+# open https://learn-language-app.notarobot.dev/
+```
+
+## 2) Update / Deploy
+
+### 2.1 Pull latest code
+
+```bash
+cd /opt/ai-speaking-bot
+
+git pull --ff-only
+```
+
+### 2.2 Run migrations + restart API/miniapp/Caddy
+
+```bash
+./deploy/deploy.sh
+```
+
+### 2.3 Restart n8n and re-import workflows (if workflow JSON changed)
+
+```bash
+cd /opt/ai-speaking-bot/deploy
+
+docker compose -f docker-compose.yml up -d --force-recreate
+# re-import workflows from deploy/workflows
+# (this overwrites existing workflows with same IDs)
+docker compose -f docker-compose.yml up -d --force-recreate n8n-import
+```
+
+## 3) Optional: Remote deploy from local machine
+
+Use `scripts/deploy-remote.sh` to SSH into the server, run `git pull`, migrations, restarts, and health checks.
+
+```bash
+./scripts/deploy-remote.sh
+```
+
+Override defaults if needed:
+
+```bash
+DEPLOY_HOST=languagebot \
+DEPLOY_DIR=/opt/ai-speaking-bot \
+DEPLOY_BRANCH=main \
+./scripts/deploy-remote.sh
+```
