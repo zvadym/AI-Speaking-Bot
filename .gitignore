@@ -1,1 +1,6 @@
 .env.local
+node_modules
+apps/**/node_modules
+apps/miniapp/dist
+deploy/.env.api
+deploy/.env.miniapp

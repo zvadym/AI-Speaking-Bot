@@ -1,3 +1,7 @@
-learn-language.notarobot.dev {
-  reverse_proxy 127.0.0.1:5678
+learn-language-api.notarobot.dev {
+  reverse_proxy api:3000
+}
+
+learn-language-app.notarobot.dev {
+  reverse_proxy miniapp:80
 }

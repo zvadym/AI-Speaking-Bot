@@ -20,7 +20,7 @@ Build a **Telegram bot** for **learning English and German**, using **voice mess
 * **Docker + Ngrok** for local testing
 * **OpenAI Whisper** for transcription and error checking
 * **PostgreSQL** for user/message/history/payments database
-* **Telegram Payments / Stars** for monetization
+* **Stripe (hosted Checkout)** for monetization
 
 ---
 
@@ -52,9 +52,7 @@ Build a **Telegram bot** for **learning English and German**, using **voice mess
 * Plus (€5/month): 1h/week
 * Pro (€15/month): 10h/week
 * Users can **upgrade**, **downgrade**, or **cancel auto-renew**
-* Payments processed using **Telegram Stars**
-
-  * Stripe rejected due to App Store rules
+* Payments processed using **Stripe subscriptions**
 * Plans table and usage tracking implemented
 * Workflow handles:
 
@@ -69,7 +67,7 @@ Build a **Telegram bot** for **learning English and German**, using **voice mess
 
 * Voice transcription sometimes “corrected” grammar — problematic for error detection
 * Language detection and enforcement are done using GPT
-* Telegram Stars required for iOS compliance
+* Stripe-only flow inside Telegram mini-app (policy risk accepted)
 * Created Telegram UI messages, buttons, and error handlers
 * Handled DB cases like empty message history, new user joins, etc.
 * Built `/plans`, `pay:*`, `successful_payment` branches
@@ -104,4 +102,3 @@ Build a **Telegram bot** for **learning English and German**, using **voice mess
 * Build analytics and dashboard
 * Multi-language interface (Ukrainian/German)
 * Dynamic leveling system (A1 → C1)
-
