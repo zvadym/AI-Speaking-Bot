@@ -72,7 +72,8 @@ docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build
 docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --remove-orphans
 
 step "📦 2.6/9: Import n8n workflows"
-docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate n8n-import
+docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" stop n8n >/dev/null 2>&1 || true
+docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run --rm --no-deps n8n-import
 
 step "✅ 2.7/9: Activate n8n workflows"
 COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" bash scripts/activate-n8n-workflows.sh

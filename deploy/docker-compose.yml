@@ -57,8 +57,26 @@ services:
     volumes:
       - ./n8n-data:/home/node/.n8n
       - ./workflows:/workflows:ro
-    entrypoint: ["n8n"]
-    command: ["import:workflow", "--separate", "--input", "/workflows/.rendered", "--overwrite"]
+    entrypoint: ["sh", "-lc"]
+    command: |
+      set -eu
+      if [ ! -d /workflows/.rendered ]; then
+        echo "Missing /workflows/.rendered. Render workflows first." >&2
+        exit 1
+      fi
+      found="false"
+      for f in /workflows/.rendered/*.json; do
+        if [ ! -f "$$f" ]; then
+          continue
+        fi
+        found="true"
+        echo "Importing workflow: $$f"
+        n8n import:workflow --input "$$f" --overwrite
+      done
+      if [ "$$found" != "true" ]; then
+        echo "No workflow JSON files found in /workflows/.rendered" >&2
+        exit 1
+      fi
 
 volumes:
   caddy_data:

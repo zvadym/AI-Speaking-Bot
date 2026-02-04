@@ -88,7 +88,7 @@ python3 ../scripts/render-n8n-workflows.py --input ./workflows --output ./workfl
 docker compose -f docker-compose.yml up -d --force-recreate
 # re-import workflows from deploy/workflows/.rendered
 # (this overwrites existing workflows with same IDs)
-docker compose -f docker-compose.yml up -d --force-recreate n8n-import
+docker compose -f docker-compose.yml run --rm --no-deps n8n-import
 
 # activate imported workflows
 COMPOSE_FILE=docker-compose.yml PROJECT=languagebot WORKFLOWS_DIR=workflows/.rendered \
@@ -145,7 +145,7 @@ python3 ../scripts/render-n8n-workflows.py --input ./workflows --output ./workfl
 docker compose -f docker-compose.yml up -d --force-recreate
 # re-import workflows from deploy/workflows/.rendered
 # (this overwrites existing workflows with same IDs)
-docker compose -f docker-compose.yml up -d --force-recreate n8n-import
+docker compose -f docker-compose.yml run --rm --no-deps n8n-import
 
 # activate imported workflows
 COMPOSE_FILE=docker-compose.yml PROJECT=languagebot WORKFLOWS_DIR=workflows/.rendered \
