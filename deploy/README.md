@@ -51,12 +51,14 @@ cp deploy/.env.api.example deploy/.env.api
 cp deploy/.env.miniapp.example deploy/.env.miniapp
 # for n8n
 cp deploy/.env.example deploy/.env
+cp deploy/.env.prod.example deploy/.env.prod
 ```
 
 Fill these on the server:
 - `deploy/.env.api`: `DATABASE_URL`, `WEBAPP_URL`, `TELEGRAM_BOT_TOKEN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`
 - `deploy/.env.miniapp`: `VITE_API_BASE=https://learn-language-api.notarobot.dev`
 - `deploy/.env`: n8n secrets (`N8N_*`, `WEBHOOK_URL`, DB creds if used)
+- `deploy/.env.prod`: n8n workflow credential IDs used to render workflows for prod (`N8N_CRED_TELEGRAM_ID`, `N8N_CRED_OPENAI_ID`, `N8N_CRED_POSTGRES_ID`)
 
 ### 1.5 Run migrations + deploy app
 
@@ -71,8 +73,14 @@ This runs dbmate migrations, builds API/miniapp images, and starts API + miniapp
 ```bash
 cd /opt/ai-speaking-bot/deploy
 
+# render workflows with prod credential IDs
+set -a
+source .env.prod
+set +a
+python3 ../scripts/render-n8n-workflows.py --input ./workflows --output ./workflows/.rendered
+
 docker compose -f docker-compose.yml up -d --force-recreate
-# re-import workflows from deploy/workflows
+# re-import workflows from deploy/workflows/.rendered
 # (this overwrites existing workflows with same IDs)
 docker compose -f docker-compose.yml up -d --force-recreate n8n-import
 ```
@@ -107,8 +115,14 @@ git pull --ff-only
 ```bash
 cd /opt/ai-speaking-bot/deploy
 
+# render workflows with prod credential IDs
+set -a
+source .env.prod
+set +a
+python3 ../scripts/render-n8n-workflows.py --input ./workflows --output ./workflows/.rendered
+
 docker compose -f docker-compose.yml up -d --force-recreate
-# re-import workflows from deploy/workflows
+# re-import workflows from deploy/workflows/.rendered
 # (this overwrites existing workflows with same IDs)
 docker compose -f docker-compose.yml up -d --force-recreate n8n-import
 ```
