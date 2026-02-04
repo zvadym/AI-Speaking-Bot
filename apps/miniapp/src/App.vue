@@ -29,6 +29,7 @@
         class="plan"
         :class="{ featured: plan.tier === 'pro' }"
         :style="{ animationDelay: `${index * 120}ms` }"
+        @click="logDebug(`plan card click: ${plan.tier}`)"
       >
         <header>
           <span class="plan-tier">{{ planLabel(plan.tier) }}</span>
@@ -52,8 +53,8 @@
 
         <button
           class="cta"
-          :disabled="loading || actionPending"
-          @click="subscribe(plan.tier)"
+          :disabled="isBusy"
+          @click.stop="subscribe(plan.tier)"
         >
           {{ actionPending === plan.tier ? 'Opening Checkout…' : 'Subscribe' }}
         </button>
@@ -71,7 +72,7 @@
         <div class="manage-actions">
           <button
             class="ghost"
-            :disabled="loading || actionPending"
+            :disabled="isBusy"
             @click="cancel"
             v-if="user.plan_autorenew"
           >
@@ -79,7 +80,7 @@
           </button>
           <button
             class="ghost"
-            :disabled="loading || actionPending"
+            :disabled="isBusy"
             @click="resume"
             v-else
           >
@@ -92,6 +93,12 @@
     <section class="debug" v-if="debugMessages.length">
       <div class="debug-card">
         <h2>Debug</h2>
+        <div class="debug-state">
+          <span>loading: {{ state.loading ? 'true' : 'false' }}</span>
+          <span>actionPending: {{ actionPending || 'none' }}</span>
+          <span>isBusy: {{ isBusy ? 'true' : 'false' }}</span>
+          <span>token: {{ state.token ? 'yes' : 'no' }}</span>
+        </div>
         <div class="debug-list">
           <div v-for="(item, index) in debugMessages" :key="index" class="debug-item">
             <span class="debug-time">{{ item.time }}</span>
@@ -119,6 +126,8 @@ const state = reactive({
 const error = ref('');
 const actionPending = ref('');
 const debugMessages = ref([]);
+
+const isBusy = computed(() => state.loading || Boolean(actionPending.value));
 
 const statusMessage = computed(() => {
   const params = new URLSearchParams(window.location.search);
@@ -501,6 +510,15 @@ onMounted(async () => {
   margin: 0 0 8px;
   font-family: 'Gloock', serif;
   font-size: 18px;
+}
+
+.debug-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
 }
 
 .debug-list {
