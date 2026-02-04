@@ -16,24 +16,24 @@ log() {
   echo "==> $1"
 }
 
-log "🔌 Step 1/8: Check SSH connectivity to ${DEPLOY_HOST}"
+log "🔌 Step 1/9: Check SSH connectivity to ${DEPLOY_HOST}"
 ssh -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >/dev/null
 
-log "🚀 Step 2/8: Run remote deploy commands"
+log "🚀 Step 2/9: Run remote deploy commands"
 ssh "${DEPLOY_HOST}" \
   "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' bash -se" <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
 
-step "📁 2.1/8: Verify repo directory"
+step "📁 2.1/9: Verify repo directory"
 if [[ ! -d "${DEPLOY_DIR}" ]]; then
   echo "Missing ${DEPLOY_DIR} on server" >&2
   exit 1
 fi
 cd "${DEPLOY_DIR}"
 
-step "🧹 2.2/8: Ensure clean git state"
+step "🧹 2.2/9: Ensure clean git state"
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "Repo has uncommitted changes. Please commit/stash before deploy." >&2
   exit 1
@@ -45,7 +45,7 @@ git checkout "${DEPLOY_BRANCH}"
 
 git pull --ff-only origin "${DEPLOY_BRANCH}"
 
-step "🔐 2.3/8: Verify required env files (won't overwrite)"
+step "🔐 2.3/9: Verify required env files (won't overwrite)"
 for f in deploy/.env deploy/.env.api deploy/.env.miniapp deploy/.env.prod; do
   if [[ ! -f "$f" ]]; then
     echo "Missing $f on server" >&2
@@ -53,25 +53,31 @@ for f in deploy/.env deploy/.env.api deploy/.env.miniapp deploy/.env.prod; do
   fi
 done
 
-step "🌱 2.3.1/8: Load env for build args + workflow render"
+step "🌱 2.3.1/9: Load env for build args + workflow render"
 set -a
 source deploy/.env.api
 source deploy/.env.miniapp
 source deploy/.env.prod
 set +a
 
-step "🧩 2.3.2/8: Render n8n workflows"
+step "🧩 2.3.2/9: Render n8n workflows"
 python3 scripts/render-n8n-workflows.py --input deploy/workflows --output deploy/workflows/.rendered
 
-step "🗄️ 2.4/8: Run DB migrations"
+step "🗄️ 2.4/9: Run DB migrations"
 bash "${MIGRATE_SCRIPT}"
 
-step "🐳 2.5/8: Build & restart services"
+step "🐳 2.5/9: Build & restart services"
 docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build
 
 docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --remove-orphans
 
-step "✅ 2.6/8: Health checks"
+step "📦 2.6/9: Import n8n workflows"
+docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate n8n-import
+
+step "✅ 2.7/9: Activate n8n workflows"
+COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" bash scripts/activate-n8n-workflows.sh
+
+step "✅ 2.8/9: Health checks"
 if command -v curl >/dev/null 2>&1; then
   check_url() {
     local url="$1"

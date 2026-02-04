@@ -89,6 +89,10 @@ docker compose -f docker-compose.yml up -d --force-recreate
 # re-import workflows from deploy/workflows/.rendered
 # (this overwrites existing workflows with same IDs)
 docker compose -f docker-compose.yml up -d --force-recreate n8n-import
+
+# activate imported workflows
+COMPOSE_FILE=docker-compose.yml PROJECT=languagebot WORKFLOWS_DIR=workflows/.rendered \
+  bash ../scripts/activate-n8n-workflows.sh
 ```
 
 Note: n8n data is stored in `deploy/n8n-data` (bind‑mount). Ensure this directory exists and is persisted across deploys.
@@ -142,6 +146,10 @@ docker compose -f docker-compose.yml up -d --force-recreate
 # re-import workflows from deploy/workflows/.rendered
 # (this overwrites existing workflows with same IDs)
 docker compose -f docker-compose.yml up -d --force-recreate n8n-import
+
+# activate imported workflows
+COMPOSE_FILE=docker-compose.yml PROJECT=languagebot WORKFLOWS_DIR=workflows/.rendered \
+  bash ../scripts/activate-n8n-workflows.sh
 ```
 
 ## 3) Optional: Remote deploy from local machine
@@ -175,4 +183,3 @@ SSH access requires VPN. Use this tunnel to reach n8n locally:
 ```bash
 ssh -L 5678:127.0.0.1:5678 languagebot -N
 ```
-
