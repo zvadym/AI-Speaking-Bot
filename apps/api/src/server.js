@@ -327,6 +327,126 @@ app.post('/billing/resume', requireAuth, async (req, res) => {
   return res.json({ ok: true, status: updated.status });
 });
 
+app.post('/billing/upgrade', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const { tier } = req.body || {};
+  const targetTier = String(tier || '').toLowerCase();
+  if (!['plus', 'pro'].includes(targetTier)) {
+    return res.status(400).json({ error: 'bad_tier' });
+  }
+
+  const { rows: userRows } = await pool.query(
+    `SELECT stripe_subscription_id
+       FROM users
+      WHERE chat_id = $1
+      LIMIT 1`,
+    [chatId]
+  );
+
+  const subscriptionId = userRows[0]?.stripe_subscription_id || null;
+  if (!subscriptionId) {
+    return res.status(400).json({ error: 'no_subscription' });
+  }
+
+  let subscription;
+  try {
+    subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ['items.data.price', 'latest_invoice.payment_intent', 'latest_invoice']
+    });
+  } catch (err) {
+    console.error('Stripe: failed to retrieve subscription for upgrade', err);
+    return res.status(500).json({ error: 'stripe_error' });
+  }
+
+  const subscriptionItem = subscription.items?.data?.[0] || null;
+  const currentPriceId = subscriptionItem?.price?.id || null;
+  const currency = subscriptionItem?.price?.currency?.toUpperCase() || null;
+  const billingInterval = subscriptionItem?.price?.recurring?.interval || 'month';
+  if (!subscriptionItem?.id || !currentPriceId || !currency) {
+    return res.status(400).json({ error: 'subscription_not_upgradeable' });
+  }
+
+  const currentTier = await resolveTierByPrice(currentPriceId);
+  const tierRank = { free: 0, plus: 1, pro: 2 };
+  if (currentTier && (tierRank[targetTier] ?? 0) <= (tierRank[currentTier] ?? 0)) {
+    return res.status(400).json({ error: 'not_an_upgrade', current_tier: currentTier });
+  }
+
+  const { rows: priceRows } = await pool.query(
+    `SELECT stripe_price_id
+       FROM plan_prices
+      WHERE tier = $1 AND currency = $2 AND billing_interval = $3 AND active = true
+      LIMIT 1`,
+    [targetTier, currency, billingInterval]
+  );
+
+  const targetPriceId = priceRows[0]?.stripe_price_id || null;
+  if (!targetPriceId) {
+    return res.status(400).json({ error: 'price_not_found' });
+  }
+
+  let updated;
+  try {
+    updated = await stripe.subscriptions.update(subscriptionId, {
+      items: [{ id: subscriptionItem.id, price: targetPriceId }],
+      proration_behavior: 'always_invoice',
+      payment_behavior: 'pending_if_incomplete',
+      expand: ['latest_invoice.payment_intent', 'latest_invoice']
+    });
+  } catch (err) {
+    console.error('Stripe: upgrade failed', err);
+    return res.status(500).json({ error: 'stripe_error' });
+  }
+
+  const invoice = typeof updated.latest_invoice === 'object' ? updated.latest_invoice : null;
+  const paymentIntent = typeof invoice?.payment_intent === 'object' ? invoice.payment_intent : null;
+
+  const pendingUpgrade = Boolean(updated.pending_update);
+
+  if (pendingUpgrade) {
+    await pool.query(
+      `UPDATE users
+          SET pending_plan_tier = $1,
+              pending_plan_effective_at = NOW(),
+              updated_at = NOW()
+        WHERE chat_id = $2`,
+      [targetTier, chatId]
+    );
+  } else {
+    await pool.query(
+      `UPDATE users
+          SET pending_plan_tier = NULL,
+              pending_plan_effective_at = NULL,
+              updated_at = NOW()
+        WHERE chat_id = $1`,
+      [chatId]
+    );
+  }
+
+  return res.json({
+    ok: true,
+    pending: pendingUpgrade,
+    currency,
+    billing_interval: billingInterval,
+    current_tier: currentTier,
+    target_tier: targetTier,
+    invoice: invoice
+      ? {
+          id: invoice.id,
+          status: invoice.status || null,
+          hosted_invoice_url: invoice.hosted_invoice_url || null
+        }
+      : null,
+    payment_intent: paymentIntent
+      ? {
+          id: paymentIntent.id,
+          status: paymentIntent.status || null,
+          client_secret: paymentIntent.client_secret || null
+        }
+      : null
+  });
+});
+
 async function upsertUser(user) {
   const chatId = user.id;
   const username = user.username || null;
@@ -479,6 +599,15 @@ async function handleStripeEvent(event) {
     const customerId = subscription.customer;
     const priceId = subscription.items?.data?.[0]?.price?.id || null;
     const tier = priceId ? await resolveTierByPrice(priceId) : null;
+    const pendingItem = subscription.pending_update?.subscription_items?.[0] || null;
+    const pendingPriceId =
+      typeof pendingItem?.price === 'string'
+        ? pendingItem.price
+        : typeof pendingItem?.price === 'object'
+          ? pendingItem.price?.id || null
+          : null;
+    const pendingTier = pendingPriceId ? await resolveTierByPrice(pendingPriceId) : null;
+    const pendingEffectiveAt = pendingTier ? new Date() : null;
     const status = subscription.status;
     const isActive = ['active', 'trialing', 'past_due', 'unpaid'].includes(status);
     const planTier = isActive && tier ? tier : 'free';
@@ -557,8 +686,8 @@ async function handleStripeEvent(event) {
               stripe_subscription_status = $8,
               billing_currency = $9,
               updated_at = NOW(),
-              pending_plan_tier = NULL,
-              pending_plan_effective_at = NULL
+              pending_plan_tier = $10,
+              pending_plan_effective_at = $11
         WHERE stripe_customer_id = $5
         RETURNING chat_id`,
       [
@@ -570,7 +699,9 @@ async function handleStripeEvent(event) {
         subscription.id,
         priceId,
         status,
-        currency
+        currency,
+        pendingTier,
+        pendingEffectiveAt
       ]
     );
 
@@ -599,9 +730,9 @@ async function handleStripeEvent(event) {
                   stripe_subscription_status = $8,
                   billing_currency = $9,
                   updated_at = NOW(),
-                  pending_plan_tier = NULL,
-                  pending_plan_effective_at = NULL
-            WHERE chat_id = $10
+                  pending_plan_tier = $10,
+                  pending_plan_effective_at = $11
+            WHERE chat_id = $12
             RETURNING chat_id`,
           [
             planTier,
@@ -613,6 +744,8 @@ async function handleStripeEvent(event) {
             priceId,
             status,
             currency,
+            pendingTier,
+            pendingEffectiveAt,
             paymentChatId
           ]
         );
