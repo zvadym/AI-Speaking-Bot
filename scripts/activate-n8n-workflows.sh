@@ -27,7 +27,7 @@ for path in sorted(workflow_dir.glob("*.json")):
     wid = data.get("id")
     if wid:
         ids.append(str(wid))
-print("\\n".join(ids))
+print("\n".join(ids))
 PY
 )"
 
