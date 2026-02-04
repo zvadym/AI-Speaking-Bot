@@ -252,6 +252,37 @@ async function loadPlans() {
 async function subscribe(tier) {
   actionPending.value = tier;
   try {
+    if (effectiveTier.value === 'plus' && tier === 'pro') {
+      const resp = await fetch(`${apiBase}/billing/upgrade`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${state.token}`
+        },
+        body: JSON.stringify({ tier })
+      });
+
+      if (!resp.ok) {
+        const payload = await resp.json().catch(() => ({}));
+        error.value = payload?.error === 'not_an_upgrade' ? 'You are already on this plan.' : 'Upgrade unavailable right now.';
+        return;
+      }
+
+      const data = await resp.json();
+      const url = data?.invoice?.hosted_invoice_url;
+      if (url) {
+        if (window.Telegram?.WebApp) {
+          window.Telegram.WebApp.openLink(url);
+        } else {
+          window.location.href = url;
+        }
+        return;
+      }
+
+      await loadPlans();
+      return;
+    }
+
     const resp = await fetch(`${apiBase}/billing/checkout`, {
       method: 'POST',
       headers: {
