@@ -75,7 +75,6 @@ app.post('/auth/telegram', async (req, res) => {
 app.get('/plans', requireAuth, async (req, res) => {
   const currency = (req.query.currency || 'EUR').toString().toUpperCase();
   const chatId = req.auth.chatId;
-  console.info('plans request', { chatId, currency });
 
   const { rows: userRows } = await pool.query(
     `SELECT plan_tier, plan_expires_at, plan_autorenew, pending_plan_tier, pending_plan_effective_at,
@@ -98,14 +97,6 @@ app.get('/plans', requireAuth, async (req, res) => {
       ORDER BY p.tier`,
     [currency]
   );
-
-  console.info('plans response', {
-    chatId,
-    currency,
-    user: userRows[0] || null,
-    plansCount: plans.length,
-    plans
-  });
 
   return res.json({
     currency,

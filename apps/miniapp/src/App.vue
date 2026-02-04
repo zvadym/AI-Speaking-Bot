@@ -195,26 +195,32 @@ async function loadPlans() {
 
 async function subscribe(tier) {
   actionPending.value = tier;
-  const resp = await fetch(`${apiBase}/billing/checkout`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${state.token}`
-    },
-    body: JSON.stringify({ tier, currency: state.currency })
-  });
+  try {
+    const resp = await fetch(`${apiBase}/billing/checkout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${state.token}`
+      },
+      body: JSON.stringify({ tier, currency: state.currency })
+    });
 
-  if (!resp.ok) {
+    if (!resp.ok) {
+      error.value = 'Checkout unavailable right now.';
+      return;
+    }
+
+    const data = await resp.json();
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.openLink(data.url);
+    } else {
+      window.location.href = data.url;
+    }
+  } catch (err) {
+    console.error(err);
     error.value = 'Checkout unavailable right now.';
+  } finally {
     actionPending.value = '';
-    return;
-  }
-
-  const data = await resp.json();
-  if (window.Telegram?.WebApp) {
-    window.Telegram.WebApp.openLink(data.url);
-  } else {
-    window.location.href = data.url;
   }
 }
 
