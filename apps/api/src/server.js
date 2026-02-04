@@ -481,12 +481,48 @@ async function handleStripeEvent(event) {
     const status = subscription.status;
     const isActive = ['active', 'trialing', 'past_due', 'unpaid'].includes(status);
     const planTier = isActive && tier ? tier : 'free';
-    const periodEnd = subscription.current_period_end
-      ? new Date(subscription.current_period_end * 1000)
-      : new Date();
-    const periodStart = subscription.current_period_start
-      ? new Date(subscription.current_period_start * 1000)
-      : null;
+
+    const nowMs = Date.now();
+    const maybeEndSeconds =
+      typeof subscription.current_period_end === 'number' ? subscription.current_period_end : null;
+    const maybeEndMs = maybeEndSeconds ? maybeEndSeconds * 1000 : null;
+
+    let periodEndSeconds = maybeEndSeconds;
+    let periodStartSeconds =
+      typeof subscription.current_period_start === 'number' ? subscription.current_period_start : null;
+
+    const looksSuspicious =
+      isActive && (typeof maybeEndMs !== 'number' || !Number.isFinite(maybeEndMs) || maybeEndMs < nowMs + 60 * 60 * 1000);
+
+    if (looksSuspicious && subscription?.id) {
+      try {
+        const fresh = await stripe.subscriptions.retrieve(subscription.id);
+        if (typeof fresh.current_period_end === 'number') {
+          periodEndSeconds = fresh.current_period_end;
+        }
+        if (typeof fresh.current_period_start === 'number') {
+          periodStartSeconds = fresh.current_period_start;
+        }
+      } catch (err) {
+        console.warn('Stripe: failed to retrieve subscription for period dates', {
+          eventId: event.id,
+          type,
+          subscriptionId: subscription.id,
+          customerId,
+          err: err?.message || String(err)
+        });
+      }
+    }
+
+    const periodEnd =
+      typeof periodEndSeconds === 'number' && Number.isFinite(periodEndSeconds)
+        ? new Date(periodEndSeconds * 1000)
+        : null;
+    const periodStart =
+      typeof periodStartSeconds === 'number' && Number.isFinite(periodStartSeconds)
+        ? new Date(periodStartSeconds * 1000)
+        : null;
+
     const autoRenew = !subscription.cancel_at_period_end;
     const currency = subscription.items?.data?.[0]?.price?.currency?.toUpperCase() || 'EUR';
 
@@ -500,11 +536,11 @@ async function handleStripeEvent(event) {
     const prevTier = prevRows[0]?.plan_tier || 'free';
     const prevChatId = prevRows[0]?.chat_id || null;
 
-    const { rows: updatedRows } = await pool.query(
+    const { rows: updatedRows, rowCount: updatedRowCount } = await pool.query(
       `UPDATE users
           SET plan_tier = $1,
               plan_started_at = COALESCE($2, plan_started_at),
-              plan_expires_at = $3,
+              plan_expires_at = COALESCE($3, plan_expires_at),
               plan_autorenew = $4,
               stripe_customer_id = $5,
               stripe_subscription_id = $6,
@@ -529,7 +565,52 @@ async function handleStripeEvent(event) {
       ]
     );
 
-    const updatedChatId = updatedRows[0]?.chat_id || prevChatId;
+    let updatedChatId = updatedRows[0]?.chat_id || prevChatId || null;
+
+    if (!updatedChatId) {
+      // If the user row wasn't linked by stripe_customer_id yet, fall back to the chat_id we inferred
+      // from the event for payment tracking (e.g. via metadata or client_reference_id in other event types).
+      if (paymentChatId && updatedRowCount === 0) {
+        console.warn('Stripe subscription update matched 0 users; falling back to chat_id', {
+          eventId: event.id,
+          type,
+          customerId,
+          subscriptionId: subscription.id,
+          chatId: paymentChatId
+        });
+        const { rows: fallbackRows } = await pool.query(
+          `UPDATE users
+              SET plan_tier = $1,
+                  plan_started_at = COALESCE($2, plan_started_at),
+                  plan_expires_at = COALESCE($3, plan_expires_at),
+                  plan_autorenew = $4,
+                  stripe_customer_id = $5,
+                  stripe_subscription_id = $6,
+                  stripe_price_id = $7,
+                  stripe_subscription_status = $8,
+                  billing_currency = $9,
+                  updated_at = NOW(),
+                  pending_plan_tier = NULL,
+                  pending_plan_effective_at = NULL
+            WHERE chat_id = $10
+            RETURNING chat_id`,
+          [
+            planTier,
+            periodStart,
+            periodEnd,
+            autoRenew,
+            customerId,
+            subscription.id,
+            priceId,
+            status,
+            currency,
+            paymentChatId
+          ]
+        );
+        updatedChatId = fallbackRows[0]?.chat_id || null;
+      }
+    }
+
     if (updatedChatId && prevTier !== planTier) {
       await notifyPlanChanged({
         chat_id: updatedChatId,
