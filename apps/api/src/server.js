@@ -98,10 +98,79 @@ app.get('/plans', requireAuth, async (req, res) => {
     [currency]
   );
 
+  let usage = null;
+  if (userRows[0]) {
+    const { rows: usageRows } = await pool.query(
+      `WITH u AS (
+         SELECT
+           chat_id,
+           COALESCE(plan_tier, 'free') AS plan_tier,
+           plan_expires_at,
+           COALESCE(plan_autorenew, false) AS plan_autorenew,
+           pending_plan_tier,
+           pending_plan_effective_at,
+           override_plan_tier,
+           override_expires_at
+         FROM users
+         WHERE chat_id = $1
+         LIMIT 1
+       ),
+       effective AS (
+         SELECT
+           chat_id,
+           plan_expires_at,
+           plan_autorenew,
+           pending_plan_tier,
+           pending_plan_effective_at,
+           CASE
+             WHEN override_plan_tier IS NOT NULL AND override_expires_at IS NOT NULL AND NOW() < override_expires_at
+               THEN override_plan_tier
+             WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
+               THEN plan_tier
+             ELSE 'free'
+           END AS effective_tier
+         FROM u
+       ),
+       p AS (
+         SELECT
+           tier,
+           user_audio_seconds_per_week AS limit_user,
+           tts_seconds_per_week AS limit_tts
+         FROM plans
+         WHERE tier = (SELECT effective_tier FROM effective)
+         LIMIT 1
+       ),
+       w AS (
+         SELECT
+           COALESCE(user_audio_seconds, 0) AS used_user,
+           COALESCE(tts_seconds, 0) AS used_tts
+         FROM usage_week
+         WHERE chat_id = (SELECT chat_id FROM effective)
+           AND week_start = date_trunc('week', NOW())::date
+         LIMIT 1
+       )
+       SELECT
+         (SELECT effective_tier FROM effective) AS tier,
+         (SELECT plan_expires_at FROM effective) AS plan_expires_at,
+         (SELECT plan_autorenew FROM effective) AS plan_autorenew,
+         (SELECT pending_plan_tier FROM effective) AS pending_plan_tier,
+         (SELECT pending_plan_effective_at FROM effective) AS pending_plan_effective_at,
+         (SELECT limit_user FROM p) AS limit_user,
+         (SELECT limit_tts FROM p) AS limit_tts,
+         COALESCE((SELECT used_user FROM w), 0) AS used_user,
+         COALESCE((SELECT used_tts FROM w), 0) AS used_tts,
+         GREATEST((SELECT limit_user FROM p) - COALESCE((SELECT used_user FROM w), 0), 0) AS remaining_user,
+         GREATEST((SELECT limit_tts FROM p) - COALESCE((SELECT used_tts FROM w), 0), 0) AS remaining_tts`,
+      [chatId]
+    );
+    usage = usageRows[0] || null;
+  }
+
   return res.json({
     currency,
     user: userRows[0] || null,
-    plans
+    plans,
+    usage
   });
 });
 

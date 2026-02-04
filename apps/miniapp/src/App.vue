@@ -22,9 +22,48 @@
       </div>
     </section>
 
+    <section class="manage" v-if="user">
+      <div class="manage-card">
+        <div>
+          <h2>Your plan</h2>
+          <p>
+            {{ currentPlanLabel }} · {{ autoRenewLabel }}
+          </p>
+          <div class="manage-usage" v-if="usage">
+            <div class="usage-item">
+              <span class="label">Practice time</span>
+              <span class="value">{{ formatSeconds(usage.used_user) }} / {{ formatSeconds(usage.limit_user) }} used</span>
+            </div>
+            <div class="usage-item">
+              <span class="label">Voice replies</span>
+              <span class="value">{{ formatSeconds(usage.used_tts) }} / {{ formatSeconds(usage.limit_tts) }} used</span>
+            </div>
+          </div>
+        </div>
+        <div class="manage-actions">
+          <button
+            class="ghost"
+            :disabled="isBusy"
+            @click="cancel"
+            v-if="user.plan_autorenew"
+          >
+            Turn off auto-renew
+          </button>
+          <button
+            class="ghost"
+            :disabled="isBusy"
+            @click="resume"
+            v-else
+          >
+            Resume auto-renew
+          </button>
+        </div>
+      </div>
+    </section>
+
     <section class="plans">
       <article
-        v-for="(plan, index) in plans"
+        v-for="(plan, index) in visiblePlans"
         :key="plan.tier"
         class="plan"
         :class="{ featured: plan.tier === 'pro' }"
@@ -56,37 +95,12 @@
           :disabled="isBusy"
           @click.stop="subscribe(plan.tier)"
         >
-          {{ actionPending === plan.tier ? 'Opening Checkout…' : 'Subscribe' }}
+          {{ actionPending === plan.tier ? 'Opening Checkout…' : actionLabel(plan.tier) }}
         </button>
       </article>
-    </section>
 
-    <section class="manage" v-if="user">
-      <div class="manage-card">
-        <div>
-          <h2>Your plan</h2>
-          <p>
-            {{ currentPlanLabel }} · {{ autoRenewLabel }}
-          </p>
-        </div>
-        <div class="manage-actions">
-          <button
-            class="ghost"
-            :disabled="isBusy"
-            @click="cancel"
-            v-if="user.plan_autorenew"
-          >
-            Turn off auto-renew
-          </button>
-          <button
-            class="ghost"
-            :disabled="isBusy"
-            @click="resume"
-            v-else
-          >
-            Resume auto-renew
-          </button>
-        </div>
+      <div class="plan-empty" v-if="!visiblePlans.length">
+        You're already on the top tier.
       </div>
     </section>
 
@@ -120,7 +134,8 @@ const state = reactive({
   token: '',
   plans: [],
   user: null,
-  currency: 'EUR'
+  currency: 'EUR',
+  usage: null
 });
 
 const error = ref('');
@@ -138,10 +153,12 @@ const statusMessage = computed(() => {
 
 const plans = computed(() => state.plans || []);
 const user = computed(() => state.user);
+const usage = computed(() => state.usage);
+const effectiveTier = computed(() => usage.value?.tier || state.user?.plan_tier || 'free');
 
 const currentPlanLabel = computed(() => {
-  if (!state.user?.plan_tier) return 'Free';
-  return planLabel(state.user.plan_tier);
+  if (!effectiveTier.value) return 'Free';
+  return planLabel(effectiveTier.value);
 });
 
 const autoRenewLabel = computed(() => {
@@ -172,6 +189,16 @@ function formatSeconds(seconds) {
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.round(minutes / 60);
   return `${hours} h`;
+}
+
+const visiblePlans = computed(() => {
+  if (!effectiveTier.value) return plans.value;
+  return plans.value.filter((plan) => plan.tier !== effectiveTier.value);
+});
+
+function actionLabel(tier) {
+  if (effectiveTier.value === 'plus' && tier === 'pro') return 'Upgrade';
+  return 'Subscribe';
 }
 
 function logDebug(message) {
@@ -226,6 +253,7 @@ async function loadPlans() {
   state.plans = data.plans || [];
   state.user = data.user;
   state.currency = data.currency || 'EUR';
+  state.usage = data.usage || null;
   logDebug(`plans loaded: ${state.plans.length} plan(s), user=${state.user ? 'yes' : 'no'}`);
 }
 
@@ -490,9 +518,40 @@ onMounted(async () => {
   color: var(--muted);
 }
 
+.manage-usage {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.usage-item {
+  display: grid;
+  gap: 4px;
+}
+
+.usage-item .label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.usage-item .value {
+  font-weight: 600;
+}
+
 .manage-actions {
   display: flex;
   gap: 12px;
+}
+
+.plan-empty {
+  border: 1px dashed var(--stroke);
+  border-radius: 18px;
+  padding: 18px 20px;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .debug {
