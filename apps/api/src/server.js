@@ -99,6 +99,14 @@ app.get('/plans', requireAuth, async (req, res) => {
     [currency]
   );
 
+  console.info('plans response', {
+    chatId,
+    currency,
+    user: userRows[0] || null,
+    plansCount: plans.length,
+    plans
+  });
+
   return res.json({
     currency,
     user: userRows[0] || null,
