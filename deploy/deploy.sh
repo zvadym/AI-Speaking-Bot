@@ -13,6 +13,10 @@ if [[ ! -f .env.miniapp ]]; then
   echo "Missing deploy/.env.miniapp. Copy deploy/.env.miniapp.example to deploy/.env.miniapp and fill it in." >&2
   exit 1
 fi
+if [[ ! -f .env ]]; then
+  echo "Missing deploy/.env. Create it and fill in n8n settings." >&2
+  exit 1
+fi
 
 set -a
 source .env.api
@@ -21,6 +25,6 @@ set +a
 
 "$ROOT_DIR/deploy/migrate.sh"
 
-docker compose -f docker-compose.app.yml build
+docker compose -f docker-compose.yml build
 
-docker compose -f docker-compose.app.yml up -d --remove-orphans
+docker compose -f docker-compose.yml up -d --remove-orphans

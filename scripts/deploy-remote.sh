@@ -5,11 +5,9 @@ DEPLOY_HOST="${DEPLOY_HOST:-languagebot}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-speaking-bot}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
 
-APP_COMPOSE="${APP_COMPOSE:-deploy/docker-compose.app.yml}"
-N8N_COMPOSE="${N8N_COMPOSE:-deploy/docker-compose.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-deploy/docker-compose.yml}"
 MIGRATE_SCRIPT="${MIGRATE_SCRIPT:-deploy/migrate.sh}"
-APP_PROJECT="${APP_PROJECT:-languagebot-app}"
-N8N_PROJECT="${N8N_PROJECT:-languagebot-n8n}"
+PROJECT="${PROJECT:-languagebot}"
 HEALTH_ATTEMPTS="${HEALTH_ATTEMPTS:-10}"
 HEALTH_DELAY_SEC="${HEALTH_DELAY_SEC:-3}"
 HEALTH_TIMEOUT_SEC="${HEALTH_TIMEOUT_SEC:-5}"
@@ -23,7 +21,7 @@ ssh -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >/dev
 
 log "🚀 Step 2/8: Run remote deploy commands"
 ssh "${DEPLOY_HOST}" \
-  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' APP_COMPOSE='${APP_COMPOSE}' N8N_COMPOSE='${N8N_COMPOSE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' APP_PROJECT='${APP_PROJECT}' N8N_PROJECT='${N8N_PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' bash -se" <<'REMOTE'
+  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' bash -se" <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
@@ -68,15 +66,12 @@ python3 scripts/render-n8n-workflows.py --input deploy/workflows --output deploy
 step "🗄️ 2.4/8: Run DB migrations"
 bash "${MIGRATE_SCRIPT}"
 
-step "🐳 2.5/8: Build & restart API + miniapp + caddy"
-docker compose -p "${APP_PROJECT}" -f "${APP_COMPOSE}" build
+step "🐳 2.5/8: Build & restart services"
+docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build
 
-docker compose -p "${APP_PROJECT}" -f "${APP_COMPOSE}" up -d --remove-orphans
+docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --remove-orphans
 
-step "🔄 2.6/8: Start/refresh n8n"
-docker compose -p "${N8N_PROJECT}" -f "${N8N_COMPOSE}" up -d --remove-orphans
-
-step "✅ 2.7/8: Health checks"
+step "✅ 2.6/8: Health checks"
 if command -v curl >/dev/null 2>&1; then
   check_url() {
     local url="$1"
@@ -115,6 +110,7 @@ if command -v curl >/dev/null 2>&1; then
 
   check_url https://learn-language-api.notarobot.dev/healthz
   check_url https://learn-language-app.notarobot.dev/
+  check_url_http https://learn-language-n8n.notarobot.dev/ "200 301 302 401 403"
   check_url_http http://127.0.0.1:5678/ "200 301 302 401 403"
   echo "✅ Health checks OK"
 else

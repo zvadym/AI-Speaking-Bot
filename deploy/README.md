@@ -1,6 +1,7 @@
 # Deploy Guide
 
 This repo deploys three services:
+
 - API (Node/Express)
 - Mini‑app (Vue + nginx)
 - n8n (workflow engine)
@@ -10,6 +11,7 @@ It also uses Caddy as the edge proxy.
 ## 1) First Install
 
 ### 1.1 Server prerequisites
+
 Install Docker + Docker Compose plugin (Ubuntu/Debian example):
 
 ```bash
@@ -30,9 +32,12 @@ sudo usermod -aG docker $USER
 Re‑login so Docker group changes apply.
 
 ### 1.2 DNS
+
 Point these domains to the server IP:
+
 - `learn-language-api.notarobot.dev`
 - `learn-language-app.notarobot.dev`
+- `learn-language-n8n.notarobot.dev`
 - (optional) `learn-language.notarobot.dev` for redirect
 
 ### 1.3 Clone repo
@@ -55,9 +60,10 @@ cp deploy/.env.prod.example deploy/.env.prod
 ```
 
 Fill these on the server:
+
 - `deploy/.env.api`: `DATABASE_URL`, `WEBAPP_URL`, `TELEGRAM_BOT_TOKEN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`
 - `deploy/.env.miniapp`: `VITE_API_BASE=https://learn-language-api.notarobot.dev`
-- `deploy/.env`: n8n secrets (`N8N_*`, `WEBHOOK_URL`, DB creds if used)
+- `deploy/.env`: n8n secrets (`N8N_*`, `WEBHOOK_URL`, DB creds if used). Set `N8N_HOST`, `N8N_EDITOR_BASE_URL`, and `WEBHOOK_URL` to `https://learn-language-n8n.notarobot.dev`.
 - `deploy/.env.prod`: n8n workflow credential IDs used to render workflows for prod (`N8N_CRED_TELEGRAM_ID`, `N8N_CRED_OPENAI_ID`, `N8N_CRED_POSTGRES_ID`)
 
 ### 1.5 Run migrations + deploy app
@@ -66,7 +72,7 @@ Fill these on the server:
 ./deploy/deploy.sh
 ```
 
-This runs dbmate migrations, builds API/miniapp images, and starts API + miniapp + Caddy.
+This runs dbmate migrations, builds API/miniapp images, and starts API + miniapp + Caddy + n8n.
 
 ### 1.6 Start n8n and import workflows
 
@@ -92,9 +98,20 @@ Note: n8n data is stored in `deploy/n8n-data` (bind‑mount). Ensure this direct
 ```bash
 curl -s https://learn-language-api.notarobot.dev/healthz
 # open https://learn-language-app.notarobot.dev/
+# open https://learn-language-n8n.notarobot.dev/
 ```
 
 ## 2) Update / Deploy
+
+### One-time migration note (after unifying compose)
+
+If you previously deployed with separate compose projects (`languagebot-app` and `languagebot-n8n`), stop them once to avoid duplicate containers and port conflicts:
+
+```bash
+learn-language-n8n
+docker compose -p languagebot-app -f docker-compose.yml down
+docker compose -p languagebot-n8n -f docker-compose.yml down
+```
 
 ### 2.1 Pull latest code
 
@@ -145,10 +162,17 @@ DEPLOY_BRANCH=main \
 ./scripts/deploy-remote.sh
 ```
 
-## 4) n8n UI access (SSH tunnel)
+## 4) n8n UI access
+
+Public URL (recommended):
+
+```bash
+https://learn-language-n8n.notarobot.dev/
+```
 
 SSH access requires VPN. Use this tunnel to reach n8n locally:
 
 ```bash
 ssh -L 5678:127.0.0.1:5678 languagebot -N
 ```
+
