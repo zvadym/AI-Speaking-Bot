@@ -11,28 +11,9 @@ if [[ ! -d "${WORKFLOWS_DIR}" ]]; then
   exit 1
 fi
 
-workflow_ids="$(
-python3 - <<'PY'
-import json
-import os
-from pathlib import Path
-
-workflow_dir = Path(os.environ.get("WORKFLOWS_DIR", "deploy/workflows/.rendered"))
-ids = []
-for path in sorted(workflow_dir.glob("*.json")):
-    try:
-        data = json.loads(path.read_text())
-    except Exception:
-        continue
-    wid = data.get("id")
-    if wid:
-        ids.append(str(wid))
-print("\n".join(ids))
-PY
-)"
-
-if [[ -z "${workflow_ids}" ]]; then
-  echo "No workflow IDs found in ${WORKFLOWS_DIR}" >&2
+workflow_files=("${WORKFLOWS_DIR}"/*.json)
+if [[ ! -e "${workflow_files[0]}" ]]; then
+  echo "No workflow JSON files found in ${WORKFLOWS_DIR}" >&2
   exit 1
 fi
 
@@ -56,19 +37,65 @@ if [[ "${has_publish}" != "true" && -z "${has_activate}" ]]; then
   exit 1
 fi
 
-while IFS= read -r workflow_id; do
+failed=0
+for path in "${workflow_files[@]}"; do
+  workflow_id="$(python3 - <<PY
+import json
+from pathlib import Path
+path = Path(${path@Q})
+try:
+    data = json.loads(path.read_text())
+except Exception:
+    print("")
+    raise SystemExit(0)
+print(data.get("id", ""))
+PY
+)"
+  workflow_name="$(python3 - <<PY
+import json
+from pathlib import Path
+path = Path(${path@Q})
+try:
+    data = json.loads(path.read_text())
+except Exception:
+    print("")
+    raise SystemExit(0)
+print(data.get("name", ""))
+PY
+)"
+
   if [[ -z "${workflow_id}" ]]; then
+    echo "Skipping ${path} (missing workflow id)" >&2
+    failed=1
     continue
   fi
+
+  echo "Activating workflow: ${workflow_name:-unnamed} (${workflow_id})"
+
   if [[ "${has_publish}" == "true" ]]; then
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n publish:workflow --id="${workflow_id}"
+    if ! docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n publish:workflow --id="${workflow_id}"; then
+      echo "Failed to publish workflow ${workflow_id}" >&2
+      failed=1
+    fi
   fi
+
   if [[ "${has_activate}" == "update:workflow" ]]; then
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n update:workflow --id="${workflow_id}" --active=true
+    if ! docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n update:workflow --id="${workflow_id}" --active=true; then
+      echo "Failed to activate workflow ${workflow_id}" >&2
+      failed=1
+    fi
   elif [[ -n "${has_activate}" ]]; then
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n "${has_activate}" --id="${workflow_id}"
+    if ! docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n "${has_activate}" --id="${workflow_id}"; then
+      echo "Failed to activate workflow ${workflow_id}" >&2
+      failed=1
+    fi
   fi
-done <<< "${workflow_ids}"
+done
+
+if [[ "${failed}" -ne 0 ]]; then
+  echo "One or more workflows failed to activate." >&2
+  exit 1
+fi
 
 # Changes take effect after restarting n8n.
 docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" restart n8n
