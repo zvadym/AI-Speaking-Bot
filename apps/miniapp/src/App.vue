@@ -88,6 +88,18 @@
         </div>
       </div>
     </section>
+
+    <section class="debug" v-if="debugMessages.length">
+      <div class="debug-card">
+        <h2>Debug</h2>
+        <div class="debug-list">
+          <div v-for="(item, index) in debugMessages" :key="index" class="debug-item">
+            <span class="debug-time">{{ item.time }}</span>
+            <span class="debug-text">{{ item.message }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -106,6 +118,7 @@ const state = reactive({
 
 const error = ref('');
 const actionPending = ref('');
+const debugMessages = ref([]);
 
 const statusMessage = computed(() => {
   const params = new URLSearchParams(window.location.search);
@@ -152,15 +165,25 @@ function formatSeconds(seconds) {
   return `${hours} h`;
 }
 
+function logDebug(message) {
+  const time = new Date().toLocaleTimeString();
+  debugMessages.value.unshift({ time, message });
+  if (debugMessages.value.length > 25) {
+    debugMessages.value = debugMessages.value.slice(0, 25);
+  }
+}
+
 async function authenticate() {
   const tg = window.Telegram?.WebApp;
   if (!tg?.initData) {
     error.value = 'Open this page inside Telegram.';
+    logDebug('Missing Telegram initData.');
     return;
   }
 
   tg.ready();
   tg.expand();
+  logDebug(`initData length: ${tg.initData.length}`);
 
   const resp = await fetch(`${apiBase}/auth/telegram`, {
     method: 'POST',
@@ -170,11 +193,13 @@ async function authenticate() {
 
   if (!resp.ok) {
     error.value = 'Authorization failed.';
+    logDebug(`auth/telegram failed: HTTP ${resp.status}`);
     return;
   }
 
   const data = await resp.json();
   state.token = data.token;
+  logDebug('auth/telegram ok');
 }
 
 async function loadPlans() {
@@ -184,6 +209,7 @@ async function loadPlans() {
 
   if (!resp.ok) {
     error.value = 'Unable to load plans.';
+    logDebug(`plans failed: HTTP ${resp.status}`);
     return;
   }
 
@@ -191,10 +217,12 @@ async function loadPlans() {
   state.plans = data.plans || [];
   state.user = data.user;
   state.currency = data.currency || 'EUR';
+  logDebug(`plans loaded: ${state.plans.length} plan(s), user=${state.user ? 'yes' : 'no'}`);
 }
 
 async function subscribe(tier) {
   actionPending.value = tier;
+  logDebug(`checkout start: tier=${tier}, currency=${state.currency}`);
   try {
     const resp = await fetch(`${apiBase}/billing/checkout`, {
       method: 'POST',
@@ -207,10 +235,12 @@ async function subscribe(tier) {
 
     if (!resp.ok) {
       error.value = 'Checkout unavailable right now.';
+      logDebug(`checkout failed: HTTP ${resp.status}`);
       return;
     }
 
     const data = await resp.json();
+    logDebug('checkout ok: opening link');
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.openLink(data.url);
     } else {
@@ -219,6 +249,7 @@ async function subscribe(tier) {
   } catch (err) {
     console.error(err);
     error.value = 'Checkout unavailable right now.';
+    logDebug('checkout failed: network error');
   } finally {
     actionPending.value = '';
   }
@@ -260,6 +291,7 @@ onMounted(async () => {
   } catch (err) {
     console.error(err);
     error.value = 'Unexpected error. Try again later.';
+    logDebug('init failed: unexpected error');
   } finally {
     state.loading = false;
     actionPending.value = '';
@@ -452,6 +484,45 @@ onMounted(async () => {
 .manage-actions {
   display: flex;
   gap: 12px;
+}
+
+.debug {
+  display: grid;
+}
+
+.debug-card {
+  border-radius: 18px;
+  border: 1px dashed rgba(31, 28, 22, 0.2);
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.debug-card h2 {
+  margin: 0 0 8px;
+  font-family: 'Gloock', serif;
+  font-size: 18px;
+}
+
+.debug-list {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.debug-item {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 10px;
+}
+
+.debug-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-2);
+}
+
+.debug-text {
+  color: var(--ink);
 }
 
 .ghost {
