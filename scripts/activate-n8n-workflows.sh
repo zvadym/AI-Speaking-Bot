@@ -23,7 +23,7 @@ dc() {
 }
 
 n8n_cli() {
-  dc run --rm --no-deps --entrypoint n8n n8n "$@"
+  dc run -T --rm --no-deps --entrypoint n8n n8n "$@" </dev/null
 }
 
 probe_cmd() {

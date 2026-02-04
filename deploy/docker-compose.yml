@@ -51,6 +51,7 @@ services:
 
   n8n-import:
     image: n8nio/n8n:latest
+    profiles: ["tools"]
     restart: "no"
     env_file:
       - ${N8N_ENV_FILE:-.env}
