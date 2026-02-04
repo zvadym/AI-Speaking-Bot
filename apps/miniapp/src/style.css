@@ -1,14 +1,16 @@
 :root {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: 'Chivo', system-ui, sans-serif;
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Chivo', system-ui, sans-serif;
   color-scheme: light;
-  --ink: #1f1c16;
-  --muted: #6b5f52;
-  --paper: #f4efe6;
-  --paper-deep: #e8dcc8;
-  --accent: #d06b2f;
-  --accent-2: #2e6f6b;
-  --stroke: rgba(31, 28, 22, 0.12);
-  --shadow: rgba(31, 28, 22, 0.18);
+  --ink: #1e1a16;
+  --muted: #7a6a59;
+  --paper: #f6f1e8;
+  --paper-deep: #e9dfcf;
+  --accent: #c75a24;
+  --accent-2: #1f6b63;
+  --stroke: rgba(30, 26, 22, 0.12);
+  --shadow: rgba(30, 26, 22, 0.16);
 }
 
 * {
@@ -17,6 +19,7 @@
 
 body {
   margin: 0;
+  font-family: var(--font-body);
   background:
     radial-gradient(60% 80% at 20% 10%, rgba(208, 107, 47, 0.15), transparent 60%),
     radial-gradient(70% 90% at 90% 10%, rgba(46, 111, 107, 0.18), transparent 55%),

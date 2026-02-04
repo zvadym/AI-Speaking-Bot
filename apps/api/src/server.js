@@ -353,6 +353,23 @@ async function resolveTierByPrice(priceId) {
   return rows[0]?.tier || null;
 }
 
+async function notifyPlanChanged(payload) {
+  if (!env.planChangedWebhookUrl) return;
+  try {
+    const resp = await fetch(env.planChangedWebhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      console.warn('Plan change webhook failed', { status: resp.status, body });
+    }
+  } catch (err) {
+    console.error('Plan change webhook failed', err);
+  }
+}
+
 async function resolveChatIdForPayment(obj) {
   const metaChatId = obj?.metadata?.chat_id || obj?.metadata?.chatId;
   if (metaChatId) {
@@ -473,7 +490,17 @@ async function handleStripeEvent(event) {
     const autoRenew = !subscription.cancel_at_period_end;
     const currency = subscription.items?.data?.[0]?.price?.currency?.toUpperCase() || 'EUR';
 
-    await pool.query(
+    const { rows: prevRows } = await pool.query(
+      `SELECT chat_id, plan_tier
+         FROM users
+        WHERE stripe_customer_id = $1
+        LIMIT 1`,
+      [customerId]
+    );
+    const prevTier = prevRows[0]?.plan_tier || 'free';
+    const prevChatId = prevRows[0]?.chat_id || null;
+
+    const { rows: updatedRows } = await pool.query(
       `UPDATE users
           SET plan_tier = $1,
               plan_started_at = COALESCE($2, plan_started_at),
@@ -487,7 +514,8 @@ async function handleStripeEvent(event) {
               updated_at = NOW(),
               pending_plan_tier = NULL,
               pending_plan_effective_at = NULL
-        WHERE stripe_customer_id = $5`,
+        WHERE stripe_customer_id = $5
+        RETURNING chat_id`,
       [
         planTier,
         periodStart,
@@ -500,20 +528,59 @@ async function handleStripeEvent(event) {
         currency
       ]
     );
+
+    const updatedChatId = updatedRows[0]?.chat_id || prevChatId;
+    if (updatedChatId && prevTier !== planTier) {
+      await notifyPlanChanged({
+        chat_id: updatedChatId,
+        old_tier: prevTier,
+        new_tier: planTier,
+        status,
+        autorenew: autoRenew,
+        period_end: periodEnd?.toISOString() || null,
+        price_id: priceId,
+        currency
+      });
+    }
   }
 
   if (type === 'customer.subscription.deleted') {
     const subscription = obj;
-    await pool.query(
+    const { rows: prevRows } = await pool.query(
+      `SELECT chat_id, plan_tier
+         FROM users
+        WHERE stripe_customer_id = $1
+        LIMIT 1`,
+      [subscription.customer]
+    );
+    const prevTier = prevRows[0]?.plan_tier || 'free';
+    const prevChatId = prevRows[0]?.chat_id || null;
+
+    const { rows: updatedRows } = await pool.query(
       `UPDATE users
           SET plan_tier = 'free',
               plan_expires_at = NOW(),
               plan_autorenew = false,
               stripe_subscription_status = $1,
               updated_at = NOW()
-        WHERE stripe_customer_id = $2`,
+        WHERE stripe_customer_id = $2
+        RETURNING chat_id`,
       [subscription.status, subscription.customer]
     );
+
+    const updatedChatId = updatedRows[0]?.chat_id || prevChatId;
+    if (updatedChatId && prevTier !== 'free') {
+      await notifyPlanChanged({
+        chat_id: updatedChatId,
+        old_tier: prevTier,
+        new_tier: 'free',
+        status: subscription.status || 'canceled',
+        autorenew: false,
+        period_end: null,
+        price_id: null,
+        currency: subscription.currency?.toUpperCase() || 'EUR'
+      });
+    }
   }
 }
 

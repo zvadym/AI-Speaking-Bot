@@ -32,11 +32,33 @@
           <div class="manage-usage" v-if="usage">
             <div class="usage-item">
               <span class="label">Practice time</span>
-              <span class="value">{{ formatSeconds(usage.used_user) }} / {{ formatSeconds(usage.limit_user) }} used</span>
+              <div class="usage-bar">
+                <div class="usage-track">
+                  <div
+                    class="usage-fill"
+                    :style="{ width: `${usagePercent(usage.used_user, usage.limit_user)}%` }"
+                  ></div>
+                </div>
+                <div class="usage-meta">
+                  <span>{{ formatSeconds(usage.used_user) }} used</span>
+                  <span>{{ formatSeconds(usage.remaining_user) }} left</span>
+                </div>
+              </div>
             </div>
             <div class="usage-item">
               <span class="label">Voice replies</span>
-              <span class="value">{{ formatSeconds(usage.used_tts) }} / {{ formatSeconds(usage.limit_tts) }} used</span>
+              <div class="usage-bar">
+                <div class="usage-track">
+                  <div
+                    class="usage-fill accent"
+                    :style="{ width: `${usagePercent(usage.used_tts, usage.limit_tts)}%` }"
+                  ></div>
+                </div>
+                <div class="usage-meta">
+                  <span>{{ formatSeconds(usage.used_tts) }} used</span>
+                  <span>{{ formatSeconds(usage.remaining_tts) }} left</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -68,7 +90,6 @@
         class="plan"
         :class="{ featured: plan.tier === 'pro' }"
         :style="{ animationDelay: `${index * 120}ms` }"
-        @click="logDebug(`plan card click: ${plan.tier}`)"
       >
         <header>
           <span class="plan-tier">{{ planLabel(plan.tier) }}</span>
@@ -103,24 +124,6 @@
         You're already on the top tier.
       </div>
     </section>
-
-    <section class="debug" v-if="debugMessages.length">
-      <div class="debug-card">
-        <h2>Debug</h2>
-        <div class="debug-state">
-          <span>loading: {{ state.loading ? 'true' : 'false' }}</span>
-          <span>actionPending: {{ actionPending || 'none' }}</span>
-          <span>isBusy: {{ isBusy ? 'true' : 'false' }}</span>
-          <span>token: {{ state.token ? 'yes' : 'no' }}</span>
-        </div>
-        <div class="debug-list">
-          <div v-for="(item, index) in debugMessages" :key="index" class="debug-item">
-            <span class="debug-time">{{ item.time }}</span>
-            <span class="debug-text">{{ item.message }}</span>
-          </div>
-        </div>
-      </div>
-    </section>
   </div>
 </template>
 
@@ -140,8 +143,6 @@ const state = reactive({
 
 const error = ref('');
 const actionPending = ref('');
-const debugMessages = ref([]);
-
 const isBusy = computed(() => state.loading || Boolean(actionPending.value));
 
 const statusMessage = computed(() => {
@@ -191,6 +192,11 @@ function formatSeconds(seconds) {
   return `${hours} h`;
 }
 
+function usagePercent(used, limit) {
+  if (!limit || limit <= 0) return 0;
+  return Math.min(100, Math.round((used / limit) * 100));
+}
+
 const visiblePlans = computed(() => {
   if (!effectiveTier.value) return plans.value;
   return plans.value.filter((plan) => plan.tier !== effectiveTier.value);
@@ -201,25 +207,15 @@ function actionLabel(tier) {
   return 'Subscribe';
 }
 
-function logDebug(message) {
-  const time = new Date().toLocaleTimeString();
-  debugMessages.value.unshift({ time, message });
-  if (debugMessages.value.length > 25) {
-    debugMessages.value = debugMessages.value.slice(0, 25);
-  }
-}
-
 async function authenticate() {
   const tg = window.Telegram?.WebApp;
   if (!tg?.initData) {
     error.value = 'Open this page inside Telegram.';
-    logDebug('Missing Telegram initData.');
     return;
   }
 
   tg.ready();
   tg.expand();
-  logDebug(`initData length: ${tg.initData.length}`);
 
   const resp = await fetch(`${apiBase}/auth/telegram`, {
     method: 'POST',
@@ -229,13 +225,11 @@ async function authenticate() {
 
   if (!resp.ok) {
     error.value = 'Authorization failed.';
-    logDebug(`auth/telegram failed: HTTP ${resp.status}`);
     return;
   }
 
   const data = await resp.json();
   state.token = data.token;
-  logDebug('auth/telegram ok');
 }
 
 async function loadPlans() {
@@ -245,7 +239,6 @@ async function loadPlans() {
 
   if (!resp.ok) {
     error.value = 'Unable to load plans.';
-    logDebug(`plans failed: HTTP ${resp.status}`);
     return;
   }
 
@@ -254,12 +247,10 @@ async function loadPlans() {
   state.user = data.user;
   state.currency = data.currency || 'EUR';
   state.usage = data.usage || null;
-  logDebug(`plans loaded: ${state.plans.length} plan(s), user=${state.user ? 'yes' : 'no'}`);
 }
 
 async function subscribe(tier) {
   actionPending.value = tier;
-  logDebug(`checkout start: tier=${tier}, currency=${state.currency}`);
   try {
     const resp = await fetch(`${apiBase}/billing/checkout`, {
       method: 'POST',
@@ -272,12 +263,10 @@ async function subscribe(tier) {
 
     if (!resp.ok) {
       error.value = 'Checkout unavailable right now.';
-      logDebug(`checkout failed: HTTP ${resp.status}`);
       return;
     }
 
     const data = await resp.json();
-    logDebug('checkout ok: opening link');
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.openLink(data.url);
     } else {
@@ -286,7 +275,6 @@ async function subscribe(tier) {
   } catch (err) {
     console.error(err);
     error.value = 'Checkout unavailable right now.';
-    logDebug('checkout failed: network error');
   } finally {
     actionPending.value = '';
   }
@@ -328,7 +316,6 @@ onMounted(async () => {
   } catch (err) {
     console.error(err);
     error.value = 'Unexpected error. Try again later.';
-    logDebug('init failed: unexpected error');
   } finally {
     state.loading = false;
     actionPending.value = '';
@@ -358,7 +345,7 @@ onMounted(async () => {
 }
 
 .hero h1 {
-  font-family: 'Gloock', serif;
+  font-family: var(--font-display);
   font-size: clamp(32px, 5vw, 56px);
   margin: 0;
 }
@@ -435,7 +422,7 @@ onMounted(async () => {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-family: 'Gloock', serif;
+  font-family: var(--font-display);
 }
 
 .plan-price .amount {
@@ -510,7 +497,7 @@ onMounted(async () => {
 
 .manage-card h2 {
   margin: 0 0 4px;
-  font-family: 'Gloock', serif;
+  font-family: var(--font-display);
 }
 
 .manage-card p {
@@ -522,12 +509,12 @@ onMounted(async () => {
   display: grid;
   gap: 10px;
   margin-top: 14px;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .usage-item {
   display: grid;
-  gap: 4px;
+  gap: 8px;
 }
 
 .usage-item .label {
@@ -537,8 +524,38 @@ onMounted(async () => {
   letter-spacing: 0.12em;
 }
 
-.usage-item .value {
-  font-weight: 600;
+.usage-bar {
+  display: grid;
+  gap: 6px;
+}
+
+.usage-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(31, 28, 22, 0.08);
+  overflow: hidden;
+}
+
+.usage-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(208, 107, 47, 0.95), rgba(208, 107, 47, 0.55));
+  box-shadow: 0 6px 12px -8px rgba(208, 107, 47, 0.9);
+  transition: width 350ms ease;
+}
+
+.usage-fill.accent {
+  background: linear-gradient(90deg, rgba(46, 111, 107, 0.95), rgba(46, 111, 107, 0.55));
+  box-shadow: 0 6px 12px -8px rgba(46, 111, 107, 0.8);
+}
+
+.usage-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .manage-actions {
@@ -552,54 +569,6 @@ onMounted(async () => {
   padding: 18px 20px;
   color: var(--muted);
   font-size: 14px;
-}
-
-.debug {
-  display: grid;
-}
-
-.debug-card {
-  border-radius: 18px;
-  border: 1px dashed rgba(31, 28, 22, 0.2);
-  padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.6);
-}
-
-.debug-card h2 {
-  margin: 0 0 8px;
-  font-family: 'Gloock', serif;
-  font-size: 18px;
-}
-
-.debug-state {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 16px;
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-
-.debug-list {
-  display: grid;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.debug-item {
-  display: grid;
-  grid-template-columns: 70px 1fr;
-  gap: 10px;
-}
-
-.debug-time {
-  font-variant-numeric: tabular-nums;
-  color: var(--accent-2);
-}
-
-.debug-text {
-  color: var(--ink);
 }
 
 .ghost {

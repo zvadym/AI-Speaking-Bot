@@ -30,5 +30,6 @@ export const env = {
   stripeSecretKey: requireEnv('STRIPE_SECRET_KEY'),
   stripeWebhookSecret: requireEnv('STRIPE_WEBHOOK_SECRET'),
   jwtSecret: requireEnv('JWT_SECRET'),
-  corsOrigins
+  corsOrigins,
+  planChangedWebhookUrl: process.env.PLAN_CHANGED_WEBHOOK_URL || ''
 };
