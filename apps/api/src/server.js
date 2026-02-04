@@ -152,7 +152,7 @@ app.post('/billing/checkout', requireAuth, async (req, res) => {
     );
   }
 
-  const session = await stripe.checkout.sessions.create({
+  const sessionParams = {
     mode: 'subscription',
     customer: stripeCustomerId,
     client_reference_id: String(chatId),
@@ -161,7 +161,36 @@ app.post('/billing/checkout', requireAuth, async (req, res) => {
     cancel_url: `${env.webappUrl}/cancel`,
     allow_promotion_codes: false,
     metadata: { chat_id: String(chatId), tier: normalizedTier }
-  });
+  };
+
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create(sessionParams);
+  } catch (err) {
+    if (err?.type === 'StripeInvalidRequestError' && err?.code === 'resource_missing' && err?.param === 'customer') {
+      const customer = await stripe.customers.create({
+        metadata: { telegram_chat_id: String(chatId) }
+      });
+
+      stripeCustomerId = customer.id;
+
+      await pool.query(
+        `UPDATE users
+            SET stripe_customer_id = $1,
+                updated_at = NOW()
+          WHERE chat_id = $2`,
+        [stripeCustomerId, chatId]
+      );
+
+      session = await stripe.checkout.sessions.create({
+        ...sessionParams,
+        customer: stripeCustomerId
+      });
+    } else {
+      console.error('Stripe checkout failed', err);
+      return res.status(500).json({ error: 'stripe_error' });
+    }
+  }
 
   return res.json({ url: session.url });
 });
@@ -277,7 +306,7 @@ async function handleStripeEvent(event) {
         raw
      ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
-     ) ON CONFLICT (stripe_event_id) DO NOTHING`,
+     ) ON CONFLICT (stripe_event_id) WHERE stripe_event_id IS NOT NULL DO NOTHING`,
     [
       obj?.metadata?.chat_id ? Number(obj.metadata.chat_id) : null,
       obj?.metadata?.tier || null,
