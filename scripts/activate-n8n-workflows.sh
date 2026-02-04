@@ -36,19 +36,37 @@ if [[ -z "${workflow_ids}" ]]; then
   exit 1
 fi
 
-activate_cmd="publish"
-if ! docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n publish:workflow --help >/dev/null 2>&1; then
-  activate_cmd="update"
+has_publish="false"
+has_activate=""
+
+if docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n publish:workflow --help >/dev/null 2>&1; then
+  has_publish="true"
+fi
+
+if docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n workflow:activate --help >/dev/null 2>&1; then
+  has_activate="workflow:activate"
+elif docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n activate:workflow --help >/dev/null 2>&1; then
+  has_activate="activate:workflow"
+elif docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n update:workflow --help >/dev/null 2>&1; then
+  has_activate="update:workflow"
+fi
+
+if [[ "${has_publish}" != "true" && -z "${has_activate}" ]]; then
+  echo "No supported activation commands found in n8n container." >&2
+  exit 1
 fi
 
 while IFS= read -r workflow_id; do
   if [[ -z "${workflow_id}" ]]; then
     continue
   fi
-  if [[ "${activate_cmd}" == "update" ]]; then
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n update:workflow --id="${workflow_id}" --active=true
-  else
+  if [[ "${has_publish}" == "true" ]]; then
     docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n publish:workflow --id="${workflow_id}"
+  fi
+  if [[ "${has_activate}" == "update:workflow" ]]; then
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n update:workflow --id="${workflow_id}" --active=true
+  elif [[ -n "${has_activate}" ]]; then
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n "${has_activate}" --id="${workflow_id}"
   fi
 done <<< "${workflow_ids}"
 
