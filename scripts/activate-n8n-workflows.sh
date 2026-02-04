@@ -36,9 +36,9 @@ if [[ -z "${workflow_ids}" ]]; then
   exit 1
 fi
 
-activate_cmd="update"
-if ! docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n update:workflow --help >/dev/null 2>&1; then
-  activate_cmd="publish"
+activate_cmd="publish"
+if ! docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T n8n n8n publish:workflow --help >/dev/null 2>&1; then
+  activate_cmd="update"
 fi
 
 while IFS= read -r workflow_id; do
