@@ -284,46 +284,93 @@ async function resolveTierByPrice(priceId) {
   return rows[0]?.tier || null;
 }
 
+async function resolveChatIdForPayment(obj) {
+  const metaChatId = obj?.metadata?.chat_id || obj?.metadata?.chatId;
+  if (metaChatId) {
+    const parsed = Number(metaChatId);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  if (obj?.client_reference_id) {
+    const parsed = Number(obj.client_reference_id);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  if (obj?.customer) {
+    const { rows } = await pool.query(
+      `SELECT chat_id
+         FROM users
+        WHERE stripe_customer_id = $1
+        LIMIT 1`,
+      [obj.customer]
+    );
+    if (rows[0]?.chat_id) return rows[0].chat_id;
+  }
+
+  if (obj?.subscription) {
+    const { rows } = await pool.query(
+      `SELECT chat_id
+         FROM users
+        WHERE stripe_subscription_id = $1
+        LIMIT 1`,
+      [obj.subscription]
+    );
+    if (rows[0]?.chat_id) return rows[0].chat_id;
+  }
+
+  return null;
+}
+
 async function handleStripeEvent(event) {
   const type = event.type;
   const obj = event.data.object;
 
-  await pool.query(
-    `INSERT INTO payments (
-        chat_id,
-        tier,
-        provider,
-        amount_cents,
-        currency,
-        status,
-        stripe_event_id,
-        stripe_customer_id,
-        stripe_subscription_id,
-        stripe_invoice_id,
-        stripe_checkout_session_id,
-        stripe_payment_intent_id,
-        stripe_price_id,
-        raw
-     ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
-     ) ON CONFLICT (stripe_event_id) WHERE stripe_event_id IS NOT NULL DO NOTHING`,
-    [
-      obj?.metadata?.chat_id ? Number(obj.metadata.chat_id) : null,
-      obj?.metadata?.tier || null,
-      'stripe',
-      obj?.amount_total || obj?.amount_paid || null,
-      obj?.currency || null,
-      obj?.status || null,
-      event.id,
-      obj?.customer || null,
-      obj?.subscription || obj?.id || null,
-      obj?.invoice || obj?.id || null,
-      obj?.id || null,
-      obj?.payment_intent || null,
-      obj?.price || obj?.items?.data?.[0]?.price?.id || null,
-      event
-    ]
-  );
+  const paymentChatId = await resolveChatIdForPayment(obj);
+  if (!paymentChatId) {
+    console.warn('Stripe event missing chat_id; skipping payment insert', {
+      eventId: event.id,
+      type,
+      customer: obj?.customer || null,
+      subscription: obj?.subscription || null
+    });
+  } else {
+    await pool.query(
+      `INSERT INTO payments (
+          chat_id,
+          tier,
+          provider,
+          amount_cents,
+          currency,
+          status,
+          stripe_event_id,
+          stripe_customer_id,
+          stripe_subscription_id,
+          stripe_invoice_id,
+          stripe_checkout_session_id,
+          stripe_payment_intent_id,
+          stripe_price_id,
+          raw
+       ) VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
+       ) ON CONFLICT (stripe_event_id) WHERE stripe_event_id IS NOT NULL DO NOTHING`,
+      [
+        paymentChatId,
+        obj?.metadata?.tier || null,
+        'stripe',
+        obj?.amount_total || obj?.amount_paid || null,
+        obj?.currency || null,
+        obj?.status || null,
+        event.id,
+        obj?.customer || null,
+        obj?.subscription || obj?.id || null,
+        obj?.invoice || obj?.id || null,
+        obj?.id || null,
+        obj?.payment_intent || null,
+        obj?.price || obj?.items?.data?.[0]?.price?.id || null,
+        event
+      ]
+    );
+  }
 
   if (type === 'checkout.session.completed') {
     const session = obj;
