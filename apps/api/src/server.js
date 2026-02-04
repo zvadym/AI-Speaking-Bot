@@ -9,6 +9,9 @@ import { signSession, requireAuth } from './auth.js';
 
 const app = express();
 
+app.use(cors({ origin: env.corsOrigins.length ? env.corsOrigins : true }));
+app.use(morgan('tiny'));
+
 app.post('/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   if (!sig) {
@@ -31,8 +34,6 @@ app.post('/stripe/webhook', express.raw({ type: 'application/json' }), async (re
   }
 });
 
-app.use(cors({ origin: env.corsOrigins.length ? env.corsOrigins : true }));
-app.use(morgan('tiny'));
 app.use(express.json());
 
 app.get('/healthz', (req, res) => {
@@ -495,6 +496,14 @@ async function handleStripeEvent(event) {
       isActive && (typeof maybeEndMs !== 'number' || !Number.isFinite(maybeEndMs) || maybeEndMs < nowMs + 60 * 60 * 1000);
 
     if (looksSuspicious && subscription?.id) {
+      console.warn('Stripe: subscription period end missing/suspicious; retrieving fresh subscription', {
+        eventId: event.id,
+        type,
+        status,
+        customerId,
+        subscriptionId: subscription.id,
+        current_period_end: subscription.current_period_end ?? null
+      });
       try {
         const fresh = await stripe.subscriptions.retrieve(subscription.id);
         if (typeof fresh.current_period_end === 'number') {
