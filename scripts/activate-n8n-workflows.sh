@@ -26,17 +26,22 @@ n8n_cli() {
   dc run -T --rm --no-deps --entrypoint n8n n8n "$@" </dev/null
 }
 
+did_stop="false"
+cleanup() {
+  if [[ "${did_stop}" == "true" ]]; then
+    dc start n8n >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
 probe_cmd() {
   local cmd="$1"
   local out=""
-  out="$(n8n_cli "${cmd}" --help 2>&1)" || true
+  out="$(n8n_cli "${cmd}" --help 2>&1 || true)"
   if echo "${out}" | grep -qiE "Unknown command|not found|did you mean"; then
     return 1
   fi
-  if echo "${out}" | grep -qiE "Usage:|Options:"; then
-    return 0
-  fi
-  return 1
+  return 0
 }
 
 has_publish="false"
@@ -59,11 +64,17 @@ fi
 
 if [[ "${has_publish}" != "true" && -z "${has_activate}" && "${has_update}" != "true" ]]; then
   echo "No supported activation commands found in n8n container." >&2
+  echo "Debug: n8n --version" >&2
+  n8n_cli --version >&2 || true
+  echo "Debug: n8n --help (first 200 lines)" >&2
+  n8n_cli --help 2>&1 | sed -n '1,200p' >&2 || true
+  dc start n8n >/dev/null 2>&1 || true
   exit 1
 fi
 
 if [[ "${STOP_N8N_BEFORE}" == "true" ]]; then
   dc stop n8n >/dev/null 2>&1 || true
+  did_stop="true"
 fi
 
 failed=0
@@ -124,6 +135,7 @@ done
 
 if [[ "${failed}" -ne 0 ]]; then
   echo "One or more workflows failed to activate." >&2
+  dc start n8n >/dev/null 2>&1 || true
   exit 1
 fi
 
