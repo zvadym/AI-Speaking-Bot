@@ -43,23 +43,39 @@ app.post('/auth/telegram', async (req, res) => {
   const { initData } = req.body || {};
   const result = verifyInitData(initData);
   if (!result.ok) {
+    console.warn('auth/telegram failed', {
+      reason: result.reason,
+      hasInitData: Boolean(initData),
+      initDataLength: typeof initData === 'string' ? initData.length : 0,
+      origin: req.headers.origin,
+      ua: req.headers['user-agent']
+    });
     return res.status(401).json({ error: result.reason });
   }
 
   const user = result.user;
   if (!user?.id) {
+    console.warn('auth/telegram missing user', {
+      origin: req.headers.origin,
+      ua: req.headers['user-agent']
+    });
     return res.status(400).json({ error: 'missing_user' });
   }
 
   await upsertUser(user);
 
   const token = signSession({ chatId: user.id, username: user.username || null });
+  console.info('auth/telegram ok', {
+    chatId: user.id,
+    username: user.username || null
+  });
   return res.json({ token, user: { id: user.id, username: user.username || null, first_name: user.first_name || null } });
 });
 
 app.get('/plans', requireAuth, async (req, res) => {
   const currency = (req.query.currency || 'EUR').toString().toUpperCase();
   const chatId = req.auth.chatId;
+  console.info('plans request', { chatId, currency });
 
   const { rows: userRows } = await pool.query(
     `SELECT plan_tier, plan_expires_at, plan_autorenew, pending_plan_tier, pending_plan_effective_at,
