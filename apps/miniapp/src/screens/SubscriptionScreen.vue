@@ -1,38 +1,38 @@
 <template>
   <div class="shell fade-in">
     <header class="hero">
-      <div class="hero-badge">Subscription Atelier</div>
-      <h1>Choose your training tempo</h1>
+      <div class="hero-badge">{{ $t('subscription.heroBadge') }}</div>
+      <h1>{{ $t('subscription.title') }}</h1>
       <p class="hero-sub">
-        Keep your speaking practice steady. Pick a cadence that matches your week and toggle auto-renew whenever you want.
+        {{ $t('subscription.sub') }}
       </p>
     </header>
 
     <section class="status" v-if="statusMessage">
       <div class="status-card">
-        <span class="status-label">Status</span>
+        <span class="status-label">{{ $t('common.status') }}</span>
         <span class="status-text">{{ statusMessage }}</span>
       </div>
     </section>
 
-    <section class="status" v-if="notice">
+    <section class="status" v-if="noticeMessage">
       <div class="status-card">
-        <span class="status-label">Scheduled</span>
-        <span class="status-text">{{ notice }}</span>
+        <span class="status-label">{{ $t('common.scheduled') }}</span>
+        <span class="status-text">{{ noticeMessage }}</span>
       </div>
     </section>
 
-    <section class="status" v-if="error">
+    <section class="status" v-if="errorMessage">
       <div class="status-card error">
-        <span class="status-label">Notice</span>
-        <span class="status-text">{{ error }}</span>
+        <span class="status-label">{{ $t('common.notice') }}</span>
+        <span class="status-text">{{ errorMessage }}</span>
       </div>
     </section>
 
     <section class="manage" v-if="user">
       <div class="manage-card">
         <div>
-          <h2>Your plan</h2>
+          <h2>{{ $t('subscription.manage.yourPlan') }}</h2>
           <p>
             {{ currentPlanLabel }}
             <template v-if="showAutoRenewControls"> · {{ autoRenewLabel }}</template>
@@ -42,7 +42,7 @@
           </p>
           <div class="manage-usage" v-if="usage">
             <div class="usage-item">
-              <span class="label">Practice time</span>
+              <span class="label">{{ $t('subscription.manage.practiceTime') }}</span>
               <div class="usage-bar">
                 <div class="usage-track">
                   <div
@@ -50,24 +50,16 @@
                     :style="{ width: `${usagePercent(usage.used_user, usage.limit_user)}%` }"
                   ></div>
                 </div>
-                <div class="usage-meta">
-                  <span>{{ formatSeconds(usage.used_user) }} used</span>
-                  <span>{{ formatSeconds(usage.remaining_user) }} left</span>
-                </div>
               </div>
             </div>
             <div class="usage-item">
-              <span class="label">Voice replies</span>
+              <span class="label">{{ $t('subscription.manage.voiceReplies') }}</span>
               <div class="usage-bar">
                 <div class="usage-track">
                   <div
                     class="usage-fill accent"
                     :style="{ width: `${usagePercent(usage.used_tts, usage.limit_tts)}%` }"
                   ></div>
-                </div>
-                <div class="usage-meta">
-                  <span>{{ formatSeconds(usage.used_tts) }} used</span>
-                  <span>{{ formatSeconds(usage.remaining_tts) }} left</span>
                 </div>
               </div>
             </div>
@@ -80,7 +72,7 @@
             @click="openBillingPortal"
             v-if="showManagePayments"
           >
-            Manage payments
+            {{ $t('subscription.manage.managePayments') }}
           </button>
           <button
             class="ghost"
@@ -88,7 +80,7 @@
             @click="cancel"
             v-if="showAutoRenewControls && user.plan_autorenew"
           >
-            Turn off auto-renew
+            {{ $t('subscription.manage.turnOffAutoRenew') }}
           </button>
           <button
             class="ghost"
@@ -96,7 +88,7 @@
             @click="resume"
             v-else-if="showAutoRenewControls"
           >
-            Resume auto-renew
+            {{ $t('subscription.manage.resumeAutoRenew') }}
           </button>
         </div>
       </div>
@@ -105,14 +97,14 @@
     <section class="plans">
       <section class="comparison" v-if="showProVsPlus">
         <div class="comparison-card">
-          <div class="comparison-kicker">Pro advantage</div>
+          <div class="comparison-kicker">{{ $t('subscription.comparison.kicker') }}</div>
           <div class="comparison-title">
             <span class="comparison-pro">Pro</span>
-            <span class="comparison-eq">is</span>
+            <span class="comparison-eq">{{ $t('subscription.comparison.is') }}</span>
             <span class="comparison-mult">{{ proVsPlusMultiplier }}×</span>
             <span class="comparison-plus">Plus</span>
           </div>
-          <p class="comparison-sub">A single upgrade signal — built for longer voice messages and more back‑and‑forth.</p>
+          <p class="comparison-sub">{{ $t('subscription.comparison.sub') }}</p>
         </div>
       </section>
 
@@ -128,7 +120,7 @@
           <div class="plan-price">
             <span class="currency">{{ currencySymbol(plan.currency) }}</span>
             <span class="amount">{{ formatPrice(plan.amount_cents) }}</span>
-            <span class="period">/ month</span>
+            <span class="period">{{ $t('subscription.period.perMonth') }}</span>
           </div>
         </header>
 
@@ -139,16 +131,16 @@
           :disabled="isBusy || (effectiveTier === 'pro' && plan.tier === 'plus' && user?.pending_plan_tier === 'plus')"
           @click.stop="subscribe(plan.tier)"
         >
-          {{ actionPending === plan.tier ? 'Opening Checkout…' : actionLabel(plan.tier) }}
+          {{ actionPending === plan.tier ? $t('subscription.actions.openingCheckout') : actionLabel(plan.tier) }}
         </button>
 
         <p class="plan-note" v-if="effectiveTier === 'pro' && plan.tier === 'plus'">
-          Switches at the end of your current billing period.
+          {{ $t('subscription.notes.downgradeEndOfPeriod') }}
         </p>
       </article>
 
       <div class="plan-empty" v-if="!visiblePlans.length">
-        You're already on the top tier.
+        {{ $t('subscription.notes.alreadyTopTier') }}
       </div>
     </section>
 
@@ -160,6 +152,7 @@
 
 <script setup>
 import { onMounted, reactive, computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { tgOpenLink } from '../lib/tg.js';
 import BackToMenu from '../components/BackToMenu.vue';
 
@@ -169,6 +162,7 @@ const props = defineProps({
 });
 
 defineEmits(['navigate']);
+const { t, locale } = useI18n({ useScope: 'global' });
 
 const state = reactive({
   loading: true,
@@ -178,15 +172,31 @@ const state = reactive({
   usage: null
 });
 
-const error = ref('');
-const notice = ref('');
+const errorState = ref(null);
+const noticeState = ref(null);
 const actionPending = ref('');
 const isBusy = computed(() => state.loading || Boolean(actionPending.value));
 
+const errorMessage = computed(() => (errorState.value ? t(errorState.value.key, errorState.value.params) : ''));
+const noticeMessage = computed(() => (noticeState.value ? t(noticeState.value.key, noticeState.value.params) : ''));
+
+function setError(key, params) {
+  errorState.value = { key, params };
+}
+
+function setNotice(key, params) {
+  noticeState.value = { key, params };
+}
+
+function clearMessages() {
+  errorState.value = null;
+  noticeState.value = null;
+}
+
 const statusMessage = computed(() => {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('session_id')) return 'Checkout completed. We are activating your plan now.';
-  if (window.location.pathname.endsWith('/cancel')) return 'Checkout canceled. Your current plan remains unchanged.';
+  if (params.get('session_id')) return t('subscription.statusMessage.checkoutCompleted');
+  if (window.location.pathname.endsWith('/cancel')) return t('subscription.statusMessage.checkoutCanceled');
   return '';
 });
 
@@ -209,36 +219,43 @@ const proVsPlusMultiplier = computed(() => {
 const showProVsPlus = computed(() => effectiveTier.value !== 'pro' && Boolean(proVsPlusMultiplier.value));
 
 const currentPlanLabel = computed(() => {
-  if (!effectiveTier.value) return 'Free';
+  if (!effectiveTier.value) return t('plans.tiers.free');
   return planLabel(effectiveTier.value);
 });
+
+function formatDate(date) {
+  try {
+    return new Intl.DateTimeFormat(locale.value, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+  } catch {
+    return date.toLocaleDateString();
+  }
+}
 
 const pendingLabel = computed(() => {
   const pendingTier = state.user?.pending_plan_tier;
   if (!pendingTier) return '';
-  const label = pendingTier === 'pro' ? 'Pro' : pendingTier === 'plus' ? 'Plus' : 'Free';
+  const label = planLabel(pendingTier);
   const effectiveAt = state.user?.pending_plan_effective_at ? new Date(state.user.pending_plan_effective_at) : null;
   if (effectiveAt && Number.isFinite(effectiveAt.getTime())) {
-    return `Scheduled: switch to ${label} on ${effectiveAt.toLocaleDateString()}.`;
+    return t('subscription.pending.withDate', { plan: label, date: formatDate(effectiveAt) });
   }
-  return `Scheduled: switch to ${label} at renewal.`;
+  return t('subscription.pending.atRenewal', { plan: label });
 });
 
 const autoRenewLabel = computed(() => {
-  if (!state.user) return 'Auto-renew off';
-  return state.user.plan_autorenew ? 'Auto-renew on' : 'Auto-renew off';
+  if (!state.user) return t('subscription.autoRenew.off');
+  return state.user.plan_autorenew ? t('subscription.autoRenew.on') : t('subscription.autoRenew.off');
 });
 
 function planLabel(tier) {
-  if (tier === 'pro') return 'Pro';
-  if (tier === 'plus') return 'Plus';
-  return 'Free';
+  if (tier !== 'pro' && tier !== 'plus' && tier !== 'free') return t('plans.tiers.free');
+  return t(`plans.tiers.${tier}`);
 }
 
 function planTagline(tier) {
-  if (tier === 'pro') return 'Daily training mode — for longer voice messages and more back‑and‑forth.';
-  if (tier === 'plus') return 'A steady weekly cadence to keep your speaking momentum.';
-  return 'A gentle warm‑up for casual practice.';
+  if (tier === 'pro') return t('subscription.taglines.pro');
+  if (tier === 'plus') return t('subscription.taglines.plus');
+  return t('subscription.taglines.free');
 }
 
 function currencySymbol(currency) {
@@ -248,16 +265,16 @@ function currencySymbol(currency) {
 }
 
 function formatPrice(cents) {
-  if (!cents) return '—';
+  if (!cents) return t('common.dash');
   return (cents / 100).toFixed(0);
 }
 
 function formatSeconds(seconds) {
-  if (!seconds && seconds !== 0) return '—';
+  if (!seconds && seconds !== 0) return t('common.dash');
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return t('units.minutesShort', { count: minutes });
   const hours = Math.round(minutes / 60);
-  return `${hours} h`;
+  return t('units.hoursShort', { count: hours });
 }
 
 function usagePercent(used, limit) {
@@ -271,21 +288,23 @@ const visiblePlans = computed(() => {
 });
 
 function actionLabel(tier) {
-  if (effectiveTier.value === 'plus' && tier === 'pro') return 'Upgrade';
+  if (effectiveTier.value === 'plus' && tier === 'pro') return t('subscription.actions.upgrade');
   if (effectiveTier.value === 'pro' && tier === 'plus') {
-    if (state.user?.pending_plan_tier === 'plus') return 'Scheduled';
-    return 'Switch to Plus';
+    if (state.user?.pending_plan_tier === 'plus') return t('subscription.actions.scheduled');
+    return t('subscription.actions.switchToPlus');
   }
-  return 'Subscribe';
+  return t('subscription.actions.subscribe');
 }
 
-async function loadPlans() {
+async function loadPlans({ keepNotice = false } = {}) {
+  errorState.value = null;
+  if (!keepNotice) noticeState.value = null;
   const resp = await fetch(`${props.apiBase}/plans`, {
     headers: { Authorization: `Bearer ${props.token}` }
   });
 
   if (!resp.ok) {
-    error.value = 'Unable to load plans.';
+    setError('subscription.actionLabels.unableToLoadPlans');
     return;
   }
 
@@ -298,6 +317,7 @@ async function loadPlans() {
 
 async function subscribe(tier) {
   actionPending.value = tier;
+  clearMessages();
   try {
     if (effectiveTier.value === 'plus' && tier === 'pro') {
       await openBillingPortal();
@@ -316,17 +336,23 @@ async function subscribe(tier) {
 
       if (!resp.ok) {
         const payload = await resp.json().catch(() => ({}));
-        error.value = payload?.error === 'not_a_downgrade' ? 'This plan change is not available.' : 'Switch unavailable right now.';
+        setError(
+          payload?.error === 'not_a_downgrade'
+            ? 'subscription.actionLabels.notADowngrade'
+            : 'subscription.actionLabels.switchUnavailable'
+        );
         return;
       }
 
       const data = await resp.json().catch(() => ({}));
       const effectiveAt = data?.effective_at ? new Date(data.effective_at) : null;
-      notice.value =
+      setNotice(
         effectiveAt && Number.isFinite(effectiveAt.getTime())
-          ? `We’ll switch you at renewal (${effectiveAt.toLocaleDateString()}).`
-          : 'We’ll switch you at renewal.';
-      await loadPlans();
+          ? 'subscription.actionLabels.switchAtRenewalWithDate'
+          : 'subscription.actionLabels.switchAtRenewal',
+        effectiveAt && Number.isFinite(effectiveAt.getTime()) ? { date: formatDate(effectiveAt) } : undefined
+      );
+      await loadPlans({ keepNotice: true });
       return;
     }
 
@@ -340,7 +366,7 @@ async function subscribe(tier) {
     });
 
     if (!resp.ok) {
-      error.value = 'Checkout unavailable right now.';
+      setError('subscription.actionLabels.checkoutUnavailable');
       return;
     }
 
@@ -348,7 +374,7 @@ async function subscribe(tier) {
     tgOpenLink(data.url);
   } catch (err) {
     console.error(err);
-    error.value = 'Checkout unavailable right now.';
+    setError('subscription.actionLabels.checkoutUnavailable');
   } finally {
     actionPending.value = '';
   }
@@ -356,6 +382,7 @@ async function subscribe(tier) {
 
 	async function openBillingPortal() {
 	  actionPending.value = 'portal';
+    clearMessages();
 	  try {
 	    const resp = await fetch(`${props.apiBase}/billing/portal`, {
 	      method: 'POST',
@@ -364,20 +391,24 @@ async function subscribe(tier) {
 
 	    if (!resp.ok) {
 	      const payload = await resp.json().catch(() => ({}));
-	      error.value = payload?.error === 'no_customer' ? 'Billing is not available yet.' : 'Unable to open billing portal.';
+	      setError(
+          payload?.error === 'no_customer'
+            ? 'subscription.actionLabels.billingNotAvailableYet'
+            : 'subscription.actionLabels.unableToOpenBillingPortal'
+        );
 	      return;
 	    }
 
 	    const data = await resp.json();
 	    if (!data?.url) {
-	      error.value = 'Unable to open billing portal.';
+	      setError('subscription.actionLabels.unableToOpenBillingPortal');
 	      return;
 	    }
 
 	    tgOpenLink(data.url);
 	  } catch (err) {
 	    console.error(err);
-	    error.value = 'Unable to open billing portal.';
+	    setError('subscription.actionLabels.unableToOpenBillingPortal');
 	  } finally {
 	    actionPending.value = '';
 	  }
@@ -415,7 +446,7 @@ onMounted(async () => {
     await loadPlans();
   } catch (err) {
     console.error(err);
-    error.value = 'Unexpected error. Try again later.';
+    setError('subscription.actionLabels.unexpectedError');
   } finally {
     state.loading = false;
     actionPending.value = '';

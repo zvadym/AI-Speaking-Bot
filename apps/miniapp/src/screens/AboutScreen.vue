@@ -1,27 +1,27 @@
 <template>
   <div class="shell fade-in">
     <header class="page-hero">
-      <div class="kicker">ℹ️ About</div>
-      <h1>Lesia’s control room</h1>
+      <div class="kicker">{{ $t('about.kicker') }}</div>
+      <h1>{{ $t('about.title') }}</h1>
       <p class="sub">
-        This mini-app changes your learning settings for the Telegram bot and lets you manage your subscription.
+        {{ $t('about.sub') }}
       </p>
     </header>
 
     <section class="card">
-      <h2>What gets saved</h2>
+      <h2>{{ $t('about.saved.title') }}</h2>
       <ul>
-        <li><b>Language</b>: the language you practice with me.</li>
-        <li><b>Level</b>: how strict my corrections should be.</li>
-        <li><b>Subscription</b>: plans, limits, and auto-renew.</li>
+        <li><b>{{ $t('about.saved.languageTitle') }}</b>: {{ $t('about.saved.languageDesc') }}</li>
+        <li><b>{{ $t('about.saved.levelTitle') }}</b>: {{ $t('about.saved.levelDesc') }}</li>
+        <li><b>{{ $t('about.saved.subscriptionTitle') }}</b>: {{ $t('about.saved.subscriptionDesc') }}</li>
       </ul>
     </section>
 
     <section class="card">
-      <h2>Tips</h2>
+      <h2>{{ $t('about.tips.title') }}</h2>
       <ul>
-        <li>Pick your <b>language</b> first, then your <b>level</b>.</li>
-        <li>Send voice messages in the target language — I’ll reply and correct gently.</li>
+        <li>{{ $t('about.tips.pickLanguageFirst') }}</li>
+        <li>{{ $t('about.tips.sendVoice') }}</li>
       </ul>
     </section>
 

@@ -1,9 +1,11 @@
 <template>
   <div class="shell fade-in">
     <header class="page-hero">
-      <div class="kicker">🌍 Language</div>
-      <h1>What are we practicing?</h1>
-      <p class="sub">Switching language mirrors the bot’s <code>/lang</code> flow.</p>
+      <div class="kicker">{{ $t('language.kicker') }}</div>
+      <h1>{{ $t('language.title') }}</h1>
+      <p class="sub">
+        {{ $t('language.subPrefix') }} <code>/lang</code>{{ $t('language.subSuffix') }}
+      </p>
     </header>
 
     <section class="list">
@@ -19,7 +21,7 @@
         <div class="mid">
           <div class="top">
             <span class="label">{{ lang.label }}</span>
-            <span class="tag" v-if="current === lang.code">Selected</span>
+            <span class="tag" v-if="current === lang.code">{{ $t('common.selected') }}</span>
           </div>
           <div class="note">{{ lang.note }}</div>
         </div>
@@ -36,6 +38,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { apiJson } from '../lib/api.js';
 import { tgHaptic } from '../lib/tg.js';
 import BackToMenu from '../components/BackToMenu.vue';
@@ -49,13 +52,14 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['navigate']);
+const { t } = useI18n({ useScope: 'global' });
 
 const busy = ref('');
 
-const languages = [
-  { code: 'en', flag: '🇬🇧', label: 'English', note: 'Friendly corrections, natural replies.' },
-  { code: 'de', flag: '🇩🇪', label: 'German', note: 'Articles, word order, and flow — gently.' }
-];
+const languages = computed(() => [
+  { code: 'en', flag: '🇬🇧', label: t('practiceLanguages.en'), note: t('language.options.en.note') },
+  { code: 'de', flag: '🇩🇪', label: t('practiceLanguages.de'), note: t('language.options.de.note') }
+]);
 
 const current = computed(() => (props.me?.target_lang || 'en').toLowerCase());
 
@@ -70,11 +74,11 @@ async function setLang(code) {
       body: { target_lang: code }
     });
     await props.refreshMe();
-    props.toast('Saved. Now pick your level.');
+    props.toast(t('language.toasts.savedPickLevel'));
     emit('navigate', '/level');
   } catch (err) {
     console.error(err);
-    props.toast('Could not save. Please try again.');
+    props.toast(t('common.errors.couldNotSave'));
     tgHaptic('notification', 'error');
   } finally {
     busy.value = '';

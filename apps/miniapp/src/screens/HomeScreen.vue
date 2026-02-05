@@ -1,21 +1,41 @@
 <template>
   <div class="shell fade-in">
     <header class="hero">
-      <div class="kicker">Lesia · Settings</div>
+      <div class="kicker">{{ $t('home.kicker') }}</div>
       <h1>
         {{ greeting }}
       </h1>
       <p class="sub">
-        Pick a card — I’ll keep your training consistent across chats.
+        {{ $t('home.sub') }}
       </p>
 
-      <div class="chips" v-if="me">
-        <button class="chip" @click="$emit('navigate', '/language')">
+      <div class="chips">
+        <button class="chip" v-if="me" @click="$emit('navigate', '/language')">
           🌍 {{ languageLabel }}
         </button>
-        <button class="chip" @click="$emit('navigate', '/level')">
+        <button class="chip" v-if="me" @click="$emit('navigate', '/level')">
           🎯 {{ levelLabel }}
         </button>
+
+        <div class="locale-switch" role="group" :aria-label="$t('home.uiLanguage')">
+          <span class="locale-label">🌐 {{ $t('home.uiLanguage') }}</span>
+          <button
+            class="locale-btn"
+            type="button"
+            :class="{ active: locale === 'uk' }"
+            @click="setUiLocale('uk')"
+          >
+            UA
+          </button>
+          <button
+            class="locale-btn"
+            type="button"
+            :class="{ active: locale === 'en' }"
+            @click="setUiLocale('en')"
+          >
+            EN
+          </button>
+        </div>
       </div>
     </header>
 
@@ -26,10 +46,10 @@
         </div>
         <div class="mid">
           <div class="title-row">
-            <span class="title">Subscription</span>
+            <span class="title">{{ $t('home.menu.subscription.title') }}</span>
             <span class="pill" v-if="me">{{ planLabel }}</span>
           </div>
-          <p class="desc">Plans, limits, auto-renew — everything in one place.</p>
+          <p class="desc">{{ $t('home.menu.subscription.desc') }}</p>
         </div>
         <div class="right" aria-hidden="true">
           <span class="arrow">→</span>
@@ -42,10 +62,10 @@
         </div>
         <div class="mid">
           <div class="title-row">
-            <span class="title">Language</span>
+            <span class="title">{{ $t('home.menu.language.title') }}</span>
             <span class="meta" v-if="me">{{ languageLabel }}</span>
           </div>
-          <p class="desc">Choose what you practice with me.</p>
+          <p class="desc">{{ $t('home.menu.language.desc') }}</p>
         </div>
         <div class="right" aria-hidden="true"><span class="arrow">→</span></div>
       </button>
@@ -56,10 +76,10 @@
         </div>
         <div class="mid">
           <div class="title-row">
-            <span class="title">Level</span>
+            <span class="title">{{ $t('home.menu.level.title') }}</span>
             <span class="meta" v-if="me">{{ levelLabel }}</span>
           </div>
-          <p class="desc">Set correction strictness and pacing.</p>
+          <p class="desc">{{ $t('home.menu.level.desc') }}</p>
         </div>
         <div class="right" aria-hidden="true"><span class="arrow">→</span></div>
       </button>
@@ -70,9 +90,9 @@
         </div>
         <div class="mid">
           <div class="title-row">
-            <span class="title">About</span>
+            <span class="title">{{ $t('home.menu.about.title') }}</span>
           </div>
-          <p class="desc">How it works and what gets saved.</p>
+          <p class="desc">{{ $t('home.menu.about.desc') }}</p>
         </div>
         <div class="right" aria-hidden="true"><span class="arrow">→</span></div>
       </button>
@@ -82,6 +102,8 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { setAppLocale } from '../i18n.js';
 
 const props = defineProps({
   me: { type: Object, default: null }
@@ -89,15 +111,21 @@ const props = defineProps({
 
 defineEmits(['navigate']);
 
+const { t, locale } = useI18n({ useScope: 'global' });
+
+function setUiLocale(nextLocale) {
+  setAppLocale(nextLocale);
+}
+
 const greeting = computed(() => {
   const name = props.me?.first_name?.trim();
-  return name ? `Hey, ${name}.` : 'Hey.';
+  return name ? t('home.greeting.named', { name }) : t('home.greeting.anon');
 });
 
 const languageLabel = computed(() => {
   const code = (props.me?.target_lang || 'en').toLowerCase();
-  if (code === 'de') return 'German';
-  return 'English';
+  if (code === 'de') return t('practiceLanguages.de');
+  return t('practiceLanguages.en');
 });
 
 const levelLabel = computed(() => {
@@ -107,9 +135,8 @@ const levelLabel = computed(() => {
 
 const planLabel = computed(() => {
   const tier = (props.me?.plan_tier || 'free').toString().toLowerCase();
-  if (tier === 'pro') return 'Pro';
-  if (tier === 'plus') return 'Plus';
-  return 'Free';
+  if (tier !== 'pro' && tier !== 'plus' && tier !== 'free') return t('plans.tiers.free');
+  return t(`plans.tiers.${tier}`);
 });
 </script>
 
@@ -172,6 +199,48 @@ const planLabel = computed(() => {
 .chip:active {
   transform: translateY(1px);
   box-shadow: 0 10px 22px var(--shadow);
+}
+
+.locale-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 14px 30px var(--shadow);
+  border-radius: 999px;
+  padding: 7px 8px 7px 12px;
+}
+
+.locale-label {
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.locale-btn {
+  border: 1px solid rgba(30, 26, 22, 0.14);
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.82;
+  transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
+}
+
+.locale-btn.active {
+  background: rgba(31, 107, 99, 0.18);
+  border-color: rgba(31, 107, 99, 0.32);
+  opacity: 1;
+}
+
+.locale-btn:active {
+  transform: translateY(1px);
 }
 
 .menu {

@@ -1,0 +1,184 @@
+{
+  "common": {
+    "selected": "Selected",
+    "status": "Status",
+    "scheduled": "Scheduled",
+    "notice": "Notice",
+    "backToMenu": "Back to menu",
+    "dash": "—",
+    "errors": {
+      "couldNotSave": "Could not save. Please try again."
+    }
+  },
+  "locales": {
+    "uk": "Ukrainian",
+    "en": "English"
+  },
+  "practiceLanguages": {
+    "en": "English",
+    "de": "German"
+  },
+  "plans": {
+    "tiers": {
+      "free": "Free",
+      "plus": "Plus",
+      "pro": "Pro"
+    }
+  },
+  "app": {
+    "loading": {
+      "kicker": "Opening…",
+      "title": "Getting you signed in",
+      "sub": "Please keep this window open."
+    },
+    "error": {
+      "kicker": "Notice",
+      "title": "Couldn’t open the mini-app",
+      "openInTelegram": "Open this page inside Telegram.",
+      "authFailed": "Authorization failed. Please reopen the mini-app."
+    }
+  },
+  "home": {
+    "kicker": "Lesia · Settings",
+    "greeting": {
+      "named": "Hey, {name}.",
+      "anon": "Hey."
+    },
+    "sub": "Pick a card — I’ll keep your training consistent across chats.",
+    "uiLanguage": "Interface language",
+    "menu": {
+      "subscription": {
+        "title": "Subscription",
+        "desc": "Plans, limits, auto-renew — everything in one place."
+      },
+      "language": {
+        "title": "Language",
+        "desc": "Choose what you practice with me."
+      },
+      "level": {
+        "title": "Level",
+        "desc": "Set correction strictness and pacing."
+      },
+      "about": {
+        "title": "About",
+        "desc": "How it works and what gets saved."
+      }
+    }
+  },
+  "language": {
+    "kicker": "🌍 Language",
+    "title": "What are we practicing?",
+    "subPrefix": "Switching language mirrors the bot’s",
+    "subSuffix": " flow.",
+    "options": {
+      "en": {
+        "note": "Friendly corrections, natural replies."
+      },
+      "de": {
+        "note": "Articles, word order, and flow — gently."
+      }
+    },
+    "toasts": {
+      "savedPickLevel": "Saved. Now pick your level."
+    }
+  },
+  "level": {
+    "kicker": "🎯 Level",
+    "title": "How strict should I be?",
+    "subPrefix": "This mirrors the bot’s",
+    "subSuffix": " selector.",
+    "notes": {
+      "a1": "Gentle basics. One key fix at a time.",
+      "a2": "Simple grammar, more stable sentences.",
+      "b1": "Useful corrections + better alternatives.",
+      "b2": "Naturalness, collocations, flow.",
+      "c1": "Only non-trivial, high-value fixes."
+    },
+    "toasts": {
+      "saved": "Level saved ✅"
+    }
+  },
+  "about": {
+    "kicker": "ℹ️ About",
+    "title": "Lesia’s control room",
+    "sub": "This mini-app changes your learning settings for the Telegram bot and lets you manage your subscription.",
+    "saved": {
+      "title": "What gets saved",
+      "languageTitle": "Language",
+      "languageDesc": "the language you practice with me.",
+      "levelTitle": "Level",
+      "levelDesc": "how strict my corrections should be.",
+      "subscriptionTitle": "Subscription",
+      "subscriptionDesc": "plans, limits, and auto-renew."
+    },
+    "tips": {
+      "title": "Tips",
+      "pickLanguageFirst": "Pick your language first, then your level.",
+      "sendVoice": "Send voice messages in the target language — I’ll reply and correct gently."
+    }
+  },
+  "subscription": {
+    "heroBadge": "Subscription Atelier",
+    "title": "Choose your training tempo",
+    "sub": "Keep your speaking practice steady. Pick a cadence that matches your week and toggle auto-renew whenever you want.",
+    "manage": {
+      "yourPlan": "Your plan",
+      "practiceTime": "Practice time",
+      "voiceReplies": "Voice replies",
+      "managePayments": "Manage payments",
+      "turnOffAutoRenew": "Turn off auto-renew",
+      "resumeAutoRenew": "Resume auto-renew"
+    },
+    "comparison": {
+      "kicker": "Pro advantage",
+      "is": "is",
+      "sub": "A single upgrade signal — built for longer voice messages and more back‑and‑forth."
+    },
+    "period": {
+      "perMonth": "/ month"
+    },
+    "actions": {
+      "openingCheckout": "Opening Checkout…",
+      "subscribe": "Subscribe",
+      "upgrade": "Upgrade",
+      "switchToPlus": "Switch to Plus",
+      "scheduled": "Scheduled"
+    },
+    "notes": {
+      "downgradeEndOfPeriod": "Switches at the end of your current billing period.",
+      "alreadyTopTier": "You're already on the top tier."
+    },
+    "statusMessage": {
+      "checkoutCompleted": "Checkout completed. We are activating your plan now.",
+      "checkoutCanceled": "Checkout canceled. Your current plan remains unchanged."
+    },
+    "pending": {
+      "withDate": "Scheduled: switch to {plan} on {date}.",
+      "atRenewal": "Scheduled: switch to {plan} at renewal."
+    },
+    "autoRenew": {
+      "on": "Auto-renew on",
+      "off": "Auto-renew off"
+    },
+    "taglines": {
+      "pro": "Daily training mode — for longer voice messages and more back‑and‑forth.",
+      "plus": "A steady weekly cadence to keep your speaking momentum.",
+      "free": "A gentle warm‑up for casual practice."
+    },
+    "actionLabels": {
+      "notADowngrade": "This plan change is not available.",
+      "switchUnavailable": "Switch unavailable right now.",
+      "switchAtRenewal": "We’ll switch you at renewal.",
+      "switchAtRenewalWithDate": "We’ll switch you at renewal ({date}).",
+      "checkoutUnavailable": "Checkout unavailable right now.",
+      "unableToLoadPlans": "Unable to load plans.",
+      "unexpectedError": "Unexpected error. Try again later.",
+      "billingNotAvailableYet": "Billing is not available yet.",
+      "unableToOpenBillingPortal": "Unable to open billing portal."
+    }
+  },
+  "units": {
+    "minutesShort": "{count} min",
+    "hoursShort": "{count} h"
+  }
+}

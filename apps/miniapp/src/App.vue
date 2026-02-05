@@ -2,17 +2,17 @@
   <div class="app">
     <div class="loading" v-if="loading">
       <div class="loading-card">
-        <div class="loading-kicker">Opening…</div>
-        <div class="loading-title">Getting you signed in</div>
-        <div class="loading-sub">Please keep this window open.</div>
+        <div class="loading-kicker">{{ $t('app.loading.kicker') }}</div>
+        <div class="loading-title">{{ $t('app.loading.title') }}</div>
+        <div class="loading-sub">{{ $t('app.loading.sub') }}</div>
       </div>
     </div>
 
-    <div class="error" v-else-if="fatal">
+    <div class="error" v-else-if="fatalKey">
       <div class="error-card">
-        <div class="error-kicker">Notice</div>
-        <div class="error-title">Couldn’t open the mini-app</div>
-        <div class="error-sub">{{ fatal }}</div>
+        <div class="error-kicker">{{ $t('app.error.kicker') }}</div>
+        <div class="error-title">{{ $t('app.error.title') }}</div>
+        <div class="error-sub">{{ fatalText }}</div>
       </div>
     </div>
 
@@ -61,7 +61,8 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import HomeScreen from './screens/HomeScreen.vue';
 import SubscriptionScreen from './screens/SubscriptionScreen.vue';
 import LanguageScreen from './screens/LanguageScreen.vue';
@@ -74,9 +75,11 @@ import { getTelegramWebApp, tgReady } from './lib/tg.js';
 const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
 
 const nav = useNav();
+const { t } = useI18n({ useScope: 'global' });
 
 const loading = ref(true);
-const fatal = ref('');
+const fatalKey = ref('');
+const fatalText = computed(() => (fatalKey.value ? t(fatalKey.value) : ''));
 const token = ref('');
 const me = ref(null);
 
@@ -116,12 +119,12 @@ function syncTelegramBackButton() {
 
 onMounted(async () => {
   loading.value = true;
-  fatal.value = '';
+  fatalKey.value = '';
 
   try {
     const tg = getTelegramWebApp();
     if (!tg?.initData) {
-      fatal.value = 'Open this page inside Telegram.';
+      fatalKey.value = 'app.error.openInTelegram';
       return;
     }
 
@@ -139,7 +142,7 @@ onMounted(async () => {
     await refreshMe();
   } catch (err) {
     console.error(err);
-    fatal.value = 'Authorization failed. Please reopen the mini-app.';
+    fatalKey.value = 'app.error.authFailed';
   } finally {
     loading.value = false;
     syncTelegramBackButton();

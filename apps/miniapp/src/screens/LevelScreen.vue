@@ -1,9 +1,11 @@
 <template>
   <div class="shell fade-in">
     <header class="page-hero">
-      <div class="kicker">🎯 Level</div>
-      <h1>How strict should I be?</h1>
-      <p class="sub">This mirrors the bot’s <code>/level</code> selector.</p>
+      <div class="kicker">{{ $t('level.kicker') }}</div>
+      <h1>{{ $t('level.title') }}</h1>
+      <p class="sub">
+        {{ $t('level.subPrefix') }} <code>/level</code>{{ $t('level.subSuffix') }}
+      </p>
     </header>
 
     <section class="grid">
@@ -17,7 +19,7 @@
       >
         <div class="top">
           <span class="code">{{ lvl.code.toUpperCase() }}</span>
-          <span class="tag" v-if="current === lvl.code">Selected</span>
+          <span class="tag" v-if="current === lvl.code">{{ $t('common.selected') }}</span>
         </div>
         <div class="note">{{ lvl.note }}</div>
       </button>
@@ -29,6 +31,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { apiJson } from '../lib/api.js';
 import { tgHaptic } from '../lib/tg.js';
 import BackToMenu from '../components/BackToMenu.vue';
@@ -42,16 +45,17 @@ const props = defineProps({
 });
 
 defineEmits(['navigate']);
+const { t } = useI18n({ useScope: 'global' });
 
 const busy = ref('');
 
-const levels = [
-  { code: 'a1', note: 'Gentle basics. One key fix at a time.' },
-  { code: 'a2', note: 'Simple grammar, more stable sentences.' },
-  { code: 'b1', note: 'Useful corrections + better alternatives.' },
-  { code: 'b2', note: 'Naturalness, collocations, flow.' },
-  { code: 'c1', note: 'Only non-trivial, high-value fixes.' }
-];
+const levels = computed(() => [
+  { code: 'a1', note: t('level.notes.a1') },
+  { code: 'a2', note: t('level.notes.a2') },
+  { code: 'b1', note: t('level.notes.b1') },
+  { code: 'b2', note: t('level.notes.b2') },
+  { code: 'c1', note: t('level.notes.c1') }
+]);
 
 const current = computed(() => (props.me?.level || 'b1').toString().toLowerCase());
 
@@ -66,10 +70,10 @@ async function setLevel(code) {
       body: { level: code }
     });
     await props.refreshMe();
-    props.toast('Level saved ✅');
+    props.toast(t('level.toasts.saved'));
   } catch (err) {
     console.error(err);
-    props.toast('Could not save. Please try again.');
+    props.toast(t('common.errors.couldNotSave'));
     tgHaptic('notification', 'error');
   } finally {
     busy.value = '';

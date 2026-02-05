@@ -2,7 +2,7 @@
   <div class="footer">
     <button class="back" type="button" @click="$emit('navigate', '/')">
       <span class="icon" aria-hidden="true">←</span>
-      <span>Back to menu</span>
+      <span>{{ $t('common.backToMenu') }}</span>
     </button>
   </div>
 </template>
@@ -45,4 +45,3 @@ defineEmits(['navigate']);
   opacity: 0.75;
 }
 </style>
-
