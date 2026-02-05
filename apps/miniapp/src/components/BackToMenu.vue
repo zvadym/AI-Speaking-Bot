@@ -1,6 +1,6 @@
 <template>
   <div class="footer">
-    <button class="back" type="button" @click="$emit('navigate', '/')">
+    <button class="back" type="button" @click="goHome">
       <span class="icon" aria-hidden="true">←</span>
       <span>{{ $t('common.backToMenu') }}</span>
     </button>
@@ -8,7 +8,14 @@
 </template>
 
 <script setup>
-defineEmits(['navigate']);
+import { track } from '../lib/analytics.js';
+
+const emit = defineEmits(['navigate']);
+
+function goHome() {
+  track('ui_click', { id: 'back_to_menu', to: '/' });
+  emit('navigate', '/');
+}
 </script>
 
 <style scoped>

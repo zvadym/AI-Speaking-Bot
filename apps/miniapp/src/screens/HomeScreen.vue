@@ -10,10 +10,10 @@
       </p>
 
       <div class="chips">
-        <button class="chip" v-if="me" @click="$emit('navigate', '/language')">
+        <button class="chip" v-if="me" @click="go('/language', 'home_chip_language')">
           🌍 {{ languageLabel }}
         </button>
-        <button class="chip" v-if="me" @click="$emit('navigate', '/level')">
+        <button class="chip" v-if="me" @click="go('/level', 'home_chip_level')">
           🎯 {{ levelLabel }}
         </button>
 
@@ -45,7 +45,7 @@
     </header>
 
     <section class="menu">
-      <button class="menu-card featured" @click="$emit('navigate', '/subscription')">
+      <button class="menu-card featured" @click="go('/subscription', 'home_menu_subscription')">
         <div class="left">
           <div class="emoji">⭐</div>
         </div>
@@ -61,7 +61,7 @@
         </div>
       </button>
 
-      <button class="menu-card" @click="$emit('navigate', '/language')">
+      <button class="menu-card" @click="go('/language', 'home_menu_language')">
         <div class="left">
           <div class="emoji">🌍</div>
         </div>
@@ -75,7 +75,7 @@
         <div class="right" aria-hidden="true"><span class="arrow">→</span></div>
       </button>
 
-      <button class="menu-card" @click="$emit('navigate', '/level')">
+      <button class="menu-card" @click="go('/level', 'home_menu_level')">
         <div class="left">
           <div class="emoji">🎯</div>
         </div>
@@ -89,7 +89,7 @@
         <div class="right" aria-hidden="true"><span class="arrow">→</span></div>
       </button>
 
-      <button class="menu-card" @click="$emit('navigate', '/about')">
+      <button class="menu-card" @click="go('/about', 'home_menu_about')">
         <div class="left">
           <div class="emoji">ℹ️</div>
         </div>
@@ -109,17 +109,24 @@
 import { computed } from 'vue';
 import { useI18n } from '../i18n.js';
 import { setAppLocale } from '../i18n.js';
+import { track } from '../lib/analytics.js';
 
 const props = defineProps({
   me: { type: Object, default: null }
 });
 
-defineEmits(['navigate']);
+const emit = defineEmits(['navigate']);
 
 const { t, locale } = useI18n({ useScope: 'global' });
 const showUiLocaleSwitcher = false;
 
+function go(path, id) {
+  track('ui_click', { id, to: path });
+  emit('navigate', path);
+}
+
 function setUiLocale(nextLocale) {
+  track('ui_click', { id: 'home_set_ui_locale', locale: nextLocale });
   setAppLocale(nextLocale);
 }
 

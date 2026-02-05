@@ -71,6 +71,7 @@ import AboutScreen from './screens/AboutScreen.vue';
 import { useNav } from './lib/nav.js';
 import { apiJson, authTelegram } from './lib/api.js';
 import { getTelegramWebApp, tgReady } from './lib/tg.js';
+import { identifyUser, track, trackScreen } from './lib/analytics.js';
 
 const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
 
@@ -89,6 +90,10 @@ const toastState = reactive({
 });
 
 let toastTimer = null;
+let didTrackOpen = false;
+let tgActivatedHandler = null;
+let tgDeactivatedHandler = null;
+let visibilityHandler = null;
 
 function toast(message) {
   toastState.message = message;
@@ -117,6 +122,16 @@ function syncTelegramBackButton() {
   else tg.BackButton.show();
 }
 
+function trackAppOpenOnce() {
+  if (didTrackOpen) return;
+  didTrackOpen = true;
+  const tg = getTelegramWebApp();
+  track('app_open', {
+    platform: (tg?.platform || '').toString(),
+    version: (tg?.version || '').toString()
+  });
+}
+
 onMounted(async () => {
   loading.value = true;
   fatalKey.value = '';
@@ -140,6 +155,24 @@ onMounted(async () => {
     const auth = await authTelegram(apiBase, tg.initData);
     token.value = auth.token;
     await refreshMe();
+
+    if (me.value) identifyUser(me.value);
+    trackAppOpenOnce();
+
+    tgActivatedHandler = () => track('app_activated');
+    tgDeactivatedHandler = () => track('app_deactivated');
+    try {
+      tg.onEvent?.('activated', tgActivatedHandler);
+      tg.onEvent?.('deactivated', tgDeactivatedHandler);
+    } catch {
+      // ignore
+    }
+
+    visibilityHandler = () => {
+      if (document.visibilityState === 'visible') track('app_activated');
+      else track('app_deactivated');
+    };
+    document.addEventListener('visibilitychange', visibilityHandler);
   } catch (err) {
     console.error(err);
     fatalKey.value = 'app.error.authFailed';
@@ -155,13 +188,25 @@ watch(
   { immediate: true }
 );
 
+watch(
+  () => nav.path.value,
+  () => {
+    if (!me.value) return;
+    trackScreen({ path: nav.path.value, screen: nav.screen.value });
+  },
+  { immediate: true }
+);
+
 onBeforeUnmount(() => {
   const tg = getTelegramWebApp();
   try {
     if (tgBackHandler) tg?.offEvent?.('backButtonClicked', tgBackHandler);
+    if (tgActivatedHandler) tg?.offEvent?.('activated', tgActivatedHandler);
+    if (tgDeactivatedHandler) tg?.offEvent?.('deactivated', tgDeactivatedHandler);
   } catch {
     // ignore
   }
+  if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler);
   if (toastTimer) window.clearTimeout(toastTimer);
 });
 </script>

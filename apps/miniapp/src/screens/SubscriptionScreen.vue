@@ -148,6 +148,7 @@
 import { onMounted, reactive, computed, ref } from 'vue';
 import { useI18n } from '../i18n.js';
 import { tgOpenLink } from '../lib/tg.js';
+import { track } from '../lib/analytics.js';
 import BackToMenu from '../components/BackToMenu.vue';
 
 const props = defineProps({
@@ -312,6 +313,7 @@ async function subscribe(tier) {
   actionPending.value = tier;
   clearMessages();
   try {
+    track('ui_click', { id: 'subscription_subscribe', tier });
     if (effectiveTier.value === 'plus' && tier === 'pro') {
       await openBillingPortal();
       return;
@@ -364,6 +366,7 @@ async function subscribe(tier) {
     }
 
     const data = await resp.json();
+    track('checkout_opened', { tier, currency: state.currency });
     tgOpenLink(data.url);
   } catch (err) {
     console.error(err);
@@ -377,6 +380,7 @@ async function subscribe(tier) {
 	  actionPending.value = 'portal';
     clearMessages();
 	  try {
+      track('ui_click', { id: 'subscription_open_billing_portal' });
 	    const resp = await fetch(`${props.apiBase}/billing/portal`, {
 	      method: 'POST',
 	      headers: { Authorization: `Bearer ${props.token}` }
@@ -398,6 +402,7 @@ async function subscribe(tier) {
 	      return;
 	    }
 
+      track('billing_portal_opened');
 	    tgOpenLink(data.url);
 	  } catch (err) {
 	    console.error(err);
@@ -409,12 +414,14 @@ async function subscribe(tier) {
 
 async function cancel() {
   actionPending.value = 'cancel';
+  track('ui_click', { id: 'subscription_cancel_autorenew' });
   const resp = await fetch(`${props.apiBase}/billing/cancel`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${props.token}` }
   });
 
   if (resp.ok) {
+    track('subscription_autorenew_disabled');
     await loadPlans();
   }
   actionPending.value = '';
@@ -422,12 +429,14 @@ async function cancel() {
 
 async function resume() {
   actionPending.value = 'resume';
+  track('ui_click', { id: 'subscription_resume_autorenew' });
   const resp = await fetch(`${props.apiBase}/billing/resume`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${props.token}` }
   });
 
   if (resp.ok) {
+    track('subscription_autorenew_enabled');
     await loadPlans();
   }
   actionPending.value = '';

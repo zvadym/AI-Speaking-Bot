@@ -41,6 +41,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from '../i18n.js';
 import { apiJson } from '../lib/api.js';
 import { tgHaptic } from '../lib/tg.js';
+import { track } from '../lib/analytics.js';
 import BackToMenu from '../components/BackToMenu.vue';
 
 const props = defineProps({
@@ -66,6 +67,7 @@ const current = computed(() => (props.me?.target_lang || 'en').toLowerCase());
 async function setLang(code) {
   if (busy.value) return;
   busy.value = code;
+  track('ui_click', { id: 'language_select', lang: code });
   tgHaptic('impact', 'light');
   try {
     await apiJson(props.apiBase, '/me/target-lang', {
@@ -74,6 +76,7 @@ async function setLang(code) {
       body: { target_lang: code }
     });
     await props.refreshMe();
+    track('setting_saved', { key: 'target_lang', value: code });
     props.toast(t('language.toasts.savedPickLevel'));
     emit('navigate', '/level');
   } catch (err) {
