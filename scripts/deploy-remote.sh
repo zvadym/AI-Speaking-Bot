@@ -26,14 +26,14 @@ set -euo pipefail
 
 step() { echo "==> $1"; }
 
-step "📁 2.1/9: Verify repo directory"
+step "📁 2.1/10: Verify repo directory"
 if [[ ! -d "${DEPLOY_DIR}" ]]; then
   echo "Missing ${DEPLOY_DIR} on server" >&2
   exit 1
 fi
 cd "${DEPLOY_DIR}"
 
-step "🧹 2.2/9: Ensure clean git state"
+step "🧹 2.2/10: Ensure clean git state"
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "Repo has uncommitted changes. Please commit/stash before deploy." >&2
   exit 1
@@ -45,7 +45,7 @@ git checkout "${DEPLOY_BRANCH}"
 
 git pull --ff-only origin "${DEPLOY_BRANCH}"
 
-step "🔐 2.3/9: Verify required env files (won't overwrite)"
+step "🔐 2.3/10: Verify required env files (won't overwrite)"
 for f in deploy/.env deploy/.env.api deploy/.env.miniapp deploy/.env.prod; do
   if [[ ! -f "$f" ]]; then
     echo "Missing $f on server" >&2
@@ -53,32 +53,37 @@ for f in deploy/.env deploy/.env.api deploy/.env.miniapp deploy/.env.prod; do
   fi
 done
 
-step "🌱 2.3.1/9: Load env for build args + workflow render"
+step "🌱 2.3.1/10: Load env for build args + workflow render"
 set -a
 source deploy/.env.api
 source deploy/.env.miniapp
 source deploy/.env.prod
 set +a
 
-step "🧩 2.3.2/9: Render n8n workflows"
+step "🧩 2.3.2/10: Render n8n workflows"
 python3 scripts/render-n8n-workflows.py --input deploy/workflows --output deploy/workflows/.rendered
 
-step "🗄️ 2.4/9: Run DB migrations"
+step "🗄️ 2.4/10: Run DB migrations"
 bash "${MIGRATE_SCRIPT}"
 
-step "🐳 2.5/9: Build & restart services"
+step "🐳 2.5/10: Build & restart services"
 docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build
 
 docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --remove-orphans
 
-step "📦 2.6/9: Import n8n workflows"
+step "🛑 2.6/10: Stop n8n (pre-import)"
 docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" stop n8n >/dev/null 2>&1 || true
+
+step "🧹 2.7/10: Unpublish/deactivate ALL n8n workflows"
+COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" STOP_N8N_BEFORE=false bash scripts/unpublish-all-n8n-workflows.sh
+
+step "📦 2.8/10: Import n8n workflows"
 docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps n8n-import </dev/null
 
-step "✅ 2.7/9: Activate n8n workflows"
+step "✅ 2.9/10: Activate n8n workflows"
 COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" bash scripts/activate-n8n-workflows.sh
 
-step "✅ 2.8/9: Health checks"
+step "✅ 2.10/10: Health checks"
 if command -v curl >/dev/null 2>&1; then
   check_url() {
     local url="$1"
