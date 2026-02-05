@@ -17,20 +17,20 @@
     </div>
 
     <HomeScreen
-      v-else-if="nav.screen === 'home'"
+      v-else-if="nav.screen.value === 'home'"
       :me="me"
       @navigate="nav.go"
     />
 
     <SubscriptionScreen
-      v-else-if="nav.screen === 'subscription'"
+      v-else-if="nav.screen.value === 'subscription'"
       :apiBase="apiBase"
       :token="token"
       @navigate="nav.go"
     />
 
     <LanguageScreen
-      v-else-if="nav.screen === 'language'"
+      v-else-if="nav.screen.value === 'language'"
       :apiBase="apiBase"
       :token="token"
       :me="me"
@@ -40,7 +40,7 @@
     />
 
     <LevelScreen
-      v-else-if="nav.screen === 'level'"
+      v-else-if="nav.screen.value === 'level'"
       :apiBase="apiBase"
       :token="token"
       :me="me"
