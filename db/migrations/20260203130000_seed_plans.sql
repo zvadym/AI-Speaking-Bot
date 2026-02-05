@@ -1,7 +1,7 @@
 -- migrate:up
 INSERT INTO public.plans (tier, user_audio_seconds_per_week, tts_seconds_per_week)
 VALUES
-  ('free', 180, 120),
+  ('free', 120, 120),
   ('plus', 3600, 3600),
   ('pro', 36000, 36000)
 ON CONFLICT (tier) DO UPDATE
