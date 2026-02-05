@@ -291,7 +291,7 @@ app.post('/billing/checkout', requireAuth, async (req, res) => {
       ? env.webappReturnUrl
       : `${env.webappUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: env.webappReturnUrlIsCustom ? env.webappReturnUrl : `${env.webappUrl}/cancel`,
-    allow_promotion_codes: false,
+    allow_promotion_codes: true,
     metadata: { chat_id: String(chatId), tier: normalizedTier }
   };
 
