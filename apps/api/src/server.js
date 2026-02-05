@@ -175,6 +175,66 @@ app.get('/plans', requireAuth, async (req, res) => {
   });
 });
 
+app.get('/me', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const { rows } = await pool.query(
+    `SELECT chat_id, username, first_name, target_lang, level, onboarding_state, reply_mode, tts_voice,
+            plan_tier, plan_expires_at, plan_autorenew
+       FROM users
+      WHERE chat_id = $1
+      LIMIT 1`,
+    [chatId]
+  );
+
+  const user = rows[0] || null;
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+  return res.json({ user });
+});
+
+app.post('/me/target-lang', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const raw = (req.body?.target_lang ?? req.body?.targetLang ?? '').toString().trim().toLowerCase();
+  if (!['en', 'de'].includes(raw)) {
+    return res.status(400).json({ error: 'bad_target_lang' });
+  }
+
+  const { rows } = await pool.query(
+    `UPDATE users
+        SET target_lang = $1,
+            onboarding_state = 'await_level',
+            updated_at = NOW()
+      WHERE chat_id = $2
+      RETURNING chat_id, username, first_name, target_lang, level, onboarding_state, reply_mode, tts_voice,
+                plan_tier, plan_expires_at, plan_autorenew`,
+    [raw, chatId]
+  );
+
+  if (!rows[0]) return res.status(404).json({ error: 'user_not_found' });
+  return res.json({ user: rows[0] });
+});
+
+app.post('/me/level', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const raw = (req.body?.level ?? '').toString().trim().toLowerCase();
+  if (!['a1', 'a2', 'b1', 'b2', 'c1'].includes(raw)) {
+    return res.status(400).json({ error: 'bad_level' });
+  }
+
+  const { rows } = await pool.query(
+    `UPDATE users
+        SET level = $1,
+            onboarding_state = 'ready',
+            updated_at = NOW()
+      WHERE chat_id = $2
+      RETURNING chat_id, username, first_name, target_lang, level, onboarding_state, reply_mode, tts_voice,
+                plan_tier, plan_expires_at, plan_autorenew`,
+    [raw, chatId]
+  );
+
+  if (!rows[0]) return res.status(404).json({ error: 'user_not_found' });
+  return res.json({ user: rows[0] });
+});
+
 app.post('/billing/checkout', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const { tier, currency } = req.body || {};
