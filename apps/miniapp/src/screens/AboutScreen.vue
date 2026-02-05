@@ -25,13 +25,13 @@
       </ul>
     </section>
 
-    <section class="footer">
-      <button class="ghost" @click="$emit('navigate', '/')">Back to menu</button>
-    </section>
+    <BackToMenu @navigate="(path) => $emit('navigate', path)" />
   </div>
 </template>
 
 <script setup>
+import BackToMenu from '../components/BackToMenu.vue';
+
 defineEmits(['navigate']);
 </script>
 
@@ -96,25 +96,4 @@ li {
   line-height: 1.55;
 }
 
-.footer {
-  display: grid;
-  justify-items: start;
-  margin-top: 6px;
-}
-
-.ghost {
-  border: 1px solid var(--stroke);
-  background: transparent;
-  padding: 10px 14px;
-  border-radius: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--ink);
-}
-
-.ghost:active {
-  transform: translateY(1px);
-}
 </style>
-

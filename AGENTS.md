@@ -29,7 +29,8 @@ This file orients automated agents working in this repo. Keep it accurate as the
   - `DATABASE_URL`, `WEBAPP_URL`, `TELEGRAM_BOT_TOKEN`, `STRIPE_SECRET_KEY`,
     `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`.
 - API optional env vars: `API_PORT`, `API_BASE_URL`, `CORS_ORIGINS`,
-  `DATABASE_SSL`, `DATABASE_SSL_REJECT_UNAUTHORIZED`, `TELEGRAM_INITDATA_MAX_AGE`.
+  `DATABASE_SSL`, `DATABASE_SSL_REJECT_UNAUTHORIZED`, `TELEGRAM_INITDATA_MAX_AGE`,
+  `STRIPE_PORTAL_CONFIG_ID`.
 - Mini-app: `VITE_API_BASE`.
 - n8n: `deploy/.env` and `deploy/.env.prod` (credential IDs for workflow rendering).
 - Do not commit secrets. Note: `deploy/.env` is not currently ignored in `.gitignore`.

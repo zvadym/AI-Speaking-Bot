@@ -30,9 +30,7 @@
       </button>
     </section>
 
-    <section class="footer">
-      <button class="ghost" @click="$emit('navigate', '/')">Back to menu</button>
-    </section>
+    <BackToMenu @navigate="(path) => $emit('navigate', path)" />
   </div>
 </template>
 
@@ -40,6 +38,7 @@
 import { computed, ref } from 'vue';
 import { apiJson } from '../lib/api.js';
 import { tgHaptic } from '../lib/tg.js';
+import BackToMenu from '../components/BackToMenu.vue';
 
 const props = defineProps({
   apiBase: { type: String, required: true },
@@ -217,25 +216,4 @@ async function setLang(code) {
   opacity: 0.72;
 }
 
-.footer {
-  display: grid;
-  justify-items: start;
-  margin-top: 6px;
-}
-
-.ghost {
-  border: 1px solid var(--stroke);
-  background: transparent;
-  padding: 10px 14px;
-  border-radius: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--ink);
-}
-
-.ghost:active {
-  transform: translateY(1px);
-}
 </style>
-

@@ -27,7 +27,8 @@
         <div>
           <h2>Your plan</h2>
           <p>
-            {{ currentPlanLabel }} · {{ autoRenewLabel }}
+            {{ currentPlanLabel }}
+            <template v-if="showAutoRenewControls"> · {{ autoRenewLabel }}</template>
           </p>
           <div class="manage-usage" v-if="usage">
             <div class="usage-item">
@@ -66,8 +67,16 @@
           <button
             class="ghost"
             :disabled="isBusy"
+            @click="openBillingPortal"
+            v-if="showManagePayments"
+          >
+            Manage payments
+          </button>
+          <button
+            class="ghost"
+            :disabled="isBusy"
             @click="cancel"
-            v-if="user.plan_autorenew"
+            v-if="showAutoRenewControls && user.plan_autorenew"
           >
             Turn off auto-renew
           </button>
@@ -75,12 +84,9 @@
             class="ghost"
             :disabled="isBusy"
             @click="resume"
-            v-else
+            v-else-if="showAutoRenewControls"
           >
             Resume auto-renew
-          </button>
-          <button class="ghost subtle" @click="$emit('navigate', '/')">
-            Back to menu
           </button>
         </div>
       </div>
@@ -127,12 +133,17 @@
         You're already on the top tier.
       </div>
     </section>
+
+    <div class="bottom-nav">
+      <BackToMenu @navigate="(path) => $emit('navigate', path)" />
+    </div>
   </div>
 </template>
 
 <script setup>
 import { onMounted, reactive, computed, ref } from 'vue';
 import { tgOpenLink } from '../lib/tg.js';
+import BackToMenu from '../components/BackToMenu.vue';
 
 const props = defineProps({
   apiBase: { type: String, required: true },
@@ -162,8 +173,10 @@ const statusMessage = computed(() => {
 
 const plans = computed(() => state.plans || []);
 const user = computed(() => state.user);
-const usage = computed(() => state.usage);
-const effectiveTier = computed(() => usage.value?.tier || state.user?.plan_tier || 'free');
+	const usage = computed(() => state.usage);
+	const effectiveTier = computed(() => usage.value?.tier || state.user?.plan_tier || 'free');
+	const showAutoRenewControls = computed(() => effectiveTier.value !== 'free');
+	const showManagePayments = computed(() => showAutoRenewControls.value || Boolean(state.user?.stripe_subscription_status));
 
 const currentPlanLabel = computed(() => {
   if (!effectiveTier.value) return 'Free';
@@ -232,35 +245,13 @@ async function loadPlans() {
   state.usage = data.usage || null;
 }
 
-async function subscribe(tier) {
-  actionPending.value = tier;
-  try {
-    if (effectiveTier.value === 'plus' && tier === 'pro') {
-      const resp = await fetch(`${props.apiBase}/billing/upgrade`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${props.token}`
-        },
-        body: JSON.stringify({ tier })
-      });
-
-      if (!resp.ok) {
-        const payload = await resp.json().catch(() => ({}));
-        error.value = payload?.error === 'not_an_upgrade' ? 'You are already on this plan.' : 'Upgrade unavailable right now.';
-        return;
-      }
-
-      const data = await resp.json();
-      const url = data?.invoice?.hosted_invoice_url;
-      if (url) {
-        tgOpenLink(url);
-        return;
-      }
-
-      await loadPlans();
-      return;
-    }
+	async function subscribe(tier) {
+	  actionPending.value = tier;
+	  try {
+	    if (effectiveTier.value === 'plus' && tier === 'pro') {
+	      await openBillingPortal();
+	      return;
+	    }
 
     const resp = await fetch(`${props.apiBase}/billing/checkout`, {
       method: 'POST',
@@ -283,8 +274,37 @@ async function subscribe(tier) {
     error.value = 'Checkout unavailable right now.';
   } finally {
     actionPending.value = '';
-  }
-}
+	  }
+	}
+
+	async function openBillingPortal() {
+	  actionPending.value = 'portal';
+	  try {
+	    const resp = await fetch(`${props.apiBase}/billing/portal`, {
+	      method: 'POST',
+	      headers: { Authorization: `Bearer ${props.token}` }
+	    });
+
+	    if (!resp.ok) {
+	      const payload = await resp.json().catch(() => ({}));
+	      error.value = payload?.error === 'no_customer' ? 'Billing is not available yet.' : 'Unable to open billing portal.';
+	      return;
+	    }
+
+	    const data = await resp.json();
+	    if (!data?.url) {
+	      error.value = 'Unable to open billing portal.';
+	      return;
+	    }
+
+	    tgOpenLink(data.url);
+	  } catch (err) {
+	    console.error(err);
+	    error.value = 'Unable to open billing portal.';
+	  } finally {
+	    actionPending.value = '';
+	  }
+	}
 
 async function cancel() {
   actionPending.value = 'cancel';
@@ -329,7 +349,9 @@ onMounted(async () => {
 <style scoped>
 .shell {
   width: min(1100px, 100%);
-  padding: 48px 24px 80px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 48px 24px calc(22px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -429,10 +451,6 @@ onMounted(async () => {
   font-weight: 650;
   letter-spacing: 0.01em;
   color: var(--ink);
-}
-
-.ghost.subtle {
-  opacity: 0.8;
 }
 
 .ghost:disabled {
@@ -596,6 +614,11 @@ onMounted(async () => {
   grid-column: 1 / -1;
 }
 
+.bottom-nav {
+  margin-top: auto;
+  padding-top: 6px;
+}
+
 @media (max-width: 720px) {
   .manage-card {
     grid-template-columns: 1fr;
@@ -605,4 +628,3 @@ onMounted(async () => {
   }
 }
 </style>
-

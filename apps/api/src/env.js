@@ -29,6 +29,7 @@ export const env = {
   telegramInitDataMaxAgeSec,
   stripeSecretKey: requireEnv('STRIPE_SECRET_KEY'),
   stripeWebhookSecret: requireEnv('STRIPE_WEBHOOK_SECRET'),
+  stripePortalConfigId: process.env.STRIPE_PORTAL_CONFIG_ID || '',
   jwtSecret: requireEnv('JWT_SECRET'),
   corsOrigins,
   planChangedWebhookUrl: process.env.PLAN_CHANGED_WEBHOOK_URL || ''
