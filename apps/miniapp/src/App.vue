@@ -62,7 +62,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { useI18n } from './i18n.js';
 import HomeScreen from './screens/HomeScreen.vue';
 import SubscriptionScreen from './screens/SubscriptionScreen.vue';
 import LanguageScreen from './screens/LanguageScreen.vue';

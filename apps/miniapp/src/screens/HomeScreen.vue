@@ -17,7 +17,12 @@
           🎯 {{ levelLabel }}
         </button>
 
-        <div class="locale-switch" role="group" :aria-label="$t('home.uiLanguage')">
+        <div
+          v-if="showUiLocaleSwitcher"
+          class="locale-switch"
+          role="group"
+          :aria-label="$t('home.uiLanguage')"
+        >
           <span class="locale-label">🌐 {{ $t('home.uiLanguage') }}</span>
           <button
             class="locale-btn"
@@ -102,7 +107,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { useI18n } from '../i18n.js';
 import { setAppLocale } from '../i18n.js';
 
 const props = defineProps({
@@ -112,6 +117,7 @@ const props = defineProps({
 defineEmits(['navigate']);
 
 const { t, locale } = useI18n({ useScope: 'global' });
+const showUiLocaleSwitcher = false;
 
 function setUiLocale(nextLocale) {
   setAppLocale(nextLocale);

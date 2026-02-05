@@ -95,19 +95,6 @@
     </section>
 
     <section class="plans">
-      <section class="comparison" v-if="showProVsPlus">
-        <div class="comparison-card">
-          <div class="comparison-kicker">{{ $t('subscription.comparison.kicker') }}</div>
-          <div class="comparison-title">
-            <span class="comparison-pro">Pro</span>
-            <span class="comparison-eq">{{ $t('subscription.comparison.is') }}</span>
-            <span class="comparison-mult">{{ proVsPlusMultiplier }}×</span>
-            <span class="comparison-plus">Plus</span>
-          </div>
-          <p class="comparison-sub">{{ $t('subscription.comparison.sub') }}</p>
-        </div>
-      </section>
-
       <article
         v-for="(plan, index) in visiblePlans"
         :key="plan.tier"
@@ -123,6 +110,13 @@
             <span class="period">{{ $t('subscription.period.perMonth') }}</span>
           </div>
         </header>
+
+        <div class="pro-advantage" v-if="plan.tier === 'pro' && proVsPlusMultiplier">
+          <div class="pro-advantage-kicker">{{ $t('subscription.comparison.kicker') }}</div>
+          <div class="pro-advantage-line">
+            {{ $t('plans.tiers.pro') }} {{ $t('subscription.comparison.is') }} {{ proVsPlusMultiplier }}× {{ $t('plans.tiers.plus') }}
+          </div>
+        </div>
 
         <p class="plan-tagline">{{ planTagline(plan.tier) }}</p>
 
@@ -152,7 +146,7 @@
 
 <script setup>
 import { onMounted, reactive, computed, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { useI18n } from '../i18n.js';
 import { tgOpenLink } from '../lib/tg.js';
 import BackToMenu from '../components/BackToMenu.vue';
 
@@ -216,7 +210,6 @@ const proVsPlusMultiplier = computed(() => {
   if (!Number.isFinite(ratio) || ratio <= 0) return null;
   return Math.max(1, Math.round(ratio));
 });
-const showProVsPlus = computed(() => effectiveTier.value !== 'pro' && Boolean(proVsPlusMultiplier.value));
 
 const currentPlanLabel = computed(() => {
   if (!effectiveTier.value) return t('plans.tiers.free');
@@ -624,73 +617,6 @@ onMounted(async () => {
   gap: 16px;
 }
 
-.comparison {
-  grid-column: 1 / -1;
-}
-
-.comparison-card {
-  border: 1px solid rgba(30, 26, 22, 0.14);
-  border-radius: 24px;
-  padding: 18px 18px;
-  background:
-    radial-gradient(120% 180% at 15% 0%, rgba(199, 90, 36, 0.18), transparent 55%),
-    radial-gradient(110% 170% at 90% 15%, rgba(31, 107, 99, 0.18), transparent 55%),
-    rgba(255, 255, 255, 0.62);
-  box-shadow: 0 30px 70px rgba(30, 26, 22, 0.14);
-  animation: floatIn 700ms ease-out both;
-}
-
-.comparison-kicker {
-  text-transform: uppercase;
-  letter-spacing: 0.24em;
-  font-size: 10px;
-  color: var(--muted);
-}
-
-.comparison-title {
-  margin-top: 10px;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-family: var(--font-display);
-  font-size: clamp(22px, 3.1vw, 34px);
-  letter-spacing: -0.02em;
-}
-
-.comparison-pro {
-  color: var(--ink);
-}
-
-.comparison-eq {
-  font-family: var(--font-body);
-  font-size: 14px;
-  letter-spacing: 0.02em;
-  color: var(--muted);
-}
-
-.comparison-mult {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(199, 90, 36, 0.16);
-  border: 1px solid rgba(199, 90, 36, 0.22);
-  color: rgba(199, 90, 36, 0.95);
-  font-weight: 900;
-}
-
-.comparison-plus {
-  color: rgba(31, 107, 99, 0.95);
-}
-
-.comparison-sub {
-  margin: 10px 0 0;
-  color: var(--muted);
-  line-height: 1.55;
-  max-width: 640px;
-}
-
 .plan {
   border: 1px solid var(--stroke);
   border-radius: 22px;
@@ -743,6 +669,37 @@ onMounted(async () => {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.pro-advantage {
+  border-radius: 18px;
+  padding: 12px 12px;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  display: grid;
+  gap: 6px;
+}
+
+.plan.featured .pro-advantage {
+  border-color: rgba(199, 90, 36, 0.22);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.pro-advantage-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 10px;
+  font-weight: 850;
+  color: var(--muted);
+}
+
+.plan.featured .pro-advantage-kicker {
+  color: rgba(199, 90, 36, 0.95);
+}
+
+.pro-advantage-line {
+  font-weight: 900;
+  letter-spacing: -0.01em;
 }
 
 .cta {

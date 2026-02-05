@@ -31,7 +31,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { useI18n } from '../i18n.js';
 import { apiJson } from '../lib/api.js';
 import { tgHaptic } from '../lib/tg.js';
 import BackToMenu from '../components/BackToMenu.vue';

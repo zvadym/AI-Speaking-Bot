@@ -1,9 +1,9 @@
-import { watch } from 'vue';
-import { createI18n } from 'vue-i18n';
+import { watch, ref, inject } from 'vue';
 import en from './locales/en.json';
 import uk from './locales/uk.json';
 
 const STORAGE_KEY = 'miniapp_ui_locale';
+const I18N_SYMBOL = Symbol('miniapp_i18n');
 
 function normalizeLocale(input) {
   const raw = (input || '').toString().trim().toLowerCase();
@@ -20,9 +20,9 @@ function loadSavedLocale() {
   }
 }
 
-function saveLocale(locale) {
+function saveLocale(value) {
   try {
-    window.localStorage?.setItem(STORAGE_KEY, locale);
+    window.localStorage?.setItem(STORAGE_KEY, value);
   } catch {
     // ignore
   }
@@ -32,13 +32,42 @@ export function getInitialLocale() {
   return loadSavedLocale() || 'uk';
 }
 
-export const i18n = createI18n({
-  legacy: false,
-  globalInjection: true,
-  locale: getInitialLocale(),
-  fallbackLocale: 'en',
-  messages: { en, uk }
-});
+const messages = { en, uk };
+export const locale = ref(getInitialLocale());
+
+function getByPath(value, path) {
+  if (!value) return null;
+  const keys = (path || '').split('.').filter(Boolean);
+  let current = value;
+  for (const key of keys) {
+    if (current && typeof current === 'object' && key in current) current = current[key];
+    else return null;
+  }
+  return current;
+}
+
+function format(template, params) {
+  if (!params) return template;
+  return template.replace(/\{(\w+)\}/g, (_, key) => {
+    const value = params[key];
+    return value === undefined || value === null ? '' : String(value);
+  });
+}
+
+export function t(key, params) {
+  const primary = getByPath(messages[locale.value], key);
+  if (typeof primary === 'string') return format(primary, params);
+  const fallback = getByPath(messages.en, key);
+  if (typeof fallback === 'string') return format(fallback, params);
+  return key;
+}
+
+export const i18n = {
+  install(app) {
+    app.config.globalProperties.$t = t;
+    app.provide(I18N_SYMBOL, { t, locale });
+  }
+};
 
 function syncHtmlLang(value) {
   try {
@@ -48,12 +77,16 @@ function syncHtmlLang(value) {
   }
 }
 
-syncHtmlLang(i18n.global.locale.value);
-watch(i18n.global.locale, (value) => syncHtmlLang(value));
+syncHtmlLang(locale.value);
+watch(locale, (value) => syncHtmlLang(value));
 
 export function setAppLocale(nextLocale) {
   const normalized = normalizeLocale(nextLocale);
   if (!normalized) return;
-  i18n.global.locale.value = normalized;
+  locale.value = normalized;
   saveLocale(normalized);
+}
+
+export function useI18n() {
+  return inject(I18N_SYMBOL, { t, locale });
 }
