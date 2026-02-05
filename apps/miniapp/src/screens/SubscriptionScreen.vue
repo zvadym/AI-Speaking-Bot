@@ -15,6 +15,13 @@
       </div>
     </section>
 
+    <section class="status" v-if="notice">
+      <div class="status-card">
+        <span class="status-label">Scheduled</span>
+        <span class="status-text">{{ notice }}</span>
+      </div>
+    </section>
+
     <section class="status" v-if="error">
       <div class="status-card error">
         <span class="status-label">Notice</span>
@@ -29,6 +36,9 @@
           <p>
             {{ currentPlanLabel }}
             <template v-if="showAutoRenewControls"> · {{ autoRenewLabel }}</template>
+          </p>
+          <p class="pending" v-if="pendingLabel">
+            {{ pendingLabel }}
           </p>
           <div class="manage-usage" v-if="usage">
             <div class="usage-item">
@@ -93,6 +103,19 @@
     </section>
 
     <section class="plans">
+      <section class="comparison" v-if="showProVsPlus">
+        <div class="comparison-card">
+          <div class="comparison-kicker">Pro advantage</div>
+          <div class="comparison-title">
+            <span class="comparison-pro">Pro</span>
+            <span class="comparison-eq">is</span>
+            <span class="comparison-mult">{{ proVsPlusMultiplier }}×</span>
+            <span class="comparison-plus">Plus</span>
+          </div>
+          <p class="comparison-sub">A single upgrade signal — built for longer voice messages and more back‑and‑forth.</p>
+        </div>
+      </section>
+
       <article
         v-for="(plan, index) in visiblePlans"
         :key="plan.tier"
@@ -109,24 +132,19 @@
           </div>
         </header>
 
-        <div class="plan-limits">
-          <div>
-            <span class="label">Practice time</span>
-            <span class="value">{{ formatSeconds(plan.user_audio_seconds_per_week) }} / week</span>
-          </div>
-          <div>
-            <span class="label">Voice replies</span>
-            <span class="value">{{ formatSeconds(plan.tts_seconds_per_week) }} / week</span>
-          </div>
-        </div>
+        <p class="plan-tagline">{{ planTagline(plan.tier) }}</p>
 
         <button
           class="cta"
-          :disabled="isBusy"
+          :disabled="isBusy || (effectiveTier === 'pro' && plan.tier === 'plus' && user?.pending_plan_tier === 'plus')"
           @click.stop="subscribe(plan.tier)"
         >
           {{ actionPending === plan.tier ? 'Opening Checkout…' : actionLabel(plan.tier) }}
         </button>
+
+        <p class="plan-note" v-if="effectiveTier === 'pro' && plan.tier === 'plus'">
+          Switches at the end of your current billing period.
+        </p>
       </article>
 
       <div class="plan-empty" v-if="!visiblePlans.length">
@@ -161,6 +179,7 @@ const state = reactive({
 });
 
 const error = ref('');
+const notice = ref('');
 const actionPending = ref('');
 const isBusy = computed(() => state.loading || Boolean(actionPending.value));
 
@@ -173,14 +192,36 @@ const statusMessage = computed(() => {
 
 const plans = computed(() => state.plans || []);
 const user = computed(() => state.user);
-	const usage = computed(() => state.usage);
-	const effectiveTier = computed(() => usage.value?.tier || state.user?.plan_tier || 'free');
-	const showAutoRenewControls = computed(() => effectiveTier.value !== 'free');
-	const showManagePayments = computed(() => showAutoRenewControls.value || Boolean(state.user?.stripe_subscription_status));
+const usage = computed(() => state.usage);
+const effectiveTier = computed(() => usage.value?.tier || state.user?.plan_tier || 'free');
+const showAutoRenewControls = computed(() => effectiveTier.value !== 'free');
+const showManagePayments = computed(() => showAutoRenewControls.value || Boolean(state.user?.stripe_subscription_status));
+const plusPlan = computed(() => plans.value.find((plan) => plan.tier === 'plus') || null);
+const proPlan = computed(() => plans.value.find((plan) => plan.tier === 'pro') || null);
+const proVsPlusMultiplier = computed(() => {
+  const plusSeconds = plusPlan.value?.user_audio_seconds_per_week;
+  const proSeconds = proPlan.value?.user_audio_seconds_per_week;
+  if (!plusSeconds || !proSeconds) return null;
+  const ratio = proSeconds / plusSeconds;
+  if (!Number.isFinite(ratio) || ratio <= 0) return null;
+  return Math.max(1, Math.round(ratio));
+});
+const showProVsPlus = computed(() => effectiveTier.value !== 'pro' && Boolean(proVsPlusMultiplier.value));
 
 const currentPlanLabel = computed(() => {
   if (!effectiveTier.value) return 'Free';
   return planLabel(effectiveTier.value);
+});
+
+const pendingLabel = computed(() => {
+  const pendingTier = state.user?.pending_plan_tier;
+  if (!pendingTier) return '';
+  const label = pendingTier === 'pro' ? 'Pro' : pendingTier === 'plus' ? 'Plus' : 'Free';
+  const effectiveAt = state.user?.pending_plan_effective_at ? new Date(state.user.pending_plan_effective_at) : null;
+  if (effectiveAt && Number.isFinite(effectiveAt.getTime())) {
+    return `Scheduled: switch to ${label} on ${effectiveAt.toLocaleDateString()}.`;
+  }
+  return `Scheduled: switch to ${label} at renewal.`;
 });
 
 const autoRenewLabel = computed(() => {
@@ -192,6 +233,12 @@ function planLabel(tier) {
   if (tier === 'pro') return 'Pro';
   if (tier === 'plus') return 'Plus';
   return 'Free';
+}
+
+function planTagline(tier) {
+  if (tier === 'pro') return 'Daily training mode — for longer voice messages and more back‑and‑forth.';
+  if (tier === 'plus') return 'A steady weekly cadence to keep your speaking momentum.';
+  return 'A gentle warm‑up for casual practice.';
 }
 
 function currencySymbol(currency) {
@@ -225,6 +272,10 @@ const visiblePlans = computed(() => {
 
 function actionLabel(tier) {
   if (effectiveTier.value === 'plus' && tier === 'pro') return 'Upgrade';
+  if (effectiveTier.value === 'pro' && tier === 'plus') {
+    if (state.user?.pending_plan_tier === 'plus') return 'Scheduled';
+    return 'Switch to Plus';
+  }
   return 'Subscribe';
 }
 
@@ -245,13 +296,39 @@ async function loadPlans() {
   state.usage = data.usage || null;
 }
 
-	async function subscribe(tier) {
-	  actionPending.value = tier;
-	  try {
-	    if (effectiveTier.value === 'plus' && tier === 'pro') {
-	      await openBillingPortal();
-	      return;
-	    }
+async function subscribe(tier) {
+  actionPending.value = tier;
+  try {
+    if (effectiveTier.value === 'plus' && tier === 'pro') {
+      await openBillingPortal();
+      return;
+    }
+
+    if (effectiveTier.value === 'pro' && tier === 'plus') {
+      const resp = await fetch(`${props.apiBase}/billing/downgrade`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${props.token}`
+        },
+        body: JSON.stringify({ tier })
+      });
+
+      if (!resp.ok) {
+        const payload = await resp.json().catch(() => ({}));
+        error.value = payload?.error === 'not_a_downgrade' ? 'This plan change is not available.' : 'Switch unavailable right now.';
+        return;
+      }
+
+      const data = await resp.json().catch(() => ({}));
+      const effectiveAt = data?.effective_at ? new Date(data.effective_at) : null;
+      notice.value =
+        effectiveAt && Number.isFinite(effectiveAt.getTime())
+          ? `We’ll switch you at renewal (${effectiveAt.toLocaleDateString()}).`
+          : 'We’ll switch you at renewal.';
+      await loadPlans();
+      return;
+    }
 
     const resp = await fetch(`${props.apiBase}/billing/checkout`, {
       method: 'POST',
@@ -274,8 +351,8 @@ async function loadPlans() {
     error.value = 'Checkout unavailable right now.';
   } finally {
     actionPending.value = '';
-	  }
-	}
+  }
+}
 
 	async function openBillingPortal() {
 	  actionPending.value = 'portal';
@@ -435,6 +512,12 @@ onMounted(async () => {
   color: var(--muted);
 }
 
+.pending {
+  margin: 10px 0 0;
+  color: rgba(30, 26, 22, 0.78);
+  font-weight: 650;
+}
+
 .manage-actions {
   display: grid;
   gap: 10px;
@@ -510,6 +593,73 @@ onMounted(async () => {
   gap: 16px;
 }
 
+.comparison {
+  grid-column: 1 / -1;
+}
+
+.comparison-card {
+  border: 1px solid rgba(30, 26, 22, 0.14);
+  border-radius: 24px;
+  padding: 18px 18px;
+  background:
+    radial-gradient(120% 180% at 15% 0%, rgba(199, 90, 36, 0.18), transparent 55%),
+    radial-gradient(110% 170% at 90% 15%, rgba(31, 107, 99, 0.18), transparent 55%),
+    rgba(255, 255, 255, 0.62);
+  box-shadow: 0 30px 70px rgba(30, 26, 22, 0.14);
+  animation: floatIn 700ms ease-out both;
+}
+
+.comparison-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.comparison-title {
+  margin-top: 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3.1vw, 34px);
+  letter-spacing: -0.02em;
+}
+
+.comparison-pro {
+  color: var(--ink);
+}
+
+.comparison-eq {
+  font-family: var(--font-body);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.comparison-mult {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(199, 90, 36, 0.16);
+  border: 1px solid rgba(199, 90, 36, 0.22);
+  color: rgba(199, 90, 36, 0.95);
+  font-weight: 900;
+}
+
+.comparison-plus {
+  color: rgba(31, 107, 99, 0.95);
+}
+
+.comparison-sub {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 640px;
+}
+
 .plan {
   border: 1px solid var(--stroke);
   border-radius: 22px;
@@ -558,22 +708,10 @@ onMounted(async () => {
   font-size: 13px;
 }
 
-.plan-limits {
-  display: grid;
-  gap: 10px;
-}
-
-.plan-limits .label {
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 10px;
+.plan-tagline {
+  margin: 0;
   color: var(--muted);
-}
-
-.plan-limits .value {
-  display: block;
-  margin-top: 3px;
-  font-weight: 700;
+  line-height: 1.55;
 }
 
 .cta {
@@ -604,6 +742,13 @@ onMounted(async () => {
 .cta:active:not(:disabled) {
   transform: translateY(2px);
   filter: saturate(0.95);
+}
+
+.plan-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .plan-empty {

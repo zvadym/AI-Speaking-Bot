@@ -8,6 +8,17 @@ function requireEnv(name) {
   return value;
 }
 
+function optionalUrl(name) {
+  const value = process.env[name];
+  if (!value) return '';
+  try {
+    new URL(value);
+  } catch {
+    throw new Error(`Invalid URL in env var: ${name}`);
+  }
+  return value;
+}
+
 const port = Number(process.env.API_PORT || 3000);
 const telegramInitDataMaxAgeSec = Number(process.env.TELEGRAM_INITDATA_MAX_AGE || 86400);
 const corsOrigins = (process.env.CORS_ORIGINS || '')
@@ -18,10 +29,15 @@ const corsOrigins = (process.env.CORS_ORIGINS || '')
 const sslEnabled = (process.env.DATABASE_SSL || '').toLowerCase() === 'true';
 const sslRejectUnauthorized = (process.env.DATABASE_SSL_REJECT_UNAUTHORIZED || 'true').toLowerCase() === 'true';
 
+const webappUrl = requireEnv('WEBAPP_URL');
+const webappReturnUrlRaw = optionalUrl('WEBAPP_RETURN_URL');
+
 export const env = {
   port,
   apiBaseUrl: process.env.API_BASE_URL || `http://localhost:${port}`,
-  webappUrl: requireEnv('WEBAPP_URL'),
+  webappUrl,
+  webappReturnUrl: webappReturnUrlRaw || webappUrl,
+  webappReturnUrlIsCustom: Boolean(webappReturnUrlRaw),
   databaseUrl: requireEnv('DATABASE_URL'),
   databaseSsl: sslEnabled,
   databaseSslRejectUnauthorized: sslRejectUnauthorized,
