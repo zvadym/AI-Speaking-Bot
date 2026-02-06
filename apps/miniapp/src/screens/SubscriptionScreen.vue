@@ -156,7 +156,7 @@ const props = defineProps({
   token: { type: String, required: true }
 });
 
-defineEmits(['navigate']);
+const emit = defineEmits(['navigate']);
 const { t, locale } = useI18n({ useScope: 'global' });
 
 const state = reactive({
@@ -174,6 +174,10 @@ const isBusy = computed(() => state.loading || Boolean(actionPending.value));
 
 const errorMessage = computed(() => (errorState.value ? t(errorState.value.key, errorState.value.params) : ''));
 const noticeMessage = computed(() => (noticeState.value ? t(noticeState.value.key, noticeState.value.params) : ''));
+
+const embeddedCheckoutEnabled = (import.meta.env.VITE_STRIPE_EMBEDDED_CHECKOUT || '').toString().toLowerCase() === 'true';
+const stripePublishableKeyPresent = Boolean((import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').toString().trim());
+const useEmbeddedCheckout = computed(() => embeddedCheckoutEnabled && stripePublishableKeyPresent);
 
 function setError(key, params) {
   errorState.value = { key, params };
@@ -351,6 +355,12 @@ async function subscribe(tier) {
       return;
     }
 
+    if (useEmbeddedCheckout.value) {
+      track('checkout_opened', { tier, currency: state.currency, mode: 'embedded' });
+      emit('navigate', `/checkout?tier=${encodeURIComponent(tier)}&currency=${encodeURIComponent(state.currency)}`);
+      return;
+    }
+
     const resp = await fetch(`${props.apiBase}/billing/checkout`, {
       method: 'POST',
       headers: {
@@ -366,7 +376,7 @@ async function subscribe(tier) {
     }
 
     const data = await resp.json();
-    track('checkout_opened', { tier, currency: state.currency });
+    track('checkout_opened', { tier, currency: state.currency, mode: 'redirect' });
     tgOpenLink(data.url);
   } catch (err) {
     console.error(err);

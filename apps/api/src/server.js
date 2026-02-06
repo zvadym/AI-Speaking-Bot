@@ -327,6 +327,102 @@ app.post('/billing/checkout', requireAuth, async (req, res) => {
   return res.json({ url: session.url });
 });
 
+app.post('/billing/checkout/embedded', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const { tier, currency } = req.body || {};
+  const normalizedTier = String(tier || '').toLowerCase();
+  if (!['plus', 'pro'].includes(normalizedTier)) {
+    return res.status(400).json({ error: 'bad_tier' });
+  }
+
+  const billingCurrency = (currency || 'EUR').toString().toUpperCase();
+
+  const { rows: priceRows } = await pool.query(
+    `SELECT stripe_price_id
+       FROM plan_prices
+      WHERE tier = $1 AND currency = $2 AND active = true
+      LIMIT 1`,
+    [normalizedTier, billingCurrency]
+  );
+
+  if (!priceRows[0]?.stripe_price_id) {
+    return res.status(400).json({ error: 'price_not_found' });
+  }
+
+  const { rows: userRows } = await pool.query(
+    `SELECT stripe_customer_id
+       FROM users
+      WHERE chat_id = $1
+      LIMIT 1`,
+    [chatId]
+  );
+
+  let stripeCustomerId = userRows[0]?.stripe_customer_id || null;
+  if (!stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      metadata: { telegram_chat_id: String(chatId) }
+    });
+
+    stripeCustomerId = customer.id;
+
+    await pool.query(
+      `UPDATE users
+          SET stripe_customer_id = $1,
+              updated_at = NOW()
+        WHERE chat_id = $2`,
+      [stripeCustomerId, chatId]
+    );
+  }
+
+  const sessionParams = {
+    ui_mode: 'embedded',
+    mode: 'subscription',
+    customer: stripeCustomerId,
+    client_reference_id: String(chatId),
+    line_items: [{ price: priceRows[0].stripe_price_id, quantity: 1 }],
+    return_url: `${env.webappUrl}/success`,
+    allow_promotion_codes: true,
+    redirect_on_completion: 'always',
+    metadata: { chat_id: String(chatId), tier: normalizedTier }
+  };
+
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create(sessionParams);
+  } catch (err) {
+    if (err?.type === 'StripeInvalidRequestError' && err?.code === 'resource_missing' && err?.param === 'customer') {
+      const customer = await stripe.customers.create({
+        metadata: { telegram_chat_id: String(chatId) }
+      });
+
+      stripeCustomerId = customer.id;
+
+      await pool.query(
+        `UPDATE users
+            SET stripe_customer_id = $1,
+                updated_at = NOW()
+          WHERE chat_id = $2`,
+        [stripeCustomerId, chatId]
+      );
+
+      session = await stripe.checkout.sessions.create({
+        ...sessionParams,
+        customer: stripeCustomerId
+      });
+    } else {
+      console.error('Stripe embedded checkout failed', err);
+      return res.status(500).json({ error: 'stripe_error' });
+    }
+  }
+
+  if (!session?.client_secret) {
+    console.error('Stripe embedded checkout: missing client_secret', { id: session?.id });
+    return res.status(500).json({ error: 'stripe_error' });
+  }
+
+  return res.json({ client_secret: session.client_secret, id: session.id });
+});
+
 app.post('/billing/cancel', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const { rows } = await pool.query(

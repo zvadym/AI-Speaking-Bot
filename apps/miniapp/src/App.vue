@@ -29,6 +29,13 @@
       @navigate="nav.go"
     />
 
+    <CheckoutScreen
+      v-else-if="nav.screen.value === 'checkout'"
+      :apiBase="apiBase"
+      :token="token"
+      @navigate="nav.go"
+    />
+
     <LanguageScreen
       v-else-if="nav.screen.value === 'language'"
       :apiBase="apiBase"
@@ -65,6 +72,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from './i18n.js';
 import HomeScreen from './screens/HomeScreen.vue';
 import SubscriptionScreen from './screens/SubscriptionScreen.vue';
+import CheckoutScreen from './screens/CheckoutScreen.vue';
 import LanguageScreen from './screens/LanguageScreen.vue';
 import LevelScreen from './screens/LevelScreen.vue';
 import AboutScreen from './screens/AboutScreen.vue';

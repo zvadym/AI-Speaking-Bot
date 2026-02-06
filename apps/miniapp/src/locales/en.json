@@ -4,6 +4,7 @@
     "status": "Status",
     "scheduled": "Scheduled",
     "notice": "Notice",
+    "back": "Back",
     "backToMenu": "Back to menu",
     "dash": "—",
     "errors": {
@@ -115,6 +116,17 @@
       "title": "Tips",
       "pickLanguageFirst": "Pick your language first, then your level.",
       "sendVoice": "Send voice messages in the target language — I’ll reply and correct gently."
+    }
+  },
+  "checkout": {
+    "heroBadge": "Secure Checkout",
+    "title": "Checkout",
+    "sub": "Complete payment without leaving Telegram.",
+    "loading": "Loading secure checkout…",
+    "errors": {
+      "unavailable": "Checkout unavailable right now.",
+      "badTier": "Invalid plan selection.",
+      "missingKey": "Stripe is not configured for embedded checkout."
     }
   },
   "subscription": {

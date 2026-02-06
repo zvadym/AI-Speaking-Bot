@@ -45,6 +45,7 @@ export function useNav() {
   const screen = computed(() => {
     const current = path.value;
     if (current === '/subscription') return 'subscription';
+    if (current === '/checkout') return 'checkout';
     if (current === '/language') return 'language';
     if (current === '/level') return 'level';
     if (current === '/about') return 'about';
