@@ -539,13 +539,103 @@ app.post('/billing/portal', requireAuth, async (req, res) => {
   return res.json({ url: session.url });
 });
 
-app.post('/billing/upgrade', requireAuth, async (req, res) => {
+app.post('/billing/upgrade/preview', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const { tier } = req.body || {};
   const targetTier = String(tier || '').toLowerCase();
   if (!['plus', 'pro'].includes(targetTier)) {
     return res.status(400).json({ error: 'bad_tier' });
   }
+
+  const { rows: userRows } = await pool.query(
+    `SELECT stripe_subscription_id
+       FROM users
+      WHERE chat_id = $1
+      LIMIT 1`,
+    [chatId]
+  );
+
+  const subscriptionId = userRows[0]?.stripe_subscription_id || null;
+  if (!subscriptionId) {
+    return res.status(400).json({ error: 'no_subscription' });
+  }
+
+  let subscription;
+  try {
+    subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ['items.data.price']
+    });
+  } catch (err) {
+    console.error('Stripe: failed to retrieve subscription for upgrade preview', err);
+    return res.status(500).json({ error: 'stripe_error' });
+  }
+
+  const subscriptionItem = subscription.items?.data?.[0] || null;
+  const currentPriceId = subscriptionItem?.price?.id || null;
+  const currency = subscriptionItem?.price?.currency?.toUpperCase() || null;
+  const billingInterval = subscriptionItem?.price?.recurring?.interval || 'month';
+  const quantity = subscriptionItem?.quantity || 1;
+  if (!subscriptionItem?.id || !currentPriceId || !currency) {
+    return res.status(400).json({ error: 'subscription_not_upgradeable' });
+  }
+
+  const currentTier = await resolveTierByPrice(currentPriceId);
+  const tierRank = { free: 0, plus: 1, pro: 2 };
+  if (currentTier && (tierRank[targetTier] ?? 0) <= (tierRank[currentTier] ?? 0)) {
+    return res.status(400).json({ error: 'not_an_upgrade', current_tier: currentTier });
+  }
+
+  const { rows: priceRows } = await pool.query(
+    `SELECT stripe_price_id, amount_cents
+       FROM plan_prices
+      WHERE tier = $1 AND currency = $2 AND billing_interval = $3 AND active = true
+      LIMIT 1`,
+    [targetTier, currency, billingInterval]
+  );
+
+  const targetPriceId = priceRows[0]?.stripe_price_id || null;
+  const targetAmountCents = priceRows[0]?.amount_cents ?? null;
+  if (!targetPriceId) {
+    return res.status(400).json({ error: 'price_not_found' });
+  }
+
+  const prorationDate = Math.floor(Date.now() / 1000);
+  let upcoming;
+  try {
+    upcoming = await stripe.invoices.retrieveUpcoming({
+      subscription: subscriptionId,
+      subscription_items: [{ id: subscriptionItem.id, price: targetPriceId, quantity }],
+      subscription_proration_behavior: 'always_invoice',
+      subscription_proration_date: prorationDate
+    });
+  } catch (err) {
+    console.error('Stripe: failed to preview upgrade invoice', err);
+    return res.status(500).json({ error: 'stripe_error' });
+  }
+
+  return res.json({
+    ok: true,
+    current_tier: currentTier,
+    target_tier: targetTier,
+    currency,
+    billing_interval: billingInterval,
+    amount_due_cents: upcoming.amount_due || 0,
+    next_amount_cents: Number.isFinite(targetAmountCents) ? targetAmountCents : null,
+    proration_date: prorationDate
+  });
+});
+
+app.post('/billing/upgrade', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const { tier, proration_date: prorationDateRaw } = req.body || {};
+  const targetTier = String(tier || '').toLowerCase();
+  if (!['plus', 'pro'].includes(targetTier)) {
+    return res.status(400).json({ error: 'bad_tier' });
+  }
+  const parsedProrationDate = Number(prorationDateRaw);
+  const prorationDate = Number.isFinite(parsedProrationDate) && parsedProrationDate > 0
+    ? Math.floor(parsedProrationDate)
+    : null;
 
   const { rows: userRows } = await pool.query(
     `SELECT stripe_subscription_id
@@ -599,12 +689,16 @@ app.post('/billing/upgrade', requireAuth, async (req, res) => {
 
   let updated;
   try {
-    updated = await stripe.subscriptions.update(subscriptionId, {
+    const updateParams = {
       items: [{ id: subscriptionItem.id, price: targetPriceId }],
       proration_behavior: 'always_invoice',
       payment_behavior: 'pending_if_incomplete',
       expand: ['latest_invoice.payment_intent', 'latest_invoice']
-    });
+    };
+    if (prorationDate) {
+      updateParams.proration_date = prorationDate;
+    }
+    updated = await stripe.subscriptions.update(subscriptionId, updateParams);
   } catch (err) {
     console.error('Stripe: upgrade failed', err);
     return res.status(500).json({ error: 'stripe_error' });

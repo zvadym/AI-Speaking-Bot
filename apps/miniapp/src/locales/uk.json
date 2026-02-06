@@ -160,6 +160,13 @@
       "downgradeEndOfPeriod": "Зміна відбудеться наприкінці поточного платіжного періоду.",
       "alreadyTopTier": "Ти вже на найвищому рівні."
     },
+    "upgradeConfirm": {
+      "title": "Підтвердити покращення",
+      "chargeNow": "Списання зараз: {amount}",
+      "newMonthly": "Нова ціна за місяць: {amount}",
+      "cancel": "Скасувати",
+      "confirm": "Підтвердити та покращити"
+    },
     "statusMessage": {
       "checkoutCompleted": "Оплату завершено. Активуємо твій план.",
       "checkoutCanceled": "Оплату скасовано. Твій поточний план не змінено."

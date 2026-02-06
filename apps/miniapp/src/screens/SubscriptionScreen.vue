@@ -29,6 +29,24 @@
       </div>
     </section>
 
+    <section class="status" v-if="upgradeConfirm.open">
+      <div class="status-card confirm">
+        <span class="status-label">{{ $t('subscription.upgradeConfirm.title') }}</span>
+        <div class="status-text confirm-content">
+          <div>{{ $t('subscription.upgradeConfirm.chargeNow', { amount: upgradeConfirmAmountNow }) }}</div>
+          <div>{{ $t('subscription.upgradeConfirm.newMonthly', { amount: upgradeConfirmAmountNext }) }}</div>
+          <div class="confirm-actions">
+            <button class="ghost" :disabled="isBusy" @click="cancelUpgradeConfirm">
+              {{ $t('subscription.upgradeConfirm.cancel') }}
+            </button>
+            <button class="cta confirm-cta" :disabled="isBusy" @click="confirmUpgrade">
+              {{ actionPending === 'upgrade_confirm' ? $t('subscription.actions.openingCheckout') : $t('subscription.upgradeConfirm.confirm') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="manage" v-if="user">
       <div class="manage-card">
         <div>
@@ -181,6 +199,16 @@ const embeddedCheckoutEnabled = (import.meta.env.VITE_STRIPE_EMBEDDED_CHECKOUT |
 const stripePublishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').toString().trim();
 const stripePublishableKeyPresent = Boolean(stripePublishableKey);
 const useEmbeddedCheckout = computed(() => embeddedCheckoutEnabled && stripePublishableKeyPresent);
+const upgradeConfirm = reactive({
+  open: false,
+  tier: '',
+  currency: 'EUR',
+  amountDueCents: 0,
+  nextAmountCents: 0,
+  prorationDate: null
+});
+const upgradeConfirmAmountNow = computed(() => formatCurrencyAmount(upgradeConfirm.amountDueCents, upgradeConfirm.currency));
+const upgradeConfirmAmountNext = computed(() => formatCurrencyAmount(upgradeConfirm.nextAmountCents, upgradeConfirm.currency));
 
 function buildCheckoutPath(tier, currency) {
   const params = new URLSearchParams();
@@ -203,6 +231,28 @@ function setNotice(key, params) {
 function clearMessages() {
   errorState.value = null;
   noticeState.value = null;
+}
+
+function resetUpgradeConfirm() {
+  upgradeConfirm.open = false;
+  upgradeConfirm.tier = '';
+  upgradeConfirm.currency = 'EUR';
+  upgradeConfirm.amountDueCents = 0;
+  upgradeConfirm.nextAmountCents = 0;
+  upgradeConfirm.prorationDate = null;
+}
+
+function formatCurrencyAmount(cents, currency) {
+  const safeCents = Number.isFinite(Number(cents)) ? Number(cents) : 0;
+  const safeCurrency = (currency || 'EUR').toString().toUpperCase();
+  try {
+    return new Intl.NumberFormat(locale.value || 'en', {
+      style: 'currency',
+      currency: safeCurrency
+    }).format(safeCents / 100);
+  } catch {
+    return `${(safeCents / 100).toFixed(2)} ${safeCurrency}`;
+  }
 }
 
 const statusMessage = computed(() => {
@@ -347,7 +397,11 @@ async function confirmUpgradePaymentIntent(paymentIntent) {
   return false;
 }
 
-async function upgradePlan(tier) {
+async function upgradePlan(tier, { prorationDate = null } = {}) {
+  const body = { tier };
+  if (prorationDate) {
+    body.proration_date = prorationDate;
+  }
   addDebugLog('upgrade_request_started', { tier });
   const resp = await fetch(`${props.apiBase}/billing/upgrade`, {
     method: 'POST',
@@ -355,7 +409,7 @@ async function upgradePlan(tier) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${props.token}`
     },
-    body: JSON.stringify({ tier })
+    body: JSON.stringify(body)
   });
   addDebugLog('upgrade_response_received', { ok: resp.ok, status: resp.status });
 
@@ -388,6 +442,70 @@ async function upgradePlan(tier) {
   await loadPlans({ keepNotice: true });
 }
 
+async function requestUpgradePreview(tier) {
+  addDebugLog('upgrade_preview_request_started', { tier });
+  const resp = await fetch(`${props.apiBase}/billing/upgrade/preview`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${props.token}`
+    },
+    body: JSON.stringify({ tier })
+  });
+  addDebugLog('upgrade_preview_response_received', { ok: resp.ok, status: resp.status });
+
+  if (!resp.ok) {
+    setError('subscription.actionLabels.switchUnavailable');
+    return null;
+  }
+
+  const data = await resp.json().catch(() => ({}));
+  addDebugLog('upgrade_preview_response_parsed', {
+    amountDueCents: data?.amount_due_cents ?? null,
+    nextAmountCents: data?.next_amount_cents ?? null,
+    currency: data?.currency || null,
+    prorationDate: data?.proration_date || null
+  });
+  return data;
+}
+
+function openUpgradeConfirm(preview, tier) {
+  upgradeConfirm.open = true;
+  upgradeConfirm.tier = tier;
+  upgradeConfirm.currency = (preview?.currency || state.currency || 'EUR').toUpperCase();
+  upgradeConfirm.amountDueCents = Number(preview?.amount_due_cents || 0);
+  upgradeConfirm.nextAmountCents = Number(preview?.next_amount_cents || 0);
+  upgradeConfirm.prorationDate = Number.isFinite(Number(preview?.proration_date)) ? Number(preview.proration_date) : null;
+  addDebugLog('upgrade_confirmation_opened', {
+    tier,
+    amountDueCents: upgradeConfirm.amountDueCents,
+    nextAmountCents: upgradeConfirm.nextAmountCents,
+    currency: upgradeConfirm.currency
+  });
+}
+
+function cancelUpgradeConfirm() {
+  addDebugLog('upgrade_confirmation_canceled');
+  resetUpgradeConfirm();
+}
+
+async function confirmUpgrade() {
+  if (!upgradeConfirm.open || !upgradeConfirm.tier) return;
+  actionPending.value = 'upgrade_confirm';
+  clearMessages();
+  try {
+    addDebugLog('upgrade_confirmation_accepted', { tier: upgradeConfirm.tier });
+    await upgradePlan(upgradeConfirm.tier, { prorationDate: upgradeConfirm.prorationDate });
+    resetUpgradeConfirm();
+  } catch (err) {
+    console.error(err);
+    addDebugLog('upgrade_confirmation_error', { message: err?.message || 'unknown_error' });
+    setError('subscription.actionLabels.switchUnavailable');
+  } finally {
+    actionPending.value = '';
+  }
+}
+
 async function loadPlans({ keepNotice = false } = {}) {
   errorState.value = null;
   if (!keepNotice) noticeState.value = null;
@@ -412,6 +530,7 @@ async function loadPlans({ keepNotice = false } = {}) {
 async function subscribe(tier) {
   actionPending.value = tier;
   clearMessages();
+  resetUpgradeConfirm();
   try {
     track('ui_click', { id: 'subscription_subscribe', tier });
     addDebugLog('subscribe_clicked', {
@@ -423,7 +542,8 @@ async function subscribe(tier) {
       useEmbeddedCheckout: useEmbeddedCheckout.value
     });
     if (effectiveTier.value === 'plus' && tier === 'pro') {
-      await upgradePlan(tier);
+      const preview = await requestUpgradePreview(tier);
+      if (preview) openUpgradeConfirm(preview, tier);
       return;
     }
 
@@ -651,6 +771,28 @@ onMounted(async () => {
 
 .status-text {
   font-weight: 600;
+}
+
+.status-card.confirm {
+  border-color: rgba(31, 107, 99, 0.35);
+  background: rgba(31, 107, 99, 0.08);
+}
+
+.confirm-content {
+  display: grid;
+  gap: 8px;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.cta.confirm-cta {
+  width: auto;
+  min-width: 180px;
 }
 
 .manage-card {

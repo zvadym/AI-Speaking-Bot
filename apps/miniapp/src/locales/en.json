@@ -160,6 +160,13 @@
       "downgradeEndOfPeriod": "Switches at the end of your current billing period.",
       "alreadyTopTier": "You're already on the top tier."
     },
+    "upgradeConfirm": {
+      "title": "Confirm upgrade",
+      "chargeNow": "Charge now: {amount}",
+      "newMonthly": "New monthly price: {amount}",
+      "cancel": "Cancel",
+      "confirm": "Confirm and upgrade"
+    },
     "statusMessage": {
       "checkoutCompleted": "Checkout completed. We are activating your plan now.",
       "checkoutCanceled": "Checkout canceled. Your current plan remains unchanged."
