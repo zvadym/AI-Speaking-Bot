@@ -600,7 +600,7 @@
       "y": 0,
       "name": "SubscriptionScreen",
       "width": 390,
-      "height": 900,
+      "height": 981,
       "fill": [
         {
           "type": "gradient",
@@ -808,6 +808,125 @@
                   ]
                 }
               ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "bWS2u",
+          "name": "Billing cadence",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 10,
+          "children": [
+            {
+              "type": "text",
+              "id": "M2rdV",
+              "fill": "#7A6A59",
+              "content": "Billing cycle",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "fQj8X",
+              "name": "Month / Annual switcher",
+              "width": "fill_container",
+              "fill": "#FFFFFF8C",
+              "cornerRadius": 18,
+              "stroke": {
+                "thickness": 1
+              },
+              "gap": 8,
+              "padding": 6,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "P6yWr",
+                  "name": "Month (active)",
+                  "width": "fill_container",
+                  "fill": "#1F6B63",
+                  "cornerRadius": 14,
+                  "gap": 6,
+                  "padding": [
+                    12,
+                    10
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "hH2dL",
+                      "fill": "#FFFFFF",
+                      "content": "Month",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Mwb8A",
+                  "name": "Annual",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF73",
+                  "cornerRadius": 14,
+                  "gap": 8,
+                  "padding": [
+                    12,
+                    10
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "x2gNu",
+                      "fill": "#1E1A16",
+                      "content": "Annual",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JJb8N",
+                      "name": "Save badge",
+                      "fill": "#C75A24",
+                      "cornerRadius": 999,
+                      "padding": [
+                        6,
+                        4
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "GEd1f",
+                          "fill": "#FFFFFF",
+                          "content": "Save 20%",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "RF8kK",
+              "fill": "#7A6A59",
+              "content": "Annual plan gives you 2 months free.",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -1033,31 +1152,6 @@
         },
         {
           "type": "frame",
-          "id": "xOZ4Z",
-          "name": "Debug enable",
-          "width": "fill_container",
-          "fill": "#FFFFFF73",
-          "cornerRadius": 16,
-          "stroke": {
-            "thickness": 1
-          },
-          "padding": 12,
-          "justifyContent": "center",
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "4RKCs",
-              "fill": "#1E1A16",
-              "content": "Enable debug panel",
-              "fontFamily": "Inter",
-              "fontSize": 14,
-              "fontWeight": "normal"
-            }
-          ]
-        },
-        {
-          "type": "frame",
           "id": "cbp55",
           "name": "Back to menu",
           "width": "fill_container",
@@ -1090,7 +1184,7 @@
       "y": 0,
       "name": "CheckoutScreen",
       "width": 390,
-      "height": 900,
+      "height": 844,
       "fill": [
         {
           "type": "gradient",
@@ -1270,31 +1364,6 @@
               "stroke": {
                 "thickness": 1
               }
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "guqZW",
-          "name": "Debug enable",
-          "width": "fill_container",
-          "fill": "#FFFFFF73",
-          "cornerRadius": 16,
-          "stroke": {
-            "thickness": 1
-          },
-          "padding": 12,
-          "justifyContent": "center",
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "M6D7b",
-              "fill": "#1E1A16",
-              "content": "Enable debug panel",
-              "fontFamily": "Inter",
-              "fontSize": 14,
-              "fontWeight": "normal"
             }
           ]
         },
@@ -1673,8 +1742,8 @@
     {
       "type": "frame",
       "id": "R1DF8",
-      "x": 0,
-      "y": 980,
+      "x": 2088,
+      "y": 0,
       "name": "LevelScreen",
       "width": 390,
       "height": 844,
@@ -2030,8 +2099,8 @@
     {
       "type": "frame",
       "id": "1rWM2",
-      "x": 520,
-      "y": 980,
+      "x": 2604,
+      "y": 0,
       "name": "AboutScreen",
       "width": 390,
       "height": 844,
@@ -2276,8 +2345,8 @@
     {
       "type": "frame",
       "id": "QfILK",
-      "x": 1040,
-      "y": 980,
+      "x": 3124,
+      "y": 0,
       "name": "Loading State",
       "width": 390,
       "height": 844,
@@ -2404,8 +2473,8 @@
     {
       "type": "frame",
       "id": "BqvXx",
-      "x": 1560,
-      "y": 980,
+      "x": 3644,
+      "y": 0,
       "name": "Fatal Error State",
       "width": 390,
       "height": 844,
