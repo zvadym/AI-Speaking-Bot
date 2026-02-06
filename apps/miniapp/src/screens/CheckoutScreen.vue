@@ -22,6 +22,20 @@
       <div ref="mountEl" class="checkout-mount" />
     </section>
 
+    <section class="debug-wrap" v-if="debugEnabled">
+      <DebugPanel
+        title="Checkout Debug"
+        :logs="debugLogs"
+        @clear="clearDebugPanel"
+      />
+    </section>
+
+    <section class="debug-wrap" v-else>
+      <button class="ghost debug-enable" type="button" @click="enableDebugPanel">
+        Enable debug panel
+      </button>
+    </section>
+
     <div class="bottom-nav">
       <button class="ghost" type="button" @click="goBack" :disabled="loading">
         {{ $t('common.back') }}
@@ -35,6 +49,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { useI18n } from '../i18n.js';
 import { track } from '../lib/analytics.js';
+import DebugPanel from '../components/DebugPanel.vue';
+import { addDebugLog, clearDebugLogs, isDebugEnabled, readDebugLogs, setDebugEnabled, subscribeDebugLogs } from '../lib/debug.js';
 
 const props = defineProps({
   apiBase: { type: String, required: true },
@@ -48,14 +64,34 @@ const loading = ref(true);
 const errorKey = ref('');
 const errorMessage = computed(() => (errorKey.value ? t(errorKey.value) : ''));
 const mountEl = ref(null);
+const debugEnabled = ref(isDebugEnabled());
+const debugLogs = ref(readDebugLogs());
+let unsubscribeDebug = null;
 
 const publishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').toString().trim();
 
 let embeddedCheckout = null;
 
+function clearDebugPanel() {
+  clearDebugLogs();
+}
+
+function enableDebugPanel() {
+  setDebugEnabled(true);
+  debugEnabled.value = true;
+  addDebugLog('debug_enabled', { screen: 'checkout' });
+}
+
+function buildSubscriptionPath() {
+  const params = new URLSearchParams(window.location.search);
+  const debugParam = params.get('debug');
+  if (!debugParam) return '/subscription';
+  return `/subscription?debug=${encodeURIComponent(debugParam)}`;
+}
+
 function goBack() {
   track('ui_click', { id: 'checkout_back', to: '/subscription' });
-  emit('navigate', '/subscription');
+  emit('navigate', buildSubscriptionPath());
 }
 
 function parseCheckoutParams() {
@@ -67,10 +103,12 @@ function parseCheckoutParams() {
 
 function setError(key) {
   errorKey.value = key;
+  addDebugLog('checkout_error_set', { key });
 }
 
 async function fetchClientSecret() {
   const { tier, currency } = parseCheckoutParams();
+  addDebugLog('embedded_client_secret_request_started', { tier, currency });
   if (!['plus', 'pro'].includes(tier)) {
     setError('checkout.errors.badTier');
     throw new Error('bad_tier');
@@ -84,6 +122,7 @@ async function fetchClientSecret() {
     },
     body: JSON.stringify({ tier, currency })
   });
+  addDebugLog('embedded_client_secret_response_received', { ok: resp.ok, status: resp.status });
 
   if (!resp.ok) {
     setError('checkout.errors.unavailable');
@@ -96,13 +135,22 @@ async function fetchClientSecret() {
     throw new Error('missing_client_secret');
   }
 
+  addDebugLog('embedded_client_secret_received', { hasClientSecret: Boolean(data?.client_secret) });
   track('checkout_embedded_client_secret_loaded', { tier, currency });
   return data.client_secret;
 }
 
 onMounted(async () => {
+  unsubscribeDebug = subscribeDebugLogs((logs) => {
+    debugLogs.value = logs;
+  });
   loading.value = true;
   errorKey.value = '';
+  addDebugLog('checkout_screen_mounted', {
+    path: window.location.pathname,
+    search: window.location.search,
+    hasPublishableKey: Boolean(publishableKey)
+  });
 
   if (!publishableKey) {
     setError('checkout.errors.missingKey');
@@ -112,21 +160,25 @@ onMounted(async () => {
 
   try {
     const stripe = await loadStripe(publishableKey);
+    addDebugLog('stripe_loaded', { initialized: Boolean(stripe) });
     if (!stripe?.initEmbeddedCheckout) {
       setError('checkout.errors.unavailable');
       return;
     }
 
     embeddedCheckout = await stripe.initEmbeddedCheckout({ fetchClientSecret });
+    addDebugLog('embedded_checkout_initialized', { initialized: Boolean(embeddedCheckout) });
     if (!mountEl.value) {
       setError('checkout.errors.unavailable');
       return;
     }
 
     embeddedCheckout.mount(mountEl.value);
+    addDebugLog('embedded_checkout_mounted');
     track('checkout_embedded_mounted');
   } catch (err) {
     console.error(err);
+    addDebugLog('checkout_mount_error', { message: err?.message || 'unknown_error' });
     if (!errorKey.value) setError('checkout.errors.unavailable');
   } finally {
     loading.value = false;
@@ -134,6 +186,8 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  if (unsubscribeDebug) unsubscribeDebug();
+  unsubscribeDebug = null;
   try {
     embeddedCheckout?.destroy?.();
   } catch {
@@ -232,6 +286,14 @@ onBeforeUnmount(() => {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.6);
   overflow: hidden;
+}
+
+.debug-wrap {
+  display: grid;
+}
+
+.debug-enable {
+  justify-self: start;
 }
 
 .bottom-nav {

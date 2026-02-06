@@ -1,7 +1,13 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 function normalizePath(pathname) {
-  const path = (pathname || '/').trim() || '/';
+  const raw = (pathname || '/').trim() || '/';
+  let path = raw;
+  try {
+    path = new URL(raw, window.location.origin).pathname || '/';
+  } catch {
+    // ignore and fall back to raw value
+  }
   if (path === '' || path === '/') return '/';
   const clean = path.replace(/\/+$/, '');
   return clean.startsWith('/') ? clean : `/${clean}`;
@@ -16,8 +22,9 @@ export function useNav() {
 
   function go(nextPath, { replace = false } = {}) {
     const target = normalizePath(nextPath);
-    if (replace) window.history.replaceState({}, '', target);
-    else window.history.pushState({}, '', target);
+    const fullTarget = (nextPath || '/').toString().trim() || '/';
+    if (replace) window.history.replaceState({}, '', fullTarget);
+    else window.history.pushState({}, '', fullTarget);
     path.value = target;
   }
 
