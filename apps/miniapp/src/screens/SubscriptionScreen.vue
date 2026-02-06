@@ -29,24 +29,6 @@
       </div>
     </section>
 
-    <section class="status" v-if="upgradeConfirm.open">
-      <div class="status-card confirm">
-        <span class="status-label">{{ $t('subscription.upgradeConfirm.title') }}</span>
-        <div class="status-text confirm-content">
-          <div>{{ $t('subscription.upgradeConfirm.chargeNow', { amount: upgradeConfirmAmountNow }) }}</div>
-          <div>{{ $t('subscription.upgradeConfirm.newMonthly', { amount: upgradeConfirmAmountNext }) }}</div>
-          <div class="confirm-actions">
-            <button class="ghost" :disabled="isBusy" @click="cancelUpgradeConfirm">
-              {{ $t('subscription.upgradeConfirm.cancel') }}
-            </button>
-            <button class="cta confirm-cta" :disabled="isBusy" @click="confirmUpgrade">
-              {{ actionPending === 'upgrade_confirm' ? $t('subscription.actions.openingCheckout') : $t('subscription.upgradeConfirm.confirm') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="manage" v-if="user">
       <div class="manage-card">
         <div>
@@ -158,6 +140,29 @@
 
     <div class="bottom-nav">
       <BackToMenu @navigate="(path) => $emit('navigate', path)" />
+    </div>
+
+    <div
+      v-if="upgradeConfirm.open"
+      class="upgrade-dialog-overlay"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="$t('subscription.upgradeConfirm.title')"
+      @click="handleUpgradeDialogBackdropClick"
+    >
+      <div class="upgrade-dialog" @click.stop>
+        <h3 class="upgrade-dialog-title">{{ $t('subscription.upgradeConfirm.title') }}</h3>
+        <p class="upgrade-dialog-line">{{ $t('subscription.upgradeConfirm.chargeNow', { amount: upgradeConfirmAmountNow }) }}</p>
+        <p class="upgrade-dialog-line">{{ $t('subscription.upgradeConfirm.newMonthly', { amount: upgradeConfirmAmountNext }) }}</p>
+        <div class="confirm-actions">
+          <button class="ghost" :disabled="isBusy" @click="cancelUpgradeConfirm">
+            {{ $t('subscription.upgradeConfirm.cancel') }}
+          </button>
+          <button class="cta confirm-cta" :disabled="isBusy" @click="confirmUpgrade">
+            {{ actionPending === 'upgrade_confirm' ? $t('subscription.actions.openingCheckout') : $t('subscription.upgradeConfirm.confirm') }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -489,6 +494,11 @@ function cancelUpgradeConfirm() {
   resetUpgradeConfirm();
 }
 
+function handleUpgradeDialogBackdropClick() {
+  if (isBusy.value) return;
+  cancelUpgradeConfirm();
+}
+
 async function confirmUpgrade() {
   if (!upgradeConfirm.open || !upgradeConfirm.tier) return;
   actionPending.value = 'upgrade_confirm';
@@ -773,26 +783,49 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.status-card.confirm {
-  border-color: rgba(31, 107, 99, 0.35);
-  background: rgba(31, 107, 99, 0.08);
-}
-
-.confirm-content {
-  display: grid;
-  gap: 8px;
-}
-
 .confirm-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .cta.confirm-cta {
   width: auto;
   min-width: 180px;
+}
+
+.upgrade-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(20, 18, 16, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.upgrade-dialog {
+  width: min(560px, 100%);
+  border: 1px solid rgba(31, 107, 99, 0.35);
+  border-radius: 18px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 24px 50px rgba(20, 18, 16, 0.28);
+  display: grid;
+  gap: 8px;
+}
+
+.upgrade-dialog-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.upgrade-dialog-line {
+  margin: 0;
+  color: rgba(30, 26, 22, 0.9);
+  line-height: 1.45;
+  font-weight: 600;
 }
 
 .manage-card {
