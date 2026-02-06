@@ -138,20 +138,6 @@
       </div>
     </section>
 
-    <section class="debug-wrap" v-if="debugEnabled">
-      <DebugPanel
-        title="Subscription Debug"
-        :logs="debugLogs"
-        @clear="clearDebugPanel"
-      />
-    </section>
-
-    <section class="debug-wrap" v-else>
-      <button class="ghost debug-enable" :disabled="isBusy" type="button" @click="enableDebugPanel">
-        Enable debug panel
-      </button>
-    </section>
-
     <div class="bottom-nav">
       <BackToMenu @navigate="(path) => $emit('navigate', path)" />
     </div>
@@ -159,13 +145,13 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, reactive, computed, ref } from 'vue';
+import { onMounted, reactive, computed, ref } from 'vue';
+import { loadStripe } from '@stripe/stripe-js';
 import { useI18n } from '../i18n.js';
 import { tgOpenLink } from '../lib/tg.js';
 import { track } from '../lib/analytics.js';
 import BackToMenu from '../components/BackToMenu.vue';
-import DebugPanel from '../components/DebugPanel.vue';
-import { addDebugLog, clearDebugLogs, isDebugEnabled, readDebugLogs, setDebugEnabled, subscribeDebugLogs } from '../lib/debug.js';
+import { addDebugLog } from '../lib/debug.js';
 
 const props = defineProps({
   apiBase: { type: String, required: true },
@@ -192,21 +178,9 @@ const errorMessage = computed(() => (errorState.value ? t(errorState.value.key, 
 const noticeMessage = computed(() => (noticeState.value ? t(noticeState.value.key, noticeState.value.params) : ''));
 
 const embeddedCheckoutEnabled = (import.meta.env.VITE_STRIPE_EMBEDDED_CHECKOUT || '').toString().toLowerCase() === 'true';
-const stripePublishableKeyPresent = Boolean((import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').toString().trim());
+const stripePublishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').toString().trim();
+const stripePublishableKeyPresent = Boolean(stripePublishableKey);
 const useEmbeddedCheckout = computed(() => embeddedCheckoutEnabled && stripePublishableKeyPresent);
-const debugEnabled = ref(isDebugEnabled());
-const debugLogs = ref(readDebugLogs());
-let unsubscribeDebug = null;
-
-function clearDebugPanel() {
-  clearDebugLogs();
-}
-
-function enableDebugPanel() {
-  setDebugEnabled(true);
-  debugEnabled.value = true;
-  addDebugLog('debug_enabled', { screen: 'subscription' });
-}
 
 function buildCheckoutPath(tier, currency) {
   const params = new URLSearchParams();
@@ -333,6 +307,87 @@ function actionLabel(tier) {
   return t('subscription.actions.subscribe');
 }
 
+async function confirmUpgradePaymentIntent(paymentIntent) {
+  const clientSecret = paymentIntent?.client_secret || '';
+  if (!clientSecret) return true;
+  if (!stripePublishableKey) {
+    setError('subscription.actionLabels.checkoutUnavailable');
+    addDebugLog('upgrade_payment_confirm_skipped_missing_key');
+    return false;
+  }
+
+  const stripe = await loadStripe(stripePublishableKey);
+  if (!stripe?.confirmCardPayment) {
+    setError('subscription.actionLabels.checkoutUnavailable');
+    addDebugLog('upgrade_payment_confirm_skipped_missing_stripe');
+    return false;
+  }
+
+  addDebugLog('upgrade_payment_confirm_started', {
+    status: paymentIntent?.status || null
+  });
+  const result = await stripe.confirmCardPayment(clientSecret);
+  if (result?.error) {
+    setError('subscription.actionLabels.upgradePaymentFailed');
+    addDebugLog('upgrade_payment_confirm_error', {
+      code: result.error.code || null,
+      type: result.error.type || null,
+      message: result.error.message || 'unknown_error'
+    });
+    return false;
+  }
+
+  const status = result?.paymentIntent?.status || null;
+  addDebugLog('upgrade_payment_confirm_result', { status });
+  if (status === 'succeeded' || status === 'processing' || status === 'requires_capture') {
+    return true;
+  }
+
+  setError('subscription.actionLabels.upgradePaymentFailed');
+  return false;
+}
+
+async function upgradePlan(tier) {
+  addDebugLog('upgrade_request_started', { tier });
+  const resp = await fetch(`${props.apiBase}/billing/upgrade`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${props.token}`
+    },
+    body: JSON.stringify({ tier })
+  });
+  addDebugLog('upgrade_response_received', { ok: resp.ok, status: resp.status });
+
+  if (!resp.ok) {
+    const payload = await resp.json().catch(() => ({}));
+    setError(
+      payload?.error === 'not_an_upgrade'
+        ? 'subscription.actionLabels.notADowngrade'
+        : 'subscription.actionLabels.switchUnavailable'
+    );
+    return;
+  }
+
+  const data = await resp.json().catch(() => ({}));
+  addDebugLog('upgrade_response_parsed', {
+    pending: Boolean(data?.pending),
+    paymentIntentStatus: data?.payment_intent?.status || null,
+    hasPaymentIntentSecret: Boolean(data?.payment_intent?.client_secret),
+    invoiceStatus: data?.invoice?.status || null
+  });
+
+  const confirmed = await confirmUpgradePaymentIntent(data?.payment_intent || null);
+  if (!confirmed) return;
+
+  if (data?.pending) {
+    setNotice('subscription.actionLabels.upgradePending');
+  } else {
+    setNotice('subscription.actionLabels.upgradeSuccess');
+  }
+  await loadPlans({ keepNotice: true });
+}
+
 async function loadPlans({ keepNotice = false } = {}) {
   errorState.value = null;
   if (!keepNotice) noticeState.value = null;
@@ -368,7 +423,7 @@ async function subscribe(tier) {
       useEmbeddedCheckout: useEmbeddedCheckout.value
     });
     if (effectiveTier.value === 'plus' && tier === 'pro') {
-      await openBillingPortal();
+      await upgradePlan(tier);
       return;
     }
 
@@ -510,9 +565,6 @@ async function resume() {
 }
 
 onMounted(async () => {
-  unsubscribeDebug = subscribeDebugLogs((logs) => {
-    debugLogs.value = logs;
-  });
   addDebugLog('subscription_screen_mounted', {
     path: window.location.pathname,
     search: window.location.search,
@@ -530,11 +582,6 @@ onMounted(async () => {
     state.loading = false;
     actionPending.value = '';
   }
-});
-
-onBeforeUnmount(() => {
-  if (unsubscribeDebug) unsubscribeDebug();
-  unsubscribeDebug = null;
 });
 </script>
 
@@ -836,14 +883,6 @@ onBeforeUnmount(() => {
   border: 1px dashed rgba(30, 26, 22, 0.22);
   color: var(--muted);
   grid-column: 1 / -1;
-}
-
-.debug-wrap {
-  display: grid;
-}
-
-.debug-enable {
-  justify-self: start;
 }
 
 .bottom-nav {
