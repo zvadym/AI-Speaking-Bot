@@ -22,6 +22,12 @@
       @navigate="nav.go"
     />
 
+    <AdminDashboardScreen
+      v-else-if="nav.screen.value === 'admin'"
+      :apiBase="apiBase"
+      @navigate="nav.go"
+    />
+
     <SubscriptionScreen
       v-else-if="nav.screen.value === 'subscription'"
       :apiBase="apiBase"
@@ -70,21 +76,23 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from './i18n.js';
-import HomeScreen from './screens/HomeScreen.vue';
-import SubscriptionScreen from './screens/SubscriptionScreen.vue';
-import CheckoutScreen from './screens/CheckoutScreen.vue';
-import LanguageScreen from './screens/LanguageScreen.vue';
-import LevelScreen from './screens/LevelScreen.vue';
-import AboutScreen from './screens/AboutScreen.vue';
+	import HomeScreen from './screens/HomeScreen.vue';
+	import AdminDashboardScreen from './screens/AdminDashboardScreen.vue';
+	import SubscriptionScreen from './screens/SubscriptionScreen.vue';
+	import CheckoutScreen from './screens/CheckoutScreen.vue';
+	import LanguageScreen from './screens/LanguageScreen.vue';
+	import LevelScreen from './screens/LevelScreen.vue';
+	import AboutScreen from './screens/AboutScreen.vue';
 import { useNav } from './lib/nav.js';
 import { apiJson, authTelegram } from './lib/api.js';
 import { getTelegramWebApp, tgReady } from './lib/tg.js';
 import { identifyUser, track, trackScreen } from './lib/analytics.js';
 
-const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+	const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
 
-const nav = useNav();
-const { t } = useI18n({ useScope: 'global' });
+	const nav = useNav();
+	const { t } = useI18n({ useScope: 'global' });
+	const isAdmin = computed(() => nav.screen.value === 'admin');
 
 const loading = ref(true);
 const fatalKey = ref('');
@@ -140,16 +148,17 @@ function trackAppOpenOnce() {
   });
 }
 
-onMounted(async () => {
-  loading.value = true;
-  fatalKey.value = '';
+	onMounted(async () => {
+	  loading.value = true;
+	  fatalKey.value = '';
 
-  try {
-    const tg = getTelegramWebApp();
-    if (!tg?.initData) {
-      fatalKey.value = 'app.error.openInTelegram';
-      return;
-    }
+	  try {
+	    if (isAdmin.value) return;
+	    const tg = getTelegramWebApp();
+	    if (!tg?.initData) {
+	      fatalKey.value = 'app.error.openInTelegram';
+	      return;
+	    }
 
     tgReady(tg);
 
@@ -184,11 +193,11 @@ onMounted(async () => {
   } catch (err) {
     console.error(err);
     fatalKey.value = 'app.error.authFailed';
-  } finally {
-    loading.value = false;
-    syncTelegramBackButton();
-  }
-});
+	  } finally {
+	    loading.value = false;
+	    syncTelegramBackButton();
+	  }
+	});
 
 watch(
   () => nav.screen.value,

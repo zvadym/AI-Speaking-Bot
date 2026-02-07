@@ -15,6 +15,7 @@ function normalizePath(pathname) {
 
 export function useNav() {
   const path = ref(normalizePath(window.location.pathname));
+  const adminPath = normalizePath((import.meta.env.VITE_ADMIN_PATH || '').toString());
 
   function syncFromLocation() {
     path.value = normalizePath(window.location.pathname);
@@ -51,6 +52,7 @@ export function useNav() {
 
   const screen = computed(() => {
     const current = path.value;
+    if (adminPath && adminPath !== '/' && current === adminPath) return 'admin';
     if (current === '/subscription') return 'subscription';
     if (current === '/checkout') return 'checkout';
     if (current === '/language') return 'language';

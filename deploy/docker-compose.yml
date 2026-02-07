@@ -19,6 +19,7 @@ services:
         - VITE_POSTHOG_HOST=${VITE_POSTHOG_HOST}
         - VITE_STRIPE_EMBEDDED_CHECKOUT=${VITE_STRIPE_EMBEDDED_CHECKOUT}
         - VITE_STRIPE_PUBLISHABLE_KEY=${VITE_STRIPE_PUBLISHABLE_KEY}
+        - VITE_ADMIN_PATH=${VITE_ADMIN_PATH}
     restart: unless-stopped
     env_file:
       - .env.miniapp

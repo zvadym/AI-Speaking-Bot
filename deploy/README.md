@@ -61,8 +61,8 @@ cp deploy/.env.prod.example deploy/.env.prod
 
 Fill these on the server:
 
-- `deploy/.env.api`: `DATABASE_URL`, `WEBAPP_URL`, `TELEGRAM_BOT_TOKEN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`, `PLAN_CHANGED_WEBHOOK_URL`, `STRIPE_PORTAL_CONFIG_ID` (optional), `WEBAPP_RETURN_URL` (optional, e.g. `https://t.me/<bot_username>/menu`)
-- `deploy/.env.miniapp`: `VITE_API_BASE=https://learn-language-api.notarobot.dev`, `VITE_POSTHOG_KEY` (optional), `VITE_POSTHOG_HOST` (optional, defaults to `https://app.posthog.com`), `VITE_STRIPE_EMBEDDED_CHECKOUT` (set `true` to use embedded Stripe Checkout), `VITE_STRIPE_PUBLISHABLE_KEY` (required when embedded checkout is enabled), `VITE_DEBUG_UI` (optional, set `true` to always show debug panel and logs in mini-app screens)
+- `deploy/.env.api`: `DATABASE_URL`, `WEBAPP_URL`, `TELEGRAM_BOT_TOKEN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`, `PLAN_CHANGED_WEBHOOK_URL`, `ADMIN_DASHBOARD_PASSWORD` (for internal `/admin/metrics/*`), `STRIPE_PORTAL_CONFIG_ID` (optional), `WEBAPP_RETURN_URL` (optional, e.g. `https://t.me/<bot_username>/menu`)
+- `deploy/.env.miniapp`: `VITE_API_BASE=https://learn-language-api.notarobot.dev`, `VITE_ADMIN_PATH` (secret admin path), `VITE_POSTHOG_KEY` (optional), `VITE_POSTHOG_HOST` (optional, defaults to `https://app.posthog.com`), `VITE_STRIPE_EMBEDDED_CHECKOUT` (set `true` to use embedded Stripe Checkout), `VITE_STRIPE_PUBLISHABLE_KEY` (required when embedded checkout is enabled), `VITE_DEBUG_UI` (optional, set `true` to always show debug panel and logs in mini-app screens)
 - `deploy/.env`: n8n secrets (`N8N_*`, `WEBHOOK_URL`, DB creds if used). Set `N8N_HOST`, `N8N_EDITOR_BASE_URL`, and `WEBHOOK_URL` to `https://learn-language-n8n.notarobot.dev`.
 - `deploy/.env.prod`: n8n workflow credential IDs used to render workflows for prod (`N8N_CRED_TELEGRAM_ID`, `N8N_CRED_OPENAI_ID`, `N8N_CRED_POSTGRES_ID`)
 
@@ -103,6 +103,25 @@ Note: n8n data is stored in `deploy/n8n-data` (bind‑mount). Ensure this direct
 curl -s https://learn-language-api.notarobot.dev/healthz
 # open https://learn-language-app.notarobot.dev/
 # open https://learn-language-n8n.notarobot.dev/
+```
+
+### 1.8 Internal admin dashboard (optional)
+
+1) Set:
+
+- `deploy/.env.api`: `ADMIN_DASHBOARD_PASSWORD=...`
+- `deploy/.env.miniapp`: `VITE_ADMIN_PATH=/_some_secret_path` (must start with `/`, no trailing slash)
+
+2) Deploy (rebuilds mini-app):
+
+```bash
+./deploy/deploy.sh
+```
+
+3) Open the dashboard URL and enter the password:
+
+```bash
+https://learn-language-app.notarobot.dev/_some_secret_path
 ```
 
 ## 2) Update / Deploy

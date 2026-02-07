@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -38,6 +39,325 @@ app.use(express.json());
 
 app.get('/healthz', (req, res) => {
   res.json({ ok: true });
+});
+
+function safeEqualString(a, b) {
+  const aa = typeof a === 'string' ? a : '';
+  const bb = typeof b === 'string' ? b : '';
+  const aBuf = Buffer.from(aa);
+  const bBuf = Buffer.from(bb);
+  if (aBuf.length !== bBuf.length) return false;
+  return timingSafeEqual(aBuf, bBuf);
+}
+
+function requireAdmin(req, res, next) {
+  if (!env.adminDashboardPassword) {
+    return res.status(404).json({ error: 'not_found' });
+  }
+
+  const provided = (req.headers['x-admin-password'] || '').toString();
+  if (!provided || !safeEqualString(provided, env.adminDashboardPassword)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  return next();
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function parseUtcBoundary(raw, fallbackDate) {
+  const value = (raw ?? '').toString().trim();
+  if (!value) return fallbackDate;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const d = new Date(`${value}T00:00:00.000Z`);
+    if (Number.isFinite(d.getTime())) return d;
+    return null;
+  }
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return null;
+  return d;
+}
+
+function parseAdminRange(req) {
+  const now = new Date();
+  const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const defaultTo = new Date(todayUtc.getTime() + DAY_MS); // exclusive: start of tomorrow UTC
+  const defaultFrom = new Date(defaultTo.getTime() - 30 * DAY_MS);
+
+  const from = parseUtcBoundary(req.query.from, defaultFrom);
+  const to = parseUtcBoundary(req.query.to, defaultTo);
+  if (!from || !to) return { ok: false, error: 'bad_date' };
+  if (!(from < to)) return { ok: false, error: 'bad_range' };
+  if (to.getTime() - from.getTime() > 400 * DAY_MS) return { ok: false, error: 'range_too_large' };
+
+  const payloadRaw = (req.query.payload ?? '').toString().trim();
+  const payload = payloadRaw ? payloadRaw.slice(0, 200) : null;
+
+  return { ok: true, from, to, payload };
+}
+
+app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH filtered AS (
+       SELECT
+         created_at,
+         CASE
+           WHEN override_plan_tier IS NOT NULL AND override_expires_at IS NOT NULL AND NOW() < override_expires_at
+             THEN override_plan_tier
+           WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
+             THEN plan_tier
+           ELSE 'free'
+         END AS effective_tier
+       FROM users
+       WHERE ($1::text IS NULL OR acquisition_start_payload = $1)
+     )
+     SELECT
+       COUNT(*)::int AS total_users_all_time,
+       SUM((effective_tier = 'plus')::int)::int AS plus_users_all_time,
+       SUM((effective_tier = 'pro')::int)::int AS pro_users_all_time,
+       COUNT(*) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS total_users_in_range,
+       SUM((effective_tier = 'plus')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS plus_users_in_range,
+       SUM((effective_tier = 'pro')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS pro_users_in_range
+     FROM filtered`,
+    [range.payload, range.from.toISOString(), range.to.toISOString()]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    totals: rows[0] || {
+      total_users_all_time: 0,
+      plus_users_all_time: 0,
+      pro_users_all_time: 0,
+      total_users_in_range: 0,
+      plus_users_in_range: 0,
+      pro_users_in_range: 0
+    }
+  });
+});
+
+app.get('/admin/metrics/new-users-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     counts AS (
+       SELECT
+         date_trunc('day', u.created_at AT TIME ZONE 'UTC')::date AS day_utc,
+         COUNT(*)::int AS count
+       FROM users u, params
+       WHERE u.created_at >= (SELECT from_ts FROM params)
+         AND u.created_at < (SELECT to_ts FROM params)
+         AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
+       GROUP BY 1
+     )
+     SELECT d.day_utc::text AS day, COALESCE(c.count, 0)::int AS count
+     FROM days d
+     LEFT JOIN counts c USING (day_utc)
+     ORDER BY d.day_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/new-paid-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id, plan_started_at, plan_started_tier
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     counts AS (
+       SELECT
+         date_trunc('day', u.plan_started_at AT TIME ZONE 'UTC')::date AS day_utc,
+         u.plan_started_tier AS tier,
+         COUNT(*)::int AS count
+       FROM filtered_users u, params
+       WHERE u.plan_started_at IS NOT NULL
+         AND u.plan_started_at >= (SELECT from_ts FROM params)
+         AND u.plan_started_at < (SELECT to_ts FROM params)
+         AND u.plan_started_tier IN ('plus', 'pro')
+       GROUP BY 1, 2
+     )
+     SELECT
+       d.day_utc::text AS day,
+       COALESCE(SUM(c.count) FILTER (WHERE c.tier = 'plus'), 0)::int AS plus,
+       COALESCE(SUM(c.count) FILTER (WHERE c.tier = 'pro'), 0)::int AS pro
+     FROM days d
+     LEFT JOIN counts c USING (day_utc)
+     GROUP BY d.day_utc
+     ORDER BY d.day_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/active-users-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     counts AS (
+       SELECT
+         date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+         COUNT(DISTINCT v.chat_id)::int AS count
+       FROM voice_usage_events v
+       JOIN filtered_users u ON u.chat_id = v.chat_id
+       WHERE v.occurred_at >= (SELECT from_ts FROM params)
+         AND v.occurred_at < (SELECT to_ts FROM params)
+       GROUP BY 1
+     )
+     SELECT d.day_utc::text AS day, COALESCE(c.count, 0)::int AS count
+     FROM days d
+     LEFT JOIN counts c USING (day_utc)
+     ORDER BY d.day_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/usage-seconds-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     sums AS (
+       SELECT
+         date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+         v.direction AS direction,
+         SUM(v.seconds)::bigint AS seconds
+       FROM voice_usage_events v
+       JOIN filtered_users u ON u.chat_id = v.chat_id
+       WHERE v.occurred_at >= (SELECT from_ts FROM params)
+         AND v.occurred_at < (SELECT to_ts FROM params)
+       GROUP BY 1, 2
+     )
+     SELECT
+       d.day_utc::text AS day,
+       COALESCE(SUM(s.seconds) FILTER (WHERE s.direction = 'in'), 0)::bigint AS in_seconds,
+       COALESCE(SUM(s.seconds) FILTER (WHERE s.direction = 'out'), 0)::bigint AS out_seconds
+     FROM days d
+     LEFT JOIN sums s USING (day_utc)
+     GROUP BY d.day_utc
+     ORDER BY d.day_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/acquisition-payloads', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `SELECT acquisition_start_payload AS payload, COUNT(*)::int AS users
+       FROM users
+      WHERE acquisition_start_payload IS NOT NULL
+        AND created_at >= $1::timestamptz
+        AND created_at < $2::timestamptz
+      GROUP BY acquisition_start_payload
+      ORDER BY users DESC
+      LIMIT 80`,
+    [range.from.toISOString(), range.to.toISOString()]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payloads: rows
+  });
 });
 
 app.post('/auth/telegram', async (req, res) => {
@@ -1187,7 +1507,14 @@ async function handleStripeEvent(event) {
     const { rows: updatedRows, rowCount: updatedRowCount } = await pool.query(
       `UPDATE users
           SET plan_tier = $1,
-              plan_started_at = COALESCE($2, plan_started_at),
+              plan_started_at = CASE
+                WHEN plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2 IS NOT NULL THEN $2
+                ELSE plan_started_at
+              END,
+              plan_started_tier = CASE
+                WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2 IS NOT NULL THEN $1
+                ELSE plan_started_tier
+              END,
               plan_expires_at = COALESCE($3, plan_expires_at),
               plan_autorenew = $4,
               stripe_customer_id = $5,
@@ -1231,7 +1558,14 @@ async function handleStripeEvent(event) {
         const { rows: fallbackRows } = await pool.query(
           `UPDATE users
               SET plan_tier = $1,
-                  plan_started_at = COALESCE($2, plan_started_at),
+                  plan_started_at = CASE
+                    WHEN plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2 IS NOT NULL THEN $2
+                    ELSE plan_started_at
+                  END,
+                  plan_started_tier = CASE
+                    WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2 IS NOT NULL THEN $1
+                    ELSE plan_started_tier
+                  END,
                   plan_expires_at = COALESCE($3, plan_expires_at),
                   plan_autorenew = $4,
                   stripe_customer_id = $5,

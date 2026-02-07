@@ -48,5 +48,6 @@ export const env = {
   stripePortalConfigId: process.env.STRIPE_PORTAL_CONFIG_ID || '',
   jwtSecret: requireEnv('JWT_SECRET'),
   corsOrigins,
-  planChangedWebhookUrl: process.env.PLAN_CHANGED_WEBHOOK_URL || ''
+  planChangedWebhookUrl: process.env.PLAN_CHANGED_WEBHOOK_URL || '',
+  adminDashboardPassword: process.env.ADMIN_DASHBOARD_PASSWORD || ''
 };

@@ -16,7 +16,7 @@ export async function authTelegram(apiBase, initData) {
   return await resp.json();
 }
 
-export async function apiJson(apiBase, path, { token, method = 'GET', body, query } = {}) {
+export async function apiJson(apiBase, path, { token, method = 'GET', body, query, headers } = {}) {
   const url = new URL(`${apiBase}${path}`);
   if (query && typeof query === 'object') {
     Object.entries(query).forEach(([key, value]) => {
@@ -29,7 +29,8 @@ export async function apiJson(apiBase, path, { token, method = 'GET', body, quer
     method,
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(body ? { 'Content-Type': 'application/json' } : {})
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(headers && typeof headers === 'object' ? headers : {})
     },
     ...(body ? { body: JSON.stringify(body) } : {})
   });
@@ -44,4 +45,3 @@ export async function apiJson(apiBase, path, { token, method = 'GET', body, quer
 
   return await resp.json();
 }
-
