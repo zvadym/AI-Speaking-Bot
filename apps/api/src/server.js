@@ -196,6 +196,7 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
           ELSE 'free'
         END AS effective_tier
       FROM users u
+      WHERE COALESCE(u.is_active, true) = true
     ),
     last_activity AS (
       SELECT
@@ -312,6 +313,62 @@ function sanitizeErrorText(value) {
   return raw.slice(0, 500);
 }
 
+function classifyPermanentTelegramFailure(err) {
+  const status = Number(err?.telegramStatus);
+  const description = (err?.telegramDescription || err?.message || '').toString().toLowerCase();
+
+  if (description.includes('bot was blocked by the user')) return 'blocked';
+  if (description.includes('user is deactivated')) return 'deactivated';
+  if (description.includes('chat not found')) return 'chat_not_found';
+  if (description.includes("bot can't initiate conversation with a user")) return 'chat_not_found';
+  if (status === 403) return 'forbidden';
+  return null;
+}
+
+async function updateUserDeliveryState(chatId, { status, lastError, inactiveReason }) {
+  if (status === 'sent') {
+    await pool.query(
+      `UPDATE users
+          SET is_active = true,
+              inactive_reason = NULL,
+              inactive_at = NULL,
+              last_delivery_error = NULL,
+              updated_at = NOW()
+        WHERE chat_id = $1`,
+      [chatId]
+    );
+    return;
+  }
+
+  if (inactiveReason) {
+    await pool.query(
+      `UPDATE users
+          SET is_active = false,
+              inactive_reason = $2,
+              inactive_at = CASE
+                WHEN COALESCE(is_active, true) THEN NOW()
+                ELSE COALESCE(inactive_at, NOW())
+              END,
+              last_delivery_error = $3,
+              updated_at = NOW()
+        WHERE chat_id = $1`,
+      [chatId, inactiveReason, lastError]
+    );
+    return;
+  }
+
+  if (lastError) {
+    await pool.query(
+      `UPDATE users
+          SET last_delivery_error = $2,
+              updated_at = NOW()
+        WHERE chat_id = $1
+          AND COALESCE(is_active, true) = true`,
+      [chatId, lastError]
+    );
+  }
+}
+
 async function sendTelegramTextMessage(chatId, text) {
   const response = await fetch(`https://api.telegram.org/bot${env.telegramBotToken}/sendMessage`, {
     method: 'POST',
@@ -332,7 +389,10 @@ async function sendTelegramTextMessage(chatId, text) {
 
   if (!response.ok || !payload?.ok) {
     const description = payload?.description || `telegram_http_${response.status}`;
-    throw new Error(description);
+    const err = new Error(description);
+    err.telegramStatus = response.status;
+    err.telegramDescription = payload?.description || null;
+    throw err;
   }
 
   return payload.result || null;
@@ -428,6 +488,7 @@ async function processBroadcastCampaign(campaignId) {
         let status = 'sent';
         let lastError = null;
         let telegramMessageId = null;
+        let inactiveReason = null;
 
         try {
           const sent = await sendTelegramTextMessage(row.chat_id, messageText);
@@ -436,6 +497,7 @@ async function processBroadcastCampaign(campaignId) {
         } catch (err) {
           status = 'failed';
           lastError = sanitizeErrorText(err?.message || String(err));
+          inactiveReason = classifyPermanentTelegramFailure(err);
         }
 
         await pool.query(
@@ -456,6 +518,7 @@ async function processBroadcastCampaign(campaignId) {
               AND chat_id = $2`,
           [id, row.chat_id, status, lastError, telegramMessageId]
         );
+        await updateUserDeliveryState(row.chat_id, { status, lastError, inactiveReason });
 
         if (env.broadcastPerMessageDelayMs > 0) {
           await new Promise((resolve) => setTimeout(resolve, env.broadcastPerMessageDelayMs));
@@ -508,13 +571,14 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
 
   const { rows } = await pool.query(
     `WITH filtered AS (
-       SELECT
-         created_at,
-         CASE
-           WHEN override_plan_tier IS NOT NULL AND override_expires_at IS NOT NULL AND NOW() < override_expires_at
-             THEN override_plan_tier
-           WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
-             THEN plan_tier
+     SELECT
+       created_at,
+       COALESCE(is_active, true) AS is_active,
+       CASE
+         WHEN override_plan_tier IS NOT NULL AND override_expires_at IS NOT NULL AND NOW() < override_expires_at
+           THEN override_plan_tier
+         WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
+           THEN plan_tier
            ELSE 'free'
          END AS effective_tier
        FROM users
@@ -522,9 +586,11 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
      )
      SELECT
        COUNT(*)::int AS total_users_all_time,
+       SUM((is_active)::int)::int AS active_users_all_time,
        SUM((effective_tier = 'plus')::int)::int AS plus_users_all_time,
        SUM((effective_tier = 'pro')::int)::int AS pro_users_all_time,
        COUNT(*) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS total_users_in_range,
+       SUM((is_active)::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS active_users_in_range,
        SUM((effective_tier = 'plus')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS plus_users_in_range,
        SUM((effective_tier = 'pro')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS pro_users_in_range
      FROM filtered`,
@@ -538,9 +604,11 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
     payload: range.payload,
     totals: rows[0] || {
       total_users_all_time: 0,
+      active_users_all_time: 0,
       plus_users_all_time: 0,
       pro_users_all_time: 0,
       total_users_in_range: 0,
+      active_users_in_range: 0,
       plus_users_in_range: 0,
       pro_users_in_range: 0
     }
@@ -671,6 +739,50 @@ app.get('/admin/metrics/active-users-by-day', requireAdmin, async (req, res) => 
        JOIN filtered_users u ON u.chat_id = v.chat_id
        WHERE v.occurred_at >= (SELECT from_ts FROM params)
          AND v.occurred_at < (SELECT to_ts FROM params)
+       GROUP BY 1
+     )
+     SELECT d.day_utc::text AS day, COALESCE(c.count, 0)::int AS count
+     FROM days d
+     LEFT JOIN counts c USING (day_utc)
+     ORDER BY d.day_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/inactive-users-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     counts AS (
+       SELECT
+         date_trunc('day', u.inactive_at AT TIME ZONE 'UTC')::date AS day_utc,
+         COUNT(*)::int AS count
+       FROM users u, params
+       WHERE COALESCE(u.is_active, true) = false
+         AND u.inactive_at IS NOT NULL
+         AND u.inactive_at >= (SELECT from_ts FROM params)
+         AND u.inactive_at < (SELECT to_ts FROM params)
+         AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
        GROUP BY 1
      )
      SELECT d.day_utc::text AS day, COALESCE(c.count, 0)::int AS count
@@ -1806,11 +1918,15 @@ async function upsertUser(user) {
   const firstName = user.first_name || null;
 
   await pool.query(
-    `INSERT INTO users (chat_id, username, first_name)
-     VALUES ($1, $2, $3)
+    `INSERT INTO users (chat_id, username, first_name, is_active, inactive_reason, inactive_at, last_delivery_error)
+     VALUES ($1, $2, $3, true, NULL, NULL, NULL)
      ON CONFLICT (chat_id) DO UPDATE SET
        username = EXCLUDED.username,
        first_name = EXCLUDED.first_name,
+       is_active = true,
+       inactive_reason = NULL,
+       inactive_at = NULL,
+       last_delivery_error = NULL,
        updated_at = NOW()`,
     [chatId, username, firstName]
   );

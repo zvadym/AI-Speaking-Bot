@@ -58,8 +58,11 @@
     <section class="cards">
       <div class="stat">
         <div class="label">Users (range)</div>
-        <div class="value">{{ fmt(totals.total_users_in_range) }}</div>
-        <div class="meta">All-time: {{ fmt(totals.total_users_all_time) }}</div>
+        <div class="value value-pair">
+          {{ fmt(totals.active_users_in_range) }}
+          <span class="value-secondary">/ {{ fmt(totals.total_users_in_range) }}</span>
+        </div>
+        <div class="meta">All-time: {{ fmt(totals.active_users_all_time) }} / {{ fmt(totals.total_users_all_time) }}</div>
       </div>
       <div class="stat">
         <div class="label">Plus (range)</div>
@@ -245,6 +248,14 @@
     />
 
     <AdminChart
+      title="Inactive users by day"
+      subtitle="Users marked inactive from permanent Telegram delivery failures"
+      kind="bar"
+      :data="inactiveUsersSeries"
+      :series="[{ key: 'count', label: 'Inactive users', color: 'rgba(174, 43, 40, 0.86)' }]"
+    />
+
+    <AdminChart
       title="Voice usage seconds by day"
       kind="line"
       :data="usageSecondsSeries"
@@ -303,9 +314,11 @@ const previewUpdatedAt = ref('');
 
 const totals = ref({
   total_users_all_time: 0,
+  active_users_all_time: 0,
   plus_users_all_time: 0,
   pro_users_all_time: 0,
   total_users_in_range: 0,
+  active_users_in_range: 0,
   plus_users_in_range: 0,
   pro_users_in_range: 0
 });
@@ -313,6 +326,7 @@ const totals = ref({
 const newUsersSeries = ref([]);
 const newPaidSeries = ref([]);
 const activeUsersSeries = ref([]);
+const inactiveUsersSeries = ref([]);
 const usageSecondsSeries = ref([]);
 const previewLoading = ref(false);
 const previewError = ref('');
@@ -563,11 +577,12 @@ async function refresh() {
   try {
     const q = query();
     const headers = adminHeaders();
-    const [summary, newUsers, newPaid, activeUsers, usageSeconds, payloads] = await Promise.all([
+    const [summary, newUsers, newPaid, activeUsers, inactiveUsers, usageSeconds, payloads] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/new-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/new-paid-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
     ]);
@@ -576,6 +591,7 @@ async function refresh() {
     newUsersSeries.value = Array.isArray(newUsers?.series) ? newUsers.series : [];
     newPaidSeries.value = Array.isArray(newPaid?.series) ? newPaid.series : [];
     activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
+    inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
     lastUpdated.value = isoStampNow();
@@ -585,7 +601,7 @@ async function refresh() {
     errorText.value = `Failed to load: ${msg}`;
   } finally {
     loading.value = false;
-	}
+  }
 }
 
 function resetRange() {
@@ -983,6 +999,17 @@ h1 {
   font-size: 34px;
   line-height: 1;
   letter-spacing: -0.02em;
+}
+
+.value-pair {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.value-secondary {
+  font-size: 19px;
+  color: var(--muted);
 }
 
 .meta {
