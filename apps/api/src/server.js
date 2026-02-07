@@ -95,6 +95,412 @@ function parseAdminRange(req) {
   return { ok: true, from, to, payload };
 }
 
+const BROADCAST_ALLOWED_TIERS = new Set(['free', 'plus', 'pro']);
+const BROADCAST_LAST_ACTIVITY_MODES = new Set(['active_within', 'inactive_for', 'never_active']);
+const BROADCAST_USAGE_MODES = new Set(['reached', 'percent_gte']);
+const BROADCAST_MESSAGE_MAX_LEN = 4096;
+const broadcastInFlight = new Set();
+
+function clampInteger(value, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER, fallback = 0 } = {}) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  const int = Math.trunc(num);
+  if (int < min) return min;
+  if (int > max) return max;
+  return int;
+}
+
+function clampNumber(value, { min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY, fallback = 0 } = {}) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  if (num < min) return min;
+  if (num > max) return max;
+  return num;
+}
+
+function normalizeBroadcastFilters(raw) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const usernameRaw = (source.username ?? '').toString().trim();
+  const username = usernameRaw ? usernameRaw.slice(0, 64) : null;
+
+  const plansProvided = Array.isArray(source.plans);
+  const plansRaw = plansProvided ? source.plans : [];
+  const plans = Array.from(
+    new Set(
+      plansRaw
+        .map((v) => v.toString().trim().toLowerCase())
+        .filter((v) => BROADCAST_ALLOWED_TIERS.has(v))
+    )
+  );
+  let normalizedPlans = null;
+  if (plansProvided) {
+    if (plans.length === 0) normalizedPlans = [];
+    else if (plans.length < BROADCAST_ALLOWED_TIERS.size) normalizedPlans = plans;
+  }
+
+  const lastActivityModeRaw = (source.lastActivityMode ?? source.last_activity_mode ?? '').toString().trim();
+  const lastActivityMode = BROADCAST_LAST_ACTIVITY_MODES.has(lastActivityModeRaw) ? lastActivityModeRaw : null;
+  const lastActivityDays = clampInteger(source.lastActivityDays ?? source.last_activity_days, {
+    min: 1,
+    max: 3650,
+    fallback: 7
+  });
+
+  const usageModeRaw = (source.usageMode ?? source.usage_mode ?? '').toString().trim();
+  const usageMode = BROADCAST_USAGE_MODES.has(usageModeRaw) ? usageModeRaw : null;
+  const usagePercent = clampNumber(source.usagePercent ?? source.usage_percent, {
+    min: 0,
+    max: 100,
+    fallback: 80
+  });
+
+  return {
+    username,
+    plans: normalizedPlans,
+    lastActivityMode,
+    lastActivityDays,
+    usageMode,
+    usagePercent
+  };
+}
+
+function broadcastAudienceParams(filters) {
+  const plans = Array.isArray(filters.plans) ? filters.plans : null;
+  return [
+    filters.username,
+    plans,
+    filters.lastActivityMode,
+    filters.lastActivityDays,
+    filters.usageMode,
+    filters.usagePercent
+  ];
+}
+
+function broadcastAudienceSql(selectSql, suffixSql = '') {
+  return `WITH effective_users AS (
+      SELECT
+        u.chat_id,
+        u.username,
+        u.first_name,
+        u.level,
+        u.target_lang,
+        u.created_at,
+        CASE
+          WHEN u.override_plan_tier IS NOT NULL
+               AND u.override_expires_at IS NOT NULL
+               AND NOW() < u.override_expires_at
+            THEN u.override_plan_tier
+          WHEN u.plan_expires_at IS NOT NULL
+               AND NOW() < u.plan_expires_at
+            THEN u.plan_tier
+          ELSE 'free'
+        END AS effective_tier
+      FROM users u
+    ),
+    last_activity AS (
+      SELECT
+        v.chat_id,
+        MAX(v.occurred_at) AS last_activity_at
+      FROM voice_usage_events v
+      GROUP BY v.chat_id
+    ),
+    week_usage AS (
+      SELECT
+        w.chat_id,
+        COALESCE(w.user_audio_seconds, 0)::int AS used_user,
+        COALESCE(w.tts_seconds, 0)::int AS used_tts
+      FROM usage_week w
+      WHERE w.week_start = date_trunc('week', NOW())::date
+    ),
+    enriched AS (
+      SELECT
+        e.chat_id,
+        e.username,
+        e.first_name,
+        e.level,
+        e.target_lang,
+        e.created_at,
+        e.effective_tier,
+        a.last_activity_at,
+        COALESCE(w.used_user, 0)::int AS used_user,
+        COALESCE(w.used_tts, 0)::int AS used_tts,
+        COALESCE(p.user_audio_seconds_per_week, 0)::int AS limit_user,
+        COALESCE(p.tts_seconds_per_week, 0)::int AS limit_tts,
+        GREATEST(
+          CASE
+            WHEN COALESCE(p.user_audio_seconds_per_week, 0) > 0
+              THEN (COALESCE(w.used_user, 0)::numeric * 100.0) / p.user_audio_seconds_per_week
+            ELSE 0
+          END,
+          CASE
+            WHEN COALESCE(p.tts_seconds_per_week, 0) > 0
+              THEN (COALESCE(w.used_tts, 0)::numeric * 100.0) / p.tts_seconds_per_week
+            ELSE 0
+          END
+        )::numeric AS usage_percent,
+        (
+          (COALESCE(p.user_audio_seconds_per_week, 0) > 0 AND COALESCE(w.used_user, 0) >= p.user_audio_seconds_per_week)
+          OR
+          (COALESCE(p.tts_seconds_per_week, 0) > 0 AND COALESCE(w.used_tts, 0) >= p.tts_seconds_per_week)
+        ) AS limit_reached
+      FROM effective_users e
+      LEFT JOIN last_activity a ON a.chat_id = e.chat_id
+      LEFT JOIN week_usage w ON w.chat_id = e.chat_id
+      LEFT JOIN plans p ON p.tier = e.effective_tier
+    )
+    SELECT ${selectSql}
+    FROM enriched e
+    WHERE ($1::text IS NULL OR e.username ILIKE ('%' || $1::text || '%'))
+      AND ($2::text[] IS NULL OR e.effective_tier = ANY($2::text[]))
+      AND (
+        $3::text IS NULL
+        OR ($3::text = 'active_within'
+            AND e.last_activity_at IS NOT NULL
+            AND e.last_activity_at >= NOW() - make_interval(days => $4::int))
+        OR ($3::text = 'inactive_for'
+            AND (e.last_activity_at IS NULL OR e.last_activity_at < NOW() - make_interval(days => $4::int)))
+        OR ($3::text = 'never_active' AND e.last_activity_at IS NULL)
+      )
+      AND (
+        $5::text IS NULL
+        OR ($5::text = 'reached' AND e.limit_reached)
+        OR ($5::text = 'percent_gte' AND e.usage_percent >= $6::numeric)
+      )
+    ${suffixSql}`;
+}
+
+async function getBroadcastAudiencePreview(filters, sampleLimit = 20) {
+  const params = broadcastAudienceParams(filters);
+  const countQuery = broadcastAudienceSql('COUNT(*)::int AS count');
+  const sampleQuery = broadcastAudienceSql(
+    `e.chat_id,
+     e.username,
+     e.first_name,
+     e.effective_tier,
+     e.last_activity_at,
+     ROUND(e.usage_percent, 2)::numeric AS usage_percent,
+     e.limit_reached`,
+    'ORDER BY e.chat_id ASC LIMIT $7::int'
+  );
+
+  const [countRes, sampleRes] = await Promise.all([
+    pool.query(countQuery, params),
+    pool.query(sampleQuery, [...params, sampleLimit])
+  ]);
+
+  return {
+    count: countRes.rows[0]?.count || 0,
+    sample: sampleRes.rows || []
+  };
+}
+
+async function listBroadcastRecipients(filters, limit) {
+  const params = broadcastAudienceParams(filters);
+  const query = broadcastAudienceSql(
+    `e.chat_id,
+     e.username,
+     e.first_name`,
+    'ORDER BY e.chat_id ASC LIMIT $7::int'
+  );
+  const { rows } = await pool.query(query, [...params, limit]);
+  return rows;
+}
+
+function sanitizeErrorText(value) {
+  const raw = (value ?? '').toString().trim();
+  if (!raw) return null;
+  return raw.slice(0, 500);
+}
+
+async function sendTelegramTextMessage(chatId, text) {
+  const response = await fetch(`https://api.telegram.org/bot${env.telegramBotToken}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: Number(chatId),
+      text,
+      disable_web_page_preview: true
+    })
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok || !payload?.ok) {
+    const description = payload?.description || `telegram_http_${response.status}`;
+    throw new Error(description);
+  }
+
+  return payload.result || null;
+}
+
+async function refreshBroadcastCampaignStats(campaignId, { status = null, errorText = null, setFinishedAt = false } = {}) {
+  await pool.query(
+    `WITH stats AS (
+       SELECT
+         COUNT(*)::int AS total_count,
+         COUNT(*) FILTER (WHERE status = 'sent')::int AS sent_count,
+         COUNT(*) FILTER (WHERE status = 'failed')::int AS failed_count
+       FROM broadcast_recipients
+       WHERE campaign_id = $1
+     )
+     UPDATE broadcast_campaigns c
+        SET total_recipients = s.total_count,
+            sent_count = s.sent_count,
+            failed_count = s.failed_count,
+            status = COALESCE($2::text, c.status),
+            error_text = CASE
+              WHEN $3::text IS NOT NULL THEN $3::text
+              ELSE c.error_text
+            END,
+            finished_at = CASE
+              WHEN $4::boolean THEN NOW()
+              ELSE c.finished_at
+            END,
+            updated_at = NOW()
+       FROM stats s
+      WHERE c.id = $1`,
+    [campaignId, status, errorText, setFinishedAt]
+  );
+}
+
+function queueBroadcastCampaignProcessing(campaignId) {
+  const id = Number(campaignId);
+  if (!Number.isFinite(id) || id <= 0) return;
+  if (broadcastInFlight.has(id)) return;
+
+  broadcastInFlight.add(id);
+  setImmediate(async () => {
+    try {
+      await processBroadcastCampaign(id);
+    } catch (err) {
+      console.error('Broadcast processing failed', {
+        campaignId: id,
+        err: err?.message || String(err)
+      });
+    } finally {
+      broadcastInFlight.delete(id);
+    }
+  });
+}
+
+async function processBroadcastCampaign(campaignId) {
+  const id = Number(campaignId);
+  if (!Number.isFinite(id) || id <= 0) return false;
+
+  const { rows: lockRows } = await pool.query(
+    `UPDATE broadcast_campaigns
+        SET status = 'sending',
+            started_at = COALESCE(started_at, NOW()),
+            finished_at = NULL,
+            error_text = NULL,
+            updated_at = NOW()
+      WHERE id = $1
+        AND (
+          status = 'queued'
+          OR (status = 'sending' AND updated_at < NOW() - interval '5 minutes')
+        )
+      RETURNING id, message_text`,
+    [id]
+  );
+  if (!lockRows[0]) return false;
+
+  const messageText = lockRows[0].message_text;
+
+  try {
+    while (true) {
+      const { rows: pendingRows } = await pool.query(
+        `SELECT chat_id
+           FROM broadcast_recipients
+          WHERE campaign_id = $1
+            AND status = 'pending'
+          ORDER BY chat_id ASC
+          LIMIT $2`,
+        [id, env.broadcastProcessBatchSize]
+      );
+      if (pendingRows.length === 0) break;
+
+      for (const row of pendingRows) {
+        let status = 'sent';
+        let lastError = null;
+        let telegramMessageId = null;
+
+        try {
+          const sent = await sendTelegramTextMessage(row.chat_id, messageText);
+          const msgId = Number(sent?.message_id);
+          telegramMessageId = Number.isFinite(msgId) ? msgId : null;
+        } catch (err) {
+          status = 'failed';
+          lastError = sanitizeErrorText(err?.message || String(err));
+        }
+
+        await pool.query(
+          `UPDATE broadcast_recipients
+              SET status = $3,
+                  attempts = attempts + 1,
+                  last_error = $4,
+                  sent_at = CASE
+                    WHEN $3::text = 'sent' THEN NOW()
+                    ELSE sent_at
+                  END,
+                  telegram_message_id = CASE
+                    WHEN $5::bigint IS NOT NULL THEN $5::bigint
+                    ELSE telegram_message_id
+                  END,
+                  updated_at = NOW()
+            WHERE campaign_id = $1
+              AND chat_id = $2`,
+          [id, row.chat_id, status, lastError, telegramMessageId]
+        );
+
+        if (env.broadcastPerMessageDelayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, env.broadcastPerMessageDelayMs));
+        }
+      }
+
+      await refreshBroadcastCampaignStats(id);
+    }
+
+    await refreshBroadcastCampaignStats(id, { status: 'completed', setFinishedAt: true });
+    return true;
+  } catch (err) {
+    await refreshBroadcastCampaignStats(id, {
+      status: 'failed',
+      errorText: sanitizeErrorText(err?.message || String(err)),
+      setFinishedAt: true
+    });
+    return false;
+  }
+}
+
+async function notifyBroadcastQueued(payload) {
+  if (!env.broadcastWebhookUrl) return false;
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (env.broadcastWebhookSecret) {
+      headers['x-broadcast-secret'] = env.broadcastWebhookSecret;
+    }
+    const resp = await fetch(env.broadcastWebhookUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      console.warn('Broadcast webhook failed', { status: resp.status, body });
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Broadcast webhook failed', err);
+    return false;
+  }
+}
+
 app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
@@ -358,6 +764,186 @@ app.get('/admin/metrics/acquisition-payloads', requireAdmin, async (req, res) =>
     to: range.to.toISOString(),
     payloads: rows
   });
+});
+
+app.post('/admin/broadcasts/preview', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});
+  const preview = await getBroadcastAudiencePreview(filters, 20);
+  return res.json({
+    filters,
+    count: preview.count,
+    sample: preview.sample
+  });
+});
+
+app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
+  const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});
+  const messageRaw = (req.body?.messageText ?? req.body?.message ?? '').toString();
+  const messageText = messageRaw.trim();
+  if (!messageText) {
+    return res.status(400).json({ error: 'empty_message' });
+  }
+  if (messageText.length > BROADCAST_MESSAGE_MAX_LEN) {
+    return res.status(400).json({
+      error: 'message_too_long',
+      max_length: BROADCAST_MESSAGE_MAX_LEN
+    });
+  }
+
+  const recipients = await listBroadcastRecipients(filters, env.broadcastMaxRecipients + 1);
+  if (recipients.length === 0) {
+    return res.status(400).json({ error: 'empty_audience' });
+  }
+  if (recipients.length > env.broadcastMaxRecipients) {
+    return res.status(400).json({
+      error: 'too_many_recipients',
+      max_recipients: env.broadcastMaxRecipients,
+      matched: recipients.length
+    });
+  }
+
+  const chatIds = recipients.map((r) => Number(r.chat_id));
+  const usernames = recipients.map((r) => r.username || null);
+  const firstNames = recipients.map((r) => r.first_name || null);
+  const createdByRaw = (req.headers['x-admin-user'] || 'admin_dashboard').toString().trim();
+  const createdBy = createdByRaw ? createdByRaw.slice(0, 120) : 'admin_dashboard';
+
+  let campaignId = null;
+  await pool.query('BEGIN');
+  try {
+    const { rows: campaignRows } = await pool.query(
+      `INSERT INTO broadcast_campaigns (
+         status,
+         filters,
+         message_text,
+         total_recipients,
+         sent_count,
+         failed_count,
+         created_by
+       )
+       VALUES ('queued', $1::jsonb, $2::text, $3::int, 0, 0, $4::text)
+       RETURNING id`,
+      [JSON.stringify(filters), messageText, chatIds.length, createdBy]
+    );
+    campaignId = campaignRows[0]?.id || null;
+    if (!campaignId) throw new Error('campaign_create_failed');
+
+    await pool.query(
+      `INSERT INTO broadcast_recipients (
+         campaign_id,
+         chat_id,
+         username,
+         first_name,
+         status
+       )
+       SELECT
+         $1::bigint,
+         x.chat_id,
+         x.username,
+         x.first_name,
+         'pending'
+       FROM UNNEST($2::bigint[], $3::text[], $4::text[]) AS x(chat_id, username, first_name)`,
+      [campaignId, chatIds, usernames, firstNames]
+    );
+
+    await pool.query('COMMIT');
+  } catch (err) {
+    await pool.query('ROLLBACK');
+    throw err;
+  }
+
+  const webhookTriggered = await notifyBroadcastQueued({ campaign_id: campaignId });
+  queueBroadcastCampaignProcessing(campaignId);
+
+  return res.json({
+    campaign_id: campaignId,
+    status: 'queued',
+    queued_with_webhook: webhookTriggered,
+    total_recipients: chatIds.length
+  });
+});
+
+app.get('/admin/broadcasts/:id', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const campaignId = Number(req.params.id);
+  if (!Number.isFinite(campaignId) || campaignId <= 0) {
+    return res.status(400).json({ error: 'bad_campaign_id' });
+  }
+
+  const { rows: campaignRows } = await pool.query(
+    `SELECT
+       c.id,
+       c.status,
+       c.message_text,
+       c.filters,
+       c.total_recipients,
+       c.sent_count,
+       c.failed_count,
+       c.created_by,
+       c.created_at,
+       c.updated_at,
+       c.started_at,
+       c.finished_at,
+       c.error_text,
+       COALESCE(s.pending_count, 0)::int AS pending_count
+     FROM broadcast_campaigns c
+     LEFT JOIN (
+       SELECT
+         campaign_id,
+         COUNT(*) FILTER (WHERE status = 'pending')::int AS pending_count
+       FROM broadcast_recipients
+       WHERE campaign_id = $1
+       GROUP BY campaign_id
+     ) s ON s.campaign_id = c.id
+     WHERE c.id = $1
+     LIMIT 1`,
+    [campaignId]
+  );
+
+  const campaign = campaignRows[0];
+  if (!campaign) return res.status(404).json({ error: 'campaign_not_found' });
+
+  const { rows: failedRows } = await pool.query(
+    `SELECT
+       chat_id,
+       username,
+       first_name,
+       attempts,
+       last_error,
+       updated_at
+     FROM broadcast_recipients
+     WHERE campaign_id = $1
+       AND status = 'failed'
+     ORDER BY updated_at DESC
+     LIMIT 20`,
+    [campaignId]
+  );
+
+  return res.json({
+    campaign,
+    failed: failedRows
+  });
+});
+
+app.post('/internal/broadcasts/process', async (req, res) => {
+  if (!env.broadcastWebhookSecret) {
+    return res.status(404).json({ error: 'not_found' });
+  }
+
+  const provided = (req.headers['x-broadcast-secret'] || '').toString();
+  if (!provided || !safeEqualString(provided, env.broadcastWebhookSecret)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  const campaignIdRaw = req.body?.campaign_id ?? req.body?.campaignId;
+  const campaignId = Number(campaignIdRaw);
+  if (!Number.isFinite(campaignId) || campaignId <= 0) {
+    return res.status(400).json({ error: 'bad_campaign_id' });
+  }
+
+  queueBroadcastCampaignProcessing(campaignId);
+  return res.json({ ok: true, campaign_id: campaignId });
 });
 
 app.post('/auth/telegram', async (req, res) => {
