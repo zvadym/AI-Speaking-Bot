@@ -878,6 +878,80 @@ app.get('/admin/metrics/acquisition-payloads', requireAdmin, async (req, res) =>
   });
 });
 
+app.get('/admin/feedbacks', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const kindRaw = (req.query.kind ?? '').toString().trim().toLowerCase();
+  const kind = ['text', 'voice'].includes(kindRaw) ? kindRaw : null;
+  const searchRaw = (req.query.search ?? '').toString().trim();
+  const search = searchRaw ? searchRaw.slice(0, 120) : null;
+  const limit = clampInteger(req.query.limit, { min: 1, max: 200, fallback: 50 });
+  const offset = clampInteger(req.query.offset, { min: 0, max: 100000, fallback: 0 });
+
+  const params = [range.from.toISOString(), range.to.toISOString(), kind, search, limit, offset];
+  const [totalRes, rowsRes] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*)::int AS total
+         FROM feedback f
+        WHERE f.created_at >= $1::timestamptz
+          AND f.created_at < $2::timestamptz
+          AND ($3::text IS NULL OR f.kind = $3::text)
+          AND (
+            $4::text IS NULL
+            OR f.username ILIKE ('%' || $4::text || '%')
+            OR f.first_name ILIKE ('%' || $4::text || '%')
+            OR f.feedback_text ILIKE ('%' || $4::text || '%')
+            OR f.transcript ILIKE ('%' || $4::text || '%')
+            OR f.chat_id::text ILIKE ('%' || $4::text || '%')
+          )`,
+      params.slice(0, 4)
+    ),
+    pool.query(
+      `SELECT
+         f.id,
+         f.created_at,
+         f.chat_id,
+         f.username,
+         f.first_name,
+         f.message_id,
+         f.kind,
+         f.feedback_text,
+         f.transcript,
+         f.telegram_file_id
+       FROM feedback f
+       WHERE f.created_at >= $1::timestamptz
+         AND f.created_at < $2::timestamptz
+         AND ($3::text IS NULL OR f.kind = $3::text)
+         AND (
+           $4::text IS NULL
+           OR f.username ILIKE ('%' || $4::text || '%')
+           OR f.first_name ILIKE ('%' || $4::text || '%')
+           OR f.feedback_text ILIKE ('%' || $4::text || '%')
+           OR f.transcript ILIKE ('%' || $4::text || '%')
+           OR f.chat_id::text ILIKE ('%' || $4::text || '%')
+         )
+       ORDER BY f.created_at DESC, f.id DESC
+       LIMIT $5::int
+       OFFSET $6::int`,
+      params
+    )
+  ]);
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    kind,
+    search,
+    limit,
+    offset,
+    total: totalRes.rows[0]?.total || 0,
+    items: rowsRes.rows || []
+  });
+});
+
 app.post('/admin/broadcasts/preview', requireAdmin, async (req, res) => {
   res.set('Cache-Control', 'no-store');
   const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});

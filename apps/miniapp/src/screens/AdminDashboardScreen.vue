@@ -13,70 +13,136 @@
           <input v-model="password" type="password" autocomplete="current-password" placeholder="••••••••" />
         </label>
 
-        <label class="field">
-          <span>From (UTC)</span>
-          <input v-model="fromDate" type="date" />
-        </label>
-
-        <label class="field">
-          <span>To (UTC, exclusive)</span>
-          <input v-model="toDate" type="date" />
-        </label>
-      </div>
-
-      <div class="row">
-        <label class="field grow">
-          <span>Acquisition payload</span>
-          <input
-            v-model="payload"
-            type="text"
-            inputmode="text"
-            autocomplete="off"
-            placeholder="(optional)"
-            list="payloads"
-          />
-          <datalist id="payloads">
-            <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
-          </datalist>
-        </label>
-
         <div class="actions">
-          <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refresh">
-            {{ loading ? 'Loading…' : 'Refresh' }}
-          </button>
-          <button class="btn" type="button" :disabled="loading" @click="resetRange">Last 30d</button>
-          <button class="btn danger" type="button" :disabled="loading" @click="clearPassword">Clear</button>
+          <button class="btn danger" type="button" :disabled="loading || feedbackLoading" @click="clearPassword">Clear</button>
         </div>
       </div>
-
-      <p class="hint" v-if="!password">
-        Enter password to load metrics (sent to the API as <code>X-Admin-Password</code>).
+      <p class="hint">
+        Password is sent to admin endpoints as <code>X-Admin-Password</code>.
       </p>
-      <p class="error" v-else-if="errorText">{{ errorText }}</p>
     </section>
 
-    <section class="cards">
-      <div class="stat">
-        <div class="label">Users (range)</div>
-        <div class="value value-pair">
-          {{ fmt(totals.active_users_in_range) }}
-          <span class="value-secondary">/ {{ fmt(totals.total_users_in_range) }}</span>
+    <section class="tabs" role="tablist" aria-label="Admin sections">
+      <button class="tab-btn" :class="{ active: activeTab === 'analytics' }" type="button" role="tab" @click="activeTab = 'analytics'">
+        Analytics
+      </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'messaging' }" type="button" role="tab" @click="activeTab = 'messaging'">
+        Messaging
+      </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'feedback' }" type="button" role="tab" @click="activeTab = 'feedback'">
+        Feedback
+      </button>
+    </section>
+
+    <template v-if="activeTab === 'analytics'">
+      <section class="card">
+        <div class="row">
+          <label class="field">
+            <span>From (UTC)</span>
+            <input v-model="fromDate" type="date" />
+          </label>
+
+          <label class="field">
+            <span>To (UTC, exclusive)</span>
+            <input v-model="toDate" type="date" />
+          </label>
         </div>
-        <div class="meta">All-time: {{ fmt(totals.active_users_all_time) }} / {{ fmt(totals.total_users_all_time) }}</div>
-      </div>
-      <div class="stat">
-        <div class="label">Plus (range)</div>
-        <div class="value">{{ fmt(totals.plus_users_in_range) }}</div>
-        <div class="meta">All-time: {{ fmt(totals.plus_users_all_time) }}</div>
-      </div>
-      <div class="stat">
-        <div class="label">Pro (range)</div>
-        <div class="value">{{ fmt(totals.pro_users_in_range) }}</div>
-        <div class="meta">All-time: {{ fmt(totals.pro_users_all_time) }}</div>
-      </div>
-    </section>
 
-    <section class="card broadcast">
+        <div class="row">
+          <label class="field grow">
+            <span>Acquisition payload</span>
+            <input
+              v-model="payload"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              placeholder="(optional)"
+              list="payloads"
+            />
+            <datalist id="payloads">
+              <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
+            </datalist>
+          </label>
+
+          <div class="actions">
+            <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refresh">
+              {{ loading ? 'Loading…' : 'Refresh' }}
+            </button>
+            <button class="btn" type="button" :disabled="loading" @click="resetRange">Last 30d</button>
+          </div>
+        </div>
+
+        <p class="hint" v-if="!password">Enter password first to load analytics.</p>
+        <p class="error" v-else-if="errorText">{{ errorText }}</p>
+      </section>
+
+      <section class="cards">
+        <div class="stat">
+          <div class="label">Users (range)</div>
+          <div class="value value-pair">
+            {{ fmt(totals.active_users_in_range) }}
+            <span class="value-secondary">/ {{ fmt(totals.total_users_in_range) }}</span>
+          </div>
+          <div class="meta">All-time: {{ fmt(totals.active_users_all_time) }} / {{ fmt(totals.total_users_all_time) }}</div>
+        </div>
+        <div class="stat">
+          <div class="label">Plus (range)</div>
+          <div class="value">{{ fmt(totals.plus_users_in_range) }}</div>
+          <div class="meta">All-time: {{ fmt(totals.plus_users_all_time) }}</div>
+        </div>
+        <div class="stat">
+          <div class="label">Pro (range)</div>
+          <div class="value">{{ fmt(totals.pro_users_in_range) }}</div>
+          <div class="meta">All-time: {{ fmt(totals.pro_users_all_time) }}</div>
+        </div>
+      </section>
+
+      <AdminChart
+        title="New users by day"
+        kind="bar"
+        :data="newUsersSeries"
+        :series="[{ key: 'count', label: 'New users', color: 'rgba(199, 90, 36, 0.86)' }]"
+      />
+
+      <AdminChart
+        title="New paid users by day (first time)"
+        subtitle="Split by tier at first payment"
+        kind="bar"
+        :data="newPaidSeries"
+        :series="[
+          { key: 'plus', label: 'Plus', color: 'rgba(31, 107, 99, 0.88)' },
+          { key: 'pro', label: 'Pro', color: 'rgba(199, 90, 36, 0.88)' }
+        ]"
+      />
+
+      <AdminChart
+        title="Active users by day"
+        subtitle="Active = at least one voice usage event that day"
+        kind="bar"
+        :data="activeUsersSeries"
+        :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
+      />
+
+      <AdminChart
+        title="Inactive users by day"
+        subtitle="Users marked inactive from permanent Telegram delivery failures"
+        kind="bar"
+        :data="inactiveUsersSeries"
+        :series="[{ key: 'count', label: 'Inactive users', color: 'rgba(174, 43, 40, 0.86)' }]"
+      />
+
+      <AdminChart
+        title="Voice usage seconds by day"
+        kind="line"
+        :data="usageSecondsSeries"
+        :series="[
+          { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)' },
+          { key: 'out_seconds', label: 'Out', color: 'rgba(199, 90, 36, 0.9)' }
+        ]"
+      />
+    </template>
+
+    <section class="card broadcast" v-else-if="activeTab === 'messaging'">
       <div class="broadcast-head">
         <div>
           <div class="kicker">Broadcast</div>
@@ -221,53 +287,92 @@
       </div>
     </section>
 
-    <AdminChart
-      title="New users by day"
-      kind="bar"
-      :data="newUsersSeries"
-      :series="[{ key: 'count', label: 'New users', color: 'rgba(199, 90, 36, 0.86)' }]"
-    />
+    <section class="card feedback" v-else>
+      <div class="feedback-head">
+        <div>
+          <div class="kicker">Feedback inbox</div>
+          <h2>User feedback</h2>
+          <p class="sub compact">Text and voice feedback submitted with <code>/feedback</code>.</p>
+        </div>
+        <div class="feedback-count">Total: {{ fmt(feedbackTotal) }}</div>
+      </div>
 
-    <AdminChart
-      title="New paid users by day (first time)"
-      subtitle="Split by tier at first payment"
-      kind="bar"
-      :data="newPaidSeries"
-      :series="[
-        { key: 'plus', label: 'Plus', color: 'rgba(31, 107, 99, 0.88)' },
-        { key: 'pro', label: 'Pro', color: 'rgba(199, 90, 36, 0.88)' }
-      ]"
-    />
+      <div class="row">
+        <label class="field">
+          <span>From (UTC)</span>
+          <input v-model="feedbackFromDate" type="date" />
+        </label>
+        <label class="field">
+          <span>To (UTC, exclusive)</span>
+          <input v-model="feedbackToDate" type="date" />
+        </label>
+        <label class="field">
+          <span>Kind</span>
+          <select v-model="feedbackKind">
+            <option value="any">Any</option>
+            <option value="text">Text</option>
+            <option value="voice">Voice</option>
+          </select>
+        </label>
+      </div>
 
-    <AdminChart
-      title="Active users by day"
-      subtitle="Active = at least one voice usage event that day"
-      kind="bar"
-      :data="activeUsersSeries"
-      :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
-    />
+      <div class="row">
+        <label class="field grow">
+          <span>Search</span>
+          <input
+            v-model.trim="feedbackSearch"
+            type="text"
+            autocomplete="off"
+            inputmode="text"
+            placeholder="username, name, chat id, or text"
+          />
+        </label>
+        <div class="actions">
+          <button class="btn primary" type="button" :disabled="!canFetchFeedback || feedbackLoading" @click="refreshFeedback({ resetOffset: true })">
+            {{ feedbackLoading ? 'Loading…' : 'Refresh' }}
+          </button>
+          <button class="btn" type="button" :disabled="feedbackLoading" @click="resetFeedbackRange">Last 30d</button>
+        </div>
+      </div>
 
-    <AdminChart
-      title="Inactive users by day"
-      subtitle="Users marked inactive from permanent Telegram delivery failures"
-      kind="bar"
-      :data="inactiveUsersSeries"
-      :series="[{ key: 'count', label: 'Inactive users', color: 'rgba(174, 43, 40, 0.86)' }]"
-    />
+      <p class="hint" v-if="!password">Enter admin password above to load feedback.</p>
+      <p class="error" v-else-if="feedbackError">{{ feedbackError }}</p>
 
-    <AdminChart
-      title="Voice usage seconds by day"
-      kind="line"
-      :data="usageSecondsSeries"
-      :series="[
-        { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)' },
-        { key: 'out_seconds', label: 'Out', color: 'rgba(199, 90, 36, 0.9)' }
-      ]"
-    />
+      <div class="feedback-list" v-if="feedbackRows.length">
+        <article class="feedback-item" v-for="row in feedbackRows" :key="row.id">
+          <div class="feedback-item-head">
+            <div class="feedback-meta">
+              <span class="chip">{{ row.kind }}</span>
+              <code>#{{ row.id }}</code>
+              <code>{{ row.chat_id }}</code>
+              <span>{{ row.username ? `@${row.username}` : (row.first_name || 'unknown user') }}</span>
+            </div>
+            <time>{{ formatFeedbackTime(row.created_at) }}</time>
+          </div>
+          <pre class="feedback-text">{{ feedbackBody(row) }}</pre>
+          <p class="hint" v-if="row.kind === 'voice' && row.telegram_file_id">
+            Voice file id: <code>{{ row.telegram_file_id }}</code>
+          </p>
+        </article>
+      </div>
+
+      <p class="hint" v-else-if="password && !feedbackLoading">No feedback found for current filters.</p>
+
+      <div class="feedback-pager">
+        <button class="btn" type="button" :disabled="feedbackLoading || feedbackOffset <= 0" @click="feedbackPrevPage">
+          Previous
+        </button>
+        <button class="btn" type="button" :disabled="feedbackLoading || !feedbackHasNext" @click="feedbackNextPage">
+          Next
+        </button>
+      </div>
+    </section>
 
     <footer class="foot">
       <button class="link" type="button" @click="emit('navigate', '/', { replace: true })">← Back to app</button>
-      <span v-if="lastUpdated" class="stamp">Updated: {{ lastUpdated }}</span>
+      <span v-if="activeTab === 'analytics' && lastUpdated" class="stamp">Updated: {{ lastUpdated }}</span>
+      <span v-else-if="activeTab === 'feedback' && feedbackUpdatedAt" class="stamp">Updated: {{ feedbackUpdatedAt }}</span>
+      <span v-else-if="activeTab === 'messaging' && previewUpdatedAt" class="stamp">Updated: {{ previewUpdatedAt }}</span>
     </footer>
   </div>
 </template>
@@ -301,11 +406,23 @@ function defaultRange() {
 }
 
 const password = ref('');
+const activeTab = ref('analytics');
 const { from: defaultFrom, to: defaultTo } = defaultRange();
 const fromDate = ref(defaultFrom);
 const toDate = ref(defaultTo);
 const payload = ref('');
 const payloadOptions = ref([]);
+const feedbackFromDate = ref(defaultFrom);
+const feedbackToDate = ref(defaultTo);
+const feedbackKind = ref('any');
+const feedbackSearch = ref('');
+const feedbackRows = ref([]);
+const feedbackTotal = ref(0);
+const feedbackOffset = ref(0);
+const feedbackLimit = 40;
+const feedbackLoading = ref(false);
+const feedbackError = ref('');
+const feedbackUpdatedAt = ref('');
 
 const loading = ref(false);
 const errorText = ref('');
@@ -360,6 +477,13 @@ const canFetch = computed(() => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(toDate.value)) return false;
   return fromDate.value < toDate.value;
 });
+const canFetchFeedback = computed(() => {
+  if (!password.value) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(feedbackFromDate.value)) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(feedbackToDate.value)) return false;
+  return feedbackFromDate.value < feedbackToDate.value;
+});
+const feedbackHasNext = computed(() => feedbackOffset.value + feedbackRows.value.length < feedbackTotal.value);
 
 function adminHeaders() {
   return { 'X-Admin-Password': password.value };
@@ -390,6 +514,17 @@ function query() {
   };
 }
 
+function feedbackQuery() {
+  return {
+    from: feedbackFromDate.value,
+    to: feedbackToDate.value,
+    kind: feedbackKind.value !== 'any' ? feedbackKind.value : undefined,
+    search: feedbackSearch.value.trim() ? feedbackSearch.value.trim() : undefined,
+    limit: feedbackLimit,
+    offset: feedbackOffset.value
+  };
+}
+
 function fmt(v) {
   const n = Number(v || 0);
   if (!Number.isFinite(n)) return '0';
@@ -410,6 +545,18 @@ function formatLastActivity(raw) {
   if (days <= 0) return 'today';
   if (days === 1) return '1 day ago';
   return `${days} days ago`;
+}
+
+function formatFeedbackTime(raw) {
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return 'unknown time';
+  return d.toISOString().replace('T', ' ').replace('Z', 'Z');
+}
+
+function feedbackBody(row) {
+  const text = row?.kind === 'voice' ? (row?.transcript || '') : (row?.feedback_text || '');
+  const cleaned = String(text || '').trim();
+  return cleaned || '(empty)';
 }
 
 const selectedPlans = computed(() => {
@@ -604,10 +751,56 @@ async function refresh() {
   }
 }
 
+async function refreshFeedback({ resetOffset = false } = {}) {
+  if (resetOffset) feedbackOffset.value = 0;
+  if (!canFetchFeedback.value) return;
+
+  feedbackLoading.value = true;
+  feedbackError.value = '';
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, '/admin/feedbacks', {
+      query: feedbackQuery(),
+      headers
+    });
+    feedbackRows.value = Array.isArray(data?.items) ? data.items : [];
+    const nextTotal = Number(data?.total || 0);
+    feedbackTotal.value = Number.isFinite(nextTotal) ? nextTotal : 0;
+    feedbackUpdatedAt.value = isoStampNow();
+  } catch (err) {
+    console.error(err);
+    feedbackRows.value = [];
+    feedbackTotal.value = 0;
+    feedbackUpdatedAt.value = '';
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    feedbackError.value = `Failed to load feedback: ${msg}`;
+  } finally {
+    feedbackLoading.value = false;
+  }
+}
+
+function feedbackNextPage() {
+  if (!feedbackHasNext.value || feedbackLoading.value) return;
+  feedbackOffset.value += feedbackLimit;
+  refreshFeedback();
+}
+
+function feedbackPrevPage() {
+  if (feedbackLoading.value) return;
+  feedbackOffset.value = Math.max(0, feedbackOffset.value - feedbackLimit);
+  refreshFeedback();
+}
+
 function resetRange() {
   const r = defaultRange();
   fromDate.value = r.from;
   toDate.value = r.to;
+}
+
+function resetFeedbackRange() {
+  const r = defaultRange();
+  feedbackFromDate.value = r.from;
+  feedbackToDate.value = r.to;
 }
 
 function clearPassword() {
@@ -621,6 +814,11 @@ function clearPassword() {
   previewUpdatedAt.value = '';
   campaignState.value = null;
   stopCampaignPolling();
+  feedbackRows.value = [];
+  feedbackTotal.value = 0;
+  feedbackOffset.value = 0;
+  feedbackError.value = '';
+  feedbackUpdatedAt.value = '';
 }
 
 onMounted(() => {
@@ -648,6 +846,16 @@ watch(
       return;
     }
     scheduleBroadcastPreview();
+  }
+);
+
+watch(
+  () => activeTab.value,
+  (tab) => {
+    if (tab === 'feedback' && password.value && feedbackRows.value.length === 0) {
+      feedbackOffset.value = 0;
+      refreshFeedback();
+    }
   }
 );
 
@@ -704,6 +912,27 @@ h1 {
   padding: 14px;
   display: grid;
   gap: 12px;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tab-btn {
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.62);
+  border-radius: 999px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.tab-btn.active {
+  background: rgba(31, 107, 99, 0.16);
+  border-color: rgba(31, 107, 99, 0.28);
 }
 
 .row {
@@ -838,6 +1067,33 @@ h1 {
   gap: 14px;
 }
 
+.feedback {
+  display: grid;
+  gap: 14px;
+}
+
+.feedback-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.feedback h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.feedback-count {
+  border: 1px solid rgba(31, 107, 99, 0.2);
+  background: rgba(31, 107, 99, 0.08);
+  border-radius: 16px;
+  padding: 8px 12px;
+  font-weight: 650;
+}
+
 .broadcast h2 {
   margin: 0;
   font-size: 22px;
@@ -963,6 +1219,50 @@ h1 {
   gap: 10px;
   font-size: 12px;
   color: var(--muted);
+}
+
+.feedback-list {
+  display: grid;
+  gap: 10px;
+}
+
+.feedback-item {
+  border: 1px solid rgba(30, 26, 22, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.64);
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.feedback-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.feedback-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.feedback-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  color: var(--ink);
+}
+
+.feedback-pager {
+  display: flex;
+  gap: 10px;
 }
 
 @media (max-width: 820px) {
