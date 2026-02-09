@@ -54,7 +54,7 @@
       },
       "language": {
         "title": "Language",
-        "desc": "Choose what you practice with me."
+        "desc": "Fixed for this bot."
       },
       "level": {
         "title": "Level",
@@ -69,8 +69,7 @@
   "language": {
     "kicker": "🌍 Language",
     "title": "What are we practicing?",
-    "subPrefix": "Switching language mirrors the bot’s",
-    "subSuffix": " flow.",
+    "subLocked": "This bot’s learning language is fixed.",
     "options": {
       "en": {
         "note": "Friendly corrections, natural replies."
@@ -114,7 +113,7 @@
     },
     "tips": {
       "title": "Tips",
-      "pickLanguageFirst": "Pick your language first, then your level.",
+      "pickLanguageFirst": "Pick your level, then send a voice message.",
       "sendVoice": "Send voice messages in the target language — I’ll reply and correct gently."
     }
   },

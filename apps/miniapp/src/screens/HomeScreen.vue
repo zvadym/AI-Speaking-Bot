@@ -10,7 +10,7 @@
       </p>
 
       <div class="chips">
-        <button class="chip" v-if="me" @click="go('/language', 'home_chip_language')">
+        <button class="chip" v-if="me" disabled>
           🌍 {{ languageLabel }}
         </button>
         <button class="chip" v-if="me" @click="go('/level', 'home_chip_level')">
@@ -61,7 +61,7 @@
         </div>
       </button>
 
-      <button class="menu-card" @click="go('/language', 'home_menu_language')">
+      <button class="menu-card" disabled>
         <div class="left">
           <div class="emoji">🌍</div>
         </div>
@@ -214,6 +214,16 @@ const planLabel = computed(() => {
   box-shadow: 0 10px 22px var(--shadow);
 }
 
+.chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.chip:disabled:active {
+  transform: none;
+  box-shadow: 0 14px 30px var(--shadow);
+}
+
 .locale-switch {
   display: inline-flex;
   align-items: center;
@@ -299,6 +309,16 @@ const planLabel = computed(() => {
 .menu-card:active {
   transform: translateY(2px);
   box-shadow: 0 12px 30px var(--shadow);
+}
+
+.menu-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.menu-card:disabled:active {
+  transform: none;
+  box-shadow: 0 18px 45px var(--shadow);
 }
 
 .emoji {

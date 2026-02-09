@@ -4,7 +4,7 @@
       <div class="kicker">{{ $t('language.kicker') }}</div>
       <h1>{{ $t('language.title') }}</h1>
       <p class="sub">
-        {{ $t('language.subPrefix') }} <code>/lang</code>{{ $t('language.subSuffix') }}
+        {{ $t('language.subLocked') }}
       </p>
     </header>
 
@@ -14,7 +14,7 @@
         :key="lang.code"
         class="row"
         :class="{ active: current === lang.code, busy: busy === lang.code }"
-        :disabled="Boolean(busy)"
+        :disabled="languageLocked || Boolean(busy)"
         @click="setLang(lang.code)"
       >
         <div class="flag" aria-hidden="true">{{ lang.flag }}</div>
@@ -56,6 +56,7 @@ const emit = defineEmits(['navigate']);
 const { t } = useI18n({ useScope: 'global' });
 
 const busy = ref('');
+const languageLocked = true;
 
 const languages = computed(() => [
   { code: 'en', flag: '🇬🇧', label: t('practiceLanguages.en'), note: t('language.options.en.note') },
@@ -65,6 +66,7 @@ const languages = computed(() => [
 const current = computed(() => (props.me?.target_lang || 'en').toLowerCase());
 
 async function setLang(code) {
+  if (languageLocked) return;
   if (busy.value) return;
   busy.value = code;
   track('ui_click', { id: 'language_select', lang: code });
@@ -172,6 +174,7 @@ async function setLang(code) {
 
 .row:disabled {
   cursor: default;
+  opacity: 0.65;
 }
 
 .flag {
