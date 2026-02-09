@@ -122,6 +122,28 @@ def deterministic_workflow_id(prefix: str, bot_key: str) -> str:
     return uuid.uuid5(uuid.NAMESPACE_URL, f"{prefix}:{bot_key}").hex
 
 
+def patch_webhook_ids_for_bot(workflow_data: Dict[str, Any], workflow_prefix: str, bot_key: str) -> None:
+    """
+    Ensure webhook paths are unique per bot workflow clone.
+    n8n stores webhook path IDs on nodes as "webhookId". If we clone workflows
+    without changing them, multiple bots conflict on activation.
+    """
+    nodes = workflow_data.get("nodes", [])
+    if not isinstance(nodes, list):
+        return
+
+    for idx, node in enumerate(nodes):
+        if not isinstance(node, dict):
+            continue
+        webhook_id = node.get("webhookId")
+        if not isinstance(webhook_id, str) or not webhook_id.strip():
+            continue
+        node_name = node.get("name") or f"node-{idx}"
+        node_type = node.get("type") or "unknown"
+        seed = f"webhook:{workflow_prefix}:{bot_key}:{idx}:{node_type}:{node_name}"
+        node["webhookId"] = str(uuid.uuid5(uuid.NAMESPACE_URL, seed))
+
+
 def to_loader_messages_expression(messages: List[str]) -> str:
     # Keep loader workflow message rotation generic; main workflow passes messages.
     # Store as a string expression so it works in n8n "string" fields.
@@ -314,6 +336,9 @@ def main() -> int:
             ai["name"] = f"ai-bot-{bot_key}"
             loader["id"] = loader_id
             loader["name"] = f"loader-messages-rotator-{bot_key}"
+
+            patch_webhook_ids_for_bot(ai, "ai-bot", bot_key)
+            patch_webhook_ids_for_bot(loader, "loader-messages-rotator", bot_key)
 
             patch_settings_node(ai, bot_key, base, learn)
             patch_set_locale_node(ai, locale)
