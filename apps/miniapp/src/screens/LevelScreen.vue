@@ -34,7 +34,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from '../i18n.js';
 import { apiJson } from '../lib/api.js';
 import { tgHaptic } from '../lib/tg.js';
-import { track } from '../lib/analytics.js';
+import { track } from '../lib/metrics.js';
 import BackToMenu from '../components/BackToMenu.vue';
 
 const props = defineProps({

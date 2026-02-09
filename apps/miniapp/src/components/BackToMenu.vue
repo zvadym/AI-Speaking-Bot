@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-import { track } from '../lib/analytics.js';
+import { track } from '../lib/metrics.js';
 
 const emit = defineEmits(['navigate']);
 

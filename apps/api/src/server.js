@@ -846,6 +846,58 @@ app.get('/admin/metrics/active-users-by-day', requireAdmin, async (req, res) => 
   });
 });
 
+app.get('/admin/metrics/active-users-by-day-by-bot', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     counts AS (
+       SELECT
+         date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+         v.bot_key,
+         COUNT(DISTINCT v.chat_id)::int AS count
+       FROM voice_usage_events v
+       JOIN filtered_users u ON u.chat_id = v.chat_id
+       WHERE v.occurred_at >= (SELECT from_ts FROM params)
+         AND v.occurred_at < (SELECT to_ts FROM params)
+       GROUP BY 1, 2
+     )
+     SELECT
+       d.day_utc::text AS day,
+       c.bot_key,
+       COALESCE(c.count, 0)::int AS count
+     FROM days d
+     CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots
+     LEFT JOIN counts c ON c.day_utc = d.day_utc AND c.bot_key = bots.bot_key
+     ORDER BY d.day_utc ASC, bots.bot_key ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
 app.get('/admin/metrics/inactive-users-by-day', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
@@ -939,6 +991,18 @@ app.get('/admin/metrics/usage-seconds-by-day', requireAdmin, async (req, res) =>
     to: range.to.toISOString(),
     payload: range.payload,
     series: rows
+  });
+});
+
+app.get('/admin/metrics/bot-stats', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `SELECT * FROM bot_stats ORDER BY bot_key`
+  );
+
+  return res.json({
+    bots: rows || []
   });
 });
 

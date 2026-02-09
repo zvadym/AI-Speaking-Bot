@@ -48,7 +48,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { useI18n } from '../i18n.js';
-import { track } from '../lib/analytics.js';
+import { track } from '../lib/metrics.js';
 import DebugPanel from '../components/DebugPanel.vue';
 import { addDebugLog, clearDebugLogs, isDebugEnabled, readDebugLogs, setDebugEnabled, subscribeDebugLogs } from '../lib/debug.js';
 

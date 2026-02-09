@@ -86,7 +86,7 @@ import { useI18n } from './i18n.js';
 import { useNav } from './lib/nav.js';
 import { apiJson, authTelegram } from './lib/api.js';
 import { getTelegramWebApp, tgReady } from './lib/tg.js';
-import { identifyUser, track, trackScreen } from './lib/analytics.js';
+import { identifyUser, track, trackScreen } from './lib/metrics.js';
 
 	const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
 

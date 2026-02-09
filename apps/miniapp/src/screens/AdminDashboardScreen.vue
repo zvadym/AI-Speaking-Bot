@@ -97,6 +97,35 @@
         </div>
       </section>
 
+      <section class="card" v-if="botStats.length">
+        <header class="bot-stats-head">
+          <div class="kicker">Bot Statistics</div>
+          <div class="sub">Per-bot user counts and activity metrics</div>
+        </header>
+        <div class="bot-stats-grid">
+          <div class="bot-stat" v-for="bot in botStats" :key="bot.bot_key">
+            <div class="bot-stat-header">
+              <span class="bot-key-badge">{{ bot.bot_key }}</span>
+              <span class="bot-stat-total">{{ fmt(bot.total_users) }} users</span>
+            </div>
+            <div class="bot-stat-metrics">
+              <div class="metric">
+                <span class="metric-label">Active</span>
+                <span class="metric-value">{{ fmt(bot.active_users) }}</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Last 7d</span>
+                <span class="metric-value">{{ fmt(bot.users_last_7_days) }}</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Last 30d</span>
+                <span class="metric-value">{{ fmt(bot.users_last_30_days) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <AdminChart
         title="New users by day"
         kind="bar"
@@ -121,6 +150,14 @@
         kind="bar"
         :data="activeUsersSeries"
         :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
+      />
+
+      <AdminChart
+        title="Active users by day by bot"
+        subtitle="Active users split by bot (stacked)"
+        kind="bar"
+        :data="activeUsersByBotSeries"
+        :series="activeUsersByBotSeriesConfig"
       />
 
       <AdminChart
@@ -440,9 +477,13 @@ const totals = ref({
   pro_users_in_range: 0
 });
 
+const botStats = ref([]);
+
 const newUsersSeries = ref([]);
 const newPaidSeries = ref([]);
 const activeUsersSeries = ref([]);
+const activeUsersByBotSeries = ref([]);
+const activeUsersByBotSeriesConfig = ref([]);
 const inactiveUsersSeries = ref([]);
 const usageSecondsSeries = ref([]);
 const previewLoading = ref(false);
@@ -504,6 +545,51 @@ function clampNumber(value, min, max, fallback) {
   if (num < min) return min;
   if (num > max) return max;
   return num;
+}
+
+function transformByBotData(rows) {
+  // Transform rows like [{ day, bot_key, count }, ...] 
+  // into [{ day, uk_en: count, uk_de: count }, ...]
+  const byDay = {};
+  const botsSet = new Set();
+  
+  for (const row of rows) {
+    const day = row.day;
+    const botKey = row.bot_key || 'unknown';
+    const count = Number(row.count || 0);
+    
+    botsSet.add(botKey);
+    
+    if (!byDay[day]) {
+      byDay[day] = { day };
+    }
+    
+    // Convert bot-key to valid JS property key (replace '-' with '_')
+    const safeKey = botKey.replace(/-/g, '_');
+    byDay[day][safeKey] = count;
+  }
+  
+  // Convert to array and sort by day
+  const chartData = Object.values(byDay).sort((a, b) => a.day.localeCompare(b.day));
+  
+  // Build series config dynamically
+  const botColors = {
+    'uk_en': 'rgba(31, 107, 99, 0.88)',    // Teal for English
+    'uk_de': 'rgba(199, 90, 36, 0.88)',    // Orange for German
+  };
+  
+  const seriesConfig = Array.from(botsSet)
+    .sort()
+    .map(botKey => {
+      const safeKey = botKey.replace(/-/g, '_');
+      return {
+        key: safeKey,
+        label: botKey,
+        color: botColors[safeKey] || 'rgba(100, 100, 100, 0.85)'
+      };
+    });
+  
+  return { chartData, seriesConfig };
 }
 
 function query() {
@@ -724,23 +810,33 @@ async function refresh() {
   try {
     const q = query();
     const headers = adminHeaders();
-    const [summary, newUsers, newPaid, activeUsers, inactiveUsers, usageSeconds, payloads] = await Promise.all([
+    const [summary, botStatsData, newUsers, newPaid, activeUsers, activeUsersByBot, inactiveUsers, usageSeconds, payloads] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers }),
       apiJson(props.apiBase, '/admin/metrics/new-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/new-paid-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
     ]);
 
     totals.value = summary?.totals || totals.value;
+    botStats.value = Array.isArray(botStatsData?.bots) ? botStatsData.bots : [];
     newUsersSeries.value = Array.isArray(newUsers?.series) ? newUsers.series : [];
     newPaidSeries.value = Array.isArray(newPaid?.series) ? newPaid.series : [];
     activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
+    
+    // Transform bot-specific data
+    const byBotRawRows = Array.isArray(activeUsersByBot?.series) ? activeUsersByBot.series : [];
+    const { chartData: byBotData, seriesConfig: byBotConfig } = transformByBotData(byBotRawRows);
+    activeUsersByBotSeries.value = byBotData;
+    activeUsersByBotSeriesConfig.value = byBotConfig;
+    
     lastUpdated.value = isoStampNow();
   } catch (err) {
     console.error(err);
@@ -1339,5 +1435,77 @@ h1 {
 
 .stamp {
   opacity: 0.9;
+}
+
+.bot-stats-head {
+  display: grid;
+  gap: 6px;
+}
+
+.bot-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.bot-stat {
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  border-radius: 14px;
+  background: rgba(246, 241, 232, 0.4);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.bot-stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.bot-key-badge {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.bot-stat-total {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.bot-stat-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.metric {
+  display: grid;
+  gap: 3px;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 820px) {
+  .bot-stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

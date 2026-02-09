@@ -109,7 +109,7 @@
 import { computed } from 'vue';
 import { useI18n } from '../i18n.js';
 import { setAppLocale } from '../i18n.js';
-import { track } from '../lib/analytics.js';
+import { track } from '../lib/metrics.js';
 
 const props = defineProps({
   me: { type: Object, default: null }
