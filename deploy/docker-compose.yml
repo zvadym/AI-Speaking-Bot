@@ -42,7 +42,7 @@ services:
       - caddy_config:/config
 
   n8n:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:2.7.3
     restart: unless-stopped
     ports:
       - "127.0.0.1:5678:5678"
@@ -55,7 +55,7 @@ services:
       - ./workflows:/workflows:ro
 
   n8n-import:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:2.7.3
     profiles: ["tools"]
     restart: "no"
     env_file:
