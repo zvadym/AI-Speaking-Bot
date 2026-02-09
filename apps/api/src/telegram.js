@@ -9,6 +9,29 @@ function safeHexBuffer(hex) {
   }
 }
 
+function verifyInitDataWithToken({ dataCheckString, providedHash }, token) {
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(token).digest();
+  const expectedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+  const expectedBuffer = safeHexBuffer(expectedHash);
+  const providedBuffer = safeHexBuffer(providedHash);
+  if (!expectedBuffer || !providedBuffer || expectedBuffer.length !== providedBuffer.length) return false;
+
+  return crypto.timingSafeEqual(expectedBuffer, providedBuffer);
+}
+
+function candidateTokens() {
+  const tokens = [];
+  for (const [botKey, token] of Object.entries(env.telegramBotTokensByBotKey || {})) {
+    if (!token) continue;
+    tokens.push({ botKey, token });
+  }
+  if (env.telegramBotToken) {
+    tokens.push({ botKey: null, token: env.telegramBotToken });
+  }
+  return tokens;
+}
+
 export function verifyInitData(initData) {
   if (!initData || typeof initData !== 'string') {
     return { ok: false, reason: 'missing_init_data' };
@@ -28,22 +51,18 @@ export function verifyInitData(initData) {
   entries.sort();
   const dataCheckString = entries.join('\n');
 
-  const secretKey = crypto.createHmac('sha256', 'WebAppData')
-    .update(env.telegramBotToken)
-    .digest();
-
-  const expectedHash = crypto
-    .createHmac('sha256', secretKey)
-    .update(dataCheckString)
-    .digest('hex');
-
-  const expectedBuffer = safeHexBuffer(expectedHash);
-  const providedBuffer = safeHexBuffer(hash);
-  if (!expectedBuffer || !providedBuffer || expectedBuffer.length !== providedBuffer.length) {
-    return { ok: false, reason: 'bad_hash' };
+  const verification = { dataCheckString, providedHash: hash };
+  let matchedBotKey = null;
+  let ok = false;
+  for (const candidate of candidateTokens()) {
+    if (verifyInitDataWithToken(verification, candidate.token)) {
+      matchedBotKey = candidate.botKey;
+      ok = true;
+      break;
+    }
   }
 
-  if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
+  if (!ok) {
     return { ok: false, reason: 'bad_hash' };
   }
 
@@ -68,5 +87,5 @@ export function verifyInitData(initData) {
     }
   }
 
-  return { ok: true, user, authDate };
+  return { ok: true, user, authDate, botKey: matchedBotKey };
 }

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ai-language-school.online/sitemap.xml
+

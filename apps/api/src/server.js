@@ -64,6 +64,84 @@ function requireAdmin(req, res, next) {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function normalizeBotKey(raw) {
+  const value = (raw ?? '').toString().trim().toLowerCase();
+  if (!value) return null;
+  return value.slice(0, 32);
+}
+
+function botKeyFromTargetLang(targetLangRaw) {
+  const targetLang = (targetLangRaw ?? '').toString().trim().toLowerCase();
+  if (targetLang && env.botKeyByTargetLang && env.botKeyByTargetLang[targetLang]) {
+    return normalizeBotKey(env.botKeyByTargetLang[targetLang]);
+  }
+  if (targetLang) {
+    const base = (env.defaultBotKey || 'uk-de').split('-')[0] || 'uk';
+    return normalizeBotKey(`${base}-${targetLang}`);
+  }
+  return normalizeBotKey(env.defaultBotKey);
+}
+
+async function resolveUserBotKey(chatIdRaw) {
+  const chatId = Number(chatIdRaw);
+  if (!Number.isFinite(chatId)) return normalizeBotKey(env.defaultBotKey);
+
+  const { rows } = await pool.query(
+    `SELECT bot_key, target_lang
+       FROM users
+      WHERE chat_id = $1
+      LIMIT 1`,
+    [chatId]
+  );
+
+  const row = rows[0] || null;
+  const fromUser = normalizeBotKey(row?.bot_key || null);
+  if (fromUser) return fromUser;
+  return botKeyFromTargetLang(row?.target_lang || null);
+}
+
+function webhookUrlForBot(templateUrl, hookName, botKeyRaw) {
+  const template = (templateUrl ?? '').toString().trim();
+  if (!template) return '';
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (!botKey) return template;
+
+  if (template.includes('{bot_key}')) {
+    return template.split('{bot_key}').join(botKey);
+  }
+
+  if (!env.webhooksAppendBotKey) {
+    return template;
+  }
+
+  try {
+    const u = new URL(template);
+    const suffix = `-${botKey}`;
+    if (u.pathname.endsWith(suffix)) return u.toString();
+    if (u.pathname.endsWith(`/${hookName}`)) {
+      u.pathname = `${u.pathname}${suffix}`;
+      return u.toString();
+    }
+    return template;
+  } catch {
+    const suffix = `-${botKey}`;
+    if (template.endsWith(suffix)) return template;
+    if (template.endsWith(`/${hookName}`)) return `${template}${suffix}`;
+    return template;
+  }
+}
+
+function resolveTelegramBotToken(botKeyRaw) {
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (botKey) {
+    const fromMap = env.telegramBotTokensByBotKey?.[botKey];
+    if (typeof fromMap === 'string' && fromMap.trim()) return fromMap;
+  }
+  if (env.telegramBotToken) return env.telegramBotToken;
+  const first = Object.values(env.telegramBotTokensByBotKey || {}).find((v) => typeof v === 'string' && v.trim());
+  return first || '';
+}
+
 function parseUtcBoundary(raw, fallbackDate) {
   const value = (raw ?? '').toString().trim();
   if (!value) return fallbackDate;
@@ -369,8 +447,15 @@ async function updateUserDeliveryState(chatId, { status, lastError, inactiveReas
   }
 }
 
-async function sendTelegramTextMessage(chatId, text) {
-  const response = await fetch(`https://api.telegram.org/bot${env.telegramBotToken}/sendMessage`, {
+async function sendTelegramTextMessage(chatId, text, { botKey = null } = {}) {
+  const token = resolveTelegramBotToken(botKey);
+  if (!token) {
+    const err = new Error('missing_telegram_bot_token');
+    err.code = 'missing_telegram_bot_token';
+    throw err;
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -474,12 +559,15 @@ async function processBroadcastCampaign(campaignId) {
   try {
     while (true) {
       const { rows: pendingRows } = await pool.query(
-        `SELECT chat_id
-           FROM broadcast_recipients
-          WHERE campaign_id = $1
-            AND status = 'pending'
-          ORDER BY chat_id ASC
-          LIMIT $2`,
+        `SELECT
+           r.chat_id,
+           u.bot_key
+         FROM broadcast_recipients r
+         JOIN users u ON u.chat_id = r.chat_id
+        WHERE r.campaign_id = $1
+          AND r.status = 'pending'
+        ORDER BY r.chat_id ASC
+        LIMIT $2`,
         [id, env.broadcastProcessBatchSize]
       );
       if (pendingRows.length === 0) break;
@@ -491,7 +579,7 @@ async function processBroadcastCampaign(campaignId) {
         let inactiveReason = null;
 
         try {
-          const sent = await sendTelegramTextMessage(row.chat_id, messageText);
+          const sent = await sendTelegramTextMessage(row.chat_id, messageText, { botKey: row.bot_key || null });
           const msgId = Number(sent?.message_id);
           telegramMessageId = Number.isFinite(msgId) ? msgId : null;
         } catch (err) {
@@ -543,11 +631,12 @@ async function processBroadcastCampaign(campaignId) {
 async function notifyBroadcastQueued(payload) {
   if (!env.broadcastWebhookUrl) return false;
   try {
+    const url = webhookUrlForBot(env.broadcastWebhookUrl, 'admin-broadcast', env.defaultBotKey);
     const headers = { 'Content-Type': 'application/json' };
     if (env.broadcastWebhookSecret) {
       headers['x-broadcast-secret'] = env.broadcastWebhookSecret;
     }
-    const resp = await fetch(env.broadcastWebhookUrl, {
+    const resp = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload)
@@ -1155,7 +1244,7 @@ app.post('/auth/telegram', async (req, res) => {
     return res.status(400).json({ error: 'missing_user' });
   }
 
-  await upsertUser(user);
+  await upsertUser(user, { botKey: result.botKey || null });
 
   const token = signSession({ chatId: user.id, username: user.username || null });
   console.info('auth/telegram ok', {
@@ -1986,14 +2075,16 @@ app.post('/billing/downgrade', requireAuth, async (req, res) => {
   });
 });
 
-async function upsertUser(user) {
+async function upsertUser(user, { botKey = null } = {}) {
   const chatId = user.id;
   const username = user.username || null;
   const firstName = user.first_name || null;
+  const normalizedBotKey = normalizeBotKey(botKey);
+  const botKeyForInsert = normalizedBotKey || normalizeBotKey(env.defaultBotKey);
 
   await pool.query(
-    `INSERT INTO users (chat_id, username, first_name, is_active, inactive_reason, inactive_at, last_delivery_error)
-     VALUES ($1, $2, $3, true, NULL, NULL, NULL)
+    `INSERT INTO users (chat_id, username, first_name, is_active, inactive_reason, inactive_at, last_delivery_error, bot_key)
+     VALUES ($1, $2, $3, true, NULL, NULL, NULL, $4)
      ON CONFLICT (chat_id) DO UPDATE SET
        username = EXCLUDED.username,
        first_name = EXCLUDED.first_name,
@@ -2001,8 +2092,9 @@ async function upsertUser(user) {
        inactive_reason = NULL,
        inactive_at = NULL,
        last_delivery_error = NULL,
+       bot_key = COALESCE($5, users.bot_key),
        updated_at = NOW()`,
-    [chatId, username, firstName]
+    [chatId, username, firstName, botKeyForInsert, normalizedBotKey]
   );
 }
 
@@ -2020,7 +2112,9 @@ async function resolveTierByPrice(priceId) {
 async function notifyPlanChanged(payload) {
   if (!env.planChangedWebhookUrl) return;
   try {
-    const resp = await fetch(env.planChangedWebhookUrl, {
+    const botKey = await resolveUserBotKey(payload?.chat_id);
+    const url = webhookUrlForBot(env.planChangedWebhookUrl, 'plan-changed', botKey);
+    const resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

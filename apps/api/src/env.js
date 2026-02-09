@@ -8,6 +8,28 @@ function requireEnv(name) {
   return value;
 }
 
+function optionalJsonObject(name) {
+  const raw = process.env[name];
+  if (!raw) return {};
+  let parsed = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(`Invalid JSON in env var: ${name}`);
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`Expected JSON object in env var: ${name}`);
+  }
+  const obj = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (typeof value !== 'string' || !value.trim()) continue;
+    const normalizedKey = String(key).trim().toLowerCase();
+    if (!normalizedKey) continue;
+    obj[normalizedKey] = value;
+  }
+  return obj;
+}
+
 function optionalUrl(name) {
   const value = process.env[name];
   if (!value) return '';
@@ -29,6 +51,14 @@ function optionalInteger(name, fallback, { min = Number.MIN_SAFE_INTEGER, max = 
   return value;
 }
 
+function optionalBoolean(name, fallback = false) {
+  const raw = (process.env[name] ?? '').toString().trim().toLowerCase();
+  if (!raw) return fallback;
+  if (raw === 'true' || raw === '1' || raw === 'yes') return true;
+  if (raw === 'false' || raw === '0' || raw === 'no') return false;
+  throw new Error(`Invalid boolean in env var: ${name}`);
+}
+
 const port = Number(process.env.API_PORT || 3000);
 const telegramInitDataMaxAgeSec = Number(process.env.TELEGRAM_INITDATA_MAX_AGE || 86400);
 const corsOrigins = (process.env.CORS_ORIGINS || '')
@@ -42,6 +72,12 @@ const sslRejectUnauthorized = (process.env.DATABASE_SSL_REJECT_UNAUTHORIZED || '
 const webappUrl = requireEnv('WEBAPP_URL');
 const webappReturnUrlRaw = optionalUrl('WEBAPP_RETURN_URL');
 
+const telegramBotTokensByBotKey = optionalJsonObject('TELEGRAM_BOT_TOKENS_JSON');
+const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || '';
+if (!telegramBotToken && Object.keys(telegramBotTokensByBotKey).length === 0) {
+  throw new Error('Missing required env var: TELEGRAM_BOT_TOKEN (or TELEGRAM_BOT_TOKENS_JSON)');
+}
+
 export const env = {
   port,
   apiBaseUrl: process.env.API_BASE_URL || `http://localhost:${port}`,
@@ -51,7 +87,8 @@ export const env = {
   databaseUrl: requireEnv('DATABASE_URL'),
   databaseSsl: sslEnabled,
   databaseSslRejectUnauthorized: sslRejectUnauthorized,
-  telegramBotToken: requireEnv('TELEGRAM_BOT_TOKEN'),
+  telegramBotToken,
+  telegramBotTokensByBotKey,
   telegramInitDataMaxAgeSec,
   stripeSecretKey: requireEnv('STRIPE_SECRET_KEY'),
   stripeWebhookSecret: requireEnv('STRIPE_WEBHOOK_SECRET'),
@@ -64,5 +101,8 @@ export const env = {
   broadcastWebhookSecret: process.env.BROADCAST_WEBHOOK_SECRET || '',
   broadcastMaxRecipients: optionalInteger('BROADCAST_MAX_RECIPIENTS', 2000, { min: 1, max: 100000 }),
   broadcastProcessBatchSize: optionalInteger('BROADCAST_PROCESS_BATCH_SIZE', 100, { min: 1, max: 1000 }),
-  broadcastPerMessageDelayMs: optionalInteger('BROADCAST_PER_MESSAGE_DELAY_MS', 35, { min: 0, max: 5000 })
+  broadcastPerMessageDelayMs: optionalInteger('BROADCAST_PER_MESSAGE_DELAY_MS', 35, { min: 0, max: 5000 }),
+  defaultBotKey: (process.env.DEFAULT_BOT_KEY || 'uk-de').toString().trim().toLowerCase(),
+  botKeyByTargetLang: optionalJsonObject('BOT_KEY_BY_TARGET_LANG_JSON'),
+  webhooksAppendBotKey: optionalBoolean('WEBHOOKS_APPEND_BOT_KEY', false)
 };

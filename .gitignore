@@ -4,6 +4,8 @@ __pycache__
 node_modules
 apps/**/node_modules
 apps/miniapp/dist
+apps/landing/dist
+apps/**/.vercel
 deploy/.env.api
 deploy/.env.miniapp
 deploy/.env.prod

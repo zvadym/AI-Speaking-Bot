@@ -1,0 +1,1165 @@
+{
+  "version": "2.7",
+  "children": [
+    {
+      "type": "frame",
+      "id": "bi8Au",
+      "x": 0,
+      "y": 0,
+      "name": "Landing — Desktop",
+      "width": 1440,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "JpqPd",
+          "name": "Header",
+          "width": "fill_container",
+          "stroke": {
+            "fill": "#E4E4E7",
+            "thickness": {
+              "bottom": 1
+            }
+          },
+          "padding": [
+            20,
+            80
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "SUUpO",
+              "name": "Brand",
+              "fill": "#000000",
+              "content": "AI Language School",
+              "fontFamily": "Outfit",
+              "fontSize": 18,
+              "fontWeight": "800"
+            },
+            {
+              "type": "frame",
+              "id": "C2xPM",
+              "name": "Nav",
+              "gap": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "mHSV2",
+                  "name": "navTeachers",
+                  "fill": "#000000",
+                  "content": "Teachers",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "S3CoD",
+                  "name": "navHow",
+                  "fill": "#000000",
+                  "content": "How it works",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "mfLfj",
+                  "name": "navPricing",
+                  "fill": "#000000",
+                  "content": "Pricing",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "OZgni",
+                  "name": "CTA",
+                  "fill": "#000000",
+                  "cornerRadius": 12,
+                  "padding": [
+                    10,
+                    14
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "DlKiL",
+                      "name": "ctaText",
+                      "fill": "#FFFFFF",
+                      "content": "Start in Telegram",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ij6FR",
+          "name": "Hero",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": 80,
+          "children": [
+            {
+              "type": "frame",
+              "id": "QxPiq",
+              "name": "Badge",
+              "fill": "#F4F4F5",
+              "cornerRadius": 999,
+              "stroke": {
+                "fill": "#E4E4E7",
+                "thickness": 1
+              },
+              "padding": [
+                8,
+                12
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "WxsMw",
+                  "name": "badgeText",
+                  "fill": "#000000",
+                  "content": "Voice-first language practice",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "RtJ4Y",
+              "name": "Headline",
+              "fill": "#000000",
+              "content": "Learn by speaking.",
+              "lineHeight": 1.05,
+              "fontFamily": "Outfit",
+              "fontSize": 72,
+              "fontWeight": "900"
+            },
+            {
+              "type": "text",
+              "id": "8blko",
+              "name": "Subhead",
+              "fill": "#71717A",
+              "content": "Choose a teacher bot, send voice messages, get instant corrections and better phrasing — every day.",
+              "lineHeight": 1.5,
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "iN5UA",
+              "name": "Actions",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "s8lVd",
+                  "name": "Primary",
+                  "fill": "#000000",
+                  "cornerRadius": 16,
+                  "padding": [
+                    14,
+                    18
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ugscU",
+                      "name": "primaryText",
+                      "fill": "#FFFFFF",
+                      "content": "Start in Telegram",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vKMPq",
+                  "name": "Secondary",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "stroke": {
+                    "fill": "#E4E4E7",
+                    "thickness": 1
+                  },
+                  "padding": [
+                    14,
+                    18
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "gw3iS",
+                      "name": "secondaryText",
+                      "fill": "#000000",
+                      "content": "Meet the teachers",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "d3B1n",
+              "name": "Product screenshot",
+              "width": "fill_container",
+              "height": 420,
+              "fill": "#F4F4F5",
+              "cornerRadius": 24,
+              "stroke": {
+                "fill": "#E4E4E7",
+                "thickness": 1
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rmG7k",
+                  "name": "shotText",
+                  "fill": "#71717A",
+                  "content": "Screenshot placeholder",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "op1KQ",
+          "name": "Teachers",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": 80,
+          "children": [
+            {
+              "type": "frame",
+              "id": "0R2Ut",
+              "name": "Teachers Header",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "EoyF1",
+                  "name": "Teachers Title",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qkzKq",
+                      "name": "teachersTitle",
+                      "fill": "#000000",
+                      "content": "Teachers",
+                      "fontFamily": "Outfit",
+                      "fontSize": 40,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "6BEms",
+                      "name": "teachersDesc",
+                      "fill": "#71717A",
+                      "content": "Each teacher is a Telegram bot with their own tone, languages, and focus.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "4E1O8",
+                  "name": "All teachers",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "stroke": {
+                    "fill": "#E4E4E7",
+                    "thickness": 1
+                  },
+                  "padding": [
+                    12,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t9WGq",
+                      "name": "teachersCtaText",
+                      "fill": "#000000",
+                      "content": "All teachers",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fFe0g",
+              "name": "Teacher Cards",
+              "width": "fill_container",
+              "gap": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "gMpJS",
+                  "name": "Teacher Card",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 24,
+                  "stroke": {
+                    "fill": "#E4E4E7",
+                    "thickness": 1
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Q6fcr",
+                      "name": "Photo",
+                      "width": 72,
+                      "height": 72,
+                      "fill": "#F4F4F5",
+                      "cornerRadius": 36,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "3kaBz",
+                      "name": "name1",
+                      "fill": "#000000",
+                      "content": "Lesia",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "v4yhf",
+                      "name": "meta1",
+                      "fill": "#71717A",
+                      "content": "Ukrainian • English • Gentle corrections",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SIfAm",
+                      "name": "View profile",
+                      "fill": "#000000",
+                      "cornerRadius": 16,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "TyDvT",
+                          "name": "btn1Text",
+                          "fill": "#FFFFFF",
+                          "content": "View profile",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Z35nA",
+                  "name": "Teacher Card",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 24,
+                  "stroke": {
+                    "fill": "#E4E4E7",
+                    "thickness": 1
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ZvO45",
+                      "name": "Photo",
+                      "width": 72,
+                      "height": 72,
+                      "fill": "#F4F4F5",
+                      "cornerRadius": 36,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "R4sVB",
+                      "name": "name2",
+                      "fill": "#000000",
+                      "content": "Gabe",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "vd4vt",
+                      "name": "meta2",
+                      "fill": "#71717A",
+                      "content": "English • Fast feedback • Business focus",
+                      "lineHeight": 1.4,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "aa1q3",
+                      "name": "View profile",
+                      "fill": "#000000",
+                      "cornerRadius": 16,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Z4DWB",
+                          "name": "btn2Text",
+                          "fill": "#FFFFFF",
+                          "content": "View profile",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "0kprb",
+          "name": "How it works",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": 80,
+          "children": [
+            {
+              "type": "text",
+              "id": "kkJYY",
+              "name": "howTitle",
+              "fill": "#000000",
+              "content": "How it works",
+              "fontFamily": "Outfit",
+              "fontSize": 40,
+              "fontWeight": "900"
+            },
+            {
+              "type": "frame",
+              "id": "YLeV6",
+              "name": "Steps",
+              "width": "fill_container",
+              "gap": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "bbI51",
+                  "name": "Step",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 24,
+                  "stroke": {
+                    "fill": "#E4E4E7",
+                    "thickness": 1
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ZsNrK",
+                      "name": "Number",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#F4F4F5",
+                      "cornerRadius": 18,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "bjr76",
+                          "name": "step1NumText",
+                          "fill": "#000000",
+                          "content": "1",
+                          "fontFamily": "Outfit",
+                          "fontSize": 16,
+                          "fontWeight": "900"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "sGTgP",
+                      "name": "step1Title",
+                      "fill": "#000000",
+                      "content": "Pick a teacher",
+                      "fontFamily": "Outfit",
+                      "fontSize": 20,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nzHs0",
+                      "name": "step1Desc",
+                      "fill": "#71717A",
+                      "content": "Choose a teacher bot that matches your level and vibe.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "CVa52",
+                  "name": "Step",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 24,
+                  "stroke": {
+                    "fill": "#E4E4E7",
+                    "thickness": 1
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "zZyNl",
+                      "name": "Number",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#F4F4F5",
+                      "cornerRadius": 18,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "sRCcE",
+                          "name": "step2NumText",
+                          "fill": "#000000",
+                          "content": "2",
+                          "fontFamily": "Outfit",
+                          "fontSize": 16,
+                          "fontWeight": "900"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "mbJhp",
+                      "name": "step2Title",
+                      "fill": "#000000",
+                      "content": "Send a voice message",
+                      "fontFamily": "Outfit",
+                      "fontSize": 20,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "rPTSV",
+                      "name": "step2Desc",
+                      "fill": "#71717A",
+                      "content": "Speak naturally — the teacher will transcribe and correct you.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yurFp",
+                  "name": "Step",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 24,
+                  "stroke": {
+                    "fill": "#E4E4E7",
+                    "thickness": 1
+                  },
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "sEQyM",
+                      "name": "Number",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#F4F4F5",
+                      "cornerRadius": 18,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "3Fctp",
+                          "name": "step3NumText",
+                          "fill": "#000000",
+                          "content": "3",
+                          "fontFamily": "Outfit",
+                          "fontSize": 16,
+                          "fontWeight": "900"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ZbwD3",
+                      "name": "step3Title",
+                      "fill": "#000000",
+                      "content": "Improve daily",
+                      "fontFamily": "Outfit",
+                      "fontSize": 20,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Adez9",
+                      "name": "step3Desc",
+                      "fill": "#71717A",
+                      "content": "Save corrections, learn patterns, and build a real speaking habit.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ZPChn",
+      "x": 1540,
+      "y": 0,
+      "name": "Teachers — Desktop",
+      "width": 1440,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "OhK1j",
+          "name": "Header",
+          "width": "fill_container",
+          "stroke": {
+            "fill": "#E4E4E7",
+            "thickness": {
+              "bottom": 1
+            }
+          },
+          "padding": [
+            20,
+            80
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "cs7U1",
+              "name": "Brand",
+              "fill": "#000000",
+              "content": "AI Language School",
+              "fontFamily": "Outfit",
+              "fontSize": 18,
+              "fontWeight": "800"
+            },
+            {
+              "type": "frame",
+              "id": "WGZu4",
+              "name": "Nav",
+              "gap": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "5RSSw",
+                  "name": "navHome2",
+                  "fill": "#000000",
+                  "content": "Home",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "zz4Rf",
+                  "name": "navTeachers2",
+                  "fill": "#000000",
+                  "content": "Teachers",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "xHqSv",
+                  "name": "CTA",
+                  "fill": "#000000",
+                  "cornerRadius": 12,
+                  "padding": [
+                    10,
+                    14
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "T6Bxv",
+                      "name": "cta2Text",
+                      "fill": "#FFFFFF",
+                      "content": "Start in Telegram",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "L1Rcy",
+          "name": "Content",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": 80,
+          "children": [
+            {
+              "type": "text",
+              "id": "RoTI8",
+              "name": "title2",
+              "fill": "#000000",
+              "content": "Meet the teachers",
+              "lineHeight": 1.05,
+              "fontFamily": "Outfit",
+              "fontSize": 56,
+              "fontWeight": "900"
+            },
+            {
+              "type": "text",
+              "id": "HjfSa",
+              "name": "desc2",
+              "fill": "#71717A",
+              "content": "Each teacher is a dedicated Telegram bot. Pick one to start speaking today.",
+              "lineHeight": 1.5,
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "yaT85",
+              "name": "Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "e6XPp",
+                  "name": "Row",
+                  "width": "fill_container",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "hKQsM",
+                      "name": "Teacher Card",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 24,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "T1qF0",
+                          "name": "Photo",
+                          "width": 84,
+                          "height": 84,
+                          "fill": "#F4F4F5",
+                          "cornerRadius": 42,
+                          "stroke": {
+                            "fill": "#E4E4E7",
+                            "thickness": 1
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "8MUTM",
+                          "name": "nameA",
+                          "fill": "#000000",
+                          "content": "Lesia",
+                          "fontFamily": "Outfit",
+                          "fontSize": 28,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "iXucU",
+                          "name": "metaA",
+                          "fill": "#71717A",
+                          "content": "Ukrainian • English • Gentle corrections",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "I9oD4",
+                          "name": "Open",
+                          "fill": "#000000",
+                          "cornerRadius": 16,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "DdBIg",
+                              "name": "btnAText",
+                              "fill": "#FFFFFF",
+                              "content": "Open in Telegram",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "O2zq8",
+                      "name": "Teacher Card",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 24,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "YRtez",
+                          "name": "Photo",
+                          "width": 84,
+                          "height": 84,
+                          "fill": "#F4F4F5",
+                          "cornerRadius": 42,
+                          "stroke": {
+                            "fill": "#E4E4E7",
+                            "thickness": 1
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "rQD2Z",
+                          "name": "nameB",
+                          "fill": "#000000",
+                          "content": "Gabe",
+                          "fontFamily": "Outfit",
+                          "fontSize": 28,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "JpBuU",
+                          "name": "metaB",
+                          "fill": "#71717A",
+                          "content": "English • Fast feedback • Business focus",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "T3ntE",
+                          "name": "Open",
+                          "fill": "#000000",
+                          "cornerRadius": 16,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "U7JLH",
+                              "name": "btnBText",
+                              "fill": "#FFFFFF",
+                              "content": "Open in Telegram",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TxvVr",
+                  "name": "Row",
+                  "width": "fill_container",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pbsZf",
+                      "name": "Teacher Card",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 24,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "QElbW",
+                          "name": "Photo",
+                          "width": 84,
+                          "height": 84,
+                          "fill": "#F4F4F5",
+                          "cornerRadius": 42,
+                          "stroke": {
+                            "fill": "#E4E4E7",
+                            "thickness": 1
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "xMNxT",
+                          "name": "nameC",
+                          "fill": "#000000",
+                          "content": "Mira",
+                          "fontFamily": "Outfit",
+                          "fontSize": 28,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Zepk6",
+                          "name": "metaC",
+                          "fill": "#71717A",
+                          "content": "English • Patient practice • Travel",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Gwqp5",
+                          "name": "Open",
+                          "fill": "#000000",
+                          "cornerRadius": 16,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "UKTNv",
+                              "name": "btnCText",
+                              "fill": "#FFFFFF",
+                              "content": "Open in Telegram",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XAqhJ",
+                      "name": "Teacher Card",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 24,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "jtcKr",
+                          "name": "Photo",
+                          "width": 84,
+                          "height": 84,
+                          "fill": "#F4F4F5",
+                          "cornerRadius": 42,
+                          "stroke": {
+                            "fill": "#E4E4E7",
+                            "thickness": 1
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "4j7ND",
+                          "name": "nameD",
+                          "fill": "#000000",
+                          "content": "Alex",
+                          "fontFamily": "Outfit",
+                          "fontSize": 28,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "MQUf8",
+                          "name": "metaD",
+                          "fill": "#71717A",
+                          "content": "German • Structured drills • Grammar",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Z21oi",
+                          "name": "Open",
+                          "fill": "#000000",
+                          "cornerRadius": 16,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "IL3xA",
+                              "name": "btnDText",
+                              "fill": "#FFFFFF",
+                              "content": "Open in Telegram",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
