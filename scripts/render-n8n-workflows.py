@@ -144,6 +144,34 @@ def patch_webhook_ids_for_bot(workflow_data: Dict[str, Any], workflow_prefix: st
         node["webhookId"] = str(uuid.uuid5(uuid.NAMESPACE_URL, seed))
 
 
+def patch_webhook_paths_for_bot(workflow_data: Dict[str, Any], bot_key: str) -> None:
+    """
+    Make n8n Webhook node paths unique per bot clone.
+
+    In multi-bot mode, cloning a workflow that contains webhook triggers would otherwise
+    create conflicting /webhook/<path> endpoints across bots.
+    """
+    nodes = workflow_data.get("nodes", [])
+    if not isinstance(nodes, list):
+        return
+
+    suffix = f"-{bot_key}"
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        if node.get("type") != "n8n-nodes-base.webhook":
+            continue
+        params = node.get("parameters")
+        if not isinstance(params, dict):
+            continue
+        path = params.get("path")
+        if not isinstance(path, str) or not path.strip():
+            continue
+        if path.endswith(suffix):
+            continue
+        params["path"] = f"{path}{suffix}"
+
+
 def to_loader_messages_expression(messages: List[str]) -> str:
     # Keep loader workflow message rotation generic; main workflow passes messages.
     # Store as a string expression so it works in n8n "string" fields.
@@ -268,6 +296,18 @@ def load_bot_configs(bots_dir: Path) -> List[Tuple[str, Dict[str, Any]]]:
     return bots
 
 
+def clear_rendered_output_dir(input_dir: Path, output_dir: Path) -> int:
+    if input_dir.resolve() == output_dir.resolve():
+        raise ValueError("Refusing to clear output: --output must differ from --input")
+
+    removed = 0
+    for path in output_dir.glob("*.json"):
+        if path.is_file():
+            path.unlink()
+            removed += 1
+    return removed
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render n8n workflows with env-specific credential IDs.")
     parser.add_argument("--input", default="deploy/workflows", help="Directory with source workflow JSON files")
@@ -306,6 +346,13 @@ def main() -> int:
     env_map = {ctype: env_key for env_key, types in required.items() for ctype in types}
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        removed = clear_rendered_output_dir(input_dir, output_dir)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    if removed:
+        print(f"Cleared {removed} stale rendered workflow(s) from {output_dir}")
     rendered = 0
 
     if bots_mode:
@@ -337,6 +384,7 @@ def main() -> int:
             loader["id"] = loader_id
             loader["name"] = f"loader-messages-rotator-{bot_key}"
 
+            patch_webhook_paths_for_bot(ai, bot_key)
             patch_webhook_ids_for_bot(ai, "ai-bot", bot_key)
             patch_webhook_ids_for_bot(loader, "loader-messages-rotator", bot_key)
 
@@ -360,7 +408,7 @@ def main() -> int:
                 continue
             wf = load_json(path)
             # Keep Telegram credential IDs from file, unless it is missing and we have bots.
-            # For global workflows like plan-changed, default to the first bot's Telegram creds.
+            # For global workflows, default to the first bot's Telegram creds.
             if bots:
                 has_tg = False
                 for n in wf.get("nodes", []):
