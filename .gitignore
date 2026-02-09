@@ -8,3 +8,4 @@ deploy/.env.api
 deploy/.env.miniapp
 deploy/.env.prod
 deploy/workflows/.rendered
+deploy/workflows/.prod-export
