@@ -172,13 +172,6 @@ def patch_webhook_paths_for_bot(workflow_data: Dict[str, Any], bot_key: str) -> 
         params["path"] = f"{path}{suffix}"
 
 
-def to_loader_messages_expression(messages: List[str]) -> str:
-    # Keep loader workflow message rotation generic; main workflow passes messages.
-    # Store as a string expression so it works in n8n "string" fields.
-    payload = json.dumps(messages, ensure_ascii=False)
-    return f"={{ JSON.stringify({payload}) }}"
-
-
 def patch_settings_node(ai_data: Dict[str, Any], bot_key: str, base_language: str, learning_language: str) -> None:
     node = find_node(ai_data, "Settings")
     params = node.get("parameters", {})
@@ -241,7 +234,8 @@ def patch_set_locale_node(ai_data: Dict[str, Any], locale: Dict[str, Any]) -> No
             continue
         value = locale.get(name)
         if name == "loader_messages" and isinstance(value, list):
-            a["value"] = to_loader_messages_expression([str(x) for x in value])
+            a["value"] = [str(x) for x in value]
+            a["type"] = "array"
         else:
             a["value"] = value
 
