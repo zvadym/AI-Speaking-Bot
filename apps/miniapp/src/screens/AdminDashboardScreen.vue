@@ -261,12 +261,16 @@
         <div class="field grow">
           <span>Bot</span>
           <div class="plan-pills">
-            <label class="pill" :class="{ active: broadcast.botKey === null }">
-              <input v-model="broadcast.botKey" type="radio" :value="null" />
+            <label class="pill" :class="{ active: !hasSelectedBots }">
+              <input
+                type="checkbox"
+                :checked="!hasSelectedBots"
+                @change="broadcast.botKeys = []"
+              />
               <span>All bots</span>
             </label>
-            <label class="pill" v-for="bot in botStats" :key="bot.bot_key" :class="{ active: broadcast.botKey === bot.bot_key }">
-              <input v-model="broadcast.botKey" type="radio" :value="bot.bot_key" />
+            <label class="pill" v-for="bot in botStats" :key="bot.bot_key" :class="{ active: broadcast.botKeys.includes(bot.bot_key) }">
+              <input v-model="broadcast.botKeys" type="checkbox" :value="bot.bot_key" />
               <span>{{ bot.bot_key }}</span>
             </label>
           </div>
@@ -316,7 +320,7 @@
       <div class="preview-sample" v-if="broadcastPreview.sample.length">
         <div class="sample-title">Sample recipients</div>
         <ul>
-          <li v-for="row in broadcastPreview.sample.slice(0, 8)" :key="row.chat_id">
+          <li v-for="row in broadcastPreview.sample.slice(0, 8)" :key="`${row.chat_id}-${row.bot_key}`">
             <code>{{ row.chat_id }}</code>
             <span>{{ row.username ? `@${row.username}` : '(no username)' }}</span>
             <span class="bot-badge">{{ row.bot_key }}</span>
@@ -524,7 +528,7 @@ const broadcast = reactive({
   usageMode: 'any',
   usagePercent: 80,
   messageText: '',
-  botKey: null
+  botKeys: []
 });
 
 let previewTimer = null;
@@ -672,6 +676,7 @@ const selectedPlans = computed(() => {
 });
 
 const hasAnySelectedPlan = computed(() => selectedPlans.value.length > 0);
+const hasSelectedBots = computed(() => broadcast.botKeys.length > 0);
 
 function broadcastFiltersPayload() {
   const filters = {};
@@ -695,8 +700,14 @@ function broadcastFiltersPayload() {
     }
   }
 
-  if (broadcast.botKey !== null) {
-    filters.bots = [broadcast.botKey];
+  if (broadcast.botKeys.length > 0) {
+    filters.bots = Array.from(
+      new Set(
+        broadcast.botKeys
+          .map((v) => (v ?? '').toString().trim().toLowerCase())
+          .filter((v) => v.length > 0 && v.length <= 32)
+      )
+    );
   }
 
   return filters;
@@ -954,7 +965,7 @@ watch(
     broadcast.lastActivityDays,
     broadcast.usageMode,
     broadcast.usagePercent,
-    broadcast.botKey
+    broadcast.botKeys.slice().sort().join(',')
   ],
   () => {
     if (!password.value) {
@@ -975,6 +986,18 @@ watch(
     if (tab === 'feedback' && password.value && feedbackRows.value.length === 0) {
       feedbackOffset.value = 0;
       refreshFeedback();
+    }
+  }
+);
+
+watch(
+  () => botStats.value.map((bot) => bot.bot_key).join(','),
+  () => {
+    if (broadcast.botKeys.length === 0) return;
+    const allowed = new Set(botStats.value.map((bot) => bot.bot_key));
+    const next = broadcast.botKeys.filter((botKey) => allowed.has(botKey));
+    if (next.length !== broadcast.botKeys.length) {
+      broadcast.botKeys = next;
     }
   }
 );

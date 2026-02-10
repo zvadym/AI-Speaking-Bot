@@ -302,10 +302,11 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
     week_usage AS (
       SELECT
         w.chat_id,
-        COALESCE(w.user_audio_seconds, 0)::int AS used_user,
-        COALESCE(w.tts_seconds, 0)::int AS used_tts
+        COALESCE(SUM(w.user_audio_seconds), 0)::int AS used_user,
+        COALESCE(SUM(w.tts_seconds), 0)::int AS used_tts
       FROM usage_week w
       WHERE w.week_start = date_trunc('week', NOW())::date
+      GROUP BY w.chat_id
     ),
     enriched AS (
       SELECT
@@ -344,7 +345,7 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
       LEFT JOIN plans p ON p.tier = e.effective_tier
     ),
     filtered AS (
-      SELECT DISTINCT ON (e.chat_id)
+      SELECT
         e.chat_id,
         e.username,
         e.first_name,
@@ -377,7 +378,6 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
           OR ($5::text = 'percent_gte' AND e.usage_percent >= $6::numeric)
         )
         AND ($7::text[] IS NULL OR e.bot_key = ANY($7::text[]))
-      ORDER BY e.chat_id, e.bot_key
     )
     SELECT ${selectSql}
     FROM filtered f
@@ -396,7 +396,7 @@ async function getBroadcastAudiencePreview(filters, sampleLimit = 20) {
      f.last_activity_at,
      ROUND(f.usage_percent, 2)::numeric AS usage_percent,
      f.limit_reached`,
-    'ORDER BY f.chat_id ASC LIMIT $8::int'
+    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $8::int'
   );
 
   const [countRes, sampleRes] = await Promise.all([
@@ -417,7 +417,7 @@ async function listBroadcastRecipients(filters, limit) {
      f.username,
      f.first_name,
      f.bot_key`,
-    'ORDER BY f.chat_id ASC LIMIT $8::int'
+    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $8::int'
   );
   const { rows } = await pool.query(query, [...params, limit]);
   return rows;
@@ -441,8 +441,21 @@ function classifyPermanentTelegramFailure(err) {
   return null;
 }
 
-async function updateUserDeliveryState(chatId, { status, lastError, inactiveReason }) {
+async function updateUserDeliveryState(chatId, { status, lastError, inactiveReason, botKey = null }) {
+  const normalizedBotKey = normalizeBotKey(botKey);
+
   if (status === 'sent') {
+    if (normalizedBotKey) {
+      await pool.query(
+        `UPDATE user_bots
+            SET is_active = true,
+                updated_at = NOW()
+          WHERE chat_id = $1
+            AND bot_key = $2`,
+        [chatId, normalizedBotKey]
+      );
+    }
+
     await pool.query(
       `UPDATE users
           SET is_active = true,
@@ -457,17 +470,41 @@ async function updateUserDeliveryState(chatId, { status, lastError, inactiveReas
   }
 
   if (inactiveReason) {
+    if (normalizedBotKey) {
+      await pool.query(
+        `UPDATE user_bots
+            SET is_active = false,
+                updated_at = NOW()
+          WHERE chat_id = $1
+            AND bot_key = $2`,
+        [chatId, normalizedBotKey]
+      );
+    }
+
     await pool.query(
-      `UPDATE users
-          SET is_active = false,
-              inactive_reason = $2,
+      `WITH active_bots AS (
+         SELECT EXISTS (
+           SELECT 1
+           FROM user_bots
+           WHERE chat_id = $1
+             AND COALESCE(is_active, true) = true
+         ) AS has_active_bot
+       )
+       UPDATE users u
+          SET is_active = a.has_active_bot,
+              inactive_reason = CASE
+                WHEN a.has_active_bot THEN NULL
+                ELSE $2
+              END,
               inactive_at = CASE
-                WHEN COALESCE(is_active, true) THEN NOW()
-                ELSE COALESCE(inactive_at, NOW())
+                WHEN a.has_active_bot THEN NULL
+                WHEN COALESCE(u.is_active, true) THEN NOW()
+                ELSE COALESCE(u.inactive_at, NOW())
               END,
               last_delivery_error = $3,
               updated_at = NOW()
-        WHERE chat_id = $1`,
+         FROM active_bots a
+        WHERE u.chat_id = $1`,
       [chatId, inactiveReason, lastError]
     );
     return;
@@ -597,14 +634,13 @@ async function processBroadcastCampaign(campaignId) {
   try {
     while (true) {
       const { rows: pendingRows } = await pool.query(
-        `SELECT DISTINCT ON (r.chat_id)
+        `SELECT
            r.chat_id,
-           ub.bot_key
+           r.bot_key
          FROM broadcast_recipients r
-         LEFT JOIN user_bots ub ON ub.chat_id = r.chat_id
         WHERE r.campaign_id = $1
           AND r.status = 'pending'
-        ORDER BY r.chat_id ASC, ub.bot_key ASC
+        ORDER BY r.chat_id ASC, r.bot_key ASC
         LIMIT $2`,
         [id, env.broadcastProcessBatchSize]
       );
@@ -615,10 +651,11 @@ async function processBroadcastCampaign(campaignId) {
         let lastError = null;
         let telegramMessageId = null;
         let inactiveReason = null;
+        const recipientBotKey = normalizeBotKey(row.bot_key);
+        const botKey = recipientBotKey || normalizeBotKey(env.defaultBotKey) || 'uk-de';
 
         try {
           // Send via n8n webhook instead of direct Telegram API
-          const botKey = row.bot_key || env.defaultBotKey;
           const url = webhookUrlForBot(env.broadcastWebhookUrl, 'send-message', botKey);
           
           if (!url) {
@@ -630,7 +667,8 @@ async function processBroadcastCampaign(campaignId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               chat_id: row.chat_id,
-              message_text: messageText
+              message_text: messageText,
+              bot_key: botKey
             })
           });
 
@@ -662,10 +700,14 @@ async function processBroadcastCampaign(campaignId) {
                   END,
                   updated_at = NOW()
             WHERE campaign_id = $1
-              AND chat_id = $2`,
-          [id, row.chat_id, status, lastError, telegramMessageId]
+              AND chat_id = $2
+              AND (
+                bot_key = $6
+                OR (bot_key IS NULL AND $6 IS NULL)
+              )`,
+          [id, row.chat_id, status, lastError, telegramMessageId, recipientBotKey]
         );
-        await updateUserDeliveryState(row.chat_id, { status, lastError, inactiveReason });
+        await updateUserDeliveryState(row.chat_id, { status, lastError, inactiveReason, botKey });
 
         if (env.broadcastPerMessageDelayMs > 0) {
           await new Promise((resolve) => setTimeout(resolve, env.broadcastPerMessageDelayMs));
@@ -1179,6 +1221,8 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
   const chatIds = recipients.map((r) => Number(r.chat_id));
   const usernames = recipients.map((r) => r.username || null);
   const firstNames = recipients.map((r) => r.first_name || null);
+  const fallbackBotKey = normalizeBotKey(env.defaultBotKey) || 'uk-de';
+  const botKeys = recipients.map((r) => normalizeBotKey(r.bot_key) || fallbackBotKey);
   const createdByRaw = (req.headers['x-admin-user'] || 'admin_dashboard').toString().trim();
   const createdBy = createdByRaw ? createdByRaw.slice(0, 120) : 'admin_dashboard';
 
@@ -1206,6 +1250,7 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
       `INSERT INTO broadcast_recipients (
          campaign_id,
          chat_id,
+         bot_key,
          username,
          first_name,
          status
@@ -1213,11 +1258,12 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
        SELECT
          $1::bigint,
          x.chat_id,
+         x.bot_key,
          x.username,
          x.first_name,
          'pending'
-       FROM UNNEST($2::bigint[], $3::text[], $4::text[]) AS x(chat_id, username, first_name)`,
-      [campaignId, chatIds, usernames, firstNames]
+       FROM UNNEST($2::bigint[], $3::text[], $4::text[], $5::text[]) AS x(chat_id, bot_key, username, first_name)`,
+      [campaignId, chatIds, botKeys, usernames, firstNames]
     );
 
     await pool.query('COMMIT');
@@ -1278,6 +1324,7 @@ app.get('/admin/broadcasts/:id', requireAdmin, async (req, res) => {
   const { rows: failedRows } = await pool.query(
     `SELECT
        chat_id,
+       bot_key,
        username,
        first_name,
        attempts,
