@@ -4,6 +4,10 @@ set -euo pipefail
 COMPOSE_FILE="${COMPOSE_FILE:-deploy/docker-compose.yml}"
 PROJECT="${PROJECT:-languagebot}"
 STOP_N8N_BEFORE="${STOP_N8N_BEFORE:-true}"
+PROBE_RETRIES="${PROBE_RETRIES:-4}"
+PROBE_DELAY_SEC="${PROBE_DELAY_SEC:-2}"
+CMD_RETRIES="${CMD_RETRIES:-3}"
+CMD_DELAY_SEC="${CMD_DELAY_SEC:-2}"
 
 dc() {
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" "$@"
@@ -18,14 +22,76 @@ n8n_sh() {
   dc run -T --rm --no-deps --entrypoint sh n8n -lc "${cmd}" </dev/null
 }
 
+run_n8n_cli_capture() {
+  local attempt out="" rc=0
+  for attempt in $(seq 1 "${CMD_RETRIES}"); do
+    if out="$(n8n_cli "$@" 2>&1)"; then
+      printf '%s' "${out}"
+      return 0
+    fi
+    rc=$?
+    if [[ "${attempt}" -lt "${CMD_RETRIES}" ]]; then
+      echo "n8n CLI failed (attempt ${attempt}/${CMD_RETRIES}), retrying in ${CMD_DELAY_SEC}s: n8n $*" >&2
+      sleep "${CMD_DELAY_SEC}"
+    fi
+  done
+  printf '%s' "${out}"
+  return "${rc}"
+}
+
+run_n8n_sh_capture() {
+  local cmd="$1"
+  local attempt out="" rc=0
+  for attempt in $(seq 1 "${CMD_RETRIES}"); do
+    if out="$(n8n_sh "${cmd}" 2>&1)"; then
+      printf '%s' "${out}"
+      return 0
+    fi
+    rc=$?
+    if [[ "${attempt}" -lt "${CMD_RETRIES}" ]]; then
+      echo "n8n shell command failed (attempt ${attempt}/${CMD_RETRIES}), retrying in ${CMD_DELAY_SEC}s." >&2
+      sleep "${CMD_DELAY_SEC}"
+    fi
+  done
+  printf '%s' "${out}"
+  return "${rc}"
+}
+
 probe_cmd() {
   local cmd="$1"
-  local out=""
-  out="$(n8n_cli "${cmd}" --help 2>&1 || true)"
-  if echo "${out}" | grep -qiE "Unknown command|not found|did you mean"; then
-    return 1
-  fi
-  return 0
+  local out="" rc=0 attempt
+  for attempt in $(seq 1 "${PROBE_RETRIES}"); do
+    out="$(n8n_cli "${cmd}" --help 2>&1)" && rc=0 || rc=$?
+    if echo "${out}" | grep -qiE "Unknown command|not found|did you mean"; then
+      return 1
+    fi
+    if [[ "${rc}" -eq 0 ]]; then
+      return 0
+    fi
+    if [[ "${attempt}" -lt "${PROBE_RETRIES}" ]]; then
+      echo "Probe '${cmd}' failed (attempt ${attempt}/${PROBE_RETRIES}), retrying in ${PROBE_DELAY_SEC}s..." >&2
+      sleep "${PROBE_DELAY_SEC}"
+      continue
+    fi
+  done
+  echo "Probe '${cmd}' failed after ${PROBE_RETRIES} attempts." >&2
+  echo "${out}" >&2
+  return 2
+}
+
+pick_supported_cmd() {
+  local rc candidate
+  for candidate in "$@"; do
+    if probe_cmd "${candidate}"; then
+      printf '%s' "${candidate}"
+      return 0
+    fi
+    rc=$?
+    if [[ "${rc}" -eq 2 ]]; then
+      return 2
+    fi
+  done
+  return 1
 }
 
 did_stop="false"
@@ -42,16 +108,14 @@ if [[ "${STOP_N8N_BEFORE}" == "true" ]]; then
 fi
 
 unpublish_cmd=""
-if probe_cmd "unpublish:workflow"; then
-  unpublish_cmd="unpublish:workflow"
-elif probe_cmd "workflow:deactivate"; then
-  unpublish_cmd="workflow:deactivate"
-elif probe_cmd "deactivate:workflow"; then
-  unpublish_cmd="deactivate:workflow"
-elif probe_cmd "update:workflow"; then
-  unpublish_cmd="update:workflow"
-else
-  echo "No supported workflow deactivation/unpublish commands found in n8n container." >&2
+pick_rc=0
+unpublish_cmd="$(pick_supported_cmd "unpublish:workflow" "workflow:deactivate" "deactivate:workflow" "update:workflow")" || pick_rc=$?
+if [[ "${pick_rc}" -ne 0 ]]; then
+  if [[ "${pick_rc}" -eq 2 ]]; then
+    echo "Failed while probing n8n workflow deactivation commands." >&2
+  else
+    echo "No supported workflow deactivation/unpublish commands found in n8n container." >&2
+  fi
   echo "Debug: n8n --version" >&2
   n8n_cli --version >&2 || true
   echo "Debug: n8n --help (first 200 lines)" >&2
@@ -60,14 +124,14 @@ else
 fi
 
 list_cmd=""
-if probe_cmd "list:workflow"; then
-  list_cmd="list:workflow"
-elif probe_cmd "workflow:list"; then
-  list_cmd="workflow:list"
-elif probe_cmd "export:workflow"; then
-  list_cmd="export:workflow"
-else
-  echo "No supported workflow list/export commands found in n8n container." >&2
+pick_rc=0
+list_cmd="$(pick_supported_cmd "list:workflow" "workflow:list" "export:workflow")" || pick_rc=$?
+if [[ "${pick_rc}" -ne 0 ]]; then
+  if [[ "${pick_rc}" -eq 2 ]]; then
+    echo "Failed while probing n8n workflow list commands." >&2
+  else
+    echo "No supported workflow list/export commands found in n8n container." >&2
+  fi
   exit 1
 fi
 
@@ -75,15 +139,13 @@ list_out=""
 if [[ "${list_cmd}" == "export:workflow" ]]; then
   # Prefer exporting to a temp file, then cat it, to avoid mixed stdout logs.
   # Fall back to stdout export for older CLI variants.
-  if ! list_out="$(
-    n8n_sh 'set -euo pipefail; tmp="/tmp/workflows-export.json"; if n8n export:workflow --all --output "$tmp" >/dev/null 2>&1; then cat "$tmp"; else n8n export:workflow --all; fi' 2>&1
-  )"; then
+  if ! list_out="$(run_n8n_sh_capture 'set -euo pipefail; tmp="/tmp/workflows-export.json"; if n8n export:workflow --all --output "$tmp" >/dev/null 2>&1; then cat "$tmp"; else n8n export:workflow --all; fi')"; then
     echo "Failed to export workflows via n8n CLI." >&2
     echo "${list_out}" >&2
     exit 1
   fi
 else
-  if ! list_out="$(n8n_cli "${list_cmd}" 2>&1)"; then
+  if ! list_out="$(run_n8n_cli_capture "${list_cmd}")"; then
     echo "Failed to list workflows via n8n CLI." >&2
     echo "${list_out}" >&2
     exit 1
@@ -91,7 +153,7 @@ else
 fi
 
 workflow_ids="$(
-  printf '%s' "${list_out}" | python3 - <<'PY'
+  python3 -c '
 import json
 import re
 import sys
@@ -140,7 +202,7 @@ for wid in ids:
         continue
     seen.add(wid)
     print(wid)
-PY
+' <<<"${list_out}"
 )"
 
 if [[ -z "${workflow_ids}" ]]; then
