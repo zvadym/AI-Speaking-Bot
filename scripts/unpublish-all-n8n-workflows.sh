@@ -148,24 +148,20 @@ if [[ -z "${workflow_ids}" ]]; then
   exit 0
 fi
 
-failed=0
+# Convert newline-separated IDs to array for single-container batch
+workflow_id_arr=()
 while IFS= read -r workflow_id; do
   [[ -z "${workflow_id}" ]] && continue
   echo "Unpublishing/deactivating workflow: ${workflow_id}"
-  if [[ "${unpublish_cmd}" == "update:workflow" ]]; then
-    if ! n8n_cli update:workflow --id="${workflow_id}" --active=false; then
-      echo "Failed to deactivate workflow ${workflow_id}" >&2
-      failed=1
-    fi
-  else
-    if ! n8n_cli "${unpublish_cmd}" --id="${workflow_id}"; then
-      echo "Failed to unpublish/deactivate workflow ${workflow_id}" >&2
-      failed=1
-    fi
-  fi
+  workflow_id_arr+=("${workflow_id}")
 done <<<"${workflow_ids}"
 
-if [[ "${failed}" -ne 0 ]]; then
+# Single container: loop inside to avoid one container per workflow
+extra_args=""
+if [[ "${unpublish_cmd}" == "update:workflow" ]]; then
+  extra_args="--active=false"
+fi
+if ! dc run -T --rm --no-deps --entrypoint sh n8n -c 'for id in "$@"; do n8n '"${unpublish_cmd}"' --id="$id" '"${extra_args}"' || exit 1; done' sh "${workflow_id_arr[@]}" </dev/null; then
   echo "One or more workflows failed to unpublish/deactivate." >&2
   exit 1
 fi
