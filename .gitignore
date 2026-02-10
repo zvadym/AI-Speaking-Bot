@@ -11,5 +11,6 @@ deploy/.env.miniapp
 deploy/.env.prod
 deploy/.env.dev
 deploy/bots-dev/*.json
+deploy/bots/*.json
 deploy/workflows/.rendered
 deploy/workflows/.prod-export
