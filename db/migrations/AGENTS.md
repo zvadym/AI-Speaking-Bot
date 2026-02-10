@@ -16,3 +16,8 @@ FOR LOCAL MIGRATIONS:
 
 # Show help
 ./scripts/dev-migrate.sh help
+
+
+REMEMBER:
+ - Always add --migrate:up and --migrate:down to the migration file
+ 

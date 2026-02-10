@@ -23,6 +23,8 @@ Use `deploy/bots/<base>-<learning>.json` (example: `deploy/bots/uk-de.json`).
   "telegram_bot_token": "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz",
   "locale": {
     "model_system_prompt": "...",
+    "model_support_prompt": "...",
+    "model_summary_prompt": "...",
     "waiting_text": "...",
     "loader_messages": ["...", "..."],
     "hi_message_text": "={{ ... }}",
