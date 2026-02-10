@@ -261,8 +261,12 @@
         <div class="field grow">
           <span>Bot</span>
           <div class="plan-pills">
-            <label class="pill" v-for="bot in botStats" :key="bot.bot_key">
-              <input v-model="broadcast.bots" type="checkbox" :value="bot.bot_key" />
+            <label class="pill" :class="{ active: broadcast.botKey === null }">
+              <input v-model="broadcast.botKey" type="radio" :value="null" />
+              <span>All bots</span>
+            </label>
+            <label class="pill" v-for="bot in botStats" :key="bot.bot_key" :class="{ active: broadcast.botKey === bot.bot_key }">
+              <input v-model="broadcast.botKey" type="radio" :value="bot.bot_key" />
               <span>{{ bot.bot_key }}</span>
             </label>
           </div>
@@ -520,7 +524,7 @@ const broadcast = reactive({
   usageMode: 'any',
   usagePercent: 80,
   messageText: '',
-  bots: []
+  botKey: null
 });
 
 let previewTimer = null;
@@ -691,8 +695,8 @@ function broadcastFiltersPayload() {
     }
   }
 
-  if (broadcast.bots.length > 0) {
-    filters.bots = broadcast.bots;
+  if (broadcast.botKey !== null) {
+    filters.bots = [broadcast.botKey];
   }
 
   return filters;
@@ -950,7 +954,7 @@ watch(
     broadcast.lastActivityDays,
     broadcast.usageMode,
     broadcast.usagePercent,
-    broadcast.bots
+    broadcast.botKey
   ],
   () => {
     if (!password.value) {
@@ -1270,12 +1274,26 @@ h1 {
   align-items: center;
   gap: 6px;
   font-size: 13px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.pill:hover {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(31, 107, 99, 0.3);
+}
+
+.pill.active {
+  background: rgba(31, 107, 99, 0.12);
+  border-color: rgba(31, 107, 99, 0.4);
+  font-weight: 600;
 }
 
 .pill input {
   height: 14px;
   width: 14px;
   margin: 0;
+  cursor: pointer;
 }
 
 .preview-sample {

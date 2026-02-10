@@ -597,14 +597,14 @@ async function processBroadcastCampaign(campaignId) {
   try {
     while (true) {
       const { rows: pendingRows } = await pool.query(
-        `SELECT
+        `SELECT DISTINCT ON (r.chat_id)
            r.chat_id,
-           u.bot_key
+           ub.bot_key
          FROM broadcast_recipients r
-         JOIN users u ON u.chat_id = r.chat_id
+         LEFT JOIN user_bots ub ON ub.chat_id = r.chat_id
         WHERE r.campaign_id = $1
           AND r.status = 'pending'
-        ORDER BY r.chat_id ASC
+        ORDER BY r.chat_id ASC, ub.bot_key ASC
         LIMIT $2`,
         [id, env.broadcastProcessBatchSize]
       );
