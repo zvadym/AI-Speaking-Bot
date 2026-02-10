@@ -10,6 +10,8 @@ export async function authTelegram(apiBase, initData) {
     const reason = payload?.error || 'auth_failed';
     const err = new Error(reason);
     err.code = reason;
+    err.status = resp.status;
+    err.payload = payload;
     throw err;
   }
 

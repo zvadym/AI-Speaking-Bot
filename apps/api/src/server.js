@@ -2391,11 +2391,11 @@ async function upsertUser(user, { botKey = null } = {}) {
   const username = user.username || null;
   const firstName = user.first_name || null;
   const normalizedBotKey = normalizeBotKey(botKey);
-  const botKeyForInsert = normalizedBotKey || normalizeBotKey(env.defaultBotKey);
+  const botKeyForContext = normalizedBotKey || normalizeBotKey(env.defaultBotKey);
 
   await pool.query(
-    `INSERT INTO users (chat_id, username, first_name, is_active, inactive_reason, inactive_at, last_delivery_error, bot_key)
-     VALUES ($1, $2, $3, true, NULL, NULL, NULL, $4)
+    `INSERT INTO users (chat_id, username, first_name, is_active, inactive_reason, inactive_at, last_delivery_error)
+     VALUES ($1, $2, $3, true, NULL, NULL, NULL)
      ON CONFLICT (chat_id) DO UPDATE SET
        username = EXCLUDED.username,
        first_name = EXCLUDED.first_name,
@@ -2403,9 +2403,32 @@ async function upsertUser(user, { botKey = null } = {}) {
        inactive_reason = NULL,
        inactive_at = NULL,
        last_delivery_error = NULL,
-       bot_key = COALESCE($5, users.bot_key),
        updated_at = NOW()`,
-    [chatId, username, firstName, botKeyForInsert, normalizedBotKey]
+    [chatId, username, firstName]
+  );
+
+  if (!botKeyForContext) return;
+
+  await pool.query(
+    `INSERT INTO user_bots (
+       chat_id,
+       bot_key,
+       level,
+       onboarding_state,
+       reply_mode,
+       tts_voice,
+       first_seen_at,
+       last_seen_at,
+       is_active,
+       updated_at
+     )
+     VALUES ($1, $2, 'b1', 'ready', 'text', 'marin', NOW(), NOW(), true, NOW())
+     ON CONFLICT (chat_id, bot_key)
+     DO UPDATE SET
+       last_seen_at = NOW(),
+       is_active = true,
+       updated_at = NOW()`,
+    [chatId, botKeyForContext]
   );
 }
 

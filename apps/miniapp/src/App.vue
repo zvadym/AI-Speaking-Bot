@@ -76,6 +76,20 @@
       @navigate="nav.go"
     />
 
+    <section class="app-debug" v-if="debugEnabled">
+      <DebugPanel
+        title="Mini App Debug"
+        :logs="debugLogs"
+        @clear="clearDebugPanel"
+      />
+    </section>
+
+    <section class="app-debug" v-else-if="fatalKey">
+      <button class="debug-enable" type="button" @click="enableDebugPanel">
+        Show debug card
+      </button>
+    </section>
+
     <div class="toast" v-if="toastState.show" role="status" aria-live="polite">
       <div class="toast-card">{{ toastState.message }}</div>
     </div>
@@ -93,10 +107,12 @@ import LanguageScreen from './screens/LanguageScreen.vue';
 import LevelScreen from './screens/LevelScreen.vue';
 import AboutScreen from './screens/AboutScreen.vue';
 import BotPickerScreen from './screens/BotPickerScreen.vue';
+import DebugPanel from './components/DebugPanel.vue';
 import { useNav } from './lib/nav.js';
 import { apiJson, authTelegram } from './lib/api.js';
 import { getTelegramWebApp, tgReady } from './lib/tg.js';
 import { identifyUser, track, trackScreen } from './lib/metrics.js';
+import { addDebugLog, clearDebugLogs, isDebugEnabled, readDebugLogs, setDebugEnabled, subscribeDebugLogs } from './lib/debug.js';
 
 const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
 
@@ -111,6 +127,8 @@ const token = ref('');
 const me = ref(null);
 const botKey = ref('');
 const meBots = ref([]);
+const debugEnabled = ref(isDebugEnabled());
+const debugLogs = ref(readDebugLogs());
 const showBotPicker = computed(
   () => !isAdmin.value && !loading.value && !fatalKey.value && meBots.value.length > 1 && !botKey.value
 );
@@ -125,6 +143,7 @@ let didTrackOpen = false;
 let tgActivatedHandler = null;
 let tgDeactivatedHandler = null;
 let visibilityHandler = null;
+let unsubscribeDebug = null;
 
 function toast(message) {
   toastState.message = message;
@@ -160,6 +179,22 @@ function setBotKeyInLocation(nextBotKey) {
   } catch {
     // ignore URL update failures
   }
+}
+
+function clearDebugPanel() {
+  clearDebugLogs();
+}
+
+function enableDebugPanel() {
+  setDebugEnabled(true);
+  debugEnabled.value = true;
+  addDebugLog('debug_enabled', { screen: 'app' });
+}
+
+function ensureDebugEnabled() {
+  if (debugEnabled.value) return;
+  setDebugEnabled(true);
+  debugEnabled.value = true;
 }
 
 async function refreshMe() {
@@ -236,11 +271,32 @@ function trackAppOpenOnce() {
 onMounted(async () => {
   loading.value = true;
   fatalKey.value = '';
+  unsubscribeDebug = subscribeDebugLogs((logs) => {
+    debugLogs.value = logs;
+  });
 
+  const initialBotKey = readBotKeyFromLocation();
   try {
     if (isAdmin.value) return;
     const tg = getTelegramWebApp();
+    addDebugLog('app_boot_started', {
+      path: window.location.pathname,
+      search: window.location.search,
+      apiBase,
+      botKeyFromUrl: initialBotKey || null,
+      hasTelegram: Boolean(tg),
+      hasInitData: Boolean(tg?.initData),
+      platform: (tg?.platform || '').toString() || null,
+      version: (tg?.version || '').toString() || null
+    });
+
     if (!tg?.initData) {
+      ensureDebugEnabled();
+      addDebugLog('app_boot_failed_missing_init_data', {
+        hasTelegram: Boolean(tg),
+        platform: (tg?.platform || '').toString() || null,
+        version: (tg?.version || '').toString() || null
+      });
       fatalKey.value = 'app.error.openInTelegram';
       return;
     }
@@ -256,8 +312,13 @@ onMounted(async () => {
 
     const auth = await authTelegram(apiBase, tg.initData);
     token.value = auth.token;
-    const fromUrl = readBotKeyFromLocation();
+    const fromUrl = initialBotKey;
     const fromAuth = (auth?.bot_key || '').toString().trim().toLowerCase();
+    addDebugLog('auth_telegram_success', {
+      chatId: Number(auth?.user?.id) || null,
+      fromUrl: fromUrl || null,
+      fromAuth: fromAuth || null
+    });
     botKey.value = fromUrl || fromAuth || '';
     if (botKey.value) setBotKeyInLocation(botKey.value);
 
@@ -287,6 +348,16 @@ onMounted(async () => {
     document.addEventListener('visibilitychange', visibilityHandler);
   } catch (err) {
     console.error(err);
+    ensureDebugEnabled();
+    addDebugLog('app_boot_failed', {
+      code: (err?.code || '').toString() || null,
+      message: (err?.message || '').toString() || null,
+      status: Number.isFinite(err?.status) ? Number(err.status) : null,
+      payload: err?.payload || null,
+      path: window.location.pathname,
+      search: window.location.search,
+      botKeyFromUrl: initialBotKey || null
+    });
     fatalKey.value = 'app.error.authFailed';
   } finally {
     loading.value = false;
@@ -310,6 +381,8 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  if (unsubscribeDebug) unsubscribeDebug();
+  unsubscribeDebug = null;
   const tg = getTelegramWebApp();
   try {
     if (tgBackHandler) tg?.offEvent?.('backButtonClicked', tgBackHandler);
@@ -367,6 +440,23 @@ onBeforeUnmount(() => {
   margin-top: 8px;
   color: var(--muted);
   line-height: 1.6;
+}
+
+.app-debug {
+  width: min(860px, 100%);
+  margin: 0 auto;
+  padding: 0 22px 12px;
+}
+
+.debug-enable {
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 34px var(--shadow);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  cursor: pointer;
 }
 
 .toast {
