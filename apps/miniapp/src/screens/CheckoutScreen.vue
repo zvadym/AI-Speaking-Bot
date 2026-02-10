@@ -30,12 +30,6 @@
       />
     </section>
 
-    <section class="debug-wrap" v-else>
-      <button class="ghost debug-enable" type="button" @click="enableDebugPanel">
-        Enable debug panel
-      </button>
-    </section>
-
     <div class="bottom-nav">
       <button class="ghost" type="button" @click="goBack" :disabled="loading">
         {{ $t('common.back') }}
@@ -50,7 +44,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { useI18n } from '../i18n.js';
 import { track } from '../lib/metrics.js';
 import DebugPanel from '../components/DebugPanel.vue';
-import { addDebugLog, clearDebugLogs, isDebugEnabled, readDebugLogs, setDebugEnabled, subscribeDebugLogs } from '../lib/debug.js';
+import { addDebugLog, clearDebugLogs, isDebugEnabled, readDebugLogs, subscribeDebugLogs } from '../lib/debug.js';
 
 const props = defineProps({
   apiBase: { type: String, required: true },
@@ -74,12 +68,6 @@ let embeddedCheckout = null;
 
 function clearDebugPanel() {
   clearDebugLogs();
-}
-
-function enableDebugPanel() {
-  setDebugEnabled(true);
-  debugEnabled.value = true;
-  addDebugLog('debug_enabled', { screen: 'checkout' });
 }
 
 function buildSubscriptionPath() {
@@ -290,10 +278,6 @@ onBeforeUnmount(() => {
 
 .debug-wrap {
   display: grid;
-}
-
-.debug-enable {
-  justify-self: start;
 }
 
 .bottom-nav {

@@ -15,8 +15,8 @@
         @click="emit('select', bot.bot_key)"
       >
         <div class="left">
-          <div class="code">{{ bot.bot_key }}</div>
-          <div class="hint">{{ bot.languageLabel }}</div>
+          <div class="title">{{ bot.title }}</div>
+          <div class="hint">{{ bot.subtitle }}</div>
         </div>
         <span class="arrow" aria-hidden="true">→</span>
       </button>
@@ -39,15 +39,28 @@ const props = defineProps({
 const emit = defineEmits(['select']);
 const { t } = useI18n({ useScope: 'global' });
 
+function languageLabelForCode(codeRaw) {
+  const code = (codeRaw || '').toString().trim().toLowerCase();
+  if (!code) return '';
+  if (code === 'de') return t('practiceLanguages.de');
+  if (code === 'en') return t('practiceLanguages.en');
+  return code.toUpperCase();
+}
+
 const normalizedBots = computed(() =>
   (Array.isArray(props.bots) ? props.bots : [])
     .map((row) => {
       const botKey = (row?.bot_key || '').toString().trim().toLowerCase();
       if (!botKey) return null;
       const lang = (row?.target_lang || '').toString().trim().toLowerCase();
+      const [baseCode, targetCode] = botKey.split('-');
+      const learningCode = targetCode || lang;
+      const baseLabel = languageLabelForCode(baseCode);
+      const learningLabel = languageLabelForCode(learningCode);
       return {
         bot_key: botKey,
-        languageLabel: lang === 'de' ? t('practiceLanguages.de') : t('practiceLanguages.en')
+        title: learningLabel || t('botPicker.title'),
+        subtitle: baseLabel && learningLabel ? `${baseLabel} → ${learningLabel}` : learningLabel || baseLabel || t('botPicker.sub')
       };
     })
     .filter(Boolean)
@@ -121,7 +134,7 @@ h1 {
   gap: 4px;
 }
 
-.code {
+.title {
   font-family: var(--font-display);
   font-size: 20px;
   line-height: 1;
