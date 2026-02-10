@@ -61,12 +61,12 @@ cp deploy/.env.prod.example deploy/.env.prod
 
 Fill these on the server:
 
-- `deploy/.env.api`: `DATABASE_URL`, `WEBAPP_URL`, `TELEGRAM_BOT_TOKEN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`, `PLAN_CHANGED_WEBHOOK_URL`, `BROADCAST_WEBHOOK_URL`, `BROADCAST_WEBHOOK_SECRET`, `BROADCAST_MAX_RECIPIENTS` (optional), `BROADCAST_PROCESS_BATCH_SIZE` (optional), `BROADCAST_PER_MESSAGE_DELAY_MS` (optional), `ADMIN_DASHBOARD_PASSWORD` (for internal `/admin/*`), `STRIPE_PORTAL_CONFIG_ID` (optional), `WEBAPP_RETURN_URL` (optional, e.g. `https://t.me/<bot_username>/menu`)
+- `deploy/.env.api`: `DATABASE_URL`, `WEBAPP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`, `PLAN_CHANGED_WEBHOOK_URL`, `BROADCAST_WEBHOOK_URL`, `BROADCAST_WEBHOOK_SECRET`, `BROADCAST_MAX_RECIPIENTS` (optional), `BROADCAST_PROCESS_BATCH_SIZE` (optional), `BROADCAST_PER_MESSAGE_DELAY_MS` (optional), `ADMIN_DASHBOARD_PASSWORD` (for internal `/admin/*`), `STRIPE_PORTAL_CONFIG_ID` (optional), `WEBAPP_RETURN_URL` (optional, e.g. `https://t.me/<bot_username>/menu`)
 - `deploy/.env.miniapp`: `VITE_API_BASE=https://learn-language-api.notarobot.dev`, `VITE_ADMIN_PATH` (secret admin path), `VITE_POSTHOG_KEY` (optional), `VITE_POSTHOG_HOST` (optional, defaults to `https://app.posthog.com`), `VITE_STRIPE_EMBEDDED_CHECKOUT` (set `true` to use embedded Stripe Checkout), `VITE_STRIPE_PUBLISHABLE_KEY` (required when embedded checkout is enabled), `VITE_DEBUG_UI` (optional, set `true` to always show debug panel and logs in mini-app screens)
 - `deploy/.env`: n8n secrets (`N8N_*`, `WEBHOOK_URL`, DB creds if used). Set `N8N_HOST`, `N8N_EDITOR_BASE_URL`, and `WEBHOOK_URL` to `https://learn-language-n8n.notarobot.dev`.
 - `deploy/.env.prod`: n8n workflow credential IDs used to render workflows for prod (`N8N_CRED_OPENAI_ID`, `N8N_CRED_POSTGRES_ID`). `N8N_CRED_TELEGRAM_ID` is legacy single-bot mode only.
 
-If you run multiple bots (language pairs), create `deploy/bots/*.json` and put each bot’s `telegram_credential_id` there (see `deploy/bots/README.md`).
+**Bot configuration (required)**: Create `deploy/bots/*.json` files for each bot with `telegram_bot_token` and `telegram_credential_id` (see `deploy/bots/README.md`). At least one bot config is required. These files are mounted as a read-only volume into the API container.
 
 ### 1.5 Run migrations + deploy app
 

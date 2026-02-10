@@ -74,36 +74,17 @@ const webappUrl = requireEnv('WEBAPP_URL');
 const webappReturnUrlRaw = optionalUrl('WEBAPP_RETURN_URL');
 
 // Load tokens from bot config files (deploy/bots/*.json)
-const tokensFromBotConfigs = extractBotTokens();
+const telegramBotTokensByBotKey = extractBotTokens();
 
-// Load tokens from environment variables
-const telegramBotTokensByBotKeyFromEnv = optionalJsonObject('TELEGRAM_BOT_TOKENS_JSON');
-const telegramBotTokenFromEnv = process.env.TELEGRAM_BOT_TOKEN || '';
-
-// Merge: bot configs take precedence over env vars
-const telegramBotTokensByBotKey = { ...telegramBotTokensByBotKeyFromEnv, ...tokensFromBotConfigs };
-const telegramBotToken = telegramBotTokenFromEnv;
-
-// Validation: require at least one token source
-const hasBotConfigTokens = Object.keys(tokensFromBotConfigs).length > 0;
-const hasEnvTokens = telegramBotToken || Object.keys(telegramBotTokensByBotKeyFromEnv).length > 0;
-
-if (!hasBotConfigTokens && !hasEnvTokens) {
+// Validation: require at least one bot token
+if (Object.keys(telegramBotTokensByBotKey).length === 0) {
   throw new Error(
     'Missing Telegram bot tokens. ' +
-    'Add telegram_bot_token to bot config files (deploy/bots/*.json) ' +
-    'OR set TELEGRAM_BOT_TOKEN / TELEGRAM_BOT_TOKENS_JSON env var'
+    'Add telegram_bot_token field to bot config files in deploy/bots/*.json'
   );
 }
 
-if (hasBotConfigTokens) {
-  console.log(`Loaded Telegram bot tokens from bot config files for: ${Object.keys(tokensFromBotConfigs).join(', ')}`);
-}
-if (hasEnvTokens && !telegramBotToken && Object.keys(telegramBotTokensByBotKeyFromEnv).length > 0) {
-  console.log(`Loaded Telegram bot tokens from TELEGRAM_BOT_TOKENS_JSON for: ${Object.keys(telegramBotTokensByBotKeyFromEnv).join(', ')}`);
-} else if (telegramBotToken) {
-  console.log('Loaded single Telegram bot token from TELEGRAM_BOT_TOKEN');
-}
+console.log(`Loaded Telegram bot tokens from bot config files for: ${Object.keys(telegramBotTokensByBotKey).join(', ')}`)
 
 export const env = {
   port,
@@ -114,7 +95,6 @@ export const env = {
   databaseUrl: requireEnv('DATABASE_URL'),
   databaseSsl: sslEnabled,
   databaseSslRejectUnauthorized: sslRejectUnauthorized,
-  telegramBotToken,
   telegramBotTokensByBotKey,
   telegramInitDataMaxAgeSec,
   stripeSecretKey: requireEnv('STRIPE_SECRET_KEY'),

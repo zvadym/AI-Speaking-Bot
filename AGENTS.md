@@ -26,8 +26,8 @@ This file orients automated agents working in this repo. Keep it accurate as the
 
 ## Env & Secrets
 - API required env vars (see `apps/api/src/env.js`):
-  - `DATABASE_URL`, `WEBAPP_URL`, `TELEGRAM_BOT_TOKEN`, `STRIPE_SECRET_KEY`,
-    `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`.
+  - `DATABASE_URL`, `WEBAPP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`.
+  - Telegram bot tokens: configured in `deploy/bots/*.json` files (mounted into container as read-only volume).
 - API optional env vars: `API_PORT`, `API_BASE_URL`, `CORS_ORIGINS`,
   `DATABASE_SSL`, `DATABASE_SSL_REJECT_UNAUTHORIZED`, `TELEGRAM_INITDATA_MAX_AGE`,
   `STRIPE_PORTAL_CONFIG_ID`.

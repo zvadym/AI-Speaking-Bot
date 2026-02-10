@@ -7,6 +7,8 @@ services:
       - .env.api
     environment:
       - NODE_ENV=production
+    volumes:
+      - ./bots:/deploy/bots:ro
     expose:
       - "3000"
 

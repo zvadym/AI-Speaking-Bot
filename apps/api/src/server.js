@@ -137,7 +137,7 @@ function resolveTelegramBotToken(botKeyRaw) {
     const fromMap = env.telegramBotTokensByBotKey?.[botKey];
     if (typeof fromMap === 'string' && fromMap.trim()) return fromMap;
   }
-  if (env.telegramBotToken) return env.telegramBotToken;
+  // Fall back to first available token if bot key not specified
   const first = Object.values(env.telegramBotTokensByBotKey || {}).find((v) => typeof v === 'string' && v.trim());
   return first || '';
 }

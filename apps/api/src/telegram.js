@@ -26,9 +26,6 @@ function candidateTokens() {
     if (!token) continue;
     tokens.push({ botKey, token });
   }
-  if (env.telegramBotToken) {
-    tokens.push({ botKey: null, token: env.telegramBotToken });
-  }
   return tokens;
 }
 
