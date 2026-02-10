@@ -10,9 +10,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 EXPLICIT_ENV = {
-    "telegramApi": "N8N_CRED_TELEGRAM_ID",
     "openAiApi": "N8N_CRED_OPENAI_ID",
     "postgres": "N8N_CRED_POSTGRES_ID",
+    # Note: telegramApi credentials come from bot config files (deploy/bots/*.json),
+    # not from environment variables.
 }
 
 # Template workflow filenames (input_dir/*.json) that should be expanded into per-bot
@@ -84,17 +85,6 @@ def apply_env_credentials(
             env_key = env_map[ctype]
             if os.environ.get(env_key):
                 cdata["id"] = os.environ[env_key]
-
-
-def render_file(
-    path: Path, output_dir: Path, env_map: Dict[str, str], *, ignore_types: Optional[Set[str]] = None
-) -> None:
-    data = load_json(path)
-
-    apply_env_credentials(data, env_map, ignore_types=ignore_types)
-
-    output_path = output_dir / path.name
-    write_json(output_path, data)
 
 
 def find_node(data: Dict[str, Any], name: str) -> Dict[str, Any]:
@@ -322,13 +312,18 @@ def main() -> int:
         print(f"No workflow JSON files found in {input_dir}", file=sys.stderr)
         return 1
 
-    bots: List[Tuple[str, Dict[str, Any]]] = []
+    # Bot configs are required - no legacy single-bot mode supported
     bots_mode = bots_dir.exists() and any(p.suffix == ".json" for p in bots_dir.glob("*.json"))
-    if bots_mode:
-        bots = load_bot_configs(bots_dir)
+    if not bots_mode:
+        print("ERROR: No bot configs found in bots directory.", file=sys.stderr)
+        print(f"Please create bot config files in {bots_dir}/", file=sys.stderr)
+        print("See deploy/bots/README.md for details.", file=sys.stderr)
+        return 1
+    
+    bots = load_bot_configs(bots_dir)
 
-    ignore_env_types = {"telegramApi"} if bots_mode else set()
-    required = find_required_env(files, ignore_types=ignore_env_types)
+    # Telegram credentials come from bot configs, not env vars
+    required = find_required_env(files, ignore_types={"telegramApi"})
     missing = [env_key for env_key in sorted(required) if not os.environ.get(env_key)]
     if missing:
         print("Missing required credential env vars:", file=sys.stderr)
@@ -349,83 +344,74 @@ def main() -> int:
         print(f"Cleared {removed} stale rendered workflow(s) from {output_dir}")
     rendered = 0
 
-    if bots_mode:
-        # Load templates once.
-        template_ai = input_dir / "ai-bot.json"
-        template_loader = input_dir / "loader-messages-rotator.json"
-        if not template_ai.exists() or not template_loader.exists():
-            print("Multi-bot mode requires templates in input dir:", file=sys.stderr)
-            print(f"  Missing: {template_ai} or {template_loader}", file=sys.stderr)
-            return 1
+    # Load templates once.
+    template_ai = input_dir / "ai-bot.json"
+    template_loader = input_dir / "loader-messages-rotator.json"
+    if not template_ai.exists() or not template_loader.exists():
+        print("Multi-bot mode requires templates in input dir:", file=sys.stderr)
+        print(f"  Missing: {template_ai} or {template_loader}", file=sys.stderr)
+        return 1
 
-        ai_tpl = load_json(template_ai)
-        loader_tpl = load_json(template_loader)
+    ai_tpl = load_json(template_ai)
+    loader_tpl = load_json(template_loader)
 
-        for bot_key, bot in bots:
-            base = bot["base_language"]
-            learn = bot["learning_language"]
-            tg_cred = bot["telegram_credential_id"]
-            locale = bot["locale"]
+    for bot_key, bot in bots:
+        base = bot["base_language"]
+        learn = bot["learning_language"]
+        tg_cred = bot["telegram_credential_id"]
+        locale = bot["locale"]
 
-            ai = copy.deepcopy(ai_tpl)
-            loader = copy.deepcopy(loader_tpl)
+        ai = copy.deepcopy(ai_tpl)
+        loader = copy.deepcopy(loader_tpl)
 
-            ai_id = deterministic_workflow_id("ai-bot", bot_key)
-            loader_id = deterministic_workflow_id("loader-messages-rotator", bot_key)
+        ai_id = deterministic_workflow_id("ai-bot", bot_key)
+        loader_id = deterministic_workflow_id("loader-messages-rotator", bot_key)
 
-            ai["id"] = ai_id
-            ai["name"] = f"ai-bot-{bot_key}"
-            loader["id"] = loader_id
-            loader["name"] = f"loader-messages-rotator-{bot_key}"
+        ai["id"] = ai_id
+        ai["name"] = f"ai-bot-{bot_key}"
+        loader["id"] = loader_id
+        loader["name"] = f"loader-messages-rotator-{bot_key}"
 
-            patch_webhook_paths_for_bot(ai, bot_key)
-            patch_webhook_ids_for_bot(ai, "ai-bot", bot_key)
-            patch_webhook_ids_for_bot(loader, "loader-messages-rotator", bot_key)
+        patch_webhook_paths_for_bot(ai, bot_key)
+        patch_webhook_ids_for_bot(ai, "ai-bot", bot_key)
+        patch_webhook_ids_for_bot(loader, "loader-messages-rotator", bot_key)
 
-            patch_settings_node(ai, bot_key, base, learn)
-            patch_set_locale_node(ai, locale)
-            patch_start_loader(ai, loader_id, loader["name"], bot_key)
+        patch_settings_node(ai, bot_key, base, learn)
+        patch_set_locale_node(ai, locale)
+        patch_start_loader(ai, loader_id, loader["name"], bot_key)
 
-            set_telegram_credential_id(ai, tg_cred)
-            set_telegram_credential_id(loader, tg_cred)
+        set_telegram_credential_id(ai, tg_cred)
+        set_telegram_credential_id(loader, tg_cred)
 
-            apply_env_credentials(ai, env_map, ignore_types={"telegramApi"})
-            apply_env_credentials(loader, env_map, ignore_types={"telegramApi"})
+        apply_env_credentials(ai, env_map, ignore_types={"telegramApi"})
+        apply_env_credentials(loader, env_map, ignore_types={"telegramApi"})
 
-            write_json(output_dir / f"ai-bot-{bot_key}.json", ai)
-            write_json(output_dir / f"loader-messages-rotator-{bot_key}.json", loader)
-            rendered += 2
+        write_json(output_dir / f"ai-bot-{bot_key}.json", ai)
+        write_json(output_dir / f"loader-messages-rotator-{bot_key}.json", loader)
+        rendered += 2
 
-        # Render other workflows (skip templates).
-        for path in files:
-            if path.name in BOT_TEMPLATES:
-                continue
-            wf = load_json(path)
-            # Keep Telegram credential IDs from file, unless it is missing and we have bots.
-            # For global workflows, default to the first bot's Telegram creds.
-            if bots:
-                has_tg = False
-                for n in wf.get("nodes", []):
-                    creds = n.get("credentials")
-                    if isinstance(creds, dict) and isinstance(creds.get("telegramApi"), dict):
-                        has_tg = True
-                        break
-                if has_tg:
-                    default_tg = bots[0][1]["telegram_credential_id"]
-                    set_telegram_credential_id(wf, default_tg)
-            apply_env_credentials(wf, env_map, ignore_types={"telegramApi"})
-            write_json(output_dir / path.name, wf)
-            rendered += 1
-
-        print(f"Rendered {rendered} workflow(s) (multi-bot) to {output_dir}")
-        return 0
-
-    # Legacy mode: render every workflow JSON and override all credential IDs from env (including Telegram).
+    # Render other workflows (skip templates).
     for path in files:
-        render_file(path, output_dir, env_map)
+        if path.name in BOT_TEMPLATES:
+            continue
+        wf = load_json(path)
+        # Keep Telegram credential IDs from file, unless it is missing and we have bots.
+        # For global workflows, default to the first bot's Telegram creds.
+        if bots:
+            has_tg = False
+            for n in wf.get("nodes", []):
+                creds = n.get("credentials")
+                if isinstance(creds, dict) and isinstance(creds.get("telegramApi"), dict):
+                    has_tg = True
+                    break
+            if has_tg:
+                default_tg = bots[0][1]["telegram_credential_id"]
+                set_telegram_credential_id(wf, default_tg)
+        apply_env_credentials(wf, env_map, ignore_types={"telegramApi"})
+        write_json(output_dir / path.name, wf)
         rendered += 1
 
-    print(f"Rendered {rendered} workflow(s) to {output_dir}")
+    print(f"Rendered {rendered} workflow(s) (multi-bot) to {output_dir}")
     return 0
 
 

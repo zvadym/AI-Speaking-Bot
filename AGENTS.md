@@ -45,8 +45,11 @@ This file orients automated agents working in this repo. Keep it accurate as the
 
 ## n8n Workflows
 - Source: `deploy/workflows`.
+- Main workflow: `ai-bot.json` (includes conversation flow, plan-changed notifications, and broadcast send-message).
+- Deprecated: `plan-changed.json` and `admin-broadcast.json` were merged into `ai-bot.json`.
 - Render: `scripts/render-n8n-workflows.py --input deploy/workflows --output deploy/workflows/.rendered`.
 - Activate: `scripts/activate-n8n-workflows.sh`.
+- See `WEBHOOK_CONSOLIDATION.md` for details on the workflow consolidation.
 
 ## Conventions / Safety
 - API code is ESM; keep `import`/`export` style.

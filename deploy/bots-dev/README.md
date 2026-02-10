@@ -48,7 +48,7 @@ N8N_CRED_OPENAI_ID=YourOpenAICredentialId
 N8N_CRED_POSTGRES_ID=YourPostgresCredentialId
 ```
 
-`N8N_CRED_TELEGRAM_ID` is optional for render (multi-bot mode uses bot configs for Telegram); you can leave it empty or set it to one of your bot’s Telegram cred IDs.
+**Note:** `N8N_CRED_TELEGRAM_ID` is **not used** in multi-bot mode. Telegram credential IDs come from the `telegram_credential_id` field in each bot config file (`deploy/bots-dev/*.json`) instead.
 
 ### 6. Render and deploy workflows
 

@@ -579,9 +579,30 @@ async function processBroadcastCampaign(campaignId) {
         let inactiveReason = null;
 
         try {
-          const sent = await sendTelegramTextMessage(row.chat_id, messageText, { botKey: row.bot_key || null });
-          const msgId = Number(sent?.message_id);
-          telegramMessageId = Number.isFinite(msgId) ? msgId : null;
+          // Send via n8n webhook instead of direct Telegram API
+          const botKey = row.bot_key || env.defaultBotKey;
+          const url = webhookUrlForBot(env.broadcastWebhookUrl, 'send-message', botKey);
+          
+          if (!url) {
+            throw new Error('BROADCAST_WEBHOOK_URL not configured');
+          }
+
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: row.chat_id,
+              message_text: messageText
+            })
+          });
+
+          if (!resp.ok) {
+            const body = await resp.text().catch(() => '');
+            throw new Error(`Webhook returned ${resp.status}: ${body}`);
+          }
+
+          // n8n webhook doesn't return message_id, so we leave it null
+          // If needed, we can update n8n workflow to return it in the response
         } catch (err) {
           status = 'failed';
           lastError = sanitizeErrorText(err?.message || String(err));
