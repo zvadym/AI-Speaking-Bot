@@ -2712,14 +2712,14 @@ async function handleStripeEvent(event) {
       `UPDATE users
           SET plan_tier = $1,
               plan_started_at = CASE
-                WHEN plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2 IS NOT NULL THEN $2
+                WHEN plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2::timestamptz IS NOT NULL THEN $2::timestamptz
                 ELSE plan_started_at
               END,
               plan_started_tier = CASE
-                WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2 IS NOT NULL THEN $1
+                WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2::timestamptz IS NOT NULL THEN $1
                 ELSE plan_started_tier
               END,
-              plan_expires_at = COALESCE($3, plan_expires_at),
+              plan_expires_at = COALESCE($3::timestamptz, plan_expires_at),
               plan_autorenew = $4,
               stripe_customer_id = $5,
               stripe_subscription_id = $6,
@@ -2728,7 +2728,7 @@ async function handleStripeEvent(event) {
               billing_currency = $9,
               updated_at = NOW(),
               pending_plan_tier = $10,
-              pending_plan_effective_at = $11
+              pending_plan_effective_at = $11::timestamptz
         WHERE stripe_customer_id = $5
         RETURNING chat_id`,
       [
@@ -2763,14 +2763,14 @@ async function handleStripeEvent(event) {
           `UPDATE users
               SET plan_tier = $1,
                   plan_started_at = CASE
-                    WHEN plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2 IS NOT NULL THEN $2
+                    WHEN plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2::timestamptz IS NOT NULL THEN $2::timestamptz
                     ELSE plan_started_at
                   END,
                   plan_started_tier = CASE
-                    WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2 IS NOT NULL THEN $1
+                    WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2::timestamptz IS NOT NULL THEN $1
                     ELSE plan_started_tier
                   END,
-                  plan_expires_at = COALESCE($3, plan_expires_at),
+                  plan_expires_at = COALESCE($3::timestamptz, plan_expires_at),
                   plan_autorenew = $4,
                   stripe_customer_id = $5,
                   stripe_subscription_id = $6,
@@ -2779,7 +2779,7 @@ async function handleStripeEvent(event) {
                   billing_currency = $9,
                   updated_at = NOW(),
                   pending_plan_tier = $10,
-                  pending_plan_effective_at = $11
+                  pending_plan_effective_at = $11::timestamptz
             WHERE chat_id = $12
             RETURNING chat_id`,
           [
