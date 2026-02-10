@@ -313,7 +313,6 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         e.username,
         e.first_name,
         e.level,
-        e.target_lang,
         e.created_at,
         e.bot_key,
         e.effective_tier,
