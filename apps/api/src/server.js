@@ -274,10 +274,9 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         u.chat_id,
         u.username,
         u.first_name,
-        u.level,
-        u.target_lang,
+        ub.level,
+        ub.bot_key,
         u.created_at,
-        u.bot_key,
         CASE
           WHEN u.override_plan_tier IS NOT NULL
                AND u.override_expires_at IS NOT NULL
@@ -289,7 +288,9 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
           ELSE 'free'
         END AS effective_tier
       FROM users u
+      INNER JOIN user_bots ub ON ub.chat_id = u.chat_id
       WHERE COALESCE(u.is_active, true) = true
+        AND COALESCE(ub.is_active, true) = true
     ),
     last_activity AS (
       SELECT
