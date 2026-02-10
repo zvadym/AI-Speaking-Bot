@@ -342,26 +342,45 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
       LEFT JOIN last_activity a ON a.chat_id = e.chat_id
       LEFT JOIN week_usage w ON w.chat_id = e.chat_id
       LEFT JOIN plans p ON p.tier = e.effective_tier
+    ),
+    filtered AS (
+      SELECT DISTINCT ON (e.chat_id)
+        e.chat_id,
+        e.username,
+        e.first_name,
+        e.level,
+        e.created_at,
+        e.bot_key,
+        e.effective_tier,
+        e.last_activity_at,
+        e.used_user,
+        e.used_tts,
+        e.limit_user,
+        e.limit_tts,
+        e.usage_percent,
+        e.limit_reached
+      FROM enriched e
+      WHERE ($1::text IS NULL OR e.username ILIKE ('%' || $1::text || '%'))
+        AND ($2::text[] IS NULL OR e.effective_tier = ANY($2::text[]))
+        AND (
+          $3::text IS NULL
+          OR ($3::text = 'active_within'
+              AND e.last_activity_at IS NOT NULL
+              AND e.last_activity_at >= NOW() - make_interval(days => $4::int))
+          OR ($3::text = 'inactive_for'
+              AND (e.last_activity_at IS NULL OR e.last_activity_at < NOW() - make_interval(days => $4::int)))
+          OR ($3::text = 'never_active' AND e.last_activity_at IS NULL)
+        )
+        AND (
+          $5::text IS NULL
+          OR ($5::text = 'reached' AND e.limit_reached)
+          OR ($5::text = 'percent_gte' AND e.usage_percent >= $6::numeric)
+        )
+        AND ($7::text[] IS NULL OR e.bot_key = ANY($7::text[]))
+      ORDER BY e.chat_id, e.bot_key
     )
     SELECT ${selectSql}
-    FROM enriched e
-    WHERE ($1::text IS NULL OR e.username ILIKE ('%' || $1::text || '%'))
-      AND ($2::text[] IS NULL OR e.effective_tier = ANY($2::text[]))
-      AND (
-        $3::text IS NULL
-        OR ($3::text = 'active_within'
-            AND e.last_activity_at IS NOT NULL
-            AND e.last_activity_at >= NOW() - make_interval(days => $4::int))
-        OR ($3::text = 'inactive_for'
-            AND (e.last_activity_at IS NULL OR e.last_activity_at < NOW() - make_interval(days => $4::int)))
-        OR ($3::text = 'never_active' AND e.last_activity_at IS NULL)
-      )
-      AND (
-        $5::text IS NULL
-        OR ($5::text = 'reached' AND e.limit_reached)
-        OR ($5::text = 'percent_gte' AND e.usage_percent >= $6::numeric)
-      )
-      AND ($7::text[] IS NULL OR e.bot_key = ANY($7::text[]))
+    FROM filtered f
     ${suffixSql}`;
 }
 
@@ -369,15 +388,15 @@ async function getBroadcastAudiencePreview(filters, sampleLimit = 20) {
   const params = broadcastAudienceParams(filters);
   const countQuery = broadcastAudienceSql('COUNT(*)::int AS count');
   const sampleQuery = broadcastAudienceSql(
-    `e.chat_id,
-     e.username,
-     e.first_name,
-     e.bot_key,
-     e.effective_tier,
-     e.last_activity_at,
-     ROUND(e.usage_percent, 2)::numeric AS usage_percent,
-     e.limit_reached`,
-    'ORDER BY e.chat_id ASC LIMIT $8::int'
+    `f.chat_id,
+     f.username,
+     f.first_name,
+     f.bot_key,
+     f.effective_tier,
+     f.last_activity_at,
+     ROUND(f.usage_percent, 2)::numeric AS usage_percent,
+     f.limit_reached`,
+    'ORDER BY f.chat_id ASC LIMIT $8::int'
   );
 
   const [countRes, sampleRes] = await Promise.all([
@@ -394,11 +413,11 @@ async function getBroadcastAudiencePreview(filters, sampleLimit = 20) {
 async function listBroadcastRecipients(filters, limit) {
   const params = broadcastAudienceParams(filters);
   const query = broadcastAudienceSql(
-    `e.chat_id,
-     e.username,
-     e.first_name,
-     e.bot_key`,
-    'ORDER BY e.chat_id ASC LIMIT $8::int'
+    `f.chat_id,
+     f.username,
+     f.first_name,
+     f.bot_key`,
+    'ORDER BY f.chat_id ASC LIMIT $8::int'
   );
   const { rows } = await pool.query(query, [...params, limit]);
   return rows;
