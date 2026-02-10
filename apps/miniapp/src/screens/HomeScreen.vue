@@ -10,6 +10,9 @@
       </p>
 
       <div class="chips">
+        <button class="chip" v-if="botKey" disabled>
+          🤖 {{ botKey }}
+        </button>
         <button class="chip" v-if="me" disabled>
           🌍 {{ languageLabel }}
         </button>
@@ -112,7 +115,8 @@ import { setAppLocale } from '../i18n.js';
 import { track } from '../lib/metrics.js';
 
 const props = defineProps({
-  me: { type: Object, default: null }
+  me: { type: Object, default: null },
+  botKey: { type: String, default: '' }
 });
 
 const emit = defineEmits(['navigate']);

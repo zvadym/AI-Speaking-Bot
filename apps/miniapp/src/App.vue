@@ -16,9 +16,16 @@
       </div>
     </div>
 
+    <BotPickerScreen
+      v-else-if="showBotPicker"
+      :bots="meBots"
+      @select="selectBotAndRefresh"
+    />
+
     <HomeScreen
       v-else-if="nav.screen.value === 'home'"
       :me="me"
+      :botKey="botKey"
       @navigate="nav.go"
     />
 
@@ -47,6 +54,7 @@
       :apiBase="apiBase"
       :token="token"
       :me="me"
+      :botKey="botKey"
       :refreshMe="refreshMe"
       :toast="toast"
       @navigate="nav.go"
@@ -57,6 +65,7 @@
       :apiBase="apiBase"
       :token="token"
       :me="me"
+      :botKey="botKey"
       :refreshMe="refreshMe"
       :toast="toast"
       @navigate="nav.go"
@@ -76,29 +85,35 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from './i18n.js';
-	import HomeScreen from './screens/HomeScreen.vue';
-	import AdminDashboardScreen from './screens/AdminDashboardScreen.vue';
-	import SubscriptionScreen from './screens/SubscriptionScreen.vue';
-	import CheckoutScreen from './screens/CheckoutScreen.vue';
-	import LanguageScreen from './screens/LanguageScreen.vue';
-	import LevelScreen from './screens/LevelScreen.vue';
-	import AboutScreen from './screens/AboutScreen.vue';
+import HomeScreen from './screens/HomeScreen.vue';
+import AdminDashboardScreen from './screens/AdminDashboardScreen.vue';
+import SubscriptionScreen from './screens/SubscriptionScreen.vue';
+import CheckoutScreen from './screens/CheckoutScreen.vue';
+import LanguageScreen from './screens/LanguageScreen.vue';
+import LevelScreen from './screens/LevelScreen.vue';
+import AboutScreen from './screens/AboutScreen.vue';
+import BotPickerScreen from './screens/BotPickerScreen.vue';
 import { useNav } from './lib/nav.js';
 import { apiJson, authTelegram } from './lib/api.js';
 import { getTelegramWebApp, tgReady } from './lib/tg.js';
 import { identifyUser, track, trackScreen } from './lib/metrics.js';
 
-	const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
 
-	const nav = useNav();
-	const { t } = useI18n({ useScope: 'global' });
-	const isAdmin = computed(() => nav.screen.value === 'admin');
+const nav = useNav();
+const { t } = useI18n({ useScope: 'global' });
+const isAdmin = computed(() => nav.screen.value === 'admin');
 
 const loading = ref(true);
 const fatalKey = ref('');
 const fatalText = computed(() => (fatalKey.value ? t(fatalKey.value) : ''));
 const token = ref('');
 const me = ref(null);
+const botKey = ref('');
+const meBots = ref([]);
+const showBotPicker = computed(
+  () => !isAdmin.value && !loading.value && !fatalKey.value && meBots.value.length > 1 && !botKey.value
+);
 
 const toastState = reactive({
   show: false,
@@ -122,10 +137,80 @@ function toast(message) {
   }, 2600);
 }
 
+function readBotKeyFromLocation() {
+  try {
+    const u = new URL(window.location.href);
+    return (
+      u.searchParams.get('bot-key') ||
+      u.searchParams.get('bot_key') ||
+      ''
+    ).toString().trim().toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+function setBotKeyInLocation(nextBotKey) {
+  const value = (nextBotKey || '').toString().trim().toLowerCase();
+  try {
+    const u = new URL(window.location.href);
+    if (value) u.searchParams.set('bot-key', value);
+    else u.searchParams.delete('bot-key');
+    window.history.replaceState({}, '', `${u.pathname}${u.search}`);
+  } catch {
+    // ignore URL update failures
+  }
+}
+
 async function refreshMe() {
   if (!token.value) return;
-  const data = await apiJson(apiBase, '/me', { token: token.value });
+  const query = botKey.value ? { bot_key: botKey.value } : undefined;
+  const data = await apiJson(apiBase, '/me', { token: token.value, query });
   me.value = data.user;
+  if (me.value?.bot_key) {
+    const normalized = String(me.value.bot_key).trim().toLowerCase();
+    if (normalized) {
+      botKey.value = normalized;
+      setBotKeyInLocation(normalized);
+    }
+  }
+}
+
+async function refreshBots() {
+  if (!token.value) return;
+  const query = botKey.value ? { bot_key: botKey.value } : undefined;
+  const data = await apiJson(apiBase, '/me/bots', { token: token.value, query });
+  meBots.value = Array.isArray(data?.bots) ? data.bots : [];
+
+  const normalizedSelected = (data?.selected_bot_key || '').toString().trim().toLowerCase();
+  const available = new Set(meBots.value.map((row) => (row?.bot_key || '').toString().trim().toLowerCase()).filter(Boolean));
+
+  if (botKey.value && available.has(botKey.value)) return;
+  if (normalizedSelected && available.has(normalizedSelected)) {
+    botKey.value = normalizedSelected;
+    setBotKeyInLocation(normalizedSelected);
+    return;
+  }
+  if (meBots.value.length === 1) {
+    botKey.value = (meBots.value[0].bot_key || '').toString().trim().toLowerCase();
+    setBotKeyInLocation(botKey.value);
+    return;
+  }
+  if (meBots.value.length > 1) {
+    botKey.value = '';
+    return;
+  }
+
+  botKey.value = '';
+}
+
+async function selectBotAndRefresh(nextBotKey) {
+  const normalized = (nextBotKey || '').toString().trim().toLowerCase();
+  if (!normalized) return;
+  botKey.value = normalized;
+  setBotKeyInLocation(normalized);
+  track('ui_click', { id: 'bot_select', bot_key: normalized });
+  await refreshMe();
 }
 
 let tgBackHandler = null;
@@ -148,17 +233,17 @@ function trackAppOpenOnce() {
   });
 }
 
-	onMounted(async () => {
-	  loading.value = true;
-	  fatalKey.value = '';
+onMounted(async () => {
+  loading.value = true;
+  fatalKey.value = '';
 
-	  try {
-	    if (isAdmin.value) return;
-	    const tg = getTelegramWebApp();
-	    if (!tg?.initData) {
-	      fatalKey.value = 'app.error.openInTelegram';
-	      return;
-	    }
+  try {
+    if (isAdmin.value) return;
+    const tg = getTelegramWebApp();
+    if (!tg?.initData) {
+      fatalKey.value = 'app.error.openInTelegram';
+      return;
+    }
 
     tgReady(tg);
 
@@ -171,7 +256,17 @@ function trackAppOpenOnce() {
 
     const auth = await authTelegram(apiBase, tg.initData);
     token.value = auth.token;
-    await refreshMe();
+    const fromUrl = readBotKeyFromLocation();
+    const fromAuth = (auth?.bot_key || '').toString().trim().toLowerCase();
+    botKey.value = fromUrl || fromAuth || '';
+    if (botKey.value) setBotKeyInLocation(botKey.value);
+
+    await refreshBots();
+    if (botKey.value || meBots.value.length <= 1) {
+      await refreshMe();
+    } else {
+      me.value = null;
+    }
 
     if (me.value) identifyUser(me.value);
     trackAppOpenOnce();
@@ -193,11 +288,11 @@ function trackAppOpenOnce() {
   } catch (err) {
     console.error(err);
     fatalKey.value = 'app.error.authFailed';
-	  } finally {
-	    loading.value = false;
-	    syncTelegramBackButton();
-	  }
-	});
+  } finally {
+    loading.value = false;
+    syncTelegramBackButton();
+  }
+});
 
 watch(
   () => nav.screen.value,

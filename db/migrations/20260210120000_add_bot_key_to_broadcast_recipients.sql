@@ -22,7 +22,7 @@ SET bot_key = LEFT(
         LIMIT 1
       ),
       (
-        SELECT NULLIF(u.bot_key, '')
+        SELECT NULLIF(to_jsonb(u) ->> 'bot_key', '')
         FROM public.users u
         WHERE u.chat_id = r.chat_id
         LIMIT 1
@@ -47,6 +47,15 @@ ALTER TABLE public.broadcast_recipients
 
 CREATE INDEX IF NOT EXISTS idx_broadcast_recipients_campaign_chat_bot
   ON public.broadcast_recipients (campaign_id, chat_id, bot_key);
+
+-- Remove deprecated bot-specific fields from users; these now live in user_bots/user_summaries.
+ALTER TABLE public.users
+  DROP COLUMN IF EXISTS target_lang,
+  DROP COLUMN IF EXISTS summary,
+  DROP COLUMN IF EXISTS level,
+  DROP COLUMN IF EXISTS onboarding_state,
+  DROP COLUMN IF EXISTS reply_mode,
+  DROP COLUMN IF EXISTS tts_voice;
 
 -- migrate:down
 SELECT 1;

@@ -144,6 +144,7 @@ export function identifyUser(user) {
 
   posthog.identify(distinctId, {
     plan_tier: (user.plan_tier ?? user.planTier ?? 'free').toString(),
+    bot_key: (user.bot_key ?? user.botKey ?? '').toString(),
     target_lang: (user.target_lang ?? user.targetLang ?? '').toString(),
     level: (user.level ?? '').toString()
   });

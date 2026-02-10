@@ -22,8 +22,16 @@ export function useNav() {
   }
 
   function go(nextPath, { replace = false } = {}) {
-    const target = normalizePath(nextPath);
-    const fullTarget = (nextPath || '/').toString().trim() || '/';
+    const rawTarget = (nextPath || '/').toString().trim() || '/';
+    const target = normalizePath(rawTarget);
+
+    let fullTarget = rawTarget;
+    const hasQueryOrHash = /[?#]/.test(rawTarget);
+    if (!hasQueryOrHash) {
+      const currentSearch = window.location.search || '';
+      fullTarget = `${target}${currentSearch}`;
+    }
+
     if (replace) window.history.replaceState({}, '', fullTarget);
     else window.history.pushState({}, '', fullTarget);
     path.value = target;

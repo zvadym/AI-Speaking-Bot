@@ -48,6 +48,7 @@ const props = defineProps({
   apiBase: { type: String, required: true },
   token: { type: String, required: true },
   me: { type: Object, default: null },
+  botKey: { type: String, default: '' },
   refreshMe: { type: Function, required: true },
   toast: { type: Function, required: true }
 });
@@ -75,6 +76,7 @@ async function setLang(code) {
     await apiJson(props.apiBase, '/me/target-lang', {
       method: 'POST',
       token: props.token,
+      query: props.botKey ? { bot_key: props.botKey } : undefined,
       body: { target_lang: code }
     });
     await props.refreshMe();

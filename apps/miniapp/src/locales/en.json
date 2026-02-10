@@ -39,6 +39,12 @@
       "authFailed": "Authorization failed. Please reopen the mini-app."
     }
   },
+  "botPicker": {
+    "kicker": "Bot context",
+    "title": "Pick bot",
+    "sub": "Your settings are bot-specific. Choose which bot you want to manage now.",
+    "empty": "No connected bots were found yet."
+  },
   "home": {
     "kicker": "Lesia · Settings",
     "greeting": {

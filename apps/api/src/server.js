@@ -70,6 +70,18 @@ function normalizeBotKey(raw) {
   return value.slice(0, 32);
 }
 
+function requestedBotKeyFromReq(req) {
+  return normalizeBotKey(
+    req.query?.bot_key ??
+    req.query?.botKey ??
+    req.query?.['bot-key'] ??
+    req.body?.bot_key ??
+    req.body?.botKey ??
+    req.headers?.['x-bot-key'] ??
+    null
+  );
+}
+
 function botKeyFromTargetLang(targetLangRaw) {
   const targetLang = (targetLangRaw ?? '').toString().trim().toLowerCase();
   if (targetLang && env.botKeyByTargetLang && env.botKeyByTargetLang[targetLang]) {
@@ -87,9 +99,13 @@ async function resolveUserBotKey(chatIdRaw) {
   if (!Number.isFinite(chatId)) return normalizeBotKey(env.defaultBotKey);
 
   const { rows } = await pool.query(
-    `SELECT bot_key, target_lang
-       FROM users
+    `SELECT bot_key
+       FROM user_bots
       WHERE chat_id = $1
+      ORDER BY
+        COALESCE(is_active, true) DESC,
+        COALESCE(last_seen_at, updated_at, created_at) DESC,
+        bot_key ASC
       LIMIT 1`,
     [chatId]
   );
@@ -97,7 +113,105 @@ async function resolveUserBotKey(chatIdRaw) {
   const row = rows[0] || null;
   const fromUser = normalizeBotKey(row?.bot_key || null);
   if (fromUser) return fromUser;
-  return botKeyFromTargetLang(row?.target_lang || null);
+  return normalizeBotKey(env.defaultBotKey) || 'uk-de';
+}
+
+function targetLangFromBotKey(botKeyRaw) {
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (!botKey) return null;
+  const parts = botKey.split('-');
+  return parts[1] || null;
+}
+
+async function getMeUserRow(chatIdRaw, botKeyRaw = null) {
+  const chatId = Number(chatIdRaw);
+  if (!Number.isFinite(chatId)) return null;
+
+  const normalizedBotKey = normalizeBotKey(botKeyRaw);
+  const resolvedBotKey = await resolveUserBotKey(chatId);
+  let effectiveBotKey = normalizedBotKey || resolvedBotKey;
+  if (!effectiveBotKey) effectiveBotKey = normalizeBotKey(env.defaultBotKey) || 'uk-de';
+
+  async function loadRowByBotKey(botKey) {
+    const { rows } = await pool.query(
+      `SELECT
+         u.chat_id,
+         u.username,
+         u.first_name,
+         ub.bot_key,
+         split_part(ub.bot_key, '-', 2) AS target_lang,
+         ub.level,
+         ub.onboarding_state,
+         ub.reply_mode,
+         ub.tts_voice,
+         u.plan_tier,
+         u.plan_expires_at,
+         u.plan_autorenew
+       FROM users u
+       LEFT JOIN user_bots ub
+         ON ub.chat_id = u.chat_id
+        AND ub.bot_key = $2
+       WHERE u.chat_id = $1
+       LIMIT 1`,
+      [chatId, botKey]
+    );
+    return rows[0] || null;
+  }
+
+  let row = await loadRowByBotKey(effectiveBotKey);
+  if (!row) return null;
+
+  if (!row.bot_key && resolvedBotKey && resolvedBotKey !== effectiveBotKey) {
+    const fallbackRow = await loadRowByBotKey(resolvedBotKey);
+    if (fallbackRow) {
+      row = fallbackRow;
+      effectiveBotKey = resolvedBotKey;
+    }
+  }
+
+  if (!row.bot_key && normalizedBotKey && normalizedBotKey !== effectiveBotKey) {
+    const explicitRow = await loadRowByBotKey(normalizedBotKey);
+    if (explicitRow) {
+      row = explicitRow;
+      effectiveBotKey = normalizedBotKey;
+    }
+  }
+
+  return {
+    ...row,
+    bot_key: row.bot_key || effectiveBotKey,
+    target_lang: row.target_lang || targetLangFromBotKey(row.bot_key || effectiveBotKey) || 'de',
+    level: row.level || 'b1',
+    onboarding_state: row.onboarding_state || 'ready',
+    reply_mode: row.reply_mode || 'text',
+    tts_voice: row.tts_voice || 'marin'
+  };
+}
+
+async function listUserBots(chatIdRaw) {
+  const chatId = Number(chatIdRaw);
+  if (!Number.isFinite(chatId)) return [];
+
+  const { rows } = await pool.query(
+    `SELECT
+       ub.bot_key,
+       split_part(ub.bot_key, '-', 2) AS target_lang,
+       ub.level,
+       ub.onboarding_state,
+       ub.reply_mode,
+       ub.tts_voice,
+       ub.is_active,
+       ub.last_seen_at
+     FROM user_bots ub
+     WHERE ub.chat_id = $1
+     ORDER BY
+       COALESCE(ub.is_active, true) DESC,
+       COALESCE(ub.last_seen_at, ub.updated_at, ub.created_at) DESC,
+       ub.bot_key ASC`,
+    [chatId]
+  );
+
+  return rows || [];
 }
 
 function webhookUrlForBot(templateUrl, hookName, botKeyRaw) {
@@ -1389,12 +1503,17 @@ app.post('/auth/telegram', async (req, res) => {
 
   await upsertUser(user, { botKey: result.botKey || null });
 
-  const token = signSession({ chatId: user.id, username: user.username || null });
+  const authBotKey = normalizeBotKey(result.botKey || null);
+  const token = signSession({ chatId: user.id, username: user.username || null, botKey: authBotKey || undefined });
   console.info('auth/telegram ok', {
     chatId: user.id,
     username: user.username || null
   });
-  return res.json({ token, user: { id: user.id, username: user.username || null, first_name: user.first_name || null } });
+  return res.json({
+    token,
+    bot_key: authBotKey,
+    user: { id: user.id, username: user.username || null, first_name: user.first_name || null }
+  });
 });
 
 app.get('/plans', requireAuth, async (req, res) => {
@@ -1501,18 +1620,25 @@ app.get('/plans', requireAuth, async (req, res) => {
 
 app.get('/me', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
-  const { rows } = await pool.query(
-    `SELECT chat_id, username, first_name, target_lang, level, onboarding_state, reply_mode, tts_voice,
-            plan_tier, plan_expires_at, plan_autorenew
-       FROM users
-      WHERE chat_id = $1
-      LIMIT 1`,
-    [chatId]
-  );
-
-  const user = rows[0] || null;
+  const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null);
+  const user = await getMeUserRow(chatId, requestedBotKey);
   if (!user) return res.status(404).json({ error: 'user_not_found' });
   return res.json({ user });
+});
+
+app.get('/me/bots', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null);
+
+  const [bots, user] = await Promise.all([
+    listUserBots(chatId),
+    getMeUserRow(chatId, requestedBotKey)
+  ]);
+
+  return res.json({
+    selected_bot_key: user?.bot_key || requestedBotKey || null,
+    bots
+  });
 });
 
 app.post('/me/target-lang', requireAuth, async (req, res) => {
@@ -1522,19 +1648,37 @@ app.post('/me/target-lang', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'bad_target_lang' });
   }
 
-  const { rows } = await pool.query(
-    `UPDATE users
-        SET target_lang = $1,
-            onboarding_state = 'await_level',
-            updated_at = NOW()
-      WHERE chat_id = $2
-      RETURNING chat_id, username, first_name, target_lang, level, onboarding_state, reply_mode, tts_voice,
-                plan_tier, plan_expires_at, plan_autorenew`,
-    [raw, chatId]
+  const targetBotKey = botKeyFromTargetLang(raw) || normalizeBotKey(env.defaultBotKey) || 'uk-de';
+
+  const { rowCount } = await pool.query(
+    `INSERT INTO user_bots (
+       chat_id,
+       bot_key,
+       level,
+       onboarding_state,
+       reply_mode,
+       tts_voice,
+       first_seen_at,
+       last_seen_at,
+       is_active,
+       updated_at
+     )
+     SELECT $1, $2, 'b1', 'await_level', 'text', 'marin', NOW(), NOW(), true, NOW()
+     FROM users u
+     WHERE u.chat_id = $1
+     ON CONFLICT (chat_id, bot_key)
+     DO UPDATE SET
+       onboarding_state = 'await_level',
+       last_seen_at = NOW(),
+       is_active = true,
+       updated_at = NOW()`,
+    [chatId, targetBotKey]
   );
 
-  if (!rows[0]) return res.status(404).json({ error: 'user_not_found' });
-  return res.json({ user: rows[0] });
+  if (!rowCount) return res.status(404).json({ error: 'user_not_found' });
+  const user = await getMeUserRow(chatId, targetBotKey);
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+  return res.json({ user });
 });
 
 app.post('/me/level', requireAuth, async (req, res) => {
@@ -1544,19 +1688,43 @@ app.post('/me/level', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'bad_level' });
   }
 
-  const { rows } = await pool.query(
-    `UPDATE users
-        SET level = $1,
-            onboarding_state = 'ready',
-            updated_at = NOW()
-      WHERE chat_id = $2
-      RETURNING chat_id, username, first_name, target_lang, level, onboarding_state, reply_mode, tts_voice,
-                plan_tier, plan_expires_at, plan_autorenew`,
-    [raw, chatId]
+  const currentBotKey =
+    requestedBotKeyFromReq(req) ||
+    normalizeBotKey(req.auth?.botKey || null) ||
+    await resolveUserBotKey(chatId) ||
+    normalizeBotKey(env.defaultBotKey) ||
+    'uk-de';
+
+  const { rowCount } = await pool.query(
+    `INSERT INTO user_bots (
+       chat_id,
+       bot_key,
+       level,
+       onboarding_state,
+       reply_mode,
+       tts_voice,
+       first_seen_at,
+       last_seen_at,
+       is_active,
+       updated_at
+     )
+     SELECT $1, $2, $3, 'ready', 'text', 'marin', NOW(), NOW(), true, NOW()
+     FROM users u
+     WHERE u.chat_id = $1
+     ON CONFLICT (chat_id, bot_key)
+     DO UPDATE SET
+       level = EXCLUDED.level,
+       onboarding_state = 'ready',
+       last_seen_at = NOW(),
+       is_active = true,
+       updated_at = NOW()`,
+    [chatId, currentBotKey, raw]
   );
 
-  if (!rows[0]) return res.status(404).json({ error: 'user_not_found' });
-  return res.json({ user: rows[0] });
+  if (!rowCount) return res.status(404).json({ error: 'user_not_found' });
+  const user = await getMeUserRow(chatId, currentBotKey);
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+  return res.json({ user });
 });
 
 app.post('/billing/checkout', requireAuth, async (req, res) => {
