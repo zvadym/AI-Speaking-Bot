@@ -214,7 +214,7 @@ async function listUserBots(chatIdRaw) {
   return rows || [];
 }
 
-function webhookUrlForBot(templateUrl, hookName, botKeyRaw) {
+function webhookUrlForBot(templateUrl, hookName, botKeyRaw, { forceAppendBotKey = false } = {}) {
   const template = (templateUrl ?? '').toString().trim();
   if (!template) return '';
   const botKey = normalizeBotKey(botKeyRaw);
@@ -224,7 +224,7 @@ function webhookUrlForBot(templateUrl, hookName, botKeyRaw) {
     return template.split('{bot_key}').join(botKey);
   }
 
-  if (!env.webhooksAppendBotKey) {
+  if (!env.webhooksAppendBotKey && !forceAppendBotKey) {
     return template;
   }
 
@@ -2448,14 +2448,40 @@ async function notifyPlanChanged(payload) {
   try {
     const botKey = await resolveUserBotKey(payload?.chat_id);
     const url = webhookUrlForBot(env.planChangedWebhookUrl, 'plan-changed', botKey);
-    const resp = await fetch(url, {
+    let resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     if (!resp.ok) {
-      const body = await resp.text().catch(() => '');
-      console.warn('Plan change webhook failed', { status: resp.status, body });
+      let body = await resp.text().catch(() => '');
+
+      // Backward-compatible fallback:
+      // when PLAN_CHANGED_WEBHOOK_URL has no {bot_key} and WEBHOOKS_APPEND_BOT_KEY=false,
+      // retry once with "-<bot_key>" suffix for rendered multi-bot workflows.
+      if (resp.status === 404 && botKey) {
+        const fallbackUrl = webhookUrlForBot(env.planChangedWebhookUrl, 'plan-changed', botKey, {
+          forceAppendBotKey: true
+        });
+        if (fallbackUrl && fallbackUrl !== url) {
+          const fallbackResp = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (fallbackResp.ok) return;
+          resp = fallbackResp;
+          body = await fallbackResp.text().catch(() => '');
+          console.warn('Plan change webhook fallback failed', {
+            status: fallbackResp.status,
+            url: fallbackUrl,
+            body
+          });
+          return;
+        }
+      }
+
+      console.warn('Plan change webhook failed', { status: resp.status, url, body });
     }
   } catch (err) {
     console.error('Plan change webhook failed', err);
