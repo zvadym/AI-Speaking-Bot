@@ -212,3 +212,81 @@ SSH access requires VPN. Use this tunnel to reach n8n locally:
 ```bash
 ssh -L 5678:127.0.0.1:5678 languagebot -N
 ```
+
+## 5) Docker Compose Commands
+
+The project uses Docker Compose with project name `languagebot`. This is defined in `docker-compose.yml` with `name: languagebot`.
+
+**Note:** If you're on an older deployment without the `name:` field, you may need to specify the project name with `-p languagebot` in all commands below.
+
+### View running services
+
+```bash
+cd /opt/ai-speaking-bot/deploy
+docker compose ps
+```
+
+### View logs
+
+```bash
+# API logs (last 100 lines)
+docker compose logs --tail=100 api
+
+# n8n logs (last 100 lines)
+docker compose logs --tail=100 n8n
+
+# Follow logs in real-time
+docker compose logs -f api
+
+# Search for specific errors
+docker compose logs api | grep -i error
+```
+
+### Restart services
+
+```bash
+# Restart API only
+docker compose restart api
+
+# Restart all services
+docker compose restart
+```
+
+### Execute commands in containers
+
+```bash
+# Check environment variables
+docker compose exec api env | grep DATABASE_URL
+
+# Get a shell
+docker compose exec api sh
+```
+
+### Alternative: Use docker commands directly
+
+If you prefer not to use the `-p` flag, you can use `docker` commands directly with container names:
+
+```bash
+# View logs
+docker logs --tail=100 languagebot-api-1
+docker logs -f languagebot-api-1
+
+# Execute commands
+docker exec languagebot-api-1 env
+docker exec -it languagebot-api-1 sh
+```
+
+### Optional: Create an alias for convenience
+
+For shorter commands, add this to your `~/.bashrc` or `~/.zshrc`:
+
+```bash
+alias dc='docker compose'
+```
+
+Then you can use: `dc ps`, `dc logs api`, `dc restart api`, etc.
+
+**Legacy note:** On older deployments without `name: languagebot` in docker-compose.yml, use:
+```bash
+alias dc='docker compose -p languagebot'
+```

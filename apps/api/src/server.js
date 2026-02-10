@@ -232,25 +232,39 @@ function normalizeBroadcastFilters(raw) {
     fallback: 80
   });
 
+  const botsProvided = Array.isArray(source.bots);
+  const botsRaw = botsProvided ? source.bots : [];
+  const bots = Array.from(
+    new Set(
+      botsRaw
+        .map((v) => v.toString().trim().toLowerCase())
+        .filter((v) => v.length > 0 && v.length <= 32)
+    )
+  );
+  const normalizedBots = botsProvided && bots.length > 0 ? bots : null;
+
   return {
     username,
     plans: normalizedPlans,
     lastActivityMode,
     lastActivityDays,
     usageMode,
-    usagePercent
+    usagePercent,
+    bots: normalizedBots
   };
 }
 
 function broadcastAudienceParams(filters) {
   const plans = Array.isArray(filters.plans) ? filters.plans : null;
+  const bots = Array.isArray(filters.bots) ? filters.bots : null;
   return [
     filters.username,
     plans,
     filters.lastActivityMode,
     filters.lastActivityDays,
     filters.usageMode,
-    filters.usagePercent
+    filters.usagePercent,
+    bots
   ];
 }
 
@@ -263,6 +277,7 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         u.level,
         u.target_lang,
         u.created_at,
+        u.bot_key,
         CASE
           WHEN u.override_plan_tier IS NOT NULL
                AND u.override_expires_at IS NOT NULL
@@ -299,6 +314,7 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         e.level,
         e.target_lang,
         e.created_at,
+        e.bot_key,
         e.effective_tier,
         a.last_activity_at,
         COALESCE(w.used_user, 0)::int AS used_user,
@@ -345,6 +361,7 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         OR ($5::text = 'reached' AND e.limit_reached)
         OR ($5::text = 'percent_gte' AND e.usage_percent >= $6::numeric)
       )
+      AND ($7::text[] IS NULL OR e.bot_key = ANY($7::text[]))
     ${suffixSql}`;
 }
 
@@ -355,11 +372,12 @@ async function getBroadcastAudiencePreview(filters, sampleLimit = 20) {
     `e.chat_id,
      e.username,
      e.first_name,
+     e.bot_key,
      e.effective_tier,
      e.last_activity_at,
      ROUND(e.usage_percent, 2)::numeric AS usage_percent,
      e.limit_reached`,
-    'ORDER BY e.chat_id ASC LIMIT $7::int'
+    'ORDER BY e.chat_id ASC LIMIT $8::int'
   );
 
   const [countRes, sampleRes] = await Promise.all([
@@ -378,8 +396,9 @@ async function listBroadcastRecipients(filters, limit) {
   const query = broadcastAudienceSql(
     `e.chat_id,
      e.username,
-     e.first_name`,
-    'ORDER BY e.chat_id ASC LIMIT $7::int'
+     e.first_name,
+     e.bot_key`,
+    'ORDER BY e.chat_id ASC LIMIT $8::int'
   );
   const { rows } = await pool.query(query, [...params, limit]);
   return rows;
@@ -645,31 +664,6 @@ async function processBroadcastCampaign(campaignId) {
       errorText: sanitizeErrorText(err?.message || String(err)),
       setFinishedAt: true
     });
-    return false;
-  }
-}
-
-async function notifyBroadcastQueued(payload) {
-  if (!env.broadcastWebhookUrl) return false;
-  try {
-    const url = webhookUrlForBot(env.broadcastWebhookUrl, 'admin-broadcast', env.defaultBotKey);
-    const headers = { 'Content-Type': 'application/json' };
-    if (env.broadcastWebhookSecret) {
-      headers['x-broadcast-secret'] = env.broadcastWebhookSecret;
-    }
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => '');
-      console.warn('Broadcast webhook failed', { status: resp.status, body });
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error('Broadcast webhook failed', err);
     return false;
   }
 }
@@ -1213,13 +1207,11 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
     throw err;
   }
 
-  const webhookTriggered = await notifyBroadcastQueued({ campaign_id: campaignId });
   queueBroadcastCampaignProcessing(campaignId);
 
   return res.json({
     campaign_id: campaignId,
     status: 'queued',
-    queued_with_webhook: webhookTriggered,
     total_recipients: chatIds.length
   });
 });

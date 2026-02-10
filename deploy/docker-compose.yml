@@ -1,3 +1,5 @@
+name: languagebot
+
 services:
   api:
     build:

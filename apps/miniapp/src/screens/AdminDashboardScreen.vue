@@ -257,6 +257,18 @@
         </div>
       </div>
 
+      <div class="row" v-if="botStats.length">
+        <div class="field grow">
+          <span>Bot</span>
+          <div class="plan-pills">
+            <label class="pill" v-for="bot in botStats" :key="bot.bot_key">
+              <input v-model="broadcast.bots" type="checkbox" :value="bot.bot_key" />
+              <span>{{ bot.bot_key }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div class="row">
         <label class="field grow">
           <span>Message text</span>
@@ -303,6 +315,7 @@
           <li v-for="row in broadcastPreview.sample.slice(0, 8)" :key="row.chat_id">
             <code>{{ row.chat_id }}</code>
             <span>{{ row.username ? `@${row.username}` : '(no username)' }}</span>
+            <span class="bot-badge">{{ row.bot_key }}</span>
             <span>{{ row.effective_tier }}</span>
             <span>{{ formatLastActivity(row.last_activity_at) }}</span>
           </li>
@@ -506,7 +519,8 @@ const broadcast = reactive({
   lastActivityDays: 14,
   usageMode: 'any',
   usagePercent: 80,
-  messageText: ''
+  messageText: '',
+  bots: []
 });
 
 let previewTimer = null;
@@ -675,6 +689,10 @@ function broadcastFiltersPayload() {
     if (broadcast.usageMode === 'percent_gte') {
       filters.usagePercent = clampNumber(broadcast.usagePercent, 0, 100, 80);
     }
+  }
+
+  if (broadcast.bots.length > 0) {
+    filters.bots = broadcast.bots;
   }
 
   return filters;
@@ -931,7 +949,8 @@ watch(
     broadcast.lastActivityMode,
     broadcast.lastActivityDays,
     broadcast.usageMode,
-    broadcast.usagePercent
+    broadcast.usagePercent,
+    broadcast.bots
   ],
   () => {
     if (!password.value) {
@@ -942,7 +961,8 @@ watch(
       return;
     }
     scheduleBroadcastPreview();
-  }
+  },
+  { deep: true }
 );
 
 watch(
@@ -1284,6 +1304,16 @@ h1 {
   gap: 8px;
   align-items: center;
   font-size: 12px;
+}
+
+.bot-badge {
+  background: rgba(99, 102, 241, 0.1);
+  color: rgb(99, 102, 241);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
 }
 
 .campaign-state {
