@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "Home",
+    "teachers": "Insegnanti"
+  },
+  "cta": {
+    "start": "Inizia su Telegram",
+    "openTelegram": "Apri su Telegram",
+    "viewProfile": "Profilo",
+    "allTeachers": "Tutti gli insegnanti",
+    "backToTeachers": "Torna agli insegnanti"
+  },
+  "home": {
+    "badge": "Pratica la lingua con la voce",
+    "headline": "Impara parlando.",
+    "subhead": "Scegli un insegnante, invia messaggi vocali e ricevi correzioni e frasi migliori — ogni giorno.",
+    "meetTeachers": "Scopri gli insegnanti",
+    "screenshotPlaceholder": "Segnaposto screenshot",
+    "teachersTitle": "Insegnanti",
+    "teachersDesc": "Ogni insegnante ha il proprio stile, le lingue e un focus diverso.",
+    "howTitle": "Come funziona",
+    "steps": {
+      "oneTitle": "Scegli un insegnante",
+      "oneDesc": "Trova l’insegnante giusto per livello e stile.",
+      "twoTitle": "Invia un messaggio vocale",
+      "twoDesc": "Parla in modo naturale — riceverai una versione corretta e più naturale.",
+      "threeTitle": "Migliora ogni giorno",
+      "threeDesc": "Crea una vera abitudine di speaking con feedback costante."
+    }
+  },
+  "teachers": {
+    "title": "Conosci gli insegnanti",
+    "subhead": "Scegli un insegnante e inizia la prossima lezione su Telegram."
+  },
+  "teacher": {
+    "teachesPrefix": "Insegna",
+    "baseLanguagePrefix": "Spiega in",
+    "stylePrefix": "Stile"
+  },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "desc": "Prova la home."
+  },
+  "language": {
+    "label": "Lingua",
+    "en": "Inglese",
+    "uk": "Ucraino",
+    "it": "Italiano"
+  },
+  "languageName": {
+    "en": "Inglese",
+    "de": "Tedesco",
+    "uk": "Ucraino",
+    "it": "Italiano",
+    "ru": "Russo",
+    "pl": "Polacco",
+    "es": "Spagnolo",
+    "fr": "Francese"
+  }
+}
+

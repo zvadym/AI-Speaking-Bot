@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "Home",
+    "teachers": "Teachers"
+  },
+  "cta": {
+    "start": "Start in Telegram",
+    "openTelegram": "Open in Telegram",
+    "viewProfile": "View profile",
+    "allTeachers": "All teachers",
+    "backToTeachers": "Back to teachers"
+  },
+  "home": {
+    "badge": "Voice-first language practice",
+    "headline": "Learn by speaking.",
+    "subhead": "Choose a teacher, send voice messages, get instant corrections and better phrasing — every day.",
+    "meetTeachers": "Meet the teachers",
+    "screenshotPlaceholder": "Screenshot placeholder",
+    "teachersTitle": "Teachers",
+    "teachersDesc": "Every teacher has their own style, languages, and focus.",
+    "howTitle": "How it works",
+    "steps": {
+      "oneTitle": "Pick a teacher",
+      "oneDesc": "Choose a teacher that matches your level and vibe.",
+      "twoTitle": "Send a voice message",
+      "twoDesc": "Speak naturally — you’ll get a better, corrected version.",
+      "threeTitle": "Improve daily",
+      "threeDesc": "Build a real speaking habit with consistent feedback."
+    }
+  },
+  "teachers": {
+    "title": "Meet the teachers",
+    "subhead": "Pick a teacher and start your next lesson on Telegram."
+  },
+  "teacher": {
+    "teachesPrefix": "Teaches",
+    "baseLanguagePrefix": "Explains in",
+    "stylePrefix": "Style"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "desc": "Try the home page."
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "uk": "Ukrainian",
+    "it": "Italian"
+  },
+  "languageName": {
+    "en": "English",
+    "de": "German",
+    "uk": "Ukrainian",
+    "it": "Italian",
+    "ru": "Russian",
+    "pl": "Polish",
+    "es": "Spanish",
+    "fr": "French"
+  }
+}
+

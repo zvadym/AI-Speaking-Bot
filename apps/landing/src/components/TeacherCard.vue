@@ -1,27 +1,19 @@
 <template>
   <article class="card teacher-card">
     <div class="avatar">
-      <img
-        v-if="teacher.photoUrl"
-        class="avatar-img"
-        :src="teacher.photoUrl"
-        :alt="teacher.name"
-        loading="lazy"
-        decoding="async"
-      />
+      <span v-if="teacher.avatarEmoji" class="avatar-emoji" aria-hidden="true">{{ teacher.avatarEmoji }}</span>
       <span v-else class="avatar-letter" aria-hidden="true">{{ letter }}</span>
     </div>
 
     <div class="info">
-      <div class="h3 name">{{ teacher.name }}</div>
+      <div class="h3 name">{{ name }}</div>
       <div class="muted meta">
-        <span>{{ teacher.languages.join(' • ') }}</span>
-        <span v-if="teacher.tagline"> • {{ teacher.tagline }}</span>
+        <span>{{ teachesLine }}</span>
       </div>
     </div>
 
     <div class="actions">
-      <RouterLink class="btn" :to="`/teachers/${teacher.slug}`">View profile</RouterLink>
+      <RouterLink class="btn" :to="`/teachers/${teacher.slug}`">{{ t('cta.viewProfile') }}</RouterLink>
       <a
         v-if="telegramUrl"
         class="btn primary"
@@ -29,7 +21,7 @@
         target="_blank"
         rel="noreferrer"
       >
-        Open in Telegram
+        {{ t('cta.openTelegram') }}
       </a>
     </div>
   </article>
@@ -39,6 +31,8 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { getTeacherTelegramUrl } from '../lib/telegram.js';
+import { getTeacherName, getTeacherTagline } from '../data/teachers.js';
+import { useI18n } from '../i18n.js';
 
 const props = defineProps({
   teacher: {
@@ -47,7 +41,17 @@ const props = defineProps({
   }
 });
 
-const letter = computed(() => (props.teacher?.name || '?').toString().trim().slice(0, 1).toUpperCase());
+const { t, locale } = useI18n();
+
+const name = computed(() => getTeacherName(props.teacher, locale.value));
+const tagline = computed(() => getTeacherTagline(props.teacher, locale.value));
+const letter = computed(() => (name.value || '?').toString().trim().slice(0, 1).toUpperCase());
+const teachesLine = computed(() => {
+  const pieces = [];
+  if (props.teacher?.learningLanguage) pieces.push(`${t('teacher.teachesPrefix')} ${t(`languageName.${props.teacher.learningLanguage}`)}`);
+  if (tagline.value) pieces.push(tagline.value);
+  return pieces.filter(Boolean).join(' • ');
+});
 const telegramUrl = computed(() => getTeacherTelegramUrl(props.teacher));
 </script>
 
@@ -70,11 +74,9 @@ const telegramUrl = computed(() => getTeacherTelegramUrl(props.teacher));
   overflow: hidden;
 }
 
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.avatar-emoji {
+  font-size: 24px;
+  line-height: 1;
 }
 
 .avatar-letter {

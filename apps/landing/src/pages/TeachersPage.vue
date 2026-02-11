@@ -1,10 +1,8 @@
 <template>
   <section class="page">
     <div class="container">
-      <h1 class="h1">Meet the teachers</h1>
-      <p class="muted sub">
-        Each teacher is a dedicated Telegram bot. Pick one to start speaking today.
-      </p>
+      <h1 class="h1">{{ t('teachers.title') }}</h1>
+      <p class="muted sub">{{ t('teachers.subhead') }}</p>
 
       <div class="grid-2 list">
         <TeacherCard v-for="t in teachers" :key="t.slug" :teacher="t" />
@@ -16,6 +14,9 @@
 <script setup>
 import TeacherCard from '../components/TeacherCard.vue';
 import { teachers } from '../data/teachers.js';
+import { useI18n } from '../i18n.js';
+
+const { t } = useI18n();
 </script>
 
 <style scoped>
@@ -34,4 +35,3 @@ import { teachers } from '../data/teachers.js';
   margin-top: 22px;
 }
 </style>
-

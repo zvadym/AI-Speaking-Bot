@@ -1,15 +1,18 @@
 <template>
   <section class="page">
     <div class="container card">
-      <h1 class="h2">Page not found</h1>
-      <p class="muted">Try the home page.</p>
-      <RouterLink class="btn" to="/">Home</RouterLink>
+      <h1 class="h2">{{ t('notFound.title') }}</h1>
+      <p class="muted">{{ t('notFound.desc') }}</p>
+      <RouterLink class="btn" to="/">{{ t('nav.home') }}</RouterLink>
     </div>
   </section>
 </template>
 
 <script setup>
 import { RouterLink } from 'vue-router';
+import { useI18n } from '../i18n.js';
+
+const { t } = useI18n();
 </script>
 
 <style scoped>
@@ -17,4 +20,3 @@ import { RouterLink } from 'vue-router';
   padding: 56px 0;
 }
 </style>
-

@@ -8,27 +8,23 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: HomePage,
-    meta: { title: 'AI Language School' }
+    component: HomePage
   },
   {
     path: '/teachers',
     name: 'teachers',
-    component: TeachersPage,
-    meta: { title: 'Teachers — AI Language School' }
+    component: TeachersPage
   },
   {
     path: '/teachers/:slug',
     name: 'teacher',
     component: TeacherProfilePage,
-    props: true,
-    meta: { title: 'Teacher — AI Language School' }
+    props: true
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
-    component: NotFoundPage,
-    meta: { title: 'Not found — AI Language School' }
+    component: NotFoundPage
   }
 ];
 
@@ -40,9 +36,4 @@ const router = createRouter({
   }
 });
 
-router.afterEach((to) => {
-  document.title = (to?.meta?.title || 'AI Language School').toString();
-});
-
 export default router;
-

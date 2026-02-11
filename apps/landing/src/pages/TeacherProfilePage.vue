@@ -3,29 +3,32 @@
     <div class="container">
       <div v-if="teacher" class="card profile">
         <div class="avatar">
-          <img
-            v-if="teacher.photoUrl"
-            class="avatar-img"
-            :src="teacher.photoUrl"
-            :alt="teacher.name"
-            loading="lazy"
-            decoding="async"
-          />
+          <span v-if="teacher.avatarEmoji" class="avatar-emoji" aria-hidden="true">{{ teacher.avatarEmoji }}</span>
           <span v-else class="avatar-letter" aria-hidden="true">{{ letter }}</span>
         </div>
 
         <div class="main">
-          <h1 class="h2">{{ teacher.name }}</h1>
+          <h1 class="h2">{{ name }}</h1>
           <div class="muted meta">
-            {{ teacher.languages.join(' • ') }}<span v-if="teacher.tagline"> • {{ teacher.tagline }}</span>
+            {{ teachesLine }}
           </div>
 
-          <p class="bio">{{ teacher.bio }}</p>
+          <p v-if="tagline" class="bio">{{ tagline }}</p>
 
           <div class="details">
             <div class="detail">
-              <div class="muted label">Focus</div>
-              <div class="value">{{ teacher.focus }}</div>
+              <div class="muted label">{{ t('teacher.teachesPrefix') }}</div>
+              <div class="value">{{ t(`languageName.${teacher.learningLanguage}`) }}</div>
+            </div>
+            <div class="detail">
+              <div class="muted label">{{ t('teacher.baseLanguagePrefix') }}</div>
+              <div class="value">{{ t(`languageName.${teacher.baseLanguage}`) }}</div>
+            </div>
+            <div v-if="styleTags.length" class="detail">
+              <div class="muted label">{{ t('teacher.stylePrefix') }}</div>
+              <div class="tags">
+                <span v-for="tag in styleTags" :key="tag" class="tag">{{ tag }}</span>
+              </div>
             </div>
           </div>
 
@@ -37,43 +40,49 @@
               target="_blank"
               rel="noreferrer"
             >
-              Open in Telegram
+              {{ t('cta.openTelegram') }}
             </a>
-            <RouterLink class="btn" to="/teachers">Back to teachers</RouterLink>
+            <RouterLink class="btn" to="/teachers">{{ t('cta.backToTeachers') }}</RouterLink>
           </div>
         </div>
       </div>
 
       <div v-else class="card">
-        <h1 class="h2">Teacher not found</h1>
-        <p class="muted">Try the teachers list.</p>
-        <RouterLink class="btn" to="/teachers">Teachers</RouterLink>
+        <h1 class="h2">{{ t('notFound.title') }}</h1>
+        <p class="muted">{{ t('notFound.desc') }}</p>
+        <RouterLink class="btn" to="/teachers">{{ t('nav.teachers') }}</RouterLink>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue';
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { getTeacherBySlug } from '../data/teachers.js';
+import { getTeacherBySlug, getTeacherName, getTeacherTagline } from '../data/teachers.js';
 import { getTeacherTelegramUrl } from '../lib/telegram.js';
+import { useI18n } from '../i18n.js';
 
 const props = defineProps({
   slug: { type: String, required: true }
 });
 
 const teacher = computed(() => getTeacherBySlug(props.slug));
-const letter = computed(() => (teacher.value?.name || '?').toString().trim().slice(0, 1).toUpperCase());
+const { t, locale } = useI18n();
+
+const name = computed(() => getTeacherName(teacher.value, locale.value));
+const tagline = computed(() => getTeacherTagline(teacher.value, locale.value));
+const styleTags = computed(() => (Array.isArray(teacher.value?.styleTags) ? teacher.value.styleTags : []));
+const teachesLine = computed(() => {
+  if (!teacher.value) return '';
+  const parts = [];
+  parts.push(`${t('teacher.teachesPrefix')} ${t(`languageName.${teacher.value.learningLanguage}`)}`);
+  if (tagline.value) parts.push(tagline.value);
+  return parts.join(' • ');
+});
+
+const letter = computed(() => (name.value || '?').toString().trim().slice(0, 1).toUpperCase());
 const telegramUrl = computed(() => getTeacherTelegramUrl(teacher.value));
-
-function syncTitle() {
-  const base = 'AI Language School';
-  document.title = teacher.value ? `${teacher.value.name} — ${base}` : `Teacher — ${base}`;
-}
-
-onMounted(syncTitle);
-watch(teacher, syncTitle);
 </script>
 
 <style scoped>
@@ -99,11 +108,9 @@ watch(teacher, syncTitle);
   overflow: hidden;
 }
 
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.avatar-emoji {
+  font-size: 34px;
+  line-height: 1;
 }
 
 .avatar-letter {
@@ -137,6 +144,23 @@ watch(teacher, syncTitle);
 .detail .value {
   margin-top: 4px;
   font-weight: 600;
+}
+
+.tags {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
 }
 
 .actions {

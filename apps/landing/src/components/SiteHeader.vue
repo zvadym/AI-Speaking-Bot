@@ -4,12 +4,22 @@
       <RouterLink class="brand" to="/">AI Language School</RouterLink>
 
       <nav class="nav">
-        <RouterLink class="nav-link" to="/teachers">Teachers</RouterLink>
+        <RouterLink class="nav-link" to="/teachers">{{ t('nav.teachers') }}</RouterLink>
 
-        <a v-if="telegramUrl" class="btn primary" :href="telegramUrl" target="_blank" rel="noreferrer">
-          Start in Telegram
-        </a>
-        <RouterLink v-else class="btn primary" to="/teachers">Start</RouterLink>
+        <div class="locale" :aria-label="t('language.label')">
+          <button
+            v-for="opt in localeOptions"
+            :key="opt.value"
+            class="locale-btn"
+            type="button"
+            :aria-pressed="locale.value === opt.value"
+            @click="setAppLocale(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+
+        <RouterLink class="btn primary" to="/teachers">{{ t('cta.start') }}</RouterLink>
       </nav>
     </div>
   </header>
@@ -18,9 +28,16 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { getDefaultTelegramBotUrl } from '../lib/telegram.js';
+import { useI18n, supportedLocales } from '../i18n.js';
 
-const telegramUrl = computed(() => getDefaultTelegramBotUrl());
+const { t, locale, setAppLocale } = useI18n();
+
+const localeOptions = computed(() => {
+  return supportedLocales.map((value) => ({
+    value,
+    label: value.toUpperCase()
+  }));
+});
 </script>
 
 <style scoped>
@@ -62,5 +79,28 @@ const telegramUrl = computed(() => getDefaultTelegramBotUrl());
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-</style>
 
+.locale {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+  background: var(--bg);
+}
+
+.locale-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.locale-btn[aria-pressed='true'] {
+  background: var(--fg);
+  color: var(--bg);
+}
+</style>

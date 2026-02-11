@@ -7,7 +7,7 @@
       </div>
 
       <div class="links">
-        <RouterLink to="/teachers">Teachers</RouterLink>
+        <RouterLink to="/teachers">{{ t('nav.teachers') }}</RouterLink>
         <a href="https://vercel.com" target="_blank" rel="noreferrer">Hosting</a>
       </div>
     </div>
@@ -21,8 +21,10 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useI18n } from '../i18n.js';
 
 const year = computed(() => new Date().getFullYear());
+const { t } = useI18n();
 </script>
 
 <style scoped>
@@ -66,4 +68,3 @@ const year = computed(() => new Date().getFullYear());
   }
 }
 </style>
-

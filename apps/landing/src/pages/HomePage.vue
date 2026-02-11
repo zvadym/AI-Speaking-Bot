@@ -2,39 +2,30 @@
   <div>
     <section class="hero">
       <div class="container hero-inner">
-        <div class="badge">Voice-first language practice</div>
+        <div class="badge">{{ t('home.badge') }}</div>
 
-        <h1 class="h1">Learn by speaking.</h1>
+        <h1 class="h1">{{ t('home.headline') }}</h1>
         <p class="muted hero-sub">
-          Choose a teacher bot, send voice messages, get instant corrections and better phrasing — every day.
+          {{ t('home.subhead') }}
         </p>
 
         <div class="hero-actions">
-          <a
-            v-if="telegramUrl"
-            class="btn primary"
-            :href="telegramUrl"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Start in Telegram
-          </a>
-          <RouterLink v-else class="btn primary" to="/teachers">Start</RouterLink>
+          <RouterLink class="btn primary" to="/teachers">{{ t('cta.start') }}</RouterLink>
 
-          <RouterLink class="btn" to="/teachers">Meet the teachers</RouterLink>
+          <RouterLink class="btn" to="/teachers">{{ t('home.meetTeachers') }}</RouterLink>
         </div>
 
-        <div class="shot card muted">Screenshot placeholder</div>
+        <div class="shot card muted">{{ t('home.screenshotPlaceholder') }}</div>
       </div>
     </section>
 
     <section class="section">
       <div class="container section-head">
         <div>
-          <h2 class="h2">Teachers</h2>
-          <p class="muted">Each teacher is a Telegram bot with their own tone, languages, and focus.</p>
+          <h2 class="h2">{{ t('home.teachersTitle') }}</h2>
+          <p class="muted">{{ t('home.teachersDesc') }}</p>
         </div>
-        <RouterLink class="btn" to="/teachers">All teachers</RouterLink>
+        <RouterLink class="btn" to="/teachers">{{ t('cta.allTeachers') }}</RouterLink>
       </div>
 
       <div class="container grid-2">
@@ -44,22 +35,22 @@
 
     <section class="section">
       <div class="container">
-        <h2 class="h2">How it works</h2>
+        <h2 class="h2">{{ t('home.howTitle') }}</h2>
         <div class="grid-3 steps">
           <div class="card">
             <div class="step-num">1</div>
-            <div class="h3">Pick a teacher</div>
-            <div class="muted">Choose a teacher bot that matches your level and vibe.</div>
+            <div class="h3">{{ t('home.steps.oneTitle') }}</div>
+            <div class="muted">{{ t('home.steps.oneDesc') }}</div>
           </div>
           <div class="card">
             <div class="step-num">2</div>
-            <div class="h3">Send a voice message</div>
-            <div class="muted">Speak naturally — the teacher will transcribe and correct you.</div>
+            <div class="h3">{{ t('home.steps.twoTitle') }}</div>
+            <div class="muted">{{ t('home.steps.twoDesc') }}</div>
           </div>
           <div class="card">
             <div class="step-num">3</div>
-            <div class="h3">Improve daily</div>
-            <div class="muted">Save corrections, learn patterns, and build a real speaking habit.</div>
+            <div class="h3">{{ t('home.steps.threeTitle') }}</div>
+            <div class="muted">{{ t('home.steps.threeDesc') }}</div>
           </div>
         </div>
       </div>
@@ -72,9 +63,9 @@ import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import TeacherCard from '../components/TeacherCard.vue';
 import { teachers } from '../data/teachers.js';
-import { getDefaultTelegramBotUrl } from '../lib/telegram.js';
+import { useI18n } from '../i18n.js';
 
-const telegramUrl = computed(() => getDefaultTelegramBotUrl());
+const { t } = useI18n();
 const previewTeachers = computed(() => teachers.slice(0, 2));
 </script>
 
@@ -136,4 +127,3 @@ const previewTeachers = computed(() => teachers.slice(0, 2));
   margin-bottom: 10px;
 }
 </style>
-
