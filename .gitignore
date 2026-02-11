@@ -13,3 +13,4 @@ deploy/.env.dev
 deploy/bots-dev/*.json
 deploy/workflows/.rendered
 deploy/workflows/.prod-export
+deploy/workflows/to_convert
