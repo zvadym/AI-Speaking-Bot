@@ -82,7 +82,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { useI18n } from './i18n.js';
+import { setAppLocale, useI18n } from './i18n.js';
 import HomeScreen from './screens/HomeScreen.vue';
 import AdminDashboardScreen from './screens/AdminDashboardScreen.vue';
 import SubscriptionScreen from './screens/SubscriptionScreen.vue';
@@ -113,6 +113,17 @@ const meBots = ref([]);
 const showBotPicker = computed(
   () => !isAdmin.value && !loading.value && !fatalKey.value && meBots.value.length > 1 && !botKey.value
 );
+const effectiveBaseLanguage = computed(() => {
+  const fromMe = (me.value?.base_language || '').toString().trim().toLowerCase();
+  if (fromMe) return fromMe;
+
+  const selectedBotKey = (botKey.value || '').toString().trim().toLowerCase();
+  if (!selectedBotKey) return '';
+  const selectedBot = meBots.value.find(
+    (row) => (row?.bot_key || '').toString().trim().toLowerCase() === selectedBotKey
+  );
+  return (selectedBot?.base_language || '').toString().trim().toLowerCase();
+});
 
 const toastState = reactive({
   show: false,
@@ -338,6 +349,15 @@ watch(
   () => {
     if (!me.value) return;
     trackScreen({ path: nav.path.value, screen: nav.screen.value });
+  },
+  { immediate: true }
+);
+
+watch(
+  () => effectiveBaseLanguage.value,
+  (value) => {
+    if (!value) return;
+    setAppLocale(value);
   },
   { immediate: true }
 );

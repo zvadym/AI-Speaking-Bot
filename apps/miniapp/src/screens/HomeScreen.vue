@@ -17,30 +17,6 @@
           🎯 {{ levelLabel }}
         </button>
 
-        <div
-          v-if="showUiLocaleSwitcher"
-          class="locale-switch"
-          role="group"
-          :aria-label="$t('home.uiLanguage')"
-        >
-          <span class="locale-label">🌐 {{ $t('home.uiLanguage') }}</span>
-          <button
-            class="locale-btn"
-            type="button"
-            :class="{ active: locale === 'uk' }"
-            @click="setUiLocale('uk')"
-          >
-            UA
-          </button>
-          <button
-            class="locale-btn"
-            type="button"
-            :class="{ active: locale === 'en' }"
-            @click="setUiLocale('en')"
-          >
-            EN
-          </button>
-        </div>
       </div>
     </header>
 
@@ -108,7 +84,6 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from '../i18n.js';
-import { setAppLocale } from '../i18n.js';
 import { track } from '../lib/metrics.js';
 
 const props = defineProps({
@@ -117,17 +92,11 @@ const props = defineProps({
 
 const emit = defineEmits(['navigate']);
 
-const { t, locale } = useI18n({ useScope: 'global' });
-const showUiLocaleSwitcher = false;
+const { t } = useI18n({ useScope: 'global' });
 
 function go(path, id) {
   track('ui_click', { id, to: path });
   emit('navigate', path);
-}
-
-function setUiLocale(nextLocale) {
-  track('ui_click', { id: 'home_set_ui_locale', locale: nextLocale });
-  setAppLocale(nextLocale);
 }
 
 const greeting = computed(() => {
@@ -222,48 +191,6 @@ const planLabel = computed(() => {
 .chip:disabled:active {
   transform: none;
   box-shadow: 0 14px 30px var(--shadow);
-}
-
-.locale-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--stroke);
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: 0 14px 30px var(--shadow);
-  border-radius: 999px;
-  padding: 7px 8px 7px 12px;
-}
-
-.locale-label {
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  color: var(--ink);
-  white-space: nowrap;
-}
-
-.locale-btn {
-  border: 1px solid rgba(30, 26, 22, 0.14);
-  background: rgba(255, 255, 255, 0.35);
-  border-radius: 999px;
-  padding: 7px 10px;
-  cursor: pointer;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink);
-  opacity: 0.82;
-  transition: transform 120ms ease, background 120ms ease, opacity 120ms ease;
-}
-
-.locale-btn.active {
-  background: rgba(31, 107, 99, 0.18);
-  border-color: rgba(31, 107, 99, 0.32);
-  opacity: 1;
-}
-
-.locale-btn:active {
-  transform: translateY(1px);
 }
 
 .menu {

@@ -162,7 +162,13 @@ def patch_webhook_paths_for_bot(workflow_data: Dict[str, Any], bot_key: str) -> 
         params["path"] = f"{path}{suffix}"
 
 
-def patch_settings_node(ai_data: Dict[str, Any], bot_key: str, base_language: str, learning_language: str) -> None:
+def patch_settings_node(
+    ai_data: Dict[str, Any],
+    bot_key: str,
+    base_language: str,
+    learning_language: str,
+    bot_voice: str,
+) -> None:
     node = find_node(ai_data, "Settings")
     params = node.get("parameters", {})
     assignments = (params.get("assignments") or {}).get("assignments")
@@ -183,6 +189,8 @@ def patch_settings_node(ai_data: Dict[str, Any], bot_key: str, base_language: st
             a["value"] = learning_language
         elif name == "bot_key":
             a["value"] = bot_key
+        elif name == "bot_voice":
+            a["value"] = bot_voice
 
     if "bot_key" not in seen:
         assignments.append(
@@ -190,6 +198,16 @@ def patch_settings_node(ai_data: Dict[str, Any], bot_key: str, base_language: st
                 "id": str(uuid.uuid4()),
                 "name": "bot_key",
                 "value": bot_key,
+                "type": "string",
+            }
+        )
+
+    if "bot_voice" not in seen:
+        assignments.append(
+            {
+                "id": str(uuid.uuid4()),
+                "name": "bot_voice",
+                "value": bot_voice,
                 "type": "string",
             }
         )
@@ -358,6 +376,7 @@ def main() -> int:
     for bot_key, bot in bots:
         base = bot["base_language"]
         learn = bot["learning_language"]
+        bot_voice = str(bot.get("bot_voice") or "").strip() or "nova"
         tg_cred = bot["telegram_credential_id"]
         locale = bot["locale"]
 
@@ -376,7 +395,7 @@ def main() -> int:
         patch_webhook_ids_for_bot(ai, "ai-bot", bot_key)
         patch_webhook_ids_for_bot(loader, "loader-messages-rotator", bot_key)
 
-        patch_settings_node(ai, bot_key, base, learn)
+        patch_settings_node(ai, bot_key, base, learn, bot_voice)
         patch_set_locale_node(ai, locale)
         patch_start_loader(ai, loader_id, loader["name"], bot_key)
 

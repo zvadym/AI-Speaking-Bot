@@ -3,6 +3,7 @@
   "base_language": "uk",
   "learning_language": "de",
   "bot_name": "Леся",
+  "bot_voice": "Nova",
   "telegram_url": "https://t.me/lesia_language_bot",
   "telegram_credential_id": "V39Lr6UfHsLcBQsS",
   "telegram_bot_token": "REDACTED_SECRET",

@@ -3,6 +3,7 @@
   "base_language": "uk",
   "learning_language": "en",
   "bot_name": "Джекі",
+  "bot_voice": "Onyx",
   "telegram_url": "https://t.me/jackie_english_tutor_bot",
   "telegram_credential_id": "tDfUfocHcjqi1csm",
   "telegram_bot_token": "REDACTED_SECRET",
