@@ -111,16 +111,16 @@
   },
   "about": {
     "kicker": "ℹ️ About",
-    "title": "AI Language School control room",
-    "sub": "This mini-app manages your language, teacher, level, and subscription settings for Telegram.",
+    "title": "About AI Language School",
+    "sub": "AI Language School is speaking practice inside Telegram. We’re multilingual, and our teacher team keeps growing.",
     "school": {
       "title": "About the school",
-      "desc": "AI Language School is a multi-teacher speaking practice space inside Telegram. Each teacher has a unique style, while your settings stay organized in one mini-app.",
-      "linkLabel": "Open school website"
+      "desc": "You’ll practice with real human teachers, each with their own style and approach. Choose a language, pick a teacher, and build a steady speaking habit.",
+      "linkLabel": "School website"
     },
     "multilingual": {
       "title": "Multilingual setup",
-      "desc": "The school supports multiple learning languages and teacher personas.",
+      "desc": "Switch languages and teachers anytime, depending on your goals and mood.",
       "availableNow": "Available now: {languages} languages, {teachers} teachers.",
       "languagesTitle": "Languages",
       "teachersTitle": "Teachers",
@@ -130,16 +130,16 @@
     "saved": {
       "title": "What gets saved",
       "languageTitle": "Language & teacher",
-      "languageDesc": "the language and teacher you practice with.",
+      "languageDesc": "the language you practice and who you practice with.",
       "levelTitle": "Level",
-      "levelDesc": "how strict my corrections should be.",
+      "levelDesc": "how detailed your feedback should be.",
       "subscriptionTitle": "Subscription",
       "subscriptionDesc": "plans, limits, and auto-renew."
     },
     "tips": {
       "title": "Tips",
       "pickLanguageFirst": "Pick language and teacher first, then set your level.",
-      "sendVoice": "Send voice messages in the target language — I’ll reply and correct gently."
+      "sendVoice": "Send short voice messages in your target language. We’ll reply and gently help you sound more natural."
     }
   },
   "checkout": {

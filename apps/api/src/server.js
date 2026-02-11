@@ -77,6 +77,22 @@ function normalizeLanguageCode(raw) {
   return value.slice(0, 16);
 }
 
+function normalizeOptionalText(raw, maxLen) {
+  const value = (raw ?? '').toString().trim();
+  if (!value) return null;
+  return value.slice(0, maxLen);
+}
+
+function normalizeStringArray(raw, { maxItems = 12, maxItemLen = 32 } = {}) {
+  if (!Array.isArray(raw)) return null;
+  const items = raw
+    .map((v) => (v ?? '').toString().trim())
+    .filter(Boolean)
+    .map((v) => v.slice(0, maxItemLen))
+    .slice(0, maxItems);
+  return items.length ? items : null;
+}
+
 function buildPublicBotCatalog(configMap = {}) {
   const keys = new Set([
     ...Object.keys(configMap || {}),
@@ -94,6 +110,10 @@ function buildPublicBotCatalog(configMap = {}) {
     const learningLanguage = normalizeLanguageCode(config.learning_language || fromLearning || '');
     const botNameRaw = (config.bot_name || '').toString().trim();
     const telegramUrlRaw = (config.telegram_url || '').toString().trim();
+    const teacherAvatarEmoji = normalizeOptionalText(config.teacher_avatar_emoji, 8);
+    const teacherTaglineUk = normalizeOptionalText(config.teacher_tagline_uk, 220);
+    const teacherTaglineEn = normalizeOptionalText(config.teacher_tagline_en, 220);
+    const teacherStyleTags = normalizeStringArray(config.teacher_style_tags, { maxItems: 12, maxItemLen: 32 });
 
     catalog.push({
       bot_key: botKey,
@@ -101,7 +121,11 @@ function buildPublicBotCatalog(configMap = {}) {
       learning_language: learningLanguage || null,
       target_lang: learningLanguage || null,
       bot_name: botNameRaw || null,
-      telegram_url: telegramUrlRaw || null
+      telegram_url: telegramUrlRaw || null,
+      teacher_avatar_emoji: teacherAvatarEmoji,
+      teacher_tagline_uk: teacherTaglineUk,
+      teacher_tagline_en: teacherTaglineEn,
+      teacher_style_tags: teacherStyleTags
     });
   }
 
@@ -257,6 +281,10 @@ async function getMeUserRow(chatIdRaw, botKeyRaw = null) {
     base_language: baseLanguage || null,
     bot_name: botMeta?.bot_name || null,
     telegram_url: botMeta?.telegram_url || null,
+    teacher_avatar_emoji: botMeta?.teacher_avatar_emoji || null,
+    teacher_tagline_uk: botMeta?.teacher_tagline_uk || null,
+    teacher_tagline_en: botMeta?.teacher_tagline_en || null,
+    teacher_style_tags: botMeta?.teacher_style_tags || null,
     level: row.level || 'b1',
     onboarding_state: row.onboarding_state || 'ready',
     reply_mode: row.reply_mode || 'text',
@@ -307,7 +335,11 @@ async function listUserBots(chatIdRaw) {
       learning_language: learningLanguage || row.target_lang || null,
       base_language: baseLanguage || null,
       bot_name: botMeta?.bot_name || null,
-      telegram_url: botMeta?.telegram_url || null
+      telegram_url: botMeta?.telegram_url || null,
+      teacher_avatar_emoji: botMeta?.teacher_avatar_emoji || null,
+      teacher_tagline_uk: botMeta?.teacher_tagline_uk || null,
+      teacher_tagline_en: botMeta?.teacher_tagline_en || null,
+      teacher_style_tags: botMeta?.teacher_style_tags || null
     };
   });
 }
@@ -344,6 +376,10 @@ function listAvailableBotsForUser(userBots = []) {
       target_lang: normalizeLanguageCode(row?.learning_language || row?.target_lang || targetLangFromBotKey(botKey)) || null,
       bot_name: row?.bot_name || null,
       telegram_url: row?.telegram_url || null,
+      teacher_avatar_emoji: row?.teacher_avatar_emoji || null,
+      teacher_tagline_uk: row?.teacher_tagline_uk || null,
+      teacher_tagline_en: row?.teacher_tagline_en || null,
+      teacher_style_tags: row?.teacher_style_tags || null,
       is_connected: true,
       level: row?.level || null,
       onboarding_state: row?.onboarding_state || null,

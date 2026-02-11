@@ -3,6 +3,14 @@
   "base_language": "uk",
   "learning_language": "en",
   "bot_name": "Джекі",
+  "teacher_avatar_emoji": "👨‍🏫",
+  "teacher_tagline_uk": "Англійська з легким британським вайбом 🇬🇧. Допоможу говорити впевненіше й природніше.",
+  "teacher_tagline_en": "English with a light British vibe 🇬🇧. Speak more confidently and naturally.",
+  "teacher_style_tags": [
+    "friendly",
+    "british-vibe",
+    "conversation-first"
+  ],
   "bot_voice": "Onyx",
   "telegram_url": "https://t.me/jackie_english_tutor_bot",
   "telegram_credential_id": "tDfUfocHcjqi1csm",
@@ -35,9 +43,6 @@
       "🧪 Приміряю кілька варіантів — оберу найкращий."
     ],
     "better_audio_please": "Краще нам тренувати з тобою живу розмову 🎙️ Надішли, будь ласка, голосове повідомлення наступного разу.",
-    "choose_language_text": "Обери мову, яку хочеш практикувати зі мною 👇",
-    "language_option_en": "🇬🇧 Англійська",
-    "language_option_de": "🇩🇪 Німецька",
     "callback_saved": "Готово, зберіг ✅",
     "callback_translating": "Перекладаю…",
     "translation_fallback_missing": "Поки не маю перекладу для цього повідомлення.",
@@ -47,7 +52,7 @@
     "hints_intro": "Ось кілька варіантів, що ти можеш сказати далі:",
     "hints_empty": "Я ще не встиг підготувати підказки для цього повідомлення. Спробуй наступну репліку.",
     "choose_level_text": "Який у тебе рівень? Обирай 👇",
-    "hi_message_text": "={{ (() => { const lang = $('Settings').item.json.learning_language === 'de' ? 'німецькою' : 'англійською'; return `Привіт! Я Джекі 🙂 Я твій мовний наставник у Telegram.\\n\\n🎧 Надсилай голосові 1–2 речення ${lang} — я відповім і м’яко підкажу кращий варіант (з легким британським вайбом 🇬🇧).\\n💾 Я запам’ятаю обраний рівень, щоб тобі було зручно.\\n🎯 У будь-який момент можна змінити рівень виправлень /level\\n🎧 Якщо не хочеш отримувати аудіоповідомлення — вимкни тут /voice\\n`; })() }}",
+    "hi_message_text": "={{ (() => { const lang = $('Settings').item.json.learning_language === 'de' ? 'німецькою' : 'англійською'; return `Привіт! Це AI Language School 🙂\\n\\nЯ Джекі — твій викладач. Тут ми практикуємо ${lang} (з легким британським вайбом 🇬🇧).\\n\\n🎧 Надсилай голосові 1–2 речення — я відповім і м’яко підкажу кращий варіант.\\n💾 Я запам’ятаю твій рівень, щоб було зручно.\\n🎯 Змінити рівень можна командою /level\\n🎧 Голосові відповіді можна вимкнути командою /voice\\n`; })() }}",
     "choose_voice_mode_text": "Як тобі зручніше отримувати відповіді від мене, голосом чи текстом? 🎧💬",
     "voice_mode_text": "💬  Текст",
     "voice_mode_voice": "🎧 Голос",

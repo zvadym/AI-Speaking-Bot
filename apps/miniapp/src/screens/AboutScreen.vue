@@ -60,7 +60,7 @@ const props = defineProps({
 defineEmits(['navigate']);
 
 const { t } = useI18n({ useScope: 'global' });
-const schoolUrl = ((import.meta.env.VITE_SCHOOL_URL || 'https://learn-language-app.notarobot.dev').toString()).trim();
+const schoolUrl = ((import.meta.env.VITE_SCHOOL_URL || 'https://ai-language-school.online/').toString()).trim();
 
 function languageLabelForCode(codeRaw) {
   const code = (codeRaw || '').toString().trim().toLowerCase();
