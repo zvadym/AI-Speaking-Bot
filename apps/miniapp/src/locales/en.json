@@ -113,6 +113,20 @@
     "kicker": "ℹ️ About",
     "title": "AI Language School control room",
     "sub": "This mini-app manages your language, teacher, level, and subscription settings for Telegram.",
+    "school": {
+      "title": "About the school",
+      "desc": "AI Language School is a multi-teacher speaking practice space inside Telegram. Each teacher has a unique style, while your settings stay organized in one mini-app.",
+      "linkLabel": "Open school website"
+    },
+    "multilingual": {
+      "title": "Multilingual setup",
+      "desc": "The school supports multiple learning languages and teacher personas.",
+      "availableNow": "Available now: {languages} languages, {teachers} teachers.",
+      "languagesTitle": "Languages",
+      "teachersTitle": "Teachers",
+      "noneLanguages": "No languages configured yet.",
+      "noneTeachers": "No teachers configured yet."
+    },
     "saved": {
       "title": "What gets saved",
       "languageTitle": "Language & teacher",

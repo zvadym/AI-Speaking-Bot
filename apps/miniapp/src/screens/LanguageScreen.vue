@@ -34,7 +34,7 @@
         :key="teacher.bot_key"
         class="row"
         type="button"
-        :class="{ active: currentBotKey === teacher.bot_key, busy: busy === teacher.bot_key }"
+        :class="{ busy: busy === teacher.bot_key }"
         :disabled="Boolean(busy)"
         @click="chooseTeacher(teacher)"
       >
@@ -42,13 +42,11 @@
         <div class="mid">
           <div class="top">
             <span class="label">{{ teacher.name }}</span>
-            <span class="tag" v-if="currentBotKey === teacher.bot_key">{{ $t('common.selected') }}</span>
           </div>
           <div class="note">{{ teacher.subtitle }}</div>
         </div>
         <div class="right" aria-hidden="true">
-          <span v-if="currentBotKey === teacher.bot_key">✓</span>
-          <span v-else>→</span>
+          <span>→</span>
         </div>
       </button>
 
@@ -70,13 +68,11 @@ import BackToMenu from '../components/BackToMenu.vue';
 
 const props = defineProps({
   me: { type: Object, default: null },
-  botKey: { type: String, default: '' },
   bots: { type: Array, default: () => [] },
-  selectBot: { type: Function, required: true },
   toast: { type: Function, required: true }
 });
 
-const emit = defineEmits(['navigate']);
+defineEmits(['navigate']);
 const { t } = useI18n({ useScope: 'global' });
 
 const busy = ref('');
@@ -96,13 +92,6 @@ function flagForLanguage(codeRaw) {
   if (code === 'de') return '🇩🇪';
   return '🌐';
 }
-
-const currentBotKey = computed(() =>
-  (props.botKey || props.me?.bot_key || '')
-    .toString()
-    .trim()
-    .toLowerCase()
-);
 
 const teachers = computed(() =>
   (Array.isArray(props.bots) ? props.bots : [])
@@ -136,9 +125,6 @@ const teachers = computed(() =>
 );
 
 const currentLanguage = computed(() => {
-  const fromCurrentBot =
-    teachers.value.find((teacher) => teacher.bot_key === currentBotKey.value)?.languageCode || '';
-  if (fromCurrentBot) return fromCurrentBot;
   return (props.me?.learning_language || props.me?.target_lang || '').toString().trim().toLowerCase();
 });
 
@@ -202,21 +188,12 @@ async function chooseTeacher(teacher) {
   tgHaptic('impact', 'light');
 
   try {
-    try {
-      await props.selectBot(teacher.bot_key);
-      track('setting_saved', { key: 'bot_key', value: teacher.bot_key });
-    } catch (err) {
-      // Selection persistence should not block opening the teacher chat.
-      console.error(err);
-    }
-
-    if (teacher.telegramUrl) {
-      tgOpenLink(teacher.telegramUrl);
+    if (!teacher.telegramUrl) {
+      props.toast(t('common.errors.couldNotSave'));
+      tgHaptic('notification', 'error');
       return;
     }
-
-    props.toast(t('language.toasts.teacherSaved', { teacher: teacher.name }));
-    emit('navigate', '/');
+    tgOpenLink(teacher.telegramUrl);
   } catch (err) {
     console.error(err);
     props.toast(t('common.errors.couldNotSave'));
@@ -336,13 +313,6 @@ async function chooseTeacher(teacher) {
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
-.row.active {
-  border-color: rgba(199, 90, 36, 0.28);
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(199, 90, 36, 0.18), transparent 55%),
-    rgba(255, 255, 255, 0.65);
-}
-
 .row.busy {
   opacity: 0.8;
 }
@@ -379,19 +349,6 @@ async function chooseTeacher(teacher) {
   font-weight: 800;
   letter-spacing: -0.01em;
   font-size: 17px;
-}
-
-.tag {
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(199, 90, 36, 0.24);
-  background: rgba(255, 255, 255, 0.45);
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  font-weight: 800;
-  color: var(--ink);
-  opacity: 0.8;
 }
 
 .note {

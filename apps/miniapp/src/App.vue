@@ -51,9 +51,7 @@
     <LanguageScreen
       v-else-if="nav.screen.value === 'language'"
       :me="me"
-      :botKey="botKey"
       :bots="meBots"
-      :selectBot="selectBotAndRefresh"
       :toast="toast"
       @navigate="nav.go"
     />
@@ -71,6 +69,7 @@
 
     <AboutScreen
       v-else
+      :bots="meBots"
       @navigate="nav.go"
     />
 
