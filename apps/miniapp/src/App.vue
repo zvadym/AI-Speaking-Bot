@@ -50,11 +50,10 @@
 
     <LanguageScreen
       v-else-if="nav.screen.value === 'language'"
-      :apiBase="apiBase"
-      :token="token"
       :me="me"
       :botKey="botKey"
-      :refreshMe="refreshMe"
+      :bots="meBots"
+      :selectBot="selectBotAndRefresh"
       :toast="toast"
       @navigate="nav.go"
     />
@@ -180,7 +179,10 @@ async function refreshBots() {
   if (!token.value) return;
   const query = botKey.value ? { bot_key: botKey.value } : undefined;
   const data = await apiJson(apiBase, '/me/bots', { token: token.value, query });
-  meBots.value = Array.isArray(data?.bots) ? data.bots : [];
+  meBots.value =
+    (Array.isArray(data?.available_bots) && data.available_bots.length > 0)
+      ? data.available_bots
+      : (Array.isArray(data?.bots) ? data.bots : []);
 
   const normalizedSelected = (data?.selected_bot_key || '').toString().trim().toLowerCase();
   const available = new Set(meBots.value.map((row) => (row?.bot_key || '').toString().trim().toLowerCase()).filter(Boolean));
@@ -210,7 +212,7 @@ async function selectBotAndRefresh(nextBotKey) {
   botKey.value = normalized;
   setBotKeyInLocation(normalized);
   track('ui_click', { id: 'bot_select', bot_key: normalized });
-  await refreshMe();
+  await Promise.all([refreshMe(), refreshBots()]);
 }
 
 let tgBackHandler = null;

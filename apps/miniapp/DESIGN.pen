@@ -99,7 +99,7 @@
               "type": "text",
               "id": "vDymG",
               "fill": "#1F6B63",
-              "content": "AI SPEAKING BOT",
+              "content": "AI LANGUAGE SCHOOL · SETTINGS",
               "fontFamily": "Inter",
               "fontSize": 11,
               "fontWeight": "normal"
@@ -117,7 +117,7 @@
               "type": "text",
               "id": "rNNYG",
               "fill": "#7A6A59",
-              "content": "Practice speaking with voice messages.\nGet corrections and voice replies.",
+              "content": "Pick a card and manage your language school setup in one place.",
               "fontFamily": "Inter",
               "fontSize": 16,
               "fontWeight": "normal"
@@ -327,7 +327,7 @@
                       "type": "text",
                       "id": "5ulfQ",
                       "fill": "#7A6A59",
-                      "content": "Upgrade for more practice time\nand voice replies.",
+                      "content": "Plans, limits, auto-renew — everything in one place.",
                       "fontFamily": "Inter",
                       "fontSize": 14,
                       "fontWeight": "normal"
@@ -399,7 +399,7 @@
                       "type": "text",
                       "id": "DxBle",
                       "fill": "#1E1A16",
-                      "content": "Practice language",
+                      "content": "Languages & teachers",
                       "fontFamily": "Inter",
                       "fontSize": 18,
                       "fontWeight": "normal"
@@ -408,7 +408,7 @@
                       "type": "text",
                       "id": "D8MDT",
                       "fill": "#7A6A59",
-                      "content": "Pick English or German.",
+                      "content": "Choose your language and teacher.",
                       "fontFamily": "Inter",
                       "fontSize": 14,
                       "fontWeight": "normal"
@@ -489,7 +489,7 @@
                       "type": "text",
                       "id": "vnU9Y",
                       "fill": "#7A6A59",
-                      "content": "Choose A1–C1.",
+                      "content": "Set correction strictness and pacing.",
                       "fontFamily": "Inter",
                       "fontSize": 14,
                       "fontWeight": "normal"
@@ -1492,7 +1492,7 @@
               "type": "text",
               "id": "seRfp",
               "fill": "#1F6B63",
-              "content": "PRACTICE LANGUAGE",
+              "content": "LANGUAGES & TEACHERS",
               "fontFamily": "Inter",
               "fontSize": 11,
               "fontWeight": "normal"
@@ -1501,7 +1501,7 @@
               "type": "text",
               "id": "Ly3jl",
               "fill": "#1E1A16",
-              "content": "Choose your language",
+              "content": "Choose your language and teacher",
               "fontFamily": "Fraunces",
               "fontSize": 34,
               "fontWeight": "normal"
@@ -1510,7 +1510,7 @@
               "type": "text",
               "id": "az70p",
               "fill": "#7A6A59",
-              "content": "You can also type /lang in the bot.",
+              "content": "Switch language first, then pick the teacher you want to practice with.",
               "fontFamily": "Inter",
               "fontSize": 15,
               "fontWeight": "normal"
@@ -1520,15 +1520,127 @@
         {
           "type": "frame",
           "id": "pwQtw",
-          "name": "List",
+          "name": "Language content",
           "width": "fill_container",
           "layout": "vertical",
           "gap": 12,
           "children": [
             {
               "type": "frame",
-              "id": "DrOwQ",
-              "name": "Row (Active)",
+              "id": "vTabs",
+              "name": "Language tabs",
+              "width": "fill_container",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "tabEnA",
+                  "name": "Tab (Active)",
+                  "width": "fill_container",
+                  "fill": [
+                    {
+                      "type": "gradient",
+                      "gradientType": "radial",
+                      "enabled": true,
+                      "rotation": 0,
+                      "size": {
+                        "width": 1,
+                        "height": 1
+                      },
+                      "colors": [
+                        {
+                          "color": "#1F6B6329",
+                          "position": 0
+                        },
+                        {
+                          "color": "#00000000",
+                          "position": 1
+                        }
+                      ],
+                      "center": {
+                        "x": 0,
+                        "y": 0
+                      }
+                    },
+                    "#FFFFFFA6"
+                  ],
+                  "cornerRadius": 16,
+                  "stroke": {
+                    "thickness": 1
+                  },
+                  "layout": "vertical",
+                  "gap": 5,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "tabEnLabel",
+                      "fill": "#1E1A16",
+                      "content": "🇬🇧 English",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "tabEnCount",
+                      "fill": "#7A6A59",
+                      "content": "1 teacher",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tabDe",
+                  "name": "Tab",
+                  "width": "fill_container",
+                  "fill": "#FFFFFFA6",
+                  "cornerRadius": 16,
+                  "stroke": {
+                    "thickness": 1
+                  },
+                  "layout": "vertical",
+                  "gap": 5,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "tabDeLabel",
+                      "fill": "#1E1A16",
+                      "content": "🇩🇪 German",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "tabDeCount",
+                      "fill": "#7A6A59",
+                      "content": "1 teacher",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "teachHeading",
+              "fill": "#1E1A16",
+              "content": "Teachers for English",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "teachRow1",
+              "name": "Teacher Row (Active)",
               "width": "fill_container",
               "fill": [
                 {
@@ -1542,7 +1654,7 @@
                   },
                   "colors": [
                     {
-                      "color": "#1F6B632E",
+                      "color": "#C75A242E",
                       "position": 0
                     },
                     {
@@ -1567,8 +1679,8 @@
               "children": [
                 {
                   "type": "frame",
-                  "id": "2GkUT",
-                  "name": "flagEn",
+                  "id": "teachFlag1",
+                  "name": "flag",
                   "width": 44,
                   "height": 44,
                   "fill": "#FFFFFF8C",
@@ -1582,37 +1694,37 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "MzfGL",
+                      "id": "teachFlagTxt1",
                       "fill": "#1E1A16",
-                      "content": "EN",
+                      "content": "🇬🇧",
                       "fontFamily": "Inter",
-                      "fontSize": 16,
-                      "fontWeight": "800"
+                      "fontSize": 20,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
                 {
                   "type": "frame",
-                  "id": "qnnmT",
-                  "name": "midEn",
+                  "id": "teachMid1",
+                  "name": "mid",
                   "width": "fill_container",
                   "layout": "vertical",
                   "gap": 6,
                   "children": [
                     {
                       "type": "text",
-                      "id": "FynW9",
+                      "id": "teachName1",
                       "fill": "#1E1A16",
-                      "content": "English",
+                      "content": "Jackie",
                       "fontFamily": "Inter",
                       "fontSize": 17,
                       "fontWeight": "normal"
                     },
                     {
                       "type": "text",
-                      "id": "JRPxn",
+                      "id": "teachSub1",
                       "fill": "#7A6A59",
-                      "content": "Focus on everyday conversation.",
+                      "content": "Ukrainian → English",
                       "fontFamily": "Inter",
                       "fontSize": 14,
                       "fontWeight": "normal"
@@ -1621,88 +1733,10 @@
                 },
                 {
                   "type": "text",
-                  "id": "V4xfZ",
+                  "id": "teachSel1",
                   "opacity": 0.72,
+                  "fill": "#1E1A16",
                   "content": "✓",
-                  "fontFamily": "Inter",
-                  "fontSize": 18,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "RdRhv",
-              "name": "Row",
-              "width": "fill_container",
-              "fill": "#FFFFFFA6",
-              "cornerRadius": 20,
-              "stroke": {
-                "thickness": 1
-              },
-              "gap": 14,
-              "padding": 16,
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "0k1nq",
-                  "name": "flagDe",
-                  "width": 44,
-                  "height": 44,
-                  "fill": "#FFFFFF8C",
-                  "cornerRadius": 14,
-                  "stroke": {
-                    "thickness": 1
-                  },
-                  "layout": "vertical",
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "8tFgY",
-                      "fill": "#1E1A16",
-                      "content": "DE",
-                      "fontFamily": "Inter",
-                      "fontSize": 16,
-                      "fontWeight": "800"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "34K5T",
-                  "name": "midDe",
-                  "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 6,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "9QTAE",
-                      "fill": "#1E1A16",
-                      "content": "German",
-                      "fontFamily": "Inter",
-                      "fontSize": 17,
-                      "fontWeight": "normal"
-                    },
-                    {
-                      "type": "text",
-                      "id": "bIAKI",
-                      "fill": "#7A6A59",
-                      "content": "Train for work, travel, and study.",
-                      "fontFamily": "Inter",
-                      "fontSize": 14,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "id": "6inut",
-                  "opacity": 0.72,
-                  "content": "→",
                   "fontFamily": "Inter",
                   "fontSize": 18,
                   "fontWeight": "normal"
@@ -2203,7 +2237,7 @@
               "type": "text",
               "id": "mLc6k",
               "fill": "#1E1A16",
-              "content": "How it works",
+              "content": "AI Language School control room",
               "fontFamily": "Fraunces",
               "fontSize": 34,
               "fontWeight": "normal"
@@ -2212,7 +2246,7 @@
               "type": "text",
               "id": "FdH9u",
               "fill": "#7A6A59",
-              "content": "Your settings are saved and used by the Telegram bot.",
+              "content": "This mini-app manages your language, teacher, level, and subscription settings for Telegram.",
               "fontFamily": "Inter",
               "fontSize": 16,
               "fontWeight": "normal"
@@ -2246,7 +2280,7 @@
               "type": "text",
               "id": "eTDBf",
               "fill": "#1E1A16",
-              "content": "• Language: What you practice",
+              "content": "• Language & teacher: what you practice",
               "fontFamily": "Inter",
               "fontSize": 14,
               "fontWeight": "normal"
@@ -2298,7 +2332,7 @@
               "type": "text",
               "id": "paXGe",
               "fill": "#1E1A16",
-              "content": "• Pick a language first",
+              "content": "• Pick language and teacher first",
               "fontFamily": "Inter",
               "fontSize": 14,
               "fontWeight": "normal"

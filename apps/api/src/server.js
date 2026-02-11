@@ -7,6 +7,7 @@ import { pool } from './db.js';
 import { verifyInitData } from './telegram.js';
 import { stripe } from './stripe.js';
 import { signSession, requireAuth } from './auth.js';
+import { loadBotConfigs } from './bot-configs.js';
 
 const app = express();
 
@@ -68,6 +69,64 @@ function normalizeBotKey(raw) {
   const value = (raw ?? '').toString().trim().toLowerCase();
   if (!value) return null;
   return value.slice(0, 32);
+}
+
+function normalizeLanguageCode(raw) {
+  const value = (raw ?? '').toString().trim().toLowerCase();
+  if (!value) return null;
+  return value.slice(0, 16);
+}
+
+function buildPublicBotCatalog(configMap = {}) {
+  const keys = new Set([
+    ...Object.keys(configMap || {}),
+    ...Object.keys(env.telegramBotTokensByBotKey || {})
+  ]);
+
+  const catalog = [];
+  for (const rawKey of keys) {
+    const botKey = normalizeBotKey(rawKey);
+    if (!botKey) continue;
+
+    const config = configMap?.[botKey] || configMap?.[rawKey] || {};
+    const [fromBase, fromLearning] = botKey.split('-');
+    const baseLanguage = normalizeLanguageCode(config.base_language || fromBase || '');
+    const learningLanguage = normalizeLanguageCode(config.learning_language || fromLearning || '');
+    const botNameRaw = (config.bot_name || '').toString().trim();
+    const telegramUrlRaw = (config.telegram_url || '').toString().trim();
+
+    catalog.push({
+      bot_key: botKey,
+      base_language: baseLanguage || null,
+      learning_language: learningLanguage || null,
+      target_lang: learningLanguage || null,
+      bot_name: botNameRaw || null,
+      telegram_url: telegramUrlRaw || null
+    });
+  }
+
+  catalog.sort((a, b) => {
+    const langA = a.learning_language || '';
+    const langB = b.learning_language || '';
+    if (langA !== langB) return langA.localeCompare(langB);
+
+    const nameA = a.bot_name || a.bot_key;
+    const nameB = b.bot_name || b.bot_key;
+    if (nameA !== nameB) return nameA.localeCompare(nameB);
+
+    return a.bot_key.localeCompare(b.bot_key);
+  });
+
+  return catalog;
+}
+
+const publicBotCatalog = buildPublicBotCatalog(loadBotConfigs());
+const publicBotCatalogByKey = new Map(publicBotCatalog.map((bot) => [bot.bot_key, bot]));
+
+function publicBotMetaForKey(botKeyRaw) {
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (!botKey) return null;
+  return publicBotCatalogByKey.get(botKey) || null;
 }
 
 function requestedBotKeyFromReq(req) {
@@ -177,10 +236,27 @@ async function getMeUserRow(chatIdRaw, botKeyRaw = null) {
     }
   }
 
+  const resolvedKey = normalizeBotKey(row.bot_key || effectiveBotKey) || normalizeBotKey(effectiveBotKey);
+  const botMeta = publicBotMetaForKey(resolvedKey);
+  const learningLanguage = normalizeLanguageCode(
+    botMeta?.learning_language ||
+    row.target_lang ||
+    targetLangFromBotKey(resolvedKey) ||
+    'de'
+  ) || 'de';
+  const baseLanguage = normalizeLanguageCode(
+    botMeta?.base_language ||
+    (resolvedKey ? resolvedKey.split('-')[0] : '')
+  );
+
   return {
     ...row,
-    bot_key: row.bot_key || effectiveBotKey,
-    target_lang: row.target_lang || targetLangFromBotKey(row.bot_key || effectiveBotKey) || 'de',
+    bot_key: resolvedKey || row.bot_key || effectiveBotKey,
+    target_lang: learningLanguage,
+    learning_language: learningLanguage,
+    base_language: baseLanguage || null,
+    bot_name: botMeta?.bot_name || null,
+    telegram_url: botMeta?.telegram_url || null,
     level: row.level || 'b1',
     onboarding_state: row.onboarding_state || 'ready',
     reply_mode: row.reply_mode || 'text',
@@ -211,7 +287,84 @@ async function listUserBots(chatIdRaw) {
     [chatId]
   );
 
-  return rows || [];
+  return (rows || []).map((row) => {
+    const botKey = normalizeBotKey(row.bot_key) || row.bot_key;
+    const botMeta = publicBotMetaForKey(botKey);
+    const learningLanguage = normalizeLanguageCode(
+      botMeta?.learning_language ||
+      row.target_lang ||
+      targetLangFromBotKey(botKey)
+    );
+    const baseLanguage = normalizeLanguageCode(
+      botMeta?.base_language ||
+      (botKey ? botKey.split('-')[0] : '')
+    );
+
+    return {
+      ...row,
+      bot_key: botKey,
+      target_lang: learningLanguage || row.target_lang || null,
+      learning_language: learningLanguage || row.target_lang || null,
+      base_language: baseLanguage || null,
+      bot_name: botMeta?.bot_name || null,
+      telegram_url: botMeta?.telegram_url || null
+    };
+  });
+}
+
+function listAvailableBotsForUser(userBots = []) {
+  const normalizedUserBots = Array.isArray(userBots) ? userBots : [];
+  const byKey = new Map(
+    normalizedUserBots
+      .map((row) => [normalizeBotKey(row?.bot_key), row])
+      .filter(([key]) => Boolean(key))
+  );
+
+  const merged = publicBotCatalog.map((bot) => {
+    const linked = byKey.get(bot.bot_key) || null;
+    return {
+      ...bot,
+      is_connected: Boolean(linked),
+      level: linked?.level || null,
+      onboarding_state: linked?.onboarding_state || null,
+      reply_mode: linked?.reply_mode || null,
+      tts_voice: linked?.tts_voice || null,
+      is_active: linked?.is_active ?? null,
+      last_seen_at: linked?.last_seen_at || null
+    };
+  });
+
+  for (const row of normalizedUserBots) {
+    const botKey = normalizeBotKey(row?.bot_key);
+    if (!botKey || publicBotCatalogByKey.has(botKey)) continue;
+    merged.push({
+      bot_key: botKey,
+      base_language: normalizeLanguageCode(row?.base_language || botKey.split('-')[0]) || null,
+      learning_language: normalizeLanguageCode(row?.learning_language || row?.target_lang || targetLangFromBotKey(botKey)) || null,
+      target_lang: normalizeLanguageCode(row?.learning_language || row?.target_lang || targetLangFromBotKey(botKey)) || null,
+      bot_name: row?.bot_name || null,
+      telegram_url: row?.telegram_url || null,
+      is_connected: true,
+      level: row?.level || null,
+      onboarding_state: row?.onboarding_state || null,
+      reply_mode: row?.reply_mode || null,
+      tts_voice: row?.tts_voice || null,
+      is_active: row?.is_active ?? null,
+      last_seen_at: row?.last_seen_at || null
+    });
+  }
+
+  merged.sort((a, b) => {
+    const langA = a.learning_language || '';
+    const langB = b.learning_language || '';
+    if (langA !== langB) return langA.localeCompare(langB);
+    const nameA = a.bot_name || a.bot_key;
+    const nameB = b.bot_name || b.bot_key;
+    if (nameA !== nameB) return nameA.localeCompare(nameB);
+    return a.bot_key.localeCompare(b.bot_key);
+  });
+
+  return merged;
 }
 
 function webhookUrlForBot(templateUrl, hookName, botKeyRaw, { forceAppendBotKey = false } = {}) {
@@ -1630,14 +1783,15 @@ app.get('/me/bots', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null);
 
-  const [bots, user] = await Promise.all([
+  const [userBots, user] = await Promise.all([
     listUserBots(chatId),
     getMeUserRow(chatId, requestedBotKey)
   ]);
 
   return res.json({
     selected_bot_key: user?.bot_key || requestedBotKey || null,
-    bots
+    bots: userBots,
+    available_bots: listAvailableBotsForUser(userBots)
   });
 });
 

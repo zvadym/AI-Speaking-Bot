@@ -10,7 +10,7 @@
       </p>
 
       <div class="chips">
-        <button class="chip" v-if="me" disabled>
+        <button class="chip" v-if="me" @click="go('/language', 'home_chip_language')">
           🌍 {{ languageLabel }}
         </button>
         <button class="chip" v-if="me" @click="go('/level', 'home_chip_level')">
@@ -61,7 +61,7 @@
         </div>
       </button>
 
-      <button class="menu-card" disabled>
+      <button class="menu-card" @click="go('/language', 'home_menu_language')">
         <div class="left">
           <div class="emoji">🌍</div>
         </div>
@@ -136,7 +136,7 @@ const greeting = computed(() => {
 });
 
 const languageLabel = computed(() => {
-  const code = (props.me?.target_lang || 'en').toLowerCase();
+  const code = (props.me?.learning_language || props.me?.target_lang || 'en').toLowerCase();
   if (code === 'de') return t('practiceLanguages.de');
   return t('practiceLanguages.en');
 });

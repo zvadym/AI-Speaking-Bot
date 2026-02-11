@@ -40,18 +40,18 @@
     }
   },
   "botPicker": {
-    "kicker": "Bot context",
-    "title": "Pick bot",
-    "sub": "Your settings are bot-specific. Choose which bot you want to manage now.",
-    "empty": "No connected bots were found yet."
+    "kicker": "Teacher context",
+    "title": "Pick teacher",
+    "sub": "Your settings are teacher-specific. Choose which teacher you want to manage now.",
+    "empty": "No connected teachers were found yet."
   },
   "home": {
-    "kicker": "Lesia · Settings",
+    "kicker": "AI Language School · Settings",
     "greeting": {
       "named": "Hey, {name}.",
       "anon": "Hey."
     },
-    "sub": "Pick a card — I’ll keep your training consistent across chats.",
+    "sub": "Pick a card and manage your language school setup in one place.",
     "uiLanguage": "Interface language",
     "menu": {
       "subscription": {
@@ -59,8 +59,8 @@
         "desc": "Plans, limits, auto-renew — everything in one place."
       },
       "language": {
-        "title": "Language",
-        "desc": "Fixed for this bot."
+        "title": "Languages & teachers",
+        "desc": "Choose your language and teacher."
       },
       "level": {
         "title": "Level",
@@ -73,9 +73,13 @@
     }
   },
   "language": {
-    "kicker": "🌍 Language",
-    "title": "What are we practicing?",
-    "subLocked": "This bot’s learning language is fixed.",
+    "kicker": "🌍 Languages & Teachers",
+    "title": "Choose your language and teacher",
+    "sub": "Switch language first, then pick the teacher you want to practice with.",
+    "teacherFallback": "Teacher",
+    "chooseTeacher": "Teachers for {language}",
+    "teacherCount": "{count} teacher(s)",
+    "noTeachers": "No teachers are available for this language yet.",
     "options": {
       "en": {
         "note": "Friendly corrections, natural replies."
@@ -85,13 +89,14 @@
       }
     },
     "toasts": {
-      "savedPickLevel": "Saved. Now pick your level."
+      "savedPickLevel": "Saved. Now pick your level.",
+      "teacherSaved": "Teacher switched: {teacher}"
     }
   },
   "level": {
     "kicker": "🎯 Level",
     "title": "How strict should I be?",
-    "subPrefix": "This mirrors the bot’s",
+    "subPrefix": "This mirrors your teacher’s",
     "subSuffix": " selector.",
     "notes": {
       "a1": "Gentle basics. One key fix at a time.",
@@ -106,12 +111,12 @@
   },
   "about": {
     "kicker": "ℹ️ About",
-    "title": "Lesia’s control room",
-    "sub": "This mini-app changes your learning settings for the Telegram bot and lets you manage your subscription.",
+    "title": "AI Language School control room",
+    "sub": "This mini-app manages your language, teacher, level, and subscription settings for Telegram.",
     "saved": {
       "title": "What gets saved",
-      "languageTitle": "Language",
-      "languageDesc": "the language you practice with me.",
+      "languageTitle": "Language & teacher",
+      "languageDesc": "the language and teacher you practice with.",
       "levelTitle": "Level",
       "levelDesc": "how strict my corrections should be.",
       "subscriptionTitle": "Subscription",
@@ -119,7 +124,7 @@
     },
     "tips": {
       "title": "Tips",
-      "pickLanguageFirst": "Pick your level, then send a voice message.",
+      "pickLanguageFirst": "Pick language and teacher first, then set your level.",
       "sendVoice": "Send voice messages in the target language — I’ll reply and correct gently."
     }
   },

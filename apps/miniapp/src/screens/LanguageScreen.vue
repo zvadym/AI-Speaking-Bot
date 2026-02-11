@@ -4,32 +4,57 @@
       <div class="kicker">{{ $t('language.kicker') }}</div>
       <h1>{{ $t('language.title') }}</h1>
       <p class="sub">
-        {{ $t('language.subLocked') }}
+        {{ $t('language.sub') }}
       </p>
     </header>
 
-    <section class="list">
+    <section class="language-tabs" v-if="languages.length">
       <button
         v-for="lang in languages"
         :key="lang.code"
-        class="row"
-        :class="{ active: current === lang.code, busy: busy === lang.code }"
-        :disabled="languageLocked || Boolean(busy)"
-        @click="setLang(lang.code)"
+        class="language-tab"
+        type="button"
+        :class="{ active: selectedLanguage === lang.code }"
+        :disabled="Boolean(busy)"
+        @click="selectLanguage(lang.code)"
       >
-        <div class="flag" aria-hidden="true">{{ lang.flag }}</div>
+        <span class="tab-flag" aria-hidden="true">{{ lang.flag }}</span>
+        <span class="tab-label">{{ lang.label }}</span>
+        <span class="tab-count">{{ $t('language.teacherCount', { count: lang.teacherCount }) }}</span>
+      </button>
+    </section>
+
+    <section class="teachers">
+      <div class="section-head">
+        <h2>{{ $t('language.chooseTeacher', { language: selectedLanguageLabel }) }}</h2>
+      </div>
+
+      <button
+        v-for="teacher in teachersForSelectedLanguage"
+        :key="teacher.bot_key"
+        class="row"
+        type="button"
+        :class="{ active: currentBotKey === teacher.bot_key, busy: busy === teacher.bot_key }"
+        :disabled="Boolean(busy)"
+        @click="chooseTeacher(teacher)"
+      >
+        <div class="flag" aria-hidden="true">{{ teacher.flag }}</div>
         <div class="mid">
           <div class="top">
-            <span class="label">{{ lang.label }}</span>
-            <span class="tag" v-if="current === lang.code">{{ $t('common.selected') }}</span>
+            <span class="label">{{ teacher.name }}</span>
+            <span class="tag" v-if="currentBotKey === teacher.bot_key">{{ $t('common.selected') }}</span>
           </div>
-          <div class="note">{{ lang.note }}</div>
+          <div class="note">{{ teacher.subtitle }}</div>
         </div>
         <div class="right" aria-hidden="true">
-          <span v-if="current === lang.code">✓</span>
+          <span v-if="currentBotKey === teacher.bot_key">✓</span>
           <span v-else>→</span>
         </div>
       </button>
+
+      <p v-if="teachersForSelectedLanguage.length === 0" class="empty">
+        {{ $t('language.noTeachers') }}
+      </p>
     </section>
 
     <BackToMenu @navigate="(path) => $emit('navigate', path)" />
@@ -37,19 +62,17 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from '../i18n.js';
-import { apiJson } from '../lib/api.js';
-import { tgHaptic } from '../lib/tg.js';
+import { tgHaptic, tgOpenLink } from '../lib/tg.js';
 import { track } from '../lib/metrics.js';
 import BackToMenu from '../components/BackToMenu.vue';
 
 const props = defineProps({
-  apiBase: { type: String, required: true },
-  token: { type: String, required: true },
   me: { type: Object, default: null },
   botKey: { type: String, default: '' },
-  refreshMe: { type: Function, required: true },
+  bots: { type: Array, default: () => [] },
+  selectBot: { type: Function, required: true },
   toast: { type: Function, required: true }
 });
 
@@ -57,32 +80,143 @@ const emit = defineEmits(['navigate']);
 const { t } = useI18n({ useScope: 'global' });
 
 const busy = ref('');
-const languageLocked = true;
+const selectedLanguage = ref('');
 
-const languages = computed(() => [
-  { code: 'en', flag: '🇬🇧', label: t('practiceLanguages.en'), note: t('language.options.en.note') },
-  { code: 'de', flag: '🇩🇪', label: t('practiceLanguages.de'), note: t('language.options.de.note') }
-]);
+function languageLabelForCode(codeRaw) {
+  const code = (codeRaw || '').toString().trim().toLowerCase();
+  if (!code) return '';
+  if (code === 'en') return t('practiceLanguages.en');
+  if (code === 'de') return t('practiceLanguages.de');
+  return code.toUpperCase();
+}
 
-const current = computed(() => (props.me?.target_lang || 'en').toLowerCase());
+function flagForLanguage(codeRaw) {
+  const code = (codeRaw || '').toString().trim().toLowerCase();
+  if (code === 'en') return '🇬🇧';
+  if (code === 'de') return '🇩🇪';
+  return '🌐';
+}
 
-async function setLang(code) {
-  if (languageLocked) return;
+const currentBotKey = computed(() =>
+  (props.botKey || props.me?.bot_key || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+);
+
+const teachers = computed(() =>
+  (Array.isArray(props.bots) ? props.bots : [])
+    .map((row) => {
+      const botKey = (row?.bot_key || '').toString().trim().toLowerCase();
+      if (!botKey) return null;
+      const [baseFromKey, learningFromKey] = botKey.split('-');
+      const learningCode = (
+        row?.learning_language ||
+        row?.target_lang ||
+        learningFromKey ||
+        ''
+      ).toString().trim().toLowerCase();
+      if (!learningCode) return null;
+
+      const baseCode = (row?.base_language || baseFromKey || '').toString().trim().toLowerCase();
+      const teacherName = (row?.bot_name || '').toString().trim();
+      const learningLabel = languageLabelForCode(learningCode);
+      const baseLabel = languageLabelForCode(baseCode);
+
+      return {
+        bot_key: botKey,
+        languageCode: learningCode,
+        flag: flagForLanguage(learningCode),
+        name: teacherName || `${t('language.teacherFallback')} ${learningLabel}`,
+        subtitle: baseLabel && learningLabel ? `${baseLabel} → ${learningLabel}` : learningLabel || botKey,
+        telegramUrl: (row?.telegram_url || '').toString().trim()
+      };
+    })
+    .filter(Boolean)
+);
+
+const currentLanguage = computed(() => {
+  const fromCurrentBot =
+    teachers.value.find((teacher) => teacher.bot_key === currentBotKey.value)?.languageCode || '';
+  if (fromCurrentBot) return fromCurrentBot;
+  return (props.me?.learning_language || props.me?.target_lang || '').toString().trim().toLowerCase();
+});
+
+const languages = computed(() => {
+  const knownOrder = ['en', 'de'];
+  const uniqueCodes = Array.from(new Set(teachers.value.map((teacher) => teacher.languageCode)));
+  uniqueCodes.sort((a, b) => {
+    const indexA = knownOrder.indexOf(a);
+    const indexB = knownOrder.indexOf(b);
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
+  return uniqueCodes.map((code) => ({
+    code,
+    flag: flagForLanguage(code),
+    label: languageLabelForCode(code),
+    teacherCount: teachers.value.filter((teacher) => teacher.languageCode === code).length
+  }));
+});
+
+const teachersForSelectedLanguage = computed(() =>
+  teachers.value.filter((teacher) => teacher.languageCode === selectedLanguage.value)
+);
+
+const selectedLanguageLabel = computed(() => languageLabelForCode(selectedLanguage.value));
+
+watch(
+  [languages, currentLanguage],
+  ([nextLanguages, nextCurrentLanguage]) => {
+    const available = nextLanguages.map((lang) => lang.code);
+    if (!available.length) {
+      selectedLanguage.value = '';
+      return;
+    }
+    if (selectedLanguage.value && available.includes(selectedLanguage.value)) return;
+    if (nextCurrentLanguage && available.includes(nextCurrentLanguage)) {
+      selectedLanguage.value = nextCurrentLanguage;
+      return;
+    }
+    selectedLanguage.value = available[0];
+  },
+  { immediate: true }
+);
+
+function selectLanguage(code) {
+  if (!code || code === selectedLanguage.value || busy.value) return;
+  selectedLanguage.value = code;
+  track('ui_click', { id: 'language_tab_select', language: code });
+  tgHaptic('selection');
+}
+
+async function chooseTeacher(teacher) {
+  if (!teacher?.bot_key) return;
   if (busy.value) return;
-  busy.value = code;
-  track('ui_click', { id: 'language_select', lang: code });
+
+  busy.value = teacher.bot_key;
+  track('ui_click', { id: 'teacher_select', bot_key: teacher.bot_key, language: teacher.languageCode });
   tgHaptic('impact', 'light');
+
   try {
-    await apiJson(props.apiBase, '/me/target-lang', {
-      method: 'POST',
-      token: props.token,
-      query: props.botKey ? { bot_key: props.botKey } : undefined,
-      body: { target_lang: code }
-    });
-    await props.refreshMe();
-    track('setting_saved', { key: 'target_lang', value: code });
-    props.toast(t('language.toasts.savedPickLevel'));
-    emit('navigate', '/level');
+    try {
+      await props.selectBot(teacher.bot_key);
+      track('setting_saved', { key: 'bot_key', value: teacher.bot_key });
+    } catch (err) {
+      // Selection persistence should not block opening the teacher chat.
+      console.error(err);
+    }
+
+    if (teacher.telegramUrl) {
+      tgOpenLink(teacher.telegramUrl);
+      return;
+    }
+
+    props.toast(t('language.toasts.teacherSaved', { teacher: teacher.name }));
+    emit('navigate', '/');
   } catch (err) {
     console.error(err);
     props.toast(t('common.errors.couldNotSave'));
@@ -128,18 +262,62 @@ async function setLang(code) {
   line-height: 1.6;
 }
 
-.sub code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 0.95em;
-  padding: 2px 7px;
-  border-radius: 999px;
-  border: 1px solid rgba(30, 26, 22, 0.14);
-  background: rgba(255, 255, 255, 0.55);
+.language-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
 }
 
-.list {
+.language-tab {
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 14px 30px var(--shadow);
+  padding: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.language-tab.active {
+  border-color: rgba(31, 107, 99, 0.32);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(31, 107, 99, 0.16), transparent 55%),
+    rgba(255, 255, 255, 0.65);
+}
+
+.language-tab:disabled {
+  cursor: default;
+  opacity: 0.68;
+}
+
+.language-tab:active {
+  transform: translateY(2px);
+  box-shadow: 0 10px 22px var(--shadow);
+}
+
+.tab-label {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.tab-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.teachers {
   display: grid;
   gap: 12px;
+}
+
+.section-head h2 {
+  margin: 4px 0 0;
+  font-size: 16px;
 }
 
 .row {
@@ -149,7 +327,7 @@ async function setLang(code) {
   gap: 14px;
   text-align: left;
   align-items: center;
-  padding: 16px 16px;
+  padding: 16px;
   border-radius: 20px;
   border: 1px solid var(--stroke);
   background: rgba(255, 255, 255, 0.65);
@@ -159,9 +337,9 @@ async function setLang(code) {
 }
 
 .row.active {
-  border-color: rgba(31, 107, 99, 0.32);
+  border-color: rgba(199, 90, 36, 0.28);
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(31, 107, 99, 0.18), transparent 55%),
+    radial-gradient(120% 140% at 0% 0%, rgba(199, 90, 36, 0.18), transparent 55%),
     rgba(255, 255, 255, 0.65);
 }
 
@@ -206,7 +384,7 @@ async function setLang(code) {
 .tag {
   padding: 5px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(31, 107, 99, 0.24);
+  border: 1px solid rgba(199, 90, 36, 0.24);
   background: rgba(255, 255, 255, 0.45);
   text-transform: uppercase;
   font-size: 11px;
@@ -228,4 +406,9 @@ async function setLang(code) {
   opacity: 0.72;
 }
 
+.empty {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
 </style>

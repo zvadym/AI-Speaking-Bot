@@ -57,9 +57,10 @@ const normalizedBots = computed(() =>
       const learningCode = targetCode || lang;
       const baseLabel = languageLabelForCode(baseCode);
       const learningLabel = languageLabelForCode(learningCode);
+      const teacherName = (row?.bot_name || '').toString().trim();
       return {
         bot_key: botKey,
-        title: learningLabel || t('botPicker.title'),
+        title: teacherName || learningLabel || t('botPicker.title'),
         subtitle: baseLabel && learningLabel ? `${baseLabel} → ${learningLabel}` : learningLabel || baseLabel || t('botPicker.sub')
       };
     })
