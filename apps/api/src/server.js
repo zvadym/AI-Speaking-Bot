@@ -113,6 +113,7 @@ function buildPublicBotCatalog(configMap = {}) {
     const teacherAvatarEmoji = normalizeOptionalText(config.teacher_avatar_emoji, 8);
     const teacherTaglineUk = normalizeOptionalText(config.teacher_tagline_uk, 220);
     const teacherTaglineEn = normalizeOptionalText(config.teacher_tagline_en, 220);
+    const teacherTaglineIt = normalizeOptionalText(config.teacher_tagline_it, 220) || teacherTaglineEn || teacherTaglineUk;
     const teacherStyleTags = normalizeStringArray(config.teacher_style_tags, { maxItems: 12, maxItemLen: 32 });
 
     catalog.push({
@@ -125,6 +126,7 @@ function buildPublicBotCatalog(configMap = {}) {
       teacher_avatar_emoji: teacherAvatarEmoji,
       teacher_tagline_uk: teacherTaglineUk,
       teacher_tagline_en: teacherTaglineEn,
+      teacher_tagline_it: teacherTaglineIt,
       teacher_style_tags: teacherStyleTags
     });
   }
@@ -284,6 +286,7 @@ async function getMeUserRow(chatIdRaw, botKeyRaw = null) {
     teacher_avatar_emoji: botMeta?.teacher_avatar_emoji || null,
     teacher_tagline_uk: botMeta?.teacher_tagline_uk || null,
     teacher_tagline_en: botMeta?.teacher_tagline_en || null,
+    teacher_tagline_it: botMeta?.teacher_tagline_it || botMeta?.teacher_tagline_en || botMeta?.teacher_tagline_uk || null,
     teacher_style_tags: botMeta?.teacher_style_tags || null,
     level: row.level || 'b1',
     onboarding_state: row.onboarding_state || 'ready',
@@ -339,6 +342,7 @@ async function listUserBots(chatIdRaw) {
       teacher_avatar_emoji: botMeta?.teacher_avatar_emoji || null,
       teacher_tagline_uk: botMeta?.teacher_tagline_uk || null,
       teacher_tagline_en: botMeta?.teacher_tagline_en || null,
+      teacher_tagline_it: botMeta?.teacher_tagline_it || botMeta?.teacher_tagline_en || botMeta?.teacher_tagline_uk || null,
       teacher_style_tags: botMeta?.teacher_style_tags || null
     };
   });
@@ -379,6 +383,7 @@ function listAvailableBotsForUser(userBots = []) {
       teacher_avatar_emoji: row?.teacher_avatar_emoji || null,
       teacher_tagline_uk: row?.teacher_tagline_uk || null,
       teacher_tagline_en: row?.teacher_tagline_en || null,
+      teacher_tagline_it: row?.teacher_tagline_it || row?.teacher_tagline_en || row?.teacher_tagline_uk || null,
       teacher_style_tags: row?.teacher_style_tags || null,
       is_connected: true,
       level: row?.level || null,
@@ -732,6 +737,14 @@ function sanitizeErrorText(value) {
   return raw.slice(0, 500);
 }
 
+function escapeTelegramHtml(value) {
+  return (value ?? '')
+    .toString()
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
 function classifyPermanentTelegramFailure(err) {
   const status = Number(err?.telegramStatus);
   const description = (err?.telegramDescription || err?.message || '').toString().toLowerCase();
@@ -933,6 +946,7 @@ async function processBroadcastCampaign(campaignId) {
   if (!lockRows[0]) return false;
 
   const messageText = lockRows[0].message_text;
+  const telegramSafeMessageText = escapeTelegramHtml(messageText);
 
   try {
     while (true) {
@@ -970,7 +984,7 @@ async function processBroadcastCampaign(campaignId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               chat_id: row.chat_id,
-              message_text: messageText,
+              message_text: telegramSafeMessageText,
               bot_key: botKey
             })
           });
@@ -1373,6 +1387,99 @@ app.get('/admin/metrics/usage-seconds-by-day', requireAdmin, async (req, res) =>
   });
 });
 
+app.get('/admin/metrics/active-users-by-hour', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     hours AS (
+       SELECT generate_series(0, 23)::int AS hour_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     counts AS (
+       SELECT
+         EXTRACT(HOUR FROM v.occurred_at AT TIME ZONE 'UTC')::int AS hour_utc,
+         COUNT(DISTINCT v.chat_id)::int AS count
+       FROM voice_usage_events v
+       JOIN filtered_users u ON u.chat_id = v.chat_id
+       WHERE v.occurred_at >= (SELECT from_ts FROM params)
+         AND v.occurred_at < (SELECT to_ts FROM params)
+       GROUP BY 1
+     )
+     SELECT
+       LPAD(h.hour_utc::text, 2, '0') || ':00' AS day,
+       COALESCE(c.count, 0)::int AS count
+     FROM hours h
+     LEFT JOIN counts c USING (hour_utc)
+     ORDER BY h.hour_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/active-users-by-hour-today', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const now = new Date();
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const to = new Date(from.getTime() + DAY_MS);
+  const payloadRaw = (req.query.payload ?? '').toString().trim();
+  const payload = payloadRaw ? payloadRaw.slice(0, 200) : null;
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     hours AS (
+       SELECT generate_series(0, 23)::int AS hour_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     counts AS (
+       SELECT
+         EXTRACT(HOUR FROM v.occurred_at AT TIME ZONE 'UTC')::int AS hour_utc,
+         COUNT(DISTINCT v.chat_id)::int AS count
+       FROM voice_usage_events v
+       JOIN filtered_users u ON u.chat_id = v.chat_id
+       WHERE v.occurred_at >= (SELECT from_ts FROM params)
+         AND v.occurred_at < (SELECT to_ts FROM params)
+       GROUP BY 1
+     )
+     SELECT
+       LPAD(h.hour_utc::text, 2, '0') || ':00' AS day,
+       COALESCE(c.count, 0)::int AS count
+     FROM hours h
+     LEFT JOIN counts c USING (hour_utc)
+     ORDER BY h.hour_utc ASC`,
+    [from.toISOString(), to.toISOString(), payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: from.toISOString(),
+    to: to.toISOString(),
+    payload,
+    series: rows
+  });
+});
+
 app.get('/admin/metrics/bot-stats', requireAdmin, async (req, res) => {
   res.set('Cache-Control', 'no-store');
 
@@ -1477,6 +1584,66 @@ app.get('/admin/feedbacks', requireAdmin, async (req, res) => {
     to: range.to.toISOString(),
     kind,
     search,
+    limit,
+    offset,
+    total: totalRes.rows[0]?.total || 0,
+    items: rowsRes.rows || []
+  });
+});
+
+app.get('/admin/users', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const limit = clampInteger(req.query.limit, { min: 1, max: 500, fallback: 100 });
+  const offset = clampInteger(req.query.offset, { min: 0, max: 100000, fallback: 0 });
+
+  const params = [range.from.toISOString(), range.to.toISOString(), range.payload, limit, offset];
+  const [totalRes, rowsRes] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM users u
+       WHERE u.created_at >= $1::timestamptz
+         AND u.created_at < $2::timestamptz
+         AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)`,
+      params.slice(0, 3)
+    ),
+    pool.query(
+      `SELECT
+         u.chat_id,
+         u.username,
+         u.first_name,
+         u.bot_key,
+         u.created_at,
+         u.last_seen_at,
+         COALESCE(u.is_active, true) AS is_active,
+         CASE
+           WHEN u.override_plan_tier IS NOT NULL
+             AND u.override_expires_at IS NOT NULL
+             AND NOW() < u.override_expires_at
+             THEN u.override_plan_tier
+           WHEN u.plan_expires_at IS NOT NULL
+             AND NOW() < u.plan_expires_at
+             THEN u.plan_tier
+           ELSE 'free'
+         END AS effective_tier
+       FROM users u
+       WHERE u.created_at >= $1::timestamptz
+         AND u.created_at < $2::timestamptz
+         AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)
+       ORDER BY u.created_at DESC, u.chat_id DESC
+       LIMIT $4::int
+       OFFSET $5::int`,
+      params
+    )
+  ]);
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
     limit,
     offset,
     total: totalRes.rows[0]?.total || 0,

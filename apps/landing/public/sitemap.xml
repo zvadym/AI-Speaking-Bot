@@ -1,24 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://ai-language-school.online/</loc>
+    <loc>https://ai-language-school.online/en</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/teachers</loc>
+    <loc>https://ai-language-school.online/en/teachers</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/teachers/uk-de</loc>
+    <loc>https://ai-language-school.online/en/teachers/uk-de</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/teachers/uk-en</loc>
+    <loc>https://ai-language-school.online/en/teachers/uk-en</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/blog/daily-habit-10-min</loc>
+    <loc>https://ai-language-school.online/en/blog/daily-habit-10-min</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/blog/speaking-anxiety-language-barrier</loc>
+    <loc>https://ai-language-school.online/en/blog/speaking-anxiety-language-barrier</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/blog/what-to-talk-about</loc>
+    <loc>https://ai-language-school.online/en/blog/what-to-talk-about</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/uk</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/uk/teachers</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/uk/teachers/uk-de</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/uk/teachers/uk-en</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/uk/blog/daily-habit-10-min</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/uk/blog/speaking-anxiety-language-barrier</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/uk/blog/what-to-talk-about</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/it</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/it/teachers</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/it/teachers/uk-de</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/it/teachers/uk-en</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/it/blog/daily-habit-10-min</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/it/blog/speaking-anxiety-language-barrier</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/it/blog/what-to-talk-about</loc>
   </url>
 </urlset>

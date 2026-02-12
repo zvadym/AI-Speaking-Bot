@@ -9,6 +9,7 @@ Teacher pages are generated from `deploy/bots/*.json` at build time (secrets are
 Optional (for Contact form):
 
 - `VITE_CONTACT_WEBHOOK_URL` — n8n webhook URL that receives contact form submissions.
+- `VITE_SITE_URL` — canonical site origin for SEO links (defaults to `https://ai-language-school.online`).
 
 ## Local dev
 

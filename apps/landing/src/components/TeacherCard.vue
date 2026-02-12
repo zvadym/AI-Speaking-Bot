@@ -1,5 +1,5 @@
 <template>
-  <RouterLink class="card teacher-card" :to="`/teachers/${teacher.slug}`">
+  <RouterLink class="card teacher-card" :to="routeWithLocale('teacher', { slug: teacher.slug })">
     <TeacherAvatar :teacher="teacher" :name="name" :size="56" />
 
     <div class="info">
@@ -16,7 +16,7 @@ import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import TeacherAvatar from './TeacherAvatar.vue';
 import { getTeacherName, getTeacherTagline } from '../data/teachers.js';
-import { useI18n } from '../i18n.js';
+import { routeWithLocale, useI18n } from '../i18n.js';
 
 const props = defineProps({
   teacher: {

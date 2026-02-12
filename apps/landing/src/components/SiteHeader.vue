@@ -1,12 +1,12 @@
 <template>
   <header class="site-header">
     <div class="container header-inner">
-      <RouterLink class="brand" to="/">AI Language School</RouterLink>
+      <RouterLink class="brand" :to="routeWithLocale('home')">AI Language School</RouterLink>
 
       <nav class="nav">
         <RouterLink
           class="nav-link"
-          to="/teachers"
+          :to="routeWithLocale('teachers')"
           :class="{ active: isTeachersActive }"
           active-class=""
           exact-active-class=""
@@ -16,7 +16,7 @@
 
         <RouterLink
           class="nav-link"
-          to="/#pricing"
+          :to="routeWithLocale('home', {}, { hash: '#pricing' })"
           :class="{ active: activeSection === 'pricing' }"
           active-class=""
           exact-active-class=""
@@ -25,7 +25,7 @@
         </RouterLink>
         <RouterLink
           class="nav-link"
-          to="/#blog"
+          :to="routeWithLocale('home', {}, { hash: '#blog' })"
           :class="{ active: activeSection === 'blog' }"
           active-class=""
           exact-active-class=""
@@ -34,7 +34,7 @@
         </RouterLink>
         <RouterLink
           class="nav-link"
-          to="/#about"
+          :to="routeWithLocale('home', {}, { hash: '#about' })"
           :class="{ active: activeSection === 'about' }"
           active-class=""
           exact-active-class=""
@@ -43,7 +43,7 @@
         </RouterLink>
         <RouterLink
           class="nav-link"
-          to="/#contact"
+          :to="routeWithLocale('home', {}, { hash: '#contact' })"
           :class="{ active: activeSection === 'contact' }"
           active-class=""
           exact-active-class=""
@@ -58,7 +58,7 @@
             class="locale-btn"
             type="button"
             :aria-pressed="locale.value === opt.value"
-            @click="setAppLocale(opt.value)"
+            @click="switchLocale(opt.value)"
           >
             {{ opt.label }}
           </button>
@@ -71,11 +71,12 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useRoute } from 'vue-router';
-import { useI18n, supportedLocales } from '../i18n.js';
+import { useRoute, useRouter } from 'vue-router';
+import { normalizeLocale, routeWithLocale, useI18n, supportedLocales } from '../i18n.js';
 
 const { t, locale, setAppLocale } = useI18n();
 const route = useRoute();
+const router = useRouter();
 
 const SECTION_IDS = ['pricing', 'blog', 'about', 'contact'];
 const activeSection = ref('');
@@ -131,6 +132,19 @@ function setupObserver() {
   );
 
   for (const el of targets) observer.observe(el);
+}
+
+async function switchLocale(nextLocale) {
+  const normalized = normalizeLocale(nextLocale);
+  if (!normalized || normalized === locale.value) return;
+  setAppLocale(normalized);
+  if (!route.name) return;
+  await router.replace({
+    name: route.name,
+    params: { ...route.params, locale: normalized },
+    query: route.query,
+    hash: route.hash
+  });
 }
 
 const localeOptions = computed(() => {

@@ -39,7 +39,7 @@
             >
               {{ t('cta.openTelegram') }}
             </a>
-            <RouterLink class="btn" to="/teachers">{{ t('cta.backToTeachers') }}</RouterLink>
+            <RouterLink class="btn" :to="routeWithLocale('teachers')">{{ t('cta.backToTeachers') }}</RouterLink>
           </div>
         </div>
       </div>
@@ -47,7 +47,7 @@
       <div v-else class="card">
         <h1 class="h2">{{ t('notFound.title') }}</h1>
         <p class="muted">{{ t('notFound.desc') }}</p>
-        <RouterLink class="btn" to="/teachers">{{ t('nav.teachers') }}</RouterLink>
+        <RouterLink class="btn" :to="routeWithLocale('teachers')">{{ t('nav.teachers') }}</RouterLink>
       </div>
     </div>
   </section>
@@ -59,7 +59,7 @@ import { RouterLink } from 'vue-router';
 import TeacherAvatar from '../components/TeacherAvatar.vue';
 import { getTeacherBySlug, getTeacherName, getTeacherTagline } from '../data/teachers.js';
 import { getTeacherTelegramUrl } from '../lib/telegram.js';
-import { useI18n } from '../i18n.js';
+import { routeWithLocale, useI18n } from '../i18n.js';
 
 const props = defineProps({
   slug: { type: String, required: true }

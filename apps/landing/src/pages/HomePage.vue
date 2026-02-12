@@ -1,19 +1,21 @@
 <template>
-  <div>
-    <section class="hero">
+  <div ref="root">
+    <section id="home" class="snap-section hero" data-active="true">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
       <div class="container hero-inner">
         <div class="badge">{{ t('home.badge') }}</div>
 
-        <h1 class="h1">{{ t('home.headline') }}</h1>
-        <p class="muted hero-sub">
+        <h1 class="h1 reveal-up">{{ t('home.headline') }}</h1>
+        <p class="muted hero-sub reveal-up" style="--revealDelay: 80ms;">
           {{ t('home.subhead') }}
         </p>
 
-        <div class="hero-actions">
-          <RouterLink class="btn primary" to="/teachers">{{ t('cta.start') }}</RouterLink>
+        <div class="hero-actions reveal-up" style="--revealDelay: 140ms;">
+          <RouterLink class="btn primary" :to="routeWithLocale('teachers')">{{ t('cta.start') }}</RouterLink>
         </div>
 
-        <div class="shot card">
+        <div class="shot card reveal-up" style="--revealDelay: 220ms;">
           <div class="chat">
             <div class="bubble you">
               <div class="muted mini">{{ t('home.chat.you') }}</div>
@@ -30,32 +32,38 @@
           </div>
         </div>
       </div>
+      </div>
     </section>
 
-    <section class="section">
-      <div class="container section-head">
-        <div>
-          <h2 class="h2">{{ t('home.teachersTitle') }}</h2>
-          <p class="muted">{{ t('home.teachersDesc') }}</p>
+    <section id="teachers" class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container section-head reveal-up">
+          <div>
+            <h2 class="h2">{{ t('home.teachersTitle') }}</h2>
+            <p class="muted">{{ t('home.teachersDesc') }}</p>
+          </div>
+          <RouterLink class="btn" :to="routeWithLocale('teachers')">{{ t('cta.allTeachers') }}</RouterLink>
         </div>
-        <RouterLink class="btn" to="/teachers">{{ t('cta.allTeachers') }}</RouterLink>
-      </div>
 
-      <div class="container grid-2">
-        <TeacherCard v-for="t in previewTeachers" :key="t.slug" :teacher="t" />
+        <div class="container grid-2 reveal-up" style="--revealDelay: 120ms;">
+          <TeacherCard v-for="t in previewTeachers" :key="t.slug" :teacher="t" />
+        </div>
       </div>
     </section>
 
-    <section id="pricing" class="section">
+    <section id="pricing" class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
       <div class="container">
-        <div class="section-head stacked">
+        <div class="section-head stacked reveal-up">
           <div>
             <h2 class="h2">{{ t('pricing.title') }}</h2>
             <p class="muted">{{ t('pricing.subhead') }}</p>
           </div>
         </div>
 
-        <div class="grid-3 pricing-grid">
+        <div class="grid-3 pricing-grid reveal-up" style="--revealDelay: 120ms;">
           <div v-for="tier in pricingTiers" :key="tier.id" class="card tier" :class="{ featured: tier.highlight }">
             <div class="tier-top">
               <div class="h3">{{ t(`pricing.tiers.${tier.id}.name`) }}</div>
@@ -74,75 +82,89 @@
               </li>
             </ul>
 
-            <RouterLink v-if="tier.id === 'free'" class="btn" to="/teachers">{{ t('pricing.ctaTry') }}</RouterLink>
-            <RouterLink v-else class="btn primary" to="/teachers">{{ t('pricing.ctaChooseTeacher') }}</RouterLink>
+            <RouterLink v-if="tier.id === 'free'" class="btn" :to="routeWithLocale('teachers')">{{ t('pricing.ctaTry') }}</RouterLink>
+            <RouterLink v-else class="btn primary" :to="routeWithLocale('teachers')">{{ t('pricing.ctaChooseTeacher') }}</RouterLink>
           </div>
         </div>
 
-        <div class="muted note">{{ t('pricing.yearlySoon') }}</div>
+        <div class="muted note reveal-up" style="--revealDelay: 200ms;">{{ t('pricing.yearlySoon') }}</div>
+      </div>
       </div>
     </section>
 
-    <section id="blog" class="section">
-      <div class="container section-head">
-        <div>
-          <h2 class="h2">{{ t('blog.title') }}</h2>
-          <p class="muted">{{ t('blog.subhead') }}</p>
-        </div>
-      </div>
-
-      <div class="container grid-3 blog-grid">
-        <RouterLink v-for="p in posts" :key="p.slug" class="card post" :to="`/blog/${p.slug}`">
-          <div class="muted meta">
-            <span>{{ formatDate(p.publishedAt) }}</span>
-            <span v-if="p.readingMinutes"> • {{ t('blog.readingMinutes', { n: p.readingMinutes }) }}</span>
+    <section id="blog" class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container section-head reveal-up">
+          <div>
+            <h2 class="h2">{{ t('blog.title') }}</h2>
+            <p class="muted">{{ t('blog.subhead') }}</p>
           </div>
-          <div class="h3">{{ getLocalized(p.title) }}</div>
-          <p class="muted excerpt">{{ getLocalized(p.excerpt) }}</p>
-          <div class="read">{{ t('blog.read') }} →</div>
-        </RouterLink>
-      </div>
-    </section>
+        </div>
 
-    <section id="about" class="section">
-      <div class="container about">
-        <div class="card about-card">
-          <h2 class="h2">{{ t('about.title') }}</h2>
-          <p class="muted about-p">{{ t('about.p1') }}</p>
-          <p class="muted about-p">{{ t('about.p2') }}</p>
-          <ul class="muted about-list">
-            <li>{{ t('about.bullets.one') }}</li>
-            <li>{{ t('about.bullets.two') }}</li>
-            <li>{{ t('about.bullets.three') }}</li>
-          </ul>
+        <div class="container grid-3 blog-grid reveal-up" style="--revealDelay: 120ms;">
+          <RouterLink v-for="p in posts" :key="p.slug" class="card post" :to="routeWithLocale('blog-post', { slug: p.slug })">
+            <div class="muted meta">
+              <span>{{ formatDate(p.publishedAt) }}</span>
+              <span v-if="p.readingMinutes"> • {{ t('blog.readingMinutes', { n: p.readingMinutes }) }}</span>
+            </div>
+            <div class="h3">{{ getLocalized(p.title) }}</div>
+            <p class="muted excerpt">{{ getLocalized(p.excerpt) }}</p>
+            <div class="read">{{ t('blog.read') }} →</div>
+          </RouterLink>
         </div>
       </div>
     </section>
 
-    <section id="contact" class="section">
-      <div class="container">
-        <ContactForm />
+    <section id="about" class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container about reveal-up">
+          <div class="card about-card">
+            <h2 class="h2">{{ t('about.title') }}</h2>
+            <p class="muted about-p">{{ t('about.p1') }}</p>
+            <p class="muted about-p">{{ t('about.p2') }}</p>
+            <ul class="muted about-list">
+              <li>{{ t('about.bullets.one') }}</li>
+              <li>{{ t('about.bullets.two') }}</li>
+              <li>{{ t('about.bullets.three') }}</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="container">
-        <h2 class="h2">{{ t('home.howTitle') }}</h2>
-        <div class="grid-3 steps">
-          <div class="card">
-            <div class="step-num">1</div>
-            <div class="h3">{{ t('home.steps.oneTitle') }}</div>
-            <div class="muted">{{ t('home.steps.oneDesc') }}</div>
-          </div>
-          <div class="card">
-            <div class="step-num">2</div>
-            <div class="h3">{{ t('home.steps.twoTitle') }}</div>
-            <div class="muted">{{ t('home.steps.twoDesc') }}</div>
-          </div>
-          <div class="card">
-            <div class="step-num">3</div>
-            <div class="h3">{{ t('home.steps.threeTitle') }}</div>
-            <div class="muted">{{ t('home.steps.threeDesc') }}</div>
+    <section id="contact" class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container reveal-up">
+          <ContactForm />
+          <HomeFooterMini />
+        </div>
+      </div>
+    </section>
+
+    <section id="how" class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container reveal-up">
+          <h2 class="h2">{{ t('home.howTitle') }}</h2>
+          <div class="grid-3 steps" style="--revealDelay: 120ms;">
+            <div class="card">
+              <div class="step-num">1</div>
+              <div class="h3">{{ t('home.steps.oneTitle') }}</div>
+              <div class="muted">{{ t('home.steps.oneDesc') }}</div>
+            </div>
+            <div class="card">
+              <div class="step-num">2</div>
+              <div class="h3">{{ t('home.steps.twoTitle') }}</div>
+              <div class="muted">{{ t('home.steps.twoDesc') }}</div>
+            </div>
+            <div class="card">
+              <div class="step-num">3</div>
+              <div class="h3">{{ t('home.steps.threeTitle') }}</div>
+              <div class="muted">{{ t('home.steps.threeDesc') }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -151,18 +173,25 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import TeacherCard from '../components/TeacherCard.vue';
 import ContactForm from '../components/ContactForm.vue';
+import HomeFooterMini from '../components/HomeFooterMini.vue';
 import { teachers } from '../data/teachers.js';
 import { blogPosts } from '../data/blogPosts.js';
 import { pricingTiers } from '../data/pricing.js';
-import { useI18n } from '../i18n.js';
+import { routeWithLocale, useI18n } from '../i18n.js';
+import { setupParallax } from '../lib/parallax.js';
+import { setupSectionReveal } from '../lib/reveal.js';
 
 const { t, locale } = useI18n();
 const previewTeachers = computed(() => teachers.slice(0, 2));
 const posts = computed(() => blogPosts.slice(0, 3));
+
+const root = ref(null);
+let cleanupParallax = null;
+let cleanupReveal = null;
 
 function getLocalized(map) {
   const l = locale.value;
@@ -179,6 +208,18 @@ function formatDate(value) {
     return (value || '').toString();
   }
 }
+
+onMounted(() => {
+  const host = root.value;
+  const sections = host ? Array.from(host.querySelectorAll('.snap-section')) : [];
+  cleanupParallax = setupParallax(sections);
+  cleanupReveal = setupSectionReveal(sections);
+});
+
+onBeforeUnmount(() => {
+  if (cleanupParallax) cleanupParallax();
+  if (cleanupReveal) cleanupReveal();
+});
 </script>
 
 <style scoped>

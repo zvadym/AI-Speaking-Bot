@@ -3,7 +3,7 @@
     <div class="container">
       <div v-if="post" class="post">
         <div class="top">
-          <RouterLink class="btn ghost back" to="/#blog">← {{ t('blog.backToBlog') }}</RouterLink>
+          <RouterLink class="btn ghost back" :to="routeWithLocale('home', {}, { hash: '#blog' })">← {{ t('blog.backToBlog') }}</RouterLink>
           <div class="muted meta">
             <span>{{ publishedLabel }}</span>
             <span v-if="post.readingMinutes"> • {{ t('blog.readingMinutes', { n: post.readingMinutes }) }}</span>
@@ -31,7 +31,7 @@
       <div v-else class="card">
         <h1 class="h2">{{ t('notFound.title') }}</h1>
         <p class="muted">{{ t('notFound.desc') }}</p>
-        <RouterLink class="btn" to="/#blog">{{ t('blog.backToBlog') }}</RouterLink>
+        <RouterLink class="btn" :to="routeWithLocale('home', {}, { hash: '#blog' })">{{ t('blog.backToBlog') }}</RouterLink>
       </div>
     </div>
   </section>
@@ -41,7 +41,7 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { getBlogPostBySlug } from '../data/blogPosts.js';
-import { useI18n } from '../i18n.js';
+import { routeWithLocale, useI18n } from '../i18n.js';
 
 const props = defineProps({
   slug: { type: String, required: true }
@@ -160,4 +160,3 @@ const publishedLabel = computed(() => {
   line-height: 1.7;
 }
 </style>
-

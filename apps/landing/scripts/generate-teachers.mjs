@@ -13,6 +13,7 @@ const sitemapFile = path.resolve(repoRoot, 'apps/landing/public/sitemap.xml');
 const teacherAvatarsDir = path.resolve(repoRoot, 'apps/landing/public/teachers');
 
 const SITE_ORIGIN = 'https://ai-language-school.online';
+const SUPPORTED_LOCALES = ['en', 'uk', 'it'];
 const AVATAR_EXTS = ['avif', 'webp', 'png', 'jpg', 'jpeg', 'svg'];
 
 function isSupportedLocale(value) {
@@ -149,12 +150,16 @@ function xmlEscape(value) {
 }
 
 function writeSitemap(teachers, blogPosts) {
-  const urls = [
-    `${SITE_ORIGIN}/`,
-    `${SITE_ORIGIN}/teachers`,
-    ...teachers.map((t) => `${SITE_ORIGIN}/teachers/${encodeURIComponent(t.slug)}`),
-    ...(Array.isArray(blogPosts) ? blogPosts : []).map((p) => `${SITE_ORIGIN}/blog/${encodeURIComponent(p.slug)}`)
+  const sharedPaths = [
+    '',
+    '/teachers',
+    ...teachers.map((t) => `/teachers/${encodeURIComponent(t.slug)}`),
+    ...(Array.isArray(blogPosts) ? blogPosts : []).map((p) => `/blog/${encodeURIComponent(p.slug)}`)
   ];
+
+  const urls = SUPPORTED_LOCALES.flatMap((locale) =>
+    sharedPaths.map((pathSuffix) => `${SITE_ORIGIN}/${locale}${pathSuffix}`)
+  );
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
     .map((u) => `  <url>\n    <loc>${xmlEscape(u)}</loc>\n  </url>`)

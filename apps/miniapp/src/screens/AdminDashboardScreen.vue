@@ -3,7 +3,7 @@
     <header class="hero">
       <div class="kicker">Internal</div>
       <h1>Admin dashboard</h1>
-      <p class="sub">UTC charts. Date range is <strong>[from, to)</strong> (to is exclusive).</p>
+      <p class="sub">UTC charts. Date range is <strong>inclusive</strong> for both From and To dates.</p>
     </header>
 
     <section class="card">
@@ -43,8 +43,17 @@
           </label>
 
           <label class="field">
-            <span>To (UTC, exclusive)</span>
+            <span>To (UTC, inclusive)</span>
             <input v-model="toDate" type="date" />
+          </label>
+
+          <label class="field">
+            <span>Quick range</span>
+            <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
+              <option value="last_30_days">Last 30 days</option>
+              <option value="last_week">Last week</option>
+              <option value="last_month">Last month</option>
+            </select>
           </label>
         </div>
 
@@ -68,6 +77,8 @@
             <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refresh">
               {{ loading ? 'Loading…' : 'Refresh' }}
             </button>
+            <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_week')">Last week</button>
+            <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_month')">Last month</button>
             <button class="btn" type="button" :disabled="loading" @click="resetRange">Last 30d</button>
           </div>
         </div>
@@ -126,57 +137,130 @@
         </div>
       </section>
 
-      <AdminChart
-        title="New users by day"
-        kind="bar"
-        :data="newUsersSeries"
-        :series="[{ key: 'count', label: 'New users', color: 'rgba(199, 90, 36, 0.86)' }]"
-      />
+      <section class="charts-grid">
+        <AdminChart
+          title="New users by day"
+          kind="bar"
+          :data="newUsersSeries"
+          :series="[{ key: 'count', label: 'New users', color: 'rgba(199, 90, 36, 0.86)' }]"
+        />
 
-      <AdminChart
-        title="New paid users by day (first time)"
-        subtitle="Split by tier at first payment"
-        kind="bar"
-        :data="newPaidSeries"
-        :series="[
-          { key: 'plus', label: 'Plus', color: 'rgba(31, 107, 99, 0.88)' },
-          { key: 'pro', label: 'Pro', color: 'rgba(199, 90, 36, 0.88)' }
-        ]"
-      />
+        <AdminChart
+          title="New paid users by day (first time)"
+          subtitle="Split by tier at first payment"
+          kind="bar"
+          :data="newPaidSeries"
+          :series="[
+            { key: 'plus', label: 'Plus', color: 'rgba(31, 107, 99, 0.88)' },
+            { key: 'pro', label: 'Pro', color: 'rgba(199, 90, 36, 0.88)' }
+          ]"
+        />
 
-      <AdminChart
-        title="Active users by day"
-        subtitle="Active = at least one voice usage event that day"
-        kind="bar"
-        :data="activeUsersSeries"
-        :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
-      />
+        <AdminChart
+          title="Active users by day"
+          subtitle="Active = at least one voice usage event that day"
+          kind="bar"
+          :data="activeUsersSeries"
+          :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
+        />
 
-      <AdminChart
-        title="Active users by day by bot"
-        subtitle="Active users split by bot (stacked)"
-        kind="bar"
-        :data="activeUsersByBotSeries"
-        :series="activeUsersByBotSeriesConfig"
-      />
+        <AdminChart
+          title="Active users by day by bot"
+          subtitle="Active users split by bot (stacked)"
+          kind="bar"
+          :data="activeUsersByBotSeries"
+          :series="activeUsersByBotSeriesConfig"
+        />
 
-      <AdminChart
-        title="Inactive users by day"
-        subtitle="Users marked inactive from permanent Telegram delivery failures"
-        kind="bar"
-        :data="inactiveUsersSeries"
-        :series="[{ key: 'count', label: 'Inactive users', color: 'rgba(174, 43, 40, 0.86)' }]"
-      />
+        <AdminChart
+          title="Inactive users by day"
+          subtitle="Users marked inactive from permanent Telegram delivery failures"
+          kind="bar"
+          :data="inactiveUsersSeries"
+          :series="[{ key: 'count', label: 'Inactive users', color: 'rgba(174, 43, 40, 0.86)' }]"
+        />
 
-      <AdminChart
-        title="Voice usage seconds by day"
-        kind="line"
-        :data="usageSecondsSeries"
-        :series="[
-          { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)' },
-          { key: 'out_seconds', label: 'Out', color: 'rgba(199, 90, 36, 0.9)' }
-        ]"
-      />
+        <AdminChart
+          title="Voice usage seconds by day"
+          kind="line"
+          :data="usageSecondsSeries"
+          :series="[
+            { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)' },
+            { key: 'out_seconds', label: 'Out', color: 'rgba(199, 90, 36, 0.9)' }
+          ]"
+        />
+
+        <AdminChart
+          title="Active users by hour"
+          subtitle="UTC hour-of-day distribution for selected range"
+          kind="bar"
+          :data="activeUsersByHourSeries"
+          :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
+        />
+
+        <AdminChart
+          title="Active users by hour today"
+          subtitle="UTC, today only"
+          kind="bar"
+          :data="activeUsersByHourTodaySeries"
+          :series="[{ key: 'count', label: 'Active users', color: 'rgba(199, 90, 36, 0.86)' }]"
+        />
+      </section>
+
+      <section class="card users-table-card">
+        <div class="users-head">
+          <div>
+            <div class="kicker">Users</div>
+            <h2>Users by created_at DESC</h2>
+          </div>
+          <div class="users-meta">
+            <span>Total: {{ fmt(usersTotal) }}</span>
+            <span>Offset: {{ fmt(usersOffset) }}</span>
+          </div>
+        </div>
+
+        <p class="error" v-if="usersError">{{ usersError }}</p>
+        <p class="hint" v-else-if="usersLoading">Loading users…</p>
+
+        <div class="users-table-wrap" v-if="usersRows.length">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Created</th>
+                <th>Chat ID</th>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Bot</th>
+                <th>Tier</th>
+                <th>Active</th>
+                <th>Last seen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in usersRows" :key="row.chat_id">
+                <td><time>{{ formatFeedbackTime(row.created_at) }}</time></td>
+                <td><code>{{ row.chat_id }}</code></td>
+                <td>{{ row.username ? `@${row.username}` : '—' }}</td>
+                <td>{{ row.first_name || '—' }}</td>
+                <td>{{ row.bot_key || '—' }}</td>
+                <td>{{ row.effective_tier || 'free' }}</td>
+                <td>{{ row.is_active ? 'yes' : 'no' }}</td>
+                <td>{{ row.last_seen_at ? formatFeedbackTime(row.last_seen_at) : '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint" v-else-if="!usersLoading">No users found for current filters.</p>
+
+        <div class="feedback-pager">
+          <button class="btn" type="button" :disabled="usersLoading || usersOffset <= 0" @click="usersPrevPage">
+            Previous
+          </button>
+          <button class="btn" type="button" :disabled="usersLoading || !usersHasNext" @click="usersNextPage">
+            Next
+          </button>
+        </div>
+      </section>
     </template>
 
     <section class="card broadcast" v-else-if="activeTab === 'messaging'">
@@ -361,7 +445,7 @@
           <input v-model="feedbackFromDate" type="date" />
         </label>
         <label class="field">
-          <span>To (UTC, exclusive)</span>
+          <span>To (UTC, inclusive)</span>
           <input v-model="feedbackToDate" type="date" />
         </label>
         <label class="field">
@@ -458,9 +542,41 @@ function dateToYmdUtc(d) {
 function defaultRange() {
   const now = new Date();
   const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const to = new Date(todayUtc.getTime() + DAY_MS);
-  const from = new Date(to.getTime() - 30 * DAY_MS);
+  const to = todayUtc;
+  const from = new Date(to.getTime() - 29 * DAY_MS);
   return { from: dateToYmdUtc(from), to: dateToYmdUtc(to) };
+}
+
+function parseYmdAsUtc(ymd) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd || '')) return null;
+  const d = new Date(`${ymd}T00:00:00.000Z`);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+function toExclusiveBoundaryYmd(inclusiveYmd) {
+  const d = parseYmdAsUtc(inclusiveYmd);
+  if (!d) return inclusiveYmd;
+  return dateToYmdUtc(new Date(d.getTime() + DAY_MS));
+}
+
+function rangeForPreset(preset) {
+  const now = new Date();
+  const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  if (preset === 'last_week') {
+    const day = todayUtc.getUTCDay();
+    const daysFromMonday = (day + 6) % 7;
+    const thisWeekStart = new Date(todayUtc.getTime() - daysFromMonday * DAY_MS);
+    const prevWeekStart = new Date(thisWeekStart.getTime() - 7 * DAY_MS);
+    const prevWeekEnd = new Date(thisWeekStart.getTime() - DAY_MS);
+    return { from: dateToYmdUtc(prevWeekStart), to: dateToYmdUtc(prevWeekEnd) };
+  }
+  if (preset === 'last_month') {
+    const thisMonthStart = new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth(), 1));
+    const prevMonthStart = new Date(Date.UTC(thisMonthStart.getUTCFullYear(), thisMonthStart.getUTCMonth() - 1, 1));
+    const prevMonthEnd = new Date(thisMonthStart.getTime() - DAY_MS);
+    return { from: dateToYmdUtc(prevMonthStart), to: dateToYmdUtc(prevMonthEnd) };
+  }
+  return defaultRange();
 }
 
 const password = ref('');
@@ -468,6 +584,7 @@ const activeTab = ref('analytics');
 const { from: defaultFrom, to: defaultTo } = defaultRange();
 const fromDate = ref(defaultFrom);
 const toDate = ref(defaultTo);
+const rangePreset = ref('last_30_days');
 const payload = ref('');
 const payloadOptions = ref([]);
 const feedbackFromDate = ref(defaultFrom);
@@ -507,6 +624,14 @@ const activeUsersByBotSeries = ref([]);
 const activeUsersByBotSeriesConfig = ref([]);
 const inactiveUsersSeries = ref([]);
 const usageSecondsSeries = ref([]);
+const activeUsersByHourSeries = ref([]);
+const activeUsersByHourTodaySeries = ref([]);
+const usersRows = ref([]);
+const usersTotal = ref(0);
+const usersOffset = ref(0);
+const usersLimit = 50;
+const usersLoading = ref(false);
+const usersError = ref('');
 const previewLoading = ref(false);
 const previewError = ref('');
 const sendError = ref('');
@@ -538,15 +663,16 @@ const canFetch = computed(() => {
   if (!password.value) return false;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate.value)) return false;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(toDate.value)) return false;
-  return fromDate.value < toDate.value;
+  return fromDate.value <= toDate.value;
 });
 const canFetchFeedback = computed(() => {
   if (!password.value) return false;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(feedbackFromDate.value)) return false;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(feedbackToDate.value)) return false;
-  return feedbackFromDate.value < feedbackToDate.value;
+  return feedbackFromDate.value <= feedbackToDate.value;
 });
 const feedbackHasNext = computed(() => feedbackOffset.value + feedbackRows.value.length < feedbackTotal.value);
+const usersHasNext = computed(() => usersOffset.value + usersRows.value.length < usersTotal.value);
 
 function adminHeaders() {
   return { 'X-Admin-Password': password.value };
@@ -617,7 +743,7 @@ function transformByBotData(rows) {
 function query() {
   return {
     from: fromDate.value,
-    to: toDate.value,
+    to: toExclusiveBoundaryYmd(toDate.value),
     payload: payload.value.trim() ? payload.value.trim() : undefined
   };
 }
@@ -625,7 +751,7 @@ function query() {
 function feedbackQuery() {
   return {
     from: feedbackFromDate.value,
-    to: feedbackToDate.value,
+    to: toExclusiveBoundaryYmd(feedbackToDate.value),
     kind: feedbackKind.value !== 'any' ? feedbackKind.value : undefined,
     search: feedbackSearch.value.trim() ? feedbackSearch.value.trim() : undefined,
     limit: feedbackLimit,
@@ -838,12 +964,13 @@ async function sendBroadcast() {
 
 async function refresh() {
   if (!canFetch.value) return;
+  usersOffset.value = 0;
   loading.value = true;
   errorText.value = '';
   try {
     const q = query();
     const headers = adminHeaders();
-    const [summary, botStatsData, newUsers, newPaid, activeUsers, activeUsersByBot, inactiveUsers, usageSeconds, payloads] = await Promise.all([
+    const [summary, botStatsData, newUsers, newPaid, activeUsers, activeUsersByBot, inactiveUsers, usageSeconds, byHour, byHourToday, payloads, users] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers }),
       apiJson(props.apiBase, '/admin/metrics/new-users-by-day', { query: q, headers }),
@@ -852,7 +979,10 @@ async function refresh() {
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
+      apiJson(props.apiBase, '/admin/metrics/active-users-by-hour', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload }, headers }),
+      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/users', { query: { ...q, limit: usersLimit, offset: usersOffset.value }, headers })
     ]);
 
     totals.value = summary?.totals || totals.value;
@@ -862,7 +992,12 @@ async function refresh() {
     activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
+    activeUsersByHourSeries.value = Array.isArray(byHour?.series) ? byHour.series : [];
+    activeUsersByHourTodaySeries.value = Array.isArray(byHourToday?.series) ? byHourToday.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
+    usersRows.value = Array.isArray(users?.items) ? users.items : [];
+    usersTotal.value = Number.isFinite(Number(users?.total)) ? Number(users.total) : 0;
+    usersError.value = '';
     
     // Transform bot-specific data
     const byBotRawRows = Array.isArray(activeUsersByBot?.series) ? activeUsersByBot.series : [];
@@ -877,6 +1012,31 @@ async function refresh() {
     errorText.value = `Failed to load: ${msg}`;
   } finally {
     loading.value = false;
+  }
+}
+
+async function refreshUsersPage({ resetOffset = false } = {}) {
+  if (!canFetch.value) return;
+  if (resetOffset) usersOffset.value = 0;
+  usersLoading.value = true;
+  usersError.value = '';
+  try {
+    const headers = adminHeaders();
+    const q = query();
+    const data = await apiJson(props.apiBase, '/admin/users', {
+      query: { ...q, limit: usersLimit, offset: usersOffset.value },
+      headers
+    });
+    usersRows.value = Array.isArray(data?.items) ? data.items : [];
+    usersTotal.value = Number.isFinite(Number(data?.total)) ? Number(data.total) : 0;
+  } catch (err) {
+    console.error(err);
+    usersRows.value = [];
+    usersTotal.value = 0;
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    usersError.value = `Failed to load users: ${msg}`;
+  } finally {
+    usersLoading.value = false;
   }
 }
 
@@ -921,7 +1081,15 @@ function feedbackPrevPage() {
 }
 
 function resetRange() {
-  const r = defaultRange();
+  rangePreset.value = 'last_30_days';
+  const r = rangeForPreset('last_30_days');
+  fromDate.value = r.from;
+  toDate.value = r.to;
+}
+
+function applyRangePreset(preset) {
+  rangePreset.value = preset;
+  const r = rangeForPreset(preset);
   fromDate.value = r.from;
   toDate.value = r.to;
 }
@@ -948,6 +1116,22 @@ function clearPassword() {
   feedbackOffset.value = 0;
   feedbackError.value = '';
   feedbackUpdatedAt.value = '';
+  usersRows.value = [];
+  usersTotal.value = 0;
+  usersOffset.value = 0;
+  usersError.value = '';
+}
+
+function usersNextPage() {
+  if (!usersHasNext.value || usersLoading.value) return;
+  usersOffset.value += usersLimit;
+  refreshUsersPage();
+}
+
+function usersPrevPage() {
+  if (usersLoading.value) return;
+  usersOffset.value = Math.max(0, usersOffset.value - usersLimit);
+  refreshUsersPage();
 }
 
 onMounted(() => {
@@ -1013,7 +1197,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .shell {
-  width: min(980px, 100%);
+  width: min(1420px, 100%);
   padding: 44px 22px 76px;
   display: grid;
   gap: 18px;
@@ -1202,6 +1386,12 @@ h1 {
 .cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1432,8 +1622,69 @@ h1 {
   gap: 10px;
 }
 
+.users-table-card {
+  gap: 10px;
+}
+
+.users-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.users-head h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.users-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.users-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(30, 26, 22, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.users-table th,
+.users-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(30, 26, 22, 0.08);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.users-table th {
+  color: var(--muted);
+  font-weight: 650;
+  background: rgba(246, 241, 232, 0.6);
+}
+
+.users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 @media (max-width: 820px) {
   .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .charts-grid {
     grid-template-columns: 1fr;
   }
 

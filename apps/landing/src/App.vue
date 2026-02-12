@@ -4,20 +4,22 @@
     <main>
       <RouterView />
     </main>
-    <SiteFooter />
+    <SiteFooter v-if="!isHome" />
   </div>
 </template>
 
 <script setup>
-import { onMounted, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import SiteHeader from './components/SiteHeader.vue';
 import SiteFooter from './components/SiteFooter.vue';
 import { getTeacherBySlug, getTeacherName } from './data/teachers.js';
 import { getBlogPostBySlug } from './data/blogPosts.js';
-import { locale, syncLocaleForTeacherRoute, t } from './i18n.js';
+import { locale, normalizeLocale, setAppLocale, t } from './i18n.js';
+import { syncSeoLinks } from './seo.js';
 
 const route = useRoute();
+const isHome = computed(() => route.name === 'home');
 
 function syncDocumentTitle() {
   const base = 'AI Language School';
@@ -52,14 +54,24 @@ function syncDocumentTitle() {
 }
 
 function syncLocaleFromRoute() {
-  if (route.name !== 'teacher') return;
-  const slug = (route.params?.slug || '').toString();
-  if (slug) syncLocaleForTeacherRoute(slug);
+  const routeLocale = normalizeLocale(route.params?.locale);
+  if (!routeLocale || routeLocale === locale.value) return;
+  setAppLocale(routeLocale);
+}
+
+function syncHomeSnapClass() {
+  try {
+    document?.documentElement?.classList?.toggle('snap-home', isHome.value);
+  } catch {
+    // ignore
+  }
 }
 
 onMounted(() => {
   syncLocaleFromRoute();
   syncDocumentTitle();
+  syncHomeSnapClass();
+  syncSeoLinks(route, locale.value);
 });
 
 watch(
@@ -67,8 +79,13 @@ watch(
   () => {
     syncLocaleFromRoute();
     syncDocumentTitle();
+    syncHomeSnapClass();
+    syncSeoLinks(route, locale.value);
   }
 );
 
-watch(locale, () => syncDocumentTitle());
+watch(locale, () => {
+  syncDocumentTitle();
+  syncSeoLinks(route, locale.value);
+});
 </script>

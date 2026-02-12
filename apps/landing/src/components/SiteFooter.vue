@@ -7,11 +7,11 @@
       </div>
 
       <div class="links">
-        <RouterLink to="/teachers">{{ t('nav.teachers') }}</RouterLink>
-        <RouterLink to="/#pricing">{{ t('nav.pricing') }}</RouterLink>
-        <RouterLink to="/#blog">{{ t('nav.blog') }}</RouterLink>
-        <RouterLink to="/#about">{{ t('nav.about') }}</RouterLink>
-        <RouterLink to="/#contact">{{ t('nav.contact') }}</RouterLink>
+        <RouterLink :to="routeWithLocale('teachers')">{{ t('nav.teachers') }}</RouterLink>
+        <RouterLink :to="routeWithLocale('home', {}, { hash: '#pricing' })">{{ t('nav.pricing') }}</RouterLink>
+        <RouterLink :to="routeWithLocale('home', {}, { hash: '#blog' })">{{ t('nav.blog') }}</RouterLink>
+        <RouterLink :to="routeWithLocale('home', {}, { hash: '#about' })">{{ t('nav.about') }}</RouterLink>
+        <RouterLink :to="routeWithLocale('home', {}, { hash: '#contact' })">{{ t('nav.contact') }}</RouterLink>
       </div>
     </div>
 
@@ -24,7 +24,7 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useI18n } from '../i18n.js';
+import { routeWithLocale, useI18n } from '../i18n.js';
 
 const year = computed(() => new Date().getFullYear());
 const { t } = useI18n();
