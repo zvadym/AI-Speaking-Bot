@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEPLOY_HOST="${DEPLOY_HOST:-languagebot}"
+DEPLOY_HOST="${DEPLOY_HOST:-langbot-de-1}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-speaking-bot}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
+SSH_FORWARD_AGENT="${SSH_FORWARD_AGENT:-false}"
 
 COMPOSE_FILE="${COMPOSE_FILE:-deploy/docker-compose.yml}"
 MIGRATE_SCRIPT="${MIGRATE_SCRIPT:-deploy/migrate.sh}"
@@ -11,17 +12,38 @@ PROJECT="${PROJECT:-languagebot}"
 HEALTH_ATTEMPTS="${HEALTH_ATTEMPTS:-10}"
 HEALTH_DELAY_SEC="${HEALTH_DELAY_SEC:-3}"
 HEALTH_TIMEOUT_SEC="${HEALTH_TIMEOUT_SEC:-5}"
+SKIP_HEALTHCHECKS="${SKIP_HEALTHCHECKS:-false}"
+
+# Override these when deploying to a new server before DNS is updated.
+# Set any of them to empty string to skip that check.
+HEALTHCHECK_API_URL="${HEALTHCHECK_API_URL:-https://learn-language-api.notarobot.dev/healthz}"
+HEALTHCHECK_APP_URL="${HEALTHCHECK_APP_URL:-https://learn-language-app.notarobot.dev/}"
+HEALTHCHECK_N8N_URL="${HEALTHCHECK_N8N_URL:-https://learn-language-n8n.notarobot.dev/}"
+HEALTHCHECK_N8N_LOCAL_URL="${HEALTHCHECK_N8N_LOCAL_URL:-http://127.0.0.1:5678/}"
 
 log() {
   echo "==> $1"
 }
 
+if [[ "${SSH_FORWARD_AGENT}" != "true" && "${SSH_FORWARD_AGENT}" != "false" ]]; then
+  echo "Invalid SSH_FORWARD_AGENT=${SSH_FORWARD_AGENT} (expected: true|false)" >&2
+  exit 1
+fi
+
+ssh_cmd() {
+  if [[ "${SSH_FORWARD_AGENT}" == "true" ]]; then
+    ssh -A "$@"
+  else
+    ssh "$@"
+  fi
+}
+
 log "🔌 Step 1/9: Check SSH connectivity to ${DEPLOY_HOST}"
-ssh -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >/dev/null
+ssh_cmd -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >/dev/null
 
 log "🚀 Step 2/9: Run remote deploy commands"
-ssh "${DEPLOY_HOST}" \
-  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' bash -se" <<'REMOTE'
+ssh_cmd "${DEPLOY_HOST}" \
+  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' HEALTHCHECK_N8N_URL='${HEALTHCHECK_N8N_URL}' HEALTHCHECK_N8N_LOCAL_URL='${HEALTHCHECK_N8N_LOCAL_URL}' bash -se" <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
@@ -53,14 +75,18 @@ for f in deploy/.env deploy/.env.api deploy/.env.miniapp deploy/.env.prod; do
   fi
 done
 
-step "🌱 2.3.1/10: Load env for build args + workflow render"
+step "🗂️ 2.3.1/10: Ensure n8n data dir is writable by n8n (uid 1000)"
+mkdir -p deploy/n8n-data
+docker run --rm -u 0:0 -v "$PWD/deploy/n8n-data:/data" alpine:3.20 sh -c 'chown -R 1000:1000 /data && chmod 700 /data'
+
+step "🌱 2.3.2/10: Load env for build args + workflow render"
 set -a
 source deploy/.env.api
 source deploy/.env.miniapp
 source deploy/.env.prod
 set +a
 
-step "🧩 2.3.2/10: Render n8n workflows"
+step "🧩 2.3.3/10: Render n8n workflows"
 python3 scripts/render-n8n-workflows.py --input deploy/workflows --output deploy/workflows/.rendered
 
 step "🗄️ 2.4/10: Run DB migrations"
@@ -84,7 +110,9 @@ step "✅ 2.9/10: Activate n8n workflows"
 COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" bash scripts/activate-n8n-workflows.sh
 
 step "✅ 2.10/10: Health checks"
-if command -v curl >/dev/null 2>&1; then
+if [[ "${SKIP_HEALTHCHECKS}" == "true" ]]; then
+  echo "⚠️ SKIP_HEALTHCHECKS=true; skipping health checks"
+elif command -v curl >/dev/null 2>&1; then
   check_url() {
     local url="$1"
     local attempts="${HEALTH_ATTEMPTS}"
@@ -120,10 +148,18 @@ if command -v curl >/dev/null 2>&1; then
     return 1
   }
 
-  check_url https://learn-language-api.notarobot.dev/healthz
-  check_url https://learn-language-app.notarobot.dev/
-  check_url_http https://learn-language-n8n.notarobot.dev/ "200 301 302 401 403"
-  check_url_http http://127.0.0.1:5678/ "200 301 302 401 403"
+  if [[ -n "${HEALTHCHECK_API_URL:-}" ]]; then
+    check_url "${HEALTHCHECK_API_URL}"
+  fi
+  if [[ -n "${HEALTHCHECK_APP_URL:-}" ]]; then
+    check_url "${HEALTHCHECK_APP_URL}"
+  fi
+  if [[ -n "${HEALTHCHECK_N8N_URL:-}" ]]; then
+    check_url_http "${HEALTHCHECK_N8N_URL}" "200 301 302 401 403"
+  fi
+  if [[ -n "${HEALTHCHECK_N8N_LOCAL_URL:-}" ]]; then
+    check_url_http "${HEALTHCHECK_N8N_LOCAL_URL}" "200 301 302 401 403"
+  fi
   echo "✅ Health checks OK"
 else
   echo "⚠️ curl not found; skipping health checks"

@@ -8,6 +8,14 @@ DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-speaking-bot}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
 REPO_URL="${REPO_URL:-}"
 
+# How to handle sudo:
+# - auto (default): require passwordless sudo (no prompt); fail with instructions if password is needed
+# - prompt: allow sudo to prompt for password (requires a TTY)
+SUDO_MODE="${SUDO_MODE:-auto}"
+
+# SSH agent forwarding (useful for private GitHub repos with SSH clone URLs).
+SSH_FORWARD_AGENT="${SSH_FORWARD_AGENT:-false}"
+
 # Upload ignored config files from local repo -> server (won't overwrite by default).
 UPLOAD_CONFIG="${UPLOAD_CONFIG:-true}"
 FORCE_UPLOAD="${FORCE_UPLOAD:-false}"
@@ -24,7 +32,9 @@ Usage:
 Common overrides:
   DEPLOY_DIR=/opt/ai-speaking-bot
   DEPLOY_BRANCH=main
-  REPO_URL=git@github.com:you/AI-Speaking-Bot.git
+  REPO_URL=git@github.com:YOUR_ORG/YOUR_REPO.git
+  SUDO_MODE=auto|prompt
+  SSH_FORWARD_AGENT=true
   UPLOAD_CONFIG=true|false
   FORCE_UPLOAD=true|false   (overwrite existing remote config files)
 
@@ -37,6 +47,9 @@ What it does:
       deploy/.env.prod
 
 Notes:
+  - If your server requires a sudo password, re-run with: SUDO_MODE=prompt
+  - If git clone fails on a private repo, prefer SSH + agent forwarding:
+      REPO_URL=git@github.com:... SSH_FORWARD_AGENT=true DEPLOY_HOST=... ./scripts/bootstrap-remote-server.sh
   - It does NOT run docker compose or deploy anything. Run ./scripts/deploy-remote.sh after.
   - deploy/.env is tracked in git and is NOT uploaded by this script (to keep server git state clean).
 EOF
@@ -51,6 +64,16 @@ if [[ -z "${DEPLOY_HOST}" ]]; then
   echo "DEPLOY_HOST is required."
   echo
   usage
+  exit 1
+fi
+
+if [[ "${SUDO_MODE}" != "auto" && "${SUDO_MODE}" != "prompt" ]]; then
+  echo "Invalid SUDO_MODE=${SUDO_MODE} (expected: auto|prompt)" >&2
+  exit 1
+fi
+
+if [[ "${SSH_FORWARD_AGENT}" != "true" && "${SSH_FORWARD_AGENT}" != "false" ]]; then
+  echo "Invalid SSH_FORWARD_AGENT=${SSH_FORWARD_AGENT} (expected: true|false)" >&2
   exit 1
 fi
 
@@ -75,9 +98,35 @@ ssh_ok() {
   ssh -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >/dev/null
 }
 
+ssh_cmd() {
+  if [[ "${SSH_FORWARD_AGENT}" == "true" ]]; then
+    ssh -A "$@"
+  else
+    ssh "$@"
+  fi
+}
+
+scp_cmd() {
+  if [[ "${SSH_FORWARD_AGENT}" == "true" ]]; then
+    scp -A "$@"
+  else
+    scp "$@"
+  fi
+}
+
+run_remote_setup() {
+  if [[ "${SUDO_MODE}" == "prompt" ]]; then
+    ssh_cmd -tt "${DEPLOY_HOST}" \
+      "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' REPO_URL='${REPO_URL}' SUDO_MODE='${SUDO_MODE}' bash -se"
+  else
+    ssh_cmd "${DEPLOY_HOST}" \
+      "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' REPO_URL='${REPO_URL}' SUDO_MODE='${SUDO_MODE}' bash -se"
+  fi
+}
+
 remote_file_exists() {
   local rel="$1"
-  ssh "${DEPLOY_HOST}" "test -f '${DEPLOY_DIR}/${rel}'"
+  ssh_cmd "${DEPLOY_HOST}" "test -f '${DEPLOY_DIR}/${rel}'"
 }
 
 upload_ignored_file() {
@@ -97,11 +146,11 @@ upload_ignored_file() {
     fi
   fi
 
-  ssh "${DEPLOY_HOST}" "mkdir -p \"$(dirname "${remote_path}")\""
-  scp -p "${local_path}" "${DEPLOY_HOST}:${remote_path}"
+  ssh_cmd "${DEPLOY_HOST}" "mkdir -p \"$(dirname "${remote_path}")\""
+  scp_cmd -p "${local_path}" "${DEPLOY_HOST}:${remote_path}"
 
   # Restrict env file permissions on the server (safe: docker compose reads them host-side).
-  ssh "${DEPLOY_HOST}" "chmod 600 '${remote_path}'"
+  ssh_cmd "${DEPLOY_HOST}" "chmod 600 '${remote_path}'"
   echo "✅ Uploaded: ${rel}"
 }
 
@@ -112,8 +161,7 @@ if ! ssh_ok; then
 fi
 
 log "🧱 Step 2/4: Install prerequisites + Docker on remote (Debian/Ubuntu)"
-ssh -tt "${DEPLOY_HOST}" \
-  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' REPO_URL='${REPO_URL}' bash -se" <<'REMOTE'
+run_remote_setup <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
@@ -124,7 +172,19 @@ if ! command -v sudo >/dev/null 2>&1; then
 fi
 
 step "2.1/6: Sudo auth"
-sudo -v
+if [[ "${SUDO_MODE:-auto}" == "prompt" ]]; then
+  sudo -v
+else
+  if ! sudo -n true 2>/dev/null; then
+    echo "sudo requires a password for ${USER}, but SUDO_MODE=auto avoids prompting." >&2
+    echo "Fix options:" >&2
+    echo "  - Re-run with: SUDO_MODE=prompt DEPLOY_HOST=... ./scripts/bootstrap-remote-server.sh" >&2
+    echo "  - Or configure passwordless sudo (NOPASSWD) for ${USER} on the server." >&2
+    echo "    Example (run as root):" >&2
+    echo "      echo '${USER} ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/${USER} && chmod 440 /etc/sudoers.d/${USER}" >&2
+    exit 1
+  fi
+fi
 
 step "2.2/6: Detect OS"
 if [[ ! -r /etc/os-release ]]; then
@@ -179,7 +239,7 @@ if ! id -nG "${USER}" | tr ' ' '\n' | grep -qx docker; then
   echo "Added ${USER} to docker group. New SSH sessions will pick this up."
 fi
 
-step "2.6/6: Create deploy dir + clone repo (or reuse existing clone)"
+step "2.6/7: Create deploy dir + clone repo (or reuse existing clone)"
 sudo mkdir -p "${DEPLOY_DIR}"
 sudo chown -R "${USER}:${USER}" "${DEPLOY_DIR}"
 
@@ -191,13 +251,38 @@ else
     echo "${DEPLOY_DIR} is not empty and not a git repo; refusing to clone into it." >&2
     exit 1
   fi
-  git clone "${REPO_URL}" .
+  if [[ "${REPO_URL}" =~ ^git@github\.com: || "${REPO_URL}" =~ ^ssh://git@github\.com/ ]]; then
+    mkdir -p "${HOME}/.ssh"
+    chmod 700 "${HOME}/.ssh"
+    touch "${HOME}/.ssh/known_hosts"
+    chmod 600 "${HOME}/.ssh/known_hosts"
+    if ! ssh-keygen -F github.com >/dev/null 2>&1; then
+      echo "Adding github.com host key to ${HOME}/.ssh/known_hosts"
+      if ! ssh-keyscan -H github.com >>"${HOME}/.ssh/known_hosts" 2>/dev/null; then
+        echo "Failed to fetch github.com host key via ssh-keyscan." >&2
+        exit 1
+      fi
+    fi
+  fi
+  export GIT_TERMINAL_PROMPT=0
+  if ! git clone "${REPO_URL}" .; then
+    echo "git clone failed for REPO_URL=${REPO_URL}" >&2
+    echo "If this is a private GitHub repo, prefer SSH + agent forwarding from your laptop:" >&2
+    echo "  REPO_URL=git@github.com:ORG/REPO.git SSH_FORWARD_AGENT=true DEPLOY_HOST=... ./scripts/bootstrap-remote-server.sh" >&2
+    echo "Or configure a deploy key / PAT for the server." >&2
+    exit 1
+  fi
 fi
 
 git fetch origin >/dev/null 2>&1 || true
 if git show-ref --verify --quiet "refs/remotes/origin/${DEPLOY_BRANCH}"; then
   git checkout -B "${DEPLOY_BRANCH}" "origin/${DEPLOY_BRANCH}"
 fi
+
+step "2.7/7: Prepare n8n data dir ownership for container user (uid 1000)"
+mkdir -p deploy/n8n-data
+sudo chown -R 1000:1000 deploy/n8n-data
+sudo chmod 700 deploy/n8n-data
 
 echo "Remote setup OK."
 python3 --version || true
@@ -215,7 +300,7 @@ else
 fi
 
 log "🔎 Step 4/4: Verify required files exist (names only)"
-ssh "${DEPLOY_HOST}" \
+ssh_cmd "${DEPLOY_HOST}" \
   "cd '${DEPLOY_DIR}' && for f in deploy/.env deploy/.env.api deploy/.env.miniapp deploy/.env.prod; do test -f \"\$f\" && echo \"✅ \$f\" || (echo \"❌ Missing \$f\" >&2; exit 1); done"
 
 log "✅ Bootstrap complete. Next:"
