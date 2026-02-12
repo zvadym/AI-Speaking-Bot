@@ -370,6 +370,7 @@
             maxlength="4096"
             placeholder="Write the message that will be sent to each selected user..."
           />
+          <small class="hint">HTML formatting is supported in broadcast messages.</small>
         </label>
       </div>
 

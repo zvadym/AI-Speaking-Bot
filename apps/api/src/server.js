@@ -1614,7 +1614,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
          u.chat_id,
          u.username,
          u.first_name,
-         u.bot_key,
+         ub.bot_key,
          u.created_at,
          u.last_seen_at,
          COALESCE(u.is_active, true) AS is_active,
@@ -1629,6 +1629,13 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
            ELSE 'free'
          END AS effective_tier
        FROM users u
+       LEFT JOIN LATERAL (
+         SELECT b.bot_key
+         FROM user_bots b
+         WHERE b.chat_id = u.chat_id
+         ORDER BY COALESCE(b.last_seen_at, b.updated_at, b.created_at) DESC, b.bot_key ASC
+         LIMIT 1
+       ) ub ON true
        WHERE u.created_at >= $1::timestamptz
          AND u.created_at < $2::timestamptz
          AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)
