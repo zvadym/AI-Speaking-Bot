@@ -1616,7 +1616,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
          u.first_name,
          ub.bot_key,
          u.created_at,
-         u.last_seen_at,
+         COALESCE(ub.last_seen_at, u.updated_at) AS last_seen_at,
          COALESCE(u.is_active, true) AS is_active,
          CASE
            WHEN u.override_plan_tier IS NOT NULL
