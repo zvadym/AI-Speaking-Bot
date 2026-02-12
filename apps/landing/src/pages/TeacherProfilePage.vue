@@ -2,10 +2,7 @@
   <section class="page">
     <div class="container">
       <div v-if="teacher" class="card profile">
-        <div class="avatar">
-          <span v-if="teacher.avatarEmoji" class="avatar-emoji" aria-hidden="true">{{ teacher.avatarEmoji }}</span>
-          <span v-else class="avatar-letter" aria-hidden="true">{{ letter }}</span>
-        </div>
+        <TeacherAvatar :teacher="teacher" :name="name" :size="88" />
 
         <div class="main">
           <h1 class="h2">{{ name }}</h1>
@@ -59,6 +56,7 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import TeacherAvatar from '../components/TeacherAvatar.vue';
 import { getTeacherBySlug, getTeacherName, getTeacherTagline } from '../data/teachers.js';
 import { getTeacherTelegramUrl } from '../lib/telegram.js';
 import { useI18n } from '../i18n.js';
@@ -81,7 +79,6 @@ const teachesLine = computed(() => {
   return parts.join(' • ');
 });
 
-const letter = computed(() => (name.value || '?').toString().trim().slice(0, 1).toUpperCase());
 const telegramUrl = computed(() => getTeacherTelegramUrl(teacher.value));
 </script>
 
@@ -92,31 +89,9 @@ const telegramUrl = computed(() => getTeacherTelegramUrl(teacher.value));
 
 .profile {
   display: grid;
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 88px 1fr;
   gap: 18px;
   align-items: start;
-}
-
-.avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
-
-.avatar-emoji {
-  font-size: 34px;
-  line-height: 1;
-}
-
-.avatar-letter {
-  font-family: Outfit, Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  font-weight: 900;
-  font-size: 22px;
 }
 
 .meta {
@@ -173,13 +148,6 @@ const telegramUrl = computed(() => getTeacherTelegramUrl(teacher.value));
 @media (min-width: 860px) {
   .profile {
     grid-template-columns: 96px 1fr;
-  }
-  .avatar {
-    width: 96px;
-    height: 96px;
-  }
-  .avatar-letter {
-    font-size: 28px;
   }
 }
 </style>

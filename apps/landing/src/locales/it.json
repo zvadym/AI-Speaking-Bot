@@ -1,10 +1,14 @@
 {
   "nav": {
     "home": "Home",
-    "teachers": "Insegnanti"
+    "teachers": "Insegnanti",
+    "pricing": "Prezzi",
+    "blog": "Blog",
+    "about": "Chi siamo",
+    "contact": "Contatti"
   },
   "cta": {
-    "start": "Inizia su Telegram",
+    "start": "Vedi insegnanti",
     "openTelegram": "Apri su Telegram",
     "viewProfile": "Profilo",
     "allTeachers": "Tutti gli insegnanti",
@@ -13,14 +17,21 @@
   "home": {
     "badge": "Pratica la lingua con la voce",
     "headline": "Impara parlando.",
-    "subhead": "Scegli un insegnante, invia messaggi vocali e ricevi correzioni e frasi migliori — ogni giorno.",
+    "subhead": "Trova un insegnante, invia messaggi vocali e ricevi correzioni e frasi migliori — ogni giorno.",
     "meetTeachers": "Scopri gli insegnanti",
-    "screenshotPlaceholder": "Segnaposto screenshot",
+    "chat": {
+      "you": "Tu",
+      "bot": "Bot insegnante",
+      "tip": "Correzione",
+      "youMsg": "Vorrei parlare inglese con più sicurezza, ma non so bene di cosa parlare.",
+      "botMsg": "Perfetto — raccontami la tua giornata in 5 frasi. Ti aiuto a suonare più naturale.",
+      "tipMsg": "Prova: “Vorrei praticare ogni giorno — anche 10 minuti fanno la differenza.”"
+    },
     "teachersTitle": "Insegnanti",
     "teachersDesc": "Ogni insegnante ha il proprio stile, le lingue e un focus diverso.",
     "howTitle": "Come funziona",
     "steps": {
-      "oneTitle": "Scegli un insegnante",
+      "oneTitle": "Trova un insegnante",
       "oneDesc": "Trova l’insegnante giusto per livello e stile.",
       "twoTitle": "Invia un messaggio vocale",
       "twoDesc": "Parla in modo naturale — riceverai una versione corretta e più naturale.",
@@ -28,9 +39,64 @@
       "threeDesc": "Crea una vera abitudine di speaking con feedback costante."
     }
   },
+  "pricing": {
+    "title": "Prezzi",
+    "subhead": "Inizia gratis. Passa a un piano quando vuoi più tempo di pratica.",
+    "perMonth": "mese",
+    "freePrice": "Gratis",
+    "yearlySoon": "Piano annuale: in arrivo.",
+    "ctaTry": "Prova gratis",
+    "ctaChooseTeacher": "Vedi insegnanti",
+    "tiers": {
+      "free": {
+        "name": "Free",
+        "desc": "Prova il formato e capisci se fa per te.",
+        "features": "20 messaggi||Voce o testo||Correzioni istantanee"
+      },
+      "plus": {
+        "name": "Plus",
+        "desc": "Un ritmo costante di pratica.",
+        "features": "Tempo di pratica limitato/mese||Voce o testo||Correzioni + frasi migliori"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "Per un progresso serio.",
+        "features": "10× più tempo di pratica di Plus||Voce o testo||Più ripetizioni, abitudine più forte"
+      }
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "subhead": "Letture brevi e pratiche su speaking, abitudini e blocco linguistico.",
+    "read": "Leggi",
+    "backToBlog": "Torna al blog",
+    "readingMinutes": "{n} min"
+  },
+  "about": {
+    "title": "Chi siamo",
+    "p1": "Abbiamo creato AI Language School perché volevamo un modo più semplice per fare speaking — senza orari, chiamate imbarazzanti o paura del giudizio.",
+    "p2": "Telegram è sempre con te. Un bot‑insegnante è sempre pronto. E pochi minuti di pratica reale ogni giorno battono il piano perfetto che non inizi mai.",
+    "bullets": {
+      "one": "Pratica in un formato di chat familiare",
+      "two": "Correzioni gentili e frasi più naturali",
+      "three": "Un’abitudine quotidiana di speaking"
+    }
+  },
+  "contact": {
+    "title": "Contatti",
+    "subhead": "Domande o feedback? Scrivici — leggiamo tutto.",
+    "name": "Nome",
+    "telegram": "Telegram",
+    "message": "Messaggio",
+    "send": "Invia",
+    "sending": "Invio…",
+    "sent": "Inviato. Grazie!",
+    "error": "Invio non riuscito. Riprova più tardi.",
+    "unavailable": "Contatto temporaneamente non disponibile."
+  },
   "teachers": {
-    "title": "Conosci gli insegnanti",
-    "subhead": "Scegli un insegnante e inizia la prossima lezione su Telegram."
+    "title": "Insegnanti",
+    "subhead": "Vedi gli insegnanti e inizia la prossima lezione su Telegram."
   },
   "teacher": {
     "teachesPrefix": "Insegna",
@@ -58,4 +124,3 @@
     "fr": "Francese"
   }
 }
-

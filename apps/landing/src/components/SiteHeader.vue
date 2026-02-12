@@ -4,7 +4,52 @@
       <RouterLink class="brand" to="/">AI Language School</RouterLink>
 
       <nav class="nav">
-        <RouterLink class="nav-link" to="/teachers">{{ t('nav.teachers') }}</RouterLink>
+        <RouterLink
+          class="nav-link"
+          to="/teachers"
+          :class="{ active: isTeachersActive }"
+          active-class=""
+          exact-active-class=""
+        >
+          {{ t('nav.teachers') }}
+        </RouterLink>
+
+        <RouterLink
+          class="nav-link"
+          to="/#pricing"
+          :class="{ active: activeSection === 'pricing' }"
+          active-class=""
+          exact-active-class=""
+        >
+          {{ t('nav.pricing') }}
+        </RouterLink>
+        <RouterLink
+          class="nav-link"
+          to="/#blog"
+          :class="{ active: activeSection === 'blog' }"
+          active-class=""
+          exact-active-class=""
+        >
+          {{ t('nav.blog') }}
+        </RouterLink>
+        <RouterLink
+          class="nav-link"
+          to="/#about"
+          :class="{ active: activeSection === 'about' }"
+          active-class=""
+          exact-active-class=""
+        >
+          {{ t('nav.about') }}
+        </RouterLink>
+        <RouterLink
+          class="nav-link"
+          to="/#contact"
+          :class="{ active: activeSection === 'contact' }"
+          active-class=""
+          exact-active-class=""
+        >
+          {{ t('nav.contact') }}
+        </RouterLink>
 
         <div class="locale" :aria-label="t('language.label')">
           <button
@@ -18,19 +63,75 @@
             {{ opt.label }}
           </button>
         </div>
-
-        <RouterLink class="btn primary" to="/teachers">{{ t('cta.start') }}</RouterLink>
       </nav>
     </div>
   </header>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useI18n, supportedLocales } from '../i18n.js';
 
 const { t, locale, setAppLocale } = useI18n();
+const route = useRoute();
+
+const SECTION_IDS = ['pricing', 'blog', 'about', 'contact'];
+const activeSection = ref('');
+let observer = null;
+
+const isTeachersActive = computed(() => route.name === 'teachers' || route.name === 'teacher');
+
+function normalizeHash(hash) {
+  const raw = (hash || '').toString().trim();
+  if (!raw.startsWith('#')) return '';
+  const id = raw.slice(1);
+  return SECTION_IDS.includes(id) ? id : '';
+}
+
+function setActiveFromRouteHash() {
+  if (route.name !== 'home') {
+    activeSection.value = '';
+    return;
+  }
+  const id = normalizeHash(route.hash);
+  if (id) activeSection.value = id;
+}
+
+function teardownObserver() {
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+}
+
+function setupObserver() {
+  teardownObserver();
+  if (route.name !== 'home') return;
+  if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') return;
+
+  const targets = SECTION_IDS.map((id) => document.getElementById(id)).filter(Boolean);
+  if (!targets.length) return;
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((e) => e.isIntersecting)
+        .sort((a, b) => Math.abs(a.boundingClientRect.top - 120) - Math.abs(b.boundingClientRect.top - 120));
+      if (!visible.length) return;
+      const id = visible[0]?.target?.id || '';
+      if (SECTION_IDS.includes(id)) activeSection.value = id;
+    },
+    {
+      root: null,
+      threshold: [0.15, 0.25, 0.5],
+      rootMargin: '-20% 0px -65% 0px'
+    }
+  );
+
+  for (const el of targets) observer.observe(el);
+}
 
 const localeOptions = computed(() => {
   return supportedLocales.map((value) => ({
@@ -38,6 +139,26 @@ const localeOptions = computed(() => {
     label: value.toUpperCase()
   }));
 });
+
+onMounted(() => {
+  setActiveFromRouteHash();
+  setupObserver();
+});
+
+watch(
+  () => route.name,
+  () => {
+    setActiveFromRouteHash();
+    setupObserver();
+  }
+);
+
+watch(
+  () => route.hash,
+  () => setActiveFromRouteHash()
+);
+
+onBeforeUnmount(() => teardownObserver());
 </script>
 
 <style scoped>
@@ -68,6 +189,8 @@ const localeOptions = computed(() => {
   display: flex;
   align-items: center;
   gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .nav-link {
@@ -75,7 +198,7 @@ const localeOptions = computed(() => {
   text-decoration: none;
 }
 
-.nav-link.router-link-active {
+.nav-link.active {
   text-decoration: underline;
   text-underline-offset: 4px;
 }
@@ -102,5 +225,6 @@ const localeOptions = computed(() => {
 .locale-btn[aria-pressed='true'] {
   background: var(--fg);
   color: var(--bg);
+  box-shadow: var(--shadow);
 }
 </style>

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,8 +10,10 @@ const botsDir = path.resolve(repoRoot, 'deploy/bots');
 const outputDir = path.resolve(repoRoot, 'apps/landing/src/generated');
 const outputFile = path.resolve(outputDir, 'teachers.js');
 const sitemapFile = path.resolve(repoRoot, 'apps/landing/public/sitemap.xml');
+const teacherAvatarsDir = path.resolve(repoRoot, 'apps/landing/public/teachers');
 
 const SITE_ORIGIN = 'https://ai-language-school.online';
+const AVATAR_EXTS = ['avif', 'webp', 'png', 'jpg', 'jpeg', 'svg'];
 
 function isSupportedLocale(value) {
   return value === 'en' || value === 'uk' || value === 'it';
@@ -44,6 +46,17 @@ function extractEnglishName(config) {
   return safeString(rest.slice(0, stopIdx));
 }
 
+function detectAvatarImage(botKey) {
+  const key = safeString(botKey);
+  if (!key) return '';
+  for (const ext of AVATAR_EXTS) {
+    const filename = `${key}.${ext}`;
+    const fullPath = path.resolve(teacherAvatarsDir, filename);
+    if (fs.existsSync(fullPath)) return `/teachers/${filename}`;
+  }
+  return '';
+}
+
 function buildTeacher(config, filename) {
   const botKey = safeString(config.bot_key) || safeString(config.bot_key ?? '') || filename;
   const slug = botKey || filename;
@@ -68,6 +81,7 @@ function buildTeacher(config, filename) {
     baseLanguage,
     learningLanguage,
     avatarEmoji: safeString(config.teacher_avatar_emoji),
+    avatarImage: detectAvatarImage(botKey),
     displayName: {
       uk: nameUk || nameFallback,
       en: nameEn || nameFallback,
@@ -134,11 +148,12 @@ function xmlEscape(value) {
     .replaceAll("'", '&apos;');
 }
 
-function writeSitemap(teachers) {
+function writeSitemap(teachers, blogPosts) {
   const urls = [
     `${SITE_ORIGIN}/`,
     `${SITE_ORIGIN}/teachers`,
-    ...teachers.map((t) => `${SITE_ORIGIN}/teachers/${encodeURIComponent(t.slug)}`)
+    ...teachers.map((t) => `${SITE_ORIGIN}/teachers/${encodeURIComponent(t.slug)}`),
+    ...(Array.isArray(blogPosts) ? blogPosts : []).map((p) => `${SITE_ORIGIN}/blog/${encodeURIComponent(p.slug)}`)
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
@@ -147,6 +162,19 @@ function writeSitemap(teachers) {
 
   fs.writeFileSync(sitemapFile, xml, 'utf8');
 }
+
+async function readBlogPosts() {
+  try {
+    const moduleUrl = pathToFileURL(path.resolve(repoRoot, 'apps/landing/src/data/blogPosts.js')).href;
+    const mod = await import(moduleUrl);
+    const posts = Array.isArray(mod.blogPosts) ? mod.blogPosts : [];
+    return posts.filter((p) => safeString(p?.slug));
+  } catch {
+    return [];
+  }
+}
+
+const blogPosts = await readBlogPosts();
 
 const teachers = readBots()
   .filter((t) => safeString(t.slug))
@@ -159,6 +187,6 @@ if (!teachers.length) {
 }
 
 writeTeachersModule(teachers);
-writeSitemap(teachers);
+writeSitemap(teachers, blogPosts);
 
 console.log(`Generated ${teachers.length} teacher(s) -> ${path.relative(repoRoot, outputFile)}`);

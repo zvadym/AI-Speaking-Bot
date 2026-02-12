@@ -1,10 +1,14 @@
 {
   "nav": {
     "home": "Home",
-    "teachers": "Teachers"
+    "teachers": "Teachers",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "about": "About",
+    "contact": "Contact"
   },
   "cta": {
-    "start": "Start in Telegram",
+    "start": "Browse teachers",
     "openTelegram": "Open in Telegram",
     "viewProfile": "View profile",
     "allTeachers": "All teachers",
@@ -13,24 +17,86 @@
   "home": {
     "badge": "Voice-first language practice",
     "headline": "Learn by speaking.",
-    "subhead": "Choose a teacher, send voice messages, get instant corrections and better phrasing — every day.",
-    "meetTeachers": "Meet the teachers",
-    "screenshotPlaceholder": "Screenshot placeholder",
+    "subhead": "Pick a teacher, send voice messages, get instant corrections and better phrasing — every day.",
+    "meetTeachers": "See teachers",
+    "chat": {
+      "you": "You",
+      "bot": "Teacher bot",
+      "tip": "Fix",
+      "youMsg": "I want to speak English more confidently, but I’m not sure what to say.",
+      "botMsg": "Great — tell me about your day in 5 sentences. I’ll help you sound more natural.",
+      "tipMsg": "Try: “I’d like to practice speaking every day — even 10 minutes helps.”"
+    },
     "teachersTitle": "Teachers",
     "teachersDesc": "Every teacher has their own style, languages, and focus.",
     "howTitle": "How it works",
     "steps": {
       "oneTitle": "Pick a teacher",
-      "oneDesc": "Choose a teacher that matches your level and vibe.",
+      "oneDesc": "Pick a teacher that matches your level and vibe.",
       "twoTitle": "Send a voice message",
       "twoDesc": "Speak naturally — you’ll get a better, corrected version.",
       "threeTitle": "Improve daily",
       "threeDesc": "Build a real speaking habit with consistent feedback."
     }
   },
+  "pricing": {
+    "title": "Pricing",
+    "subhead": "Start free. Upgrade when you want more practice time.",
+    "perMonth": "month",
+    "freePrice": "Free",
+    "yearlySoon": "Yearly plan: coming soon.",
+    "ctaTry": "Try free",
+    "ctaChooseTeacher": "Browse teachers",
+    "tiers": {
+      "free": {
+        "name": "Free",
+        "desc": "Try the format and see how it feels.",
+        "features": "20 messages||Voice or text||Instant corrections"
+      },
+      "plus": {
+        "name": "Plus",
+        "desc": "A steady practice rhythm.",
+        "features": "Limited practice time/month||Voice or text||Corrections + better phrasing"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "For serious progress.",
+        "features": "10× more practice time than Plus||Voice or text||More reps, faster habit"
+      }
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "subhead": "Short, practical reads about speaking practice and breaking the language barrier.",
+    "read": "Read",
+    "backToBlog": "Back to blog",
+    "readingMinutes": "{n} min read"
+  },
+  "about": {
+    "title": "About",
+    "p1": "We built AI Language School because we wanted a simpler way to practice speaking — without schedules, awkward calls, or the fear of being judged.",
+    "p2": "Telegram is always with you. A teacher-style bot is always ready. And a few minutes of real practice every day beats the perfect plan you never start.",
+    "bullets": {
+      "one": "Practice in a familiar chat format",
+      "two": "Get gentle corrections and better phrasing",
+      "three": "Build a daily speaking habit"
+    }
+  },
+  "contact": {
+    "title": "Contact",
+    "subhead": "Have a question or feedback? Send a message — we read everything.",
+    "name": "Name",
+    "telegram": "Telegram",
+    "message": "Message",
+    "send": "Send",
+    "sending": "Sending…",
+    "sent": "Sent. Thank you!",
+    "error": "Could not send. Try again later.",
+    "unavailable": "Contact is temporarily unavailable."
+  },
   "teachers": {
-    "title": "Meet the teachers",
-    "subhead": "Pick a teacher and start your next lesson on Telegram."
+    "title": "Teachers",
+    "subhead": "Browse teachers and start your next lesson on Telegram."
   },
   "teacher": {
     "teachesPrefix": "Teaches",
@@ -58,4 +124,3 @@
     "fr": "French"
   }
 }
-

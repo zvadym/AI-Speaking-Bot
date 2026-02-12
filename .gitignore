@@ -12,6 +12,7 @@ deploy/.env.miniapp
 deploy/.env.prod
 deploy/.env.dev
 deploy/bots-dev/*.json
+deploy/n8n-data
 deploy/workflows/.rendered
 deploy/workflows/.prod-export
 deploy/workflows/to_convert

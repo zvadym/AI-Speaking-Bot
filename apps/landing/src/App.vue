@@ -14,6 +14,7 @@ import { useRoute } from 'vue-router';
 import SiteHeader from './components/SiteHeader.vue';
 import SiteFooter from './components/SiteFooter.vue';
 import { getTeacherBySlug, getTeacherName } from './data/teachers.js';
+import { getBlogPostBySlug } from './data/blogPosts.js';
 import { locale, syncLocaleForTeacherRoute, t } from './i18n.js';
 
 const route = useRoute();
@@ -35,6 +36,15 @@ function syncDocumentTitle() {
     const teacher = getTeacherBySlug(slug);
     const name = getTeacherName(teacher, locale.value) || t('nav.teachers');
     document.title = `${name} — ${base}`;
+    return;
+  }
+
+  if (route.name === 'blog-post') {
+    const slug = (route.params?.slug || '').toString();
+    const post = getBlogPostBySlug(slug);
+    const map = post?.title || {};
+    const title = (map[locale.value] || map.en || map.uk || map.it || post?.slug || t('nav.blog')).toString();
+    document.title = `${title} — ${base}`;
     return;
   }
 

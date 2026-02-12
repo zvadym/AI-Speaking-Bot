@@ -8,6 +8,7 @@ export const teachers = [
     "baseLanguage": "uk",
     "learningLanguage": "de",
     "avatarEmoji": "👩‍🏫",
+    "avatarImage": "",
     "displayName": {
       "uk": "Леся",
       "en": "Lesia",
@@ -31,6 +32,7 @@ export const teachers = [
     "baseLanguage": "uk",
     "learningLanguage": "en",
     "avatarEmoji": "👨‍🏫",
+    "avatarImage": "",
     "displayName": {
       "uk": "Джекі",
       "en": "Jackie",

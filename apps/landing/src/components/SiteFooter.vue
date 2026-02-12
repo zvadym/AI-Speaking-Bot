@@ -8,7 +8,10 @@
 
       <div class="links">
         <RouterLink to="/teachers">{{ t('nav.teachers') }}</RouterLink>
-        <a href="https://vercel.com" target="_blank" rel="noreferrer">Hosting</a>
+        <RouterLink to="/#pricing">{{ t('nav.pricing') }}</RouterLink>
+        <RouterLink to="/#blog">{{ t('nav.blog') }}</RouterLink>
+        <RouterLink to="/#about">{{ t('nav.about') }}</RouterLink>
+        <RouterLink to="/#contact">{{ t('nav.contact') }}</RouterLink>
       </div>
     </div>
 

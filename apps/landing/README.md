@@ -4,6 +4,12 @@ Static marketing site for `ai-language-school.online`.
 
 Teacher pages are generated from `deploy/bots/*.json` at build time (secrets are not included in the public bundle).
 
+## Env vars
+
+Optional (for Contact form):
+
+- `VITE_CONTACT_WEBHOOK_URL` — n8n webhook URL that receives contact form submissions.
+
 ## Local dev
 
 ```bash

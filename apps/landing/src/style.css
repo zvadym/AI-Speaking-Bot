@@ -31,6 +31,10 @@ body {
   text-rendering: geometricPrecision;
 }
 
+section[id] {
+  scroll-margin-top: 96px;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -146,4 +150,3 @@ a:hover {
     grid-template-columns: repeat(3, 1fr);
   }
 }
-
