@@ -42,7 +42,9 @@ N8N_CRED_POSTGRES_ID=<from n8n UI>
 # or: ./scripts/dev-migrate.sh up
 ```
 
-**Other:** `./scripts/dev-migrate.sh status` | `down` | `new <name>` | `help`
+`./scripts/dev-migrate.sh up` now also refreshes `db/schema.sql`.
+
+**Other:** `./scripts/dev-migrate.sh status` | `down` | `new <name>` | `schema-update` | `schema-check` | `help`
 
 ---
 
@@ -116,6 +118,8 @@ Details: `deploy/bots-dev/README.md`.
 |------|--------|
 | Migrations up | `./scripts/dev-migrate.sh` |
 | Migrations status | `./scripts/dev-migrate.sh status` |
+| Refresh schema snapshot | `./scripts/dev-migrate.sh schema-update` |
+| Verify schema snapshot | `./scripts/dev-migrate.sh schema-check` |
 | API | `./scripts/dev-api.sh` |
 | Miniapp | `./scripts/dev-miniapp.sh` |
 | n8n workflows (render + import + activate) | `./scripts/dev-n8n-full.sh` |
@@ -131,3 +135,4 @@ Details: `deploy/bots-dev/README.md`.
 - **“Invalid bot config (missing telegram_credential_id)”** – Edit `deploy/bots-dev/*.json` and set `telegram_credential_id` to the ID from the n8n credentials page.
 - **Import/activate fails** – Check n8n container is running; use `N8N_CONTAINER=...` if the container name is not `n8n`.
 - **Migrations** – `./scripts/dev-migrate.sh` reads `DATABASE_URL` from `deploy/.env.api`; ensure that file exists and is correct.
+- **Schema check fails** – Run `./scripts/dev-migrate.sh schema-update` and commit `db/schema.sql`.

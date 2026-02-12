@@ -1,0 +1,27 @@
+name: DB Schema Sync
+
+on:
+  pull_request:
+    paths:
+      - "db/migrations/**"
+      - "db/schema.sql"
+      - "scripts/db-schema.sh"
+      - ".github/workflows/db-schema-sync.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "db/migrations/**"
+      - "db/schema.sql"
+      - "scripts/db-schema.sh"
+      - ".github/workflows/db-schema-sync.yml"
+
+jobs:
+  check-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify db/schema.sql matches migrations
+        run: ./scripts/db-schema.sh check

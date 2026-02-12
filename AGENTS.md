@@ -12,6 +12,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - `apps/api`: Node.js (Express, ESM) API for Telegram auth, Stripe billing, and DB access.
 - `apps/miniapp`: Vue 3 + Vite SPA used inside Telegram Mini App.
 - `db/migrations`: Forward-only SQL migrations (dbmate).
+- `db/schema.sql`: Canonical Postgres schema snapshot generated from migrations.
 - `deploy`: Docker Compose stack, Caddy config, deploy/migrate scripts, n8n workflows.
 - `scripts`: Local dev helpers and n8n workflow render/activation scripts.
 
@@ -38,6 +39,10 @@ This file orients automated agents working in this repo. Keep it accurate as the
 ## DB / Migrations
 - Run migrations via `deploy/migrate.sh` (uses `ghcr.io/amacneil/dbmate:2.12`).
 - Migrations live in `db/migrations` and should be forward-only.
+- `db/schema.sql` must stay in sync with migrations:
+  - Update: `./scripts/db-schema.sh update` (or `./scripts/dev-migrate.sh up`, which refreshes it automatically).
+  - Verify: `./scripts/db-schema.sh check` (also enforced in CI for migration-related changes).
+- Every migration PR must include the corresponding `db/schema.sql` update.
 
 ## Deployment
 - `deploy/deploy.sh` runs migrations and `docker compose` for API + mini-app + Caddy + n8n.

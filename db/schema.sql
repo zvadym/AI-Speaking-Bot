@@ -1,0 +1,965 @@
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: user_bots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_bots (
+    chat_id bigint NOT NULL,
+    bot_key text NOT NULL,
+    level text DEFAULT 'a1'::text NOT NULL,
+    reply_mode text DEFAULT 'text'::text NOT NULL,
+    tts_voice text DEFAULT 'marin'::text NOT NULL,
+    onboarding_state text DEFAULT 'ready'::text NOT NULL,
+    first_seen_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_seen_at timestamp with time zone DEFAULT now() NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    text_voice_nudge_sent boolean DEFAULT false NOT NULL,
+    CONSTRAINT user_bots_level_check CHECK ((level = ANY (ARRAY['a1'::text, 'a2'::text, 'b1'::text, 'b2'::text, 'c1'::text]))),
+    CONSTRAINT user_bots_reply_mode_check CHECK ((reply_mode = ANY (ARRAY['text'::text, 'voice'::text])))
+);
+
+
+--
+-- Name: voice_usage_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.voice_usage_events (
+    id bigint NOT NULL,
+    chat_id bigint NOT NULL,
+    direction text NOT NULL,
+    seconds integer NOT NULL,
+    source text NOT NULL,
+    occurred_at timestamp with time zone DEFAULT now() NOT NULL,
+    message_id bigint,
+    bot_key text DEFAULT 'uk-de'::text NOT NULL,
+    CONSTRAINT voice_usage_events_direction_check CHECK ((direction = ANY (ARRAY['in'::text, 'out'::text]))),
+    CONSTRAINT voice_usage_events_seconds_check CHECK ((seconds >= 0)),
+    CONSTRAINT voice_usage_events_source_check CHECK ((source = ANY (ARRAY['telegram_voice_duration'::text, 'tts_estimate'::text, 'tts_actual'::text])))
+);
+
+
+--
+-- Name: bot_dau; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.bot_dau AS
+ SELECT ub.bot_key,
+    (date_trunc('day'::text, (v.occurred_at AT TIME ZONE 'UTC'::text)))::date AS day,
+    count(DISTINCT v.chat_id) AS dau
+   FROM (public.voice_usage_events v
+     JOIN public.user_bots ub ON (((ub.chat_id = v.chat_id) AND (ub.bot_key = v.bot_key))))
+  WHERE (v.occurred_at >= (now() - '90 days'::interval))
+  GROUP BY ub.bot_key, ((date_trunc('day'::text, (v.occurred_at AT TIME ZONE 'UTC'::text)))::date)
+  ORDER BY ub.bot_key, ((date_trunc('day'::text, (v.occurred_at AT TIME ZONE 'UTC'::text)))::date) DESC;
+
+
+--
+-- Name: VIEW bot_dau; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.bot_dau IS 'Daily Active Users per bot (last 90 days)';
+
+
+--
+-- Name: bot_stats; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.bot_stats AS
+ SELECT bot_key,
+    count(DISTINCT chat_id) AS total_users,
+    count(DISTINCT chat_id) FILTER (WHERE is_active) AS active_users,
+    count(DISTINCT chat_id) FILTER (WHERE (last_seen_at >= (now() - '7 days'::interval))) AS users_last_7_days,
+    count(DISTINCT chat_id) FILTER (WHERE (last_seen_at >= (now() - '30 days'::interval))) AS users_last_30_days,
+    count(DISTINCT chat_id) FILTER (WHERE (created_at >= (now() - '7 days'::interval))) AS new_users_7_days,
+    count(DISTINCT chat_id) FILTER (WHERE (created_at >= (now() - '30 days'::interval))) AS new_users_30_days,
+    min(first_seen_at) AS first_user_at,
+    max(last_seen_at) AS last_activity_at
+   FROM public.user_bots ub
+  GROUP BY bot_key;
+
+
+--
+-- Name: VIEW bot_stats; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.bot_stats IS 'Real-time statistics per bot: user counts, activity, and growth metrics';
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    chat_id bigint NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    username text,
+    first_name text,
+    plan_tier text DEFAULT 'free'::text NOT NULL,
+    plan_started_at timestamp with time zone,
+    plan_expires_at timestamp with time zone,
+    plan_autorenew boolean DEFAULT false NOT NULL,
+    pending_plan_tier text,
+    pending_plan_effective_at timestamp with time zone,
+    override_plan_tier text,
+    override_expires_at timestamp with time zone,
+    stripe_customer_id text,
+    stripe_subscription_id text,
+    stripe_price_id text,
+    stripe_subscription_status text,
+    billing_currency text DEFAULT 'EUR'::text NOT NULL,
+    acquisition_start_payload text,
+    acquisition_start_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    plan_started_tier text,
+    is_active boolean DEFAULT true NOT NULL,
+    inactive_reason text,
+    inactive_at timestamp with time zone,
+    last_delivery_error text,
+    CONSTRAINT users_inactive_reason_check CHECK (((inactive_reason IS NULL) OR (inactive_reason = ANY (ARRAY['blocked'::text, 'deactivated'::text, 'chat_not_found'::text, 'forbidden'::text]))))
+);
+
+
+--
+-- Name: bot_stats_by_tier; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.bot_stats_by_tier AS
+ SELECT ub.bot_key,
+        CASE
+            WHEN ((u.override_plan_tier IS NOT NULL) AND (u.override_expires_at IS NOT NULL) AND (now() < u.override_expires_at)) THEN u.override_plan_tier
+            WHEN ((u.plan_expires_at IS NOT NULL) AND (now() < u.plan_expires_at)) THEN u.plan_tier
+            ELSE 'free'::text
+        END AS effective_tier,
+    count(DISTINCT ub.chat_id) AS user_count,
+    count(DISTINCT ub.chat_id) FILTER (WHERE ub.is_active) AS active_user_count
+   FROM (public.user_bots ub
+     JOIN public.users u ON ((u.chat_id = ub.chat_id)))
+  GROUP BY ub.bot_key,
+        CASE
+            WHEN ((u.override_plan_tier IS NOT NULL) AND (u.override_expires_at IS NOT NULL) AND (now() < u.override_expires_at)) THEN u.override_plan_tier
+            WHEN ((u.plan_expires_at IS NOT NULL) AND (now() < u.plan_expires_at)) THEN u.plan_tier
+            ELSE 'free'::text
+        END;
+
+
+--
+-- Name: VIEW bot_stats_by_tier; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.bot_stats_by_tier IS 'User distribution by bot and subscription tier';
+
+
+--
+-- Name: broadcast_campaigns; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.broadcast_campaigns (
+    id bigint NOT NULL,
+    status text DEFAULT 'queued'::text NOT NULL,
+    filters jsonb DEFAULT '{}'::jsonb NOT NULL,
+    message_text text NOT NULL,
+    total_recipients integer DEFAULT 0 NOT NULL,
+    sent_count integer DEFAULT 0 NOT NULL,
+    failed_count integer DEFAULT 0 NOT NULL,
+    created_by text,
+    error_text text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    CONSTRAINT broadcast_campaigns_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'sending'::text, 'completed'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: broadcast_campaigns_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.broadcast_campaigns ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.broadcast_campaigns_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: broadcast_recipients; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.broadcast_recipients (
+    campaign_id bigint NOT NULL,
+    chat_id bigint NOT NULL,
+    username text,
+    first_name text,
+    status text DEFAULT 'pending'::text NOT NULL,
+    attempts integer DEFAULT 0 NOT NULL,
+    last_error text,
+    sent_at timestamp with time zone,
+    telegram_message_id bigint,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    bot_key text NOT NULL,
+    CONSTRAINT broadcast_recipients_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'sent'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: feedback; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.feedback (
+    id bigint NOT NULL,
+    chat_id bigint NOT NULL,
+    username text,
+    first_name text,
+    message_id integer,
+    kind text NOT NULL,
+    feedback_text text,
+    transcript text,
+    telegram_file_id text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    bot_key text NOT NULL,
+    CONSTRAINT feedback_kind_check CHECK ((kind = ANY (ARRAY['text'::text, 'voice'::text])))
+);
+
+
+--
+-- Name: feedback_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.feedback ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.feedback_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: loader_flags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.loader_flags (
+    chat_id bigint NOT NULL,
+    stop_flag boolean DEFAULT false NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    bot_key text NOT NULL
+);
+
+
+--
+-- Name: messages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.messages (
+    id bigint NOT NULL,
+    chat_id bigint NOT NULL,
+    role text NOT NULL,
+    content text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    translation_base text DEFAULT ''::text NOT NULL,
+    follow_up_hints text DEFAULT '[]'::text NOT NULL,
+    bot_key text DEFAULT 'uk-de'::text NOT NULL,
+    CONSTRAINT messages_role_check CHECK ((role = ANY (ARRAY['user'::text, 'assistant'::text])))
+);
+
+
+--
+-- Name: messages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.messages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.messages_id_seq OWNED BY public.messages.id;
+
+
+--
+-- Name: payments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.payments (
+    id bigint NOT NULL,
+    chat_id bigint NOT NULL,
+    tier text,
+    provider text DEFAULT 'stripe'::text NOT NULL,
+    amount_cents integer,
+    currency text,
+    status text,
+    stripe_event_id text,
+    stripe_customer_id text,
+    stripe_subscription_id text,
+    stripe_invoice_id text,
+    stripe_checkout_session_id text,
+    stripe_payment_intent_id text,
+    stripe_price_id text,
+    raw jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: payments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.payments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: payments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.payments_id_seq OWNED BY public.payments.id;
+
+
+--
+-- Name: pending_feedback; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pending_feedback (
+    chat_id bigint NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    bot_key text NOT NULL
+);
+
+
+--
+-- Name: plan_prices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.plan_prices (
+    id bigint NOT NULL,
+    tier text NOT NULL,
+    currency text NOT NULL,
+    amount_cents integer NOT NULL,
+    billing_interval text DEFAULT 'month'::text NOT NULL,
+    stripe_price_id text NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT plan_prices_currency_check CHECK ((char_length(currency) = 3)),
+    CONSTRAINT plan_prices_interval_check CHECK ((billing_interval = ANY (ARRAY['month'::text, 'year'::text])))
+);
+
+
+--
+-- Name: plan_prices_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.plan_prices ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.plan_prices_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: plans; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.plans (
+    tier text NOT NULL,
+    user_audio_seconds_per_week integer NOT NULL,
+    tts_seconds_per_week integer NOT NULL
+);
+
+
+--
+-- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.schema_migrations (
+    version character varying(128) NOT NULL
+);
+
+
+--
+-- Name: usage_hourly; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.usage_hourly (
+    chat_id bigint NOT NULL,
+    hour_start timestamp with time zone NOT NULL,
+    in_voice_seconds integer DEFAULT 0 NOT NULL,
+    out_voice_seconds integer DEFAULT 0 NOT NULL,
+    in_events integer DEFAULT 0 NOT NULL,
+    out_events integer DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    bot_key text DEFAULT 'uk-de'::text NOT NULL
+);
+
+
+--
+-- Name: usage_week; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.usage_week (
+    chat_id bigint NOT NULL,
+    week_start date NOT NULL,
+    user_audio_seconds integer DEFAULT 0 NOT NULL,
+    tts_seconds integer DEFAULT 0 NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    bot_key text DEFAULT 'uk-de'::text NOT NULL
+);
+
+
+--
+-- Name: user_summaries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_summaries (
+    chat_id bigint NOT NULL,
+    bot_key text NOT NULL,
+    summary text DEFAULT ''::text NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: voice_usage_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.voice_usage_events ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.voice_usage_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: messages id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages ALTER COLUMN id SET DEFAULT nextval('public.messages_id_seq'::regclass);
+
+
+--
+-- Name: payments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payments ALTER COLUMN id SET DEFAULT nextval('public.payments_id_seq'::regclass);
+
+
+--
+-- Name: broadcast_campaigns broadcast_campaigns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_campaigns
+    ADD CONSTRAINT broadcast_campaigns_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: broadcast_recipients broadcast_recipients_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_recipients
+    ADD CONSTRAINT broadcast_recipients_pkey PRIMARY KEY (campaign_id, chat_id, bot_key);
+
+
+--
+-- Name: feedback feedback_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feedback
+    ADD CONSTRAINT feedback_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: loader_flags loader_flags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.loader_flags
+    ADD CONSTRAINT loader_flags_pkey PRIMARY KEY (chat_id, bot_key);
+
+
+--
+-- Name: messages messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: payments payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payments
+    ADD CONSTRAINT payments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pending_feedback pending_feedback_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pending_feedback
+    ADD CONSTRAINT pending_feedback_pkey PRIMARY KEY (chat_id, bot_key);
+
+
+--
+-- Name: plan_prices plan_prices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.plan_prices
+    ADD CONSTRAINT plan_prices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: plans plans_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.plans
+    ADD CONSTRAINT plans_pkey PRIMARY KEY (tier);
+
+
+--
+-- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.schema_migrations
+    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: usage_hourly usage_hourly_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_hourly
+    ADD CONSTRAINT usage_hourly_pkey PRIMARY KEY (chat_id, bot_key, hour_start);
+
+
+--
+-- Name: usage_week usage_week_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.usage_week
+    ADD CONSTRAINT usage_week_pkey PRIMARY KEY (chat_id, bot_key, week_start);
+
+
+--
+-- Name: user_bots user_bots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_bots
+    ADD CONSTRAINT user_bots_pkey PRIMARY KEY (chat_id, bot_key);
+
+
+--
+-- Name: user_summaries user_summaries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_summaries
+    ADD CONSTRAINT user_summaries_pkey PRIMARY KEY (chat_id, bot_key);
+
+
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (chat_id);
+
+
+--
+-- Name: voice_usage_events voice_usage_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.voice_usage_events
+    ADD CONSTRAINT voice_usage_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_broadcast_campaigns_status_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_broadcast_campaigns_status_created_at ON public.broadcast_campaigns USING btree (status, created_at DESC);
+
+
+--
+-- Name: idx_broadcast_recipients_campaign_chat_bot; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_broadcast_recipients_campaign_chat_bot ON public.broadcast_recipients USING btree (campaign_id, chat_id, bot_key);
+
+
+--
+-- Name: idx_broadcast_recipients_campaign_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_broadcast_recipients_campaign_status ON public.broadcast_recipients USING btree (campaign_id, status, updated_at DESC);
+
+
+--
+-- Name: idx_broadcast_recipients_chat_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_broadcast_recipients_chat_id ON public.broadcast_recipients USING btree (chat_id);
+
+
+--
+-- Name: idx_feedback_chat_bot_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_feedback_chat_bot_id ON public.feedback USING btree (chat_id, bot_key, id DESC);
+
+
+--
+-- Name: idx_feedback_chat_id_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_feedback_chat_id_id ON public.feedback USING btree (chat_id, id DESC);
+
+
+--
+-- Name: idx_feedback_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_feedback_created_at ON public.feedback USING btree (created_at);
+
+
+--
+-- Name: idx_messages_chat_bot_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_messages_chat_bot_id ON public.messages USING btree (chat_id, bot_key, id DESC);
+
+
+--
+-- Name: idx_messages_chat_id_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_messages_chat_id_id ON public.messages USING btree (chat_id, id DESC);
+
+
+--
+-- Name: idx_payments_chat_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_payments_chat_id ON public.payments USING btree (chat_id);
+
+
+--
+-- Name: idx_payments_stripe_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_payments_stripe_event_id ON public.payments USING btree (stripe_event_id) WHERE (stripe_event_id IS NOT NULL);
+
+
+--
+-- Name: idx_payments_stripe_invoice_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_payments_stripe_invoice_id ON public.payments USING btree (stripe_invoice_id) WHERE (stripe_invoice_id IS NOT NULL);
+
+
+--
+-- Name: idx_payments_stripe_subscription_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_payments_stripe_subscription_id ON public.payments USING btree (stripe_subscription_id) WHERE (stripe_subscription_id IS NOT NULL);
+
+
+--
+-- Name: idx_pending_feedback_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pending_feedback_expires_at ON public.pending_feedback USING btree (expires_at);
+
+
+--
+-- Name: idx_plan_prices_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_plan_prices_active ON public.plan_prices USING btree (active) WHERE active;
+
+
+--
+-- Name: idx_plan_prices_stripe_price_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_plan_prices_stripe_price_id ON public.plan_prices USING btree (stripe_price_id);
+
+
+--
+-- Name: idx_plan_prices_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_plan_prices_unique ON public.plan_prices USING btree (tier, currency, billing_interval);
+
+
+--
+-- Name: idx_usage_hourly_bot_hour; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_usage_hourly_bot_hour ON public.usage_hourly USING btree (bot_key, hour_start);
+
+
+--
+-- Name: idx_usage_hourly_chat_hour; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_usage_hourly_chat_hour ON public.usage_hourly USING btree (chat_id, hour_start);
+
+
+--
+-- Name: idx_usage_hourly_hour_start; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_usage_hourly_hour_start ON public.usage_hourly USING btree (hour_start);
+
+
+--
+-- Name: idx_usage_week_bot_week; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_usage_week_bot_week ON public.usage_week USING btree (bot_key, week_start);
+
+
+--
+-- Name: idx_usage_week_chat_week; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_usage_week_chat_week ON public.usage_week USING btree (chat_id, week_start);
+
+
+--
+-- Name: idx_user_bots_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_user_bots_active ON public.user_bots USING btree (bot_key, is_active) WHERE (is_active = true);
+
+
+--
+-- Name: idx_user_bots_bot_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_user_bots_bot_key ON public.user_bots USING btree (bot_key);
+
+
+--
+-- Name: idx_user_bots_last_seen; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_user_bots_last_seen ON public.user_bots USING btree (bot_key, last_seen_at DESC);
+
+
+--
+-- Name: idx_users_acquisition_start_payload; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_acquisition_start_payload ON public.users USING btree (acquisition_start_payload);
+
+
+--
+-- Name: idx_users_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_created_at ON public.users USING btree (created_at);
+
+
+--
+-- Name: idx_users_inactive_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_inactive_at ON public.users USING btree (inactive_at) WHERE (inactive_at IS NOT NULL);
+
+
+--
+-- Name: idx_users_is_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_is_active ON public.users USING btree (is_active);
+
+
+--
+-- Name: idx_users_pending_plan_effective_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_pending_plan_effective_at ON public.users USING btree (pending_plan_effective_at) WHERE (pending_plan_tier IS NOT NULL);
+
+
+--
+-- Name: idx_users_plan_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_plan_expires_at ON public.users USING btree (plan_expires_at);
+
+
+--
+-- Name: idx_users_plan_started_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_plan_started_at ON public.users USING btree (plan_started_at) WHERE (plan_started_at IS NOT NULL);
+
+
+--
+-- Name: idx_users_plan_started_tier; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_plan_started_tier ON public.users USING btree (plan_started_tier) WHERE (plan_started_tier IS NOT NULL);
+
+
+--
+-- Name: idx_users_stripe_customer_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_users_stripe_customer_id ON public.users USING btree (stripe_customer_id) WHERE (stripe_customer_id IS NOT NULL);
+
+
+--
+-- Name: idx_users_stripe_subscription_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_stripe_subscription_id ON public.users USING btree (stripe_subscription_id) WHERE (stripe_subscription_id IS NOT NULL);
+
+
+--
+-- Name: idx_voice_usage_events_bot_occurred; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_voice_usage_events_bot_occurred ON public.voice_usage_events USING btree (bot_key, occurred_at DESC);
+
+
+--
+-- Name: idx_voice_usage_events_chat_bot_occurred; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_voice_usage_events_chat_bot_occurred ON public.voice_usage_events USING btree (chat_id, bot_key, occurred_at DESC);
+
+
+--
+-- Name: idx_voice_usage_events_chat_occurred; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_voice_usage_events_chat_occurred ON public.voice_usage_events USING btree (chat_id, occurred_at DESC);
+
+
+--
+-- Name: idx_voice_usage_events_occurred; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_voice_usage_events_occurred ON public.voice_usage_events USING btree (occurred_at DESC);
+
+
+--
+-- Name: plan_prices_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX plan_prices_active ON public.plan_prices USING btree (active) WHERE active;
+
+
+--
+-- Name: plan_prices_stripe_price_id_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX plan_prices_stripe_price_id_key ON public.plan_prices USING btree (stripe_price_id);
+
+
+--
+-- Name: plan_prices_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX plan_prices_unique ON public.plan_prices USING btree (tier, currency, billing_interval);
+
+
+--
+-- Name: broadcast_recipients broadcast_recipients_campaign_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.broadcast_recipients
+    ADD CONSTRAINT broadcast_recipients_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.broadcast_campaigns(id) ON DELETE CASCADE;
+
+
+--
+-- Name: plan_prices plan_prices_tier_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.plan_prices
+    ADD CONSTRAINT plan_prices_tier_fkey FOREIGN KEY (tier) REFERENCES public.plans(tier) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: user_bots user_bots_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_bots
+    ADD CONSTRAINT user_bots_user_fkey FOREIGN KEY (chat_id) REFERENCES public.users(chat_id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_summaries user_summaries_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_summaries
+    ADD CONSTRAINT user_summaries_user_fkey FOREIGN KEY (chat_id) REFERENCES public.users(chat_id) ON DELETE CASCADE;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+
+--
+-- Dbmate schema migrations
+--
+
+INSERT INTO public.schema_migrations (version) VALUES
+    ('20260202145821'),
+    ('20260203120000'),
+    ('20260203130000'),
+    ('20260204100000'),
+    ('20260204140000'),
+    ('20260206123000'),
+    ('20260206150000'),
+    ('20260206163000'),
+    ('20260207100000'),
+    ('20260207110000'),
+    ('20260207123000'),
+    ('20260207140000'),
+    ('20260209121000'),
+    ('20260209170000'),
+    ('20260210120000'),
+    ('20260210133000'),
+    ('20260212120000');

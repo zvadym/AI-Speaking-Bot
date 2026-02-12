@@ -1,1 +1,2 @@
-schema.sql
+# Intentionally empty.
+# Keep db/schema.sql tracked in git as the canonical schema snapshot.

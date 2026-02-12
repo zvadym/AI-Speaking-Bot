@@ -21,4 +21,4 @@ fi
 docker run --rm \
   -e DATABASE_URL="$DATABASE_URL" \
   -v "$ROOT_DIR/db:/db" \
-  ghcr.io/amacneil/dbmate:2.12 up
+  ghcr.io/amacneil/dbmate:2.12 --no-dump-schema up
