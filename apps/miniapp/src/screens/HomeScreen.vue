@@ -106,8 +106,10 @@ const greeting = computed(() => {
 
 const languageLabel = computed(() => {
   const code = (props.me?.learning_language || props.me?.target_lang || 'en').toLowerCase();
-  if (code === 'de') return t('practiceLanguages.de');
-  return t('practiceLanguages.en');
+  const key = `practiceLanguages.${code}`;
+  const label = t(key);
+  if (label !== key) return label;
+  return code.toUpperCase();
 });
 
 const levelLabel = computed(() => {

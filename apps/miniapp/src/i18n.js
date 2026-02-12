@@ -1,5 +1,7 @@
 import { watch, ref, inject } from 'vue';
 import en from './locales/en.json';
+import de from './locales/de.json';
+import it from './locales/it.json';
 import uk from './locales/uk.json';
 
 const STORAGE_KEY = 'miniapp_ui_locale';
@@ -8,6 +10,8 @@ const I18N_SYMBOL = Symbol('miniapp_i18n');
 function normalizeLocale(input) {
   const raw = (input || '').toString().trim().toLowerCase();
   if (raw === 'uk' || raw === 'uk-ua' || raw === 'ua' || raw === 'ua-ua') return 'uk';
+  if (raw === 'de' || raw.startsWith('de-')) return 'de';
+  if (raw === 'it' || raw.startsWith('it-')) return 'it';
   if (raw === 'en' || raw.startsWith('en-')) return 'en';
   return '';
 }
@@ -29,10 +33,10 @@ function saveLocale(value) {
 }
 
 export function getInitialLocale() {
-  return loadSavedLocale() || 'uk';
+  return loadSavedLocale() || 'en';
 }
 
-const messages = { en, uk };
+const messages = { en, de, it, uk };
 export const locale = ref(getInitialLocale());
 
 function getByPath(value, path) {
@@ -81,8 +85,7 @@ syncHtmlLang(locale.value);
 watch(locale, (value) => syncHtmlLang(value));
 
 export function setAppLocale(nextLocale) {
-  const normalized = normalizeLocale(nextLocale);
-  if (!normalized) return;
+  const normalized = normalizeLocale(nextLocale) || 'en';
   locale.value = normalized;
   saveLocale(normalized);
 }

@@ -81,8 +81,9 @@ const selectedLanguage = ref('');
 function languageLabelForCode(codeRaw) {
   const code = (codeRaw || '').toString().trim().toLowerCase();
   if (!code) return '';
-  if (code === 'en') return t('practiceLanguages.en');
-  if (code === 'de') return t('practiceLanguages.de');
+  const key = `practiceLanguages.${code}`;
+  const label = t(key);
+  if (label !== key) return label;
   return code.toUpperCase();
 }
 
@@ -90,6 +91,7 @@ function flagForLanguage(codeRaw) {
   const code = (codeRaw || '').toString().trim().toLowerCase();
   if (code === 'en') return '🇬🇧';
   if (code === 'de') return '🇩🇪';
+  if (code === 'it') return '🇮🇹';
   return '🌐';
 }
 
@@ -129,7 +131,7 @@ const currentLanguage = computed(() => {
 });
 
 const languages = computed(() => {
-  const knownOrder = ['en', 'de'];
+  const knownOrder = ['en', 'de', 'it'];
   const uniqueCodes = Array.from(new Set(teachers.value.map((teacher) => teacher.languageCode)));
   uniqueCodes.sort((a, b) => {
     const indexA = knownOrder.indexOf(a);

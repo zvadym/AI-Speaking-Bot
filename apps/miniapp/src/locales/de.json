@@ -1,0 +1,233 @@
+{
+  "common": {
+    "selected": "Ausgewählt",
+    "status": "Status",
+    "scheduled": "Geplant",
+    "notice": "Hinweis",
+    "back": "Zurück",
+    "backToMenu": "Zurück zum Menü",
+    "dash": "—",
+    "errors": {
+      "couldNotSave": "Konnte nicht gespeichert werden. Bitte versuche es erneut."
+    }
+  },
+  "locales": {
+    "uk": "Ukrainisch",
+    "en": "Englisch",
+    "de": "Deutsch",
+    "it": "Italienisch"
+  },
+  "practiceLanguages": {
+    "en": "Englisch",
+    "de": "Deutsch",
+    "it": "Italienisch"
+  },
+  "plans": {
+    "tiers": {
+      "free": "Kostenlos",
+      "plus": "Plus",
+      "pro": "Pro"
+    }
+  },
+  "app": {
+    "loading": {
+      "kicker": "Wird geöffnet…",
+      "title": "Anmeldung wird vorbereitet",
+      "sub": "Bitte lass dieses Fenster geöffnet."
+    },
+    "error": {
+      "kicker": "Hinweis",
+      "title": "Mini-App konnte nicht geöffnet werden",
+      "openInTelegram": "Öffne diese Seite in Telegram.",
+      "authFailed": "Autorisierung fehlgeschlagen. Bitte öffne die Mini-App erneut."
+    }
+  },
+  "botPicker": {
+    "kicker": "Lehrkraft-Kontext",
+    "title": "Lehrkraft auswählen",
+    "sub": "Deine Einstellungen gelten pro Lehrkraft. Wähle aus, welche Lehrkraft du jetzt verwalten willst.",
+    "empty": "Es wurden noch keine verbundenen Lehrkräfte gefunden."
+  },
+  "home": {
+    "kicker": "AI Language School · Einstellungen",
+    "greeting": {
+      "named": "Hi, {name}.",
+      "anon": "Hi."
+    },
+    "sub": "Wähle eine Karte und verwalte deine Sprachschul-Einstellungen an einem Ort.",
+    "uiLanguage": "Sprache der Oberfläche",
+    "menu": {
+      "subscription": {
+        "title": "Abo",
+        "desc": "Pläne, Limits, automatische Verlängerung - alles an einem Ort."
+      },
+      "language": {
+        "title": "Sprachen und Lehrkräfte",
+        "desc": "Wähle deine Sprache und Lehrkraft."
+      },
+      "level": {
+        "title": "Niveau",
+        "desc": "Stelle Korrektur-Strenge und Tempo ein."
+      },
+      "about": {
+        "title": "Über",
+        "desc": "So funktioniert es und was gespeichert wird."
+      }
+    }
+  },
+  "language": {
+    "kicker": "🌍 Sprachen und Lehrkräfte",
+    "title": "Wähle deine Sprache und Lehrkraft",
+    "sub": "Wechsle zuerst die Sprache und wähle danach die Lehrkraft, mit der du üben möchtest.",
+    "teacherFallback": "Lehrkraft",
+    "chooseTeacher": "Lehrkräfte für {language}",
+    "teacherCount": "{count} Lehrkraft(en)",
+    "noTeachers": "Für diese Sprache sind noch keine Lehrkräfte verfügbar.",
+    "options": {
+      "en": {
+        "note": "Freundliche Korrekturen, natürliche Antworten."
+      },
+      "de": {
+        "note": "Artikel, Wortstellung und Sprachfluss - behutsam."
+      }
+    },
+    "toasts": {
+      "savedPickLevel": "Gespeichert. Wähle jetzt dein Niveau.",
+      "teacherSaved": "Lehrkraft gewechselt: {teacher}"
+    }
+  },
+  "level": {
+    "kicker": "🎯 Niveau",
+    "title": "Wie streng soll ich sein?",
+    "subPrefix": "Das entspricht dem Auswahlfeld deiner Lehrkraft für",
+    "subSuffix": ".",
+    "notes": {
+      "a1": "Sanfte Grundlagen. Eine wichtige Korrektur pro Schritt.",
+      "a2": "Einfache Grammatik, stabilere Sätze.",
+      "b1": "Nützliche Korrekturen + bessere Alternativen.",
+      "b2": "Natürlichkeit, Kollokationen, Sprachfluss.",
+      "c1": "Nur nicht-triviale, wirklich wertvolle Korrekturen."
+    },
+    "toasts": {
+      "saved": "Niveau gespeichert ✅"
+    }
+  },
+  "about": {
+    "kicker": "ℹ️ Über",
+    "title": "Über AI Language School",
+    "sub": "AI Language School ist Sprechtraining in Telegram. Wir sind mehrsprachig und unser Lehrkräfteteam wächst ständig.",
+    "school": {
+      "title": "Über die Schule",
+      "desc": "Du übst mit echten menschlichen Lehrkräften, jede mit eigenem Stil und eigener Methode. Wähle eine Sprache, wähle eine Lehrkraft und baue eine konstante Sprechgewohnheit auf.",
+      "linkLabel": "Schul-Website"
+    },
+    "multilingual": {
+      "title": "Mehrsprachiges Setup",
+      "desc": "Wechsle jederzeit Sprache und Lehrkraft, je nach Ziel und Stimmung.",
+      "availableNow": "Derzeit verfügbar: {languages} Sprachen, {teachers} Lehrkräfte.",
+      "languagesTitle": "Sprachen",
+      "teachersTitle": "Lehrkräfte",
+      "noneLanguages": "Noch keine Sprachen konfiguriert.",
+      "noneTeachers": "Noch keine Lehrkräfte konfiguriert."
+    },
+    "saved": {
+      "title": "Was gespeichert wird",
+      "languageTitle": "Sprache und Lehrkraft",
+      "languageDesc": "die Sprache, die du übst, und mit wem du übst.",
+      "levelTitle": "Niveau",
+      "levelDesc": "wie detailliert dein Feedback sein soll.",
+      "subscriptionTitle": "Abo",
+      "subscriptionDesc": "Pläne, Limits und automatische Verlängerung."
+    },
+    "tips": {
+      "title": "Tipps",
+      "pickLanguageFirst": "Wähle zuerst Sprache und Lehrkraft, dann dein Niveau.",
+      "sendVoice": "Sende kurze Sprachnachrichten in deiner Zielsprache. Wir antworten und helfen dir behutsam, natürlicher zu klingen."
+    }
+  },
+  "checkout": {
+    "heroBadge": "Sicherer Checkout",
+    "title": "Checkout",
+    "sub": "Schließe die Zahlung ab, ohne Telegram zu verlassen.",
+    "loading": "Sicherer Checkout wird geladen…",
+    "errors": {
+      "unavailable": "Checkout ist derzeit nicht verfügbar.",
+      "badTier": "Ungültige Planauswahl.",
+      "missingKey": "Stripe ist für eingebetteten Checkout nicht konfiguriert."
+    }
+  },
+  "subscription": {
+    "heroBadge": "Abo-Atelier",
+    "title": "Wähle dein Trainingstempo",
+    "sub": "Halte dein Sprechtraining konstant. Wähle einen Rhythmus, der zu deiner Woche passt, und schalte die automatische Verlängerung jederzeit um.",
+    "manage": {
+      "yourPlan": "Dein Plan",
+      "practiceTime": "Übungszeit",
+      "voiceReplies": "Sprachantworten",
+      "managePayments": "Zahlungen verwalten",
+      "turnOffAutoRenew": "Automatische Verlängerung deaktivieren",
+      "resumeAutoRenew": "Automatische Verlängerung fortsetzen"
+    },
+    "comparison": {
+      "kicker": "Pro-Vorteil",
+      "is": "ist",
+      "sub": "Ein klares Upgrade-Signal - für längere Sprachnachrichten und mehr Hin und Her."
+    },
+    "period": {
+      "perMonth": "/ Monat"
+    },
+    "actions": {
+      "openingCheckout": "Checkout wird geöffnet…",
+      "subscribe": "Abonnieren",
+      "upgrade": "Upgrade",
+      "switchToPlus": "Zu Plus wechseln",
+      "scheduled": "Geplant"
+    },
+    "notes": {
+      "downgradeEndOfPeriod": "Wechselt am Ende deines aktuellen Abrechnungszeitraums.",
+      "alreadyTopTier": "Du bist bereits im höchsten Tarif."
+    },
+    "upgradeConfirm": {
+      "title": "Upgrade bestätigen",
+      "chargeNow": "Jetzt belasten: {amount}",
+      "newMonthly": "Neuer Monatspreis: {amount}",
+      "cancel": "Abbrechen",
+      "confirm": "Bestätigen und upgraden"
+    },
+    "statusMessage": {
+      "checkoutCompleted": "Checkout abgeschlossen. Wir aktivieren deinen Plan jetzt.",
+      "checkoutCanceled": "Checkout abgebrochen. Dein aktueller Plan bleibt unverändert."
+    },
+    "pending": {
+      "withDate": "Geplant: Wechsel zu {plan} am {date}.",
+      "atRenewal": "Geplant: Wechsel zu {plan} bei Verlängerung."
+    },
+    "autoRenew": {
+      "on": "Automatische Verlängerung an",
+      "off": "Automatische Verlängerung aus"
+    },
+    "taglines": {
+      "pro": "Täglicher Trainingsmodus - für längere Sprachnachrichten und mehr Hin und Her.",
+      "plus": "Ein stabiler Wochenrhythmus, der dein Sprechtempo hält.",
+      "free": "Ein sanfter Einstieg für lockeres Üben."
+    },
+    "actionLabels": {
+      "notADowngrade": "Dieser Planwechsel ist nicht verfügbar.",
+      "switchUnavailable": "Wechsel derzeit nicht verfügbar.",
+      "switchAtRenewal": "Wir wechseln bei der Verlängerung.",
+      "switchAtRenewalWithDate": "Wir wechseln bei der Verlängerung ({date}).",
+      "upgradeSuccess": "Upgrade angewendet.",
+      "upgradePending": "Upgrade wartet auf Zahlungsbestätigung.",
+      "upgradePaymentFailed": "Upgrade-Zahlung konnte nicht bestätigt werden. Bitte erneut versuchen.",
+      "checkoutUnavailable": "Checkout ist derzeit nicht verfügbar.",
+      "unableToLoadPlans": "Pläne konnten nicht geladen werden.",
+      "unexpectedError": "Unerwarteter Fehler. Bitte später erneut versuchen.",
+      "billingNotAvailableYet": "Abrechnung ist noch nicht verfügbar.",
+      "unableToOpenBillingPortal": "Billing-Portal konnte nicht geöffnet werden."
+    }
+  },
+  "units": {
+    "minutesShort": "{count} Min",
+    "hoursShort": "{count} Std"
+  }
+}

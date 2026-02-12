@@ -1,0 +1,233 @@
+{
+  "common": {
+    "selected": "Selezionato",
+    "status": "Stato",
+    "scheduled": "Programmato",
+    "notice": "Avviso",
+    "back": "Indietro",
+    "backToMenu": "Torna al menu",
+    "dash": "—",
+    "errors": {
+      "couldNotSave": "Impossibile salvare. Riprova."
+    }
+  },
+  "locales": {
+    "uk": "Ucraino",
+    "en": "Inglese",
+    "de": "Tedesco",
+    "it": "Italiano"
+  },
+  "practiceLanguages": {
+    "en": "Inglese",
+    "de": "Tedesco",
+    "it": "Italiano"
+  },
+  "plans": {
+    "tiers": {
+      "free": "Gratis",
+      "plus": "Plus",
+      "pro": "Pro"
+    }
+  },
+  "app": {
+    "loading": {
+      "kicker": "Apertura…",
+      "title": "Accesso in corso",
+      "sub": "Mantieni aperta questa finestra."
+    },
+    "error": {
+      "kicker": "Avviso",
+      "title": "Impossibile aprire la mini-app",
+      "openInTelegram": "Apri questa pagina dentro Telegram.",
+      "authFailed": "Autorizzazione non riuscita. Riapri la mini-app."
+    }
+  },
+  "botPicker": {
+    "kicker": "Contesto insegnante",
+    "title": "Scegli insegnante",
+    "sub": "Le impostazioni sono specifiche per insegnante. Scegli quale insegnante vuoi gestire ora.",
+    "empty": "Non sono ancora stati trovati insegnanti collegati."
+  },
+  "home": {
+    "kicker": "AI Language School · Impostazioni",
+    "greeting": {
+      "named": "Ciao, {name}.",
+      "anon": "Ciao."
+    },
+    "sub": "Scegli una scheda e gestisci le impostazioni della tua scuola di lingue in un unico posto.",
+    "uiLanguage": "Lingua dell'interfaccia",
+    "menu": {
+      "subscription": {
+        "title": "Abbonamento",
+        "desc": "Piani, limiti, rinnovo automatico: tutto in un unico posto."
+      },
+      "language": {
+        "title": "Lingue e insegnanti",
+        "desc": "Scegli la tua lingua e il tuo insegnante."
+      },
+      "level": {
+        "title": "Livello",
+        "desc": "Imposta rigore delle correzioni e ritmo."
+      },
+      "about": {
+        "title": "Informazioni",
+        "desc": "Come funziona e cosa viene salvato."
+      }
+    }
+  },
+  "language": {
+    "kicker": "🌍 Lingue e insegnanti",
+    "title": "Scegli la tua lingua e il tuo insegnante",
+    "sub": "Prima cambia lingua, poi scegli l'insegnante con cui vuoi esercitarti.",
+    "teacherFallback": "Insegnante",
+    "chooseTeacher": "Insegnanti per {language}",
+    "teacherCount": "{count} insegnante/i",
+    "noTeachers": "Nessun insegnante disponibile per questa lingua.",
+    "options": {
+      "en": {
+        "note": "Correzioni amichevoli, risposte naturali."
+      },
+      "de": {
+        "note": "Articoli, ordine delle parole e fluidità - con delicatezza."
+      }
+    },
+    "toasts": {
+      "savedPickLevel": "Salvato. Ora scegli il tuo livello.",
+      "teacherSaved": "Insegnante cambiato: {teacher}"
+    }
+  },
+  "level": {
+    "kicker": "🎯 Livello",
+    "title": "Quanto devo essere severo?",
+    "subPrefix": "Questo rispecchia il selettore del tuo insegnante",
+    "subSuffix": ".",
+    "notes": {
+      "a1": "Basi leggere. Una correzione chiave alla volta.",
+      "a2": "Grammatica semplice, frasi più stabili.",
+      "b1": "Correzioni utili + alternative migliori.",
+      "b2": "Naturalezza, collocazioni, fluidità.",
+      "c1": "Solo correzioni non banali e ad alto valore."
+    },
+    "toasts": {
+      "saved": "Livello salvato ✅"
+    }
+  },
+  "about": {
+    "kicker": "ℹ️ Informazioni",
+    "title": "Informazioni su AI Language School",
+    "sub": "AI Language School è pratica di conversazione dentro Telegram. Siamo multilingue e il nostro team di insegnanti continua a crescere.",
+    "school": {
+      "title": "La scuola",
+      "desc": "Ti eserciti con veri insegnanti umani, ognuno con il proprio stile e approccio. Scegli una lingua, scegli un insegnante e costruisci un'abitudine costante di conversazione.",
+      "linkLabel": "Sito della scuola"
+    },
+    "multilingual": {
+      "title": "Configurazione multilingue",
+      "desc": "Cambia lingua e insegnante in qualsiasi momento, in base ai tuoi obiettivi e al tuo mood.",
+      "availableNow": "Disponibili ora: {languages} lingue, {teachers} insegnanti.",
+      "languagesTitle": "Lingue",
+      "teachersTitle": "Insegnanti",
+      "noneLanguages": "Nessuna lingua configurata al momento.",
+      "noneTeachers": "Nessun insegnante configurato al momento."
+    },
+    "saved": {
+      "title": "Cosa viene salvato",
+      "languageTitle": "Lingua e insegnante",
+      "languageDesc": "la lingua che pratichi e con chi pratichi.",
+      "levelTitle": "Livello",
+      "levelDesc": "quanto dettagliato deve essere il tuo feedback.",
+      "subscriptionTitle": "Abbonamento",
+      "subscriptionDesc": "piani, limiti e rinnovo automatico."
+    },
+    "tips": {
+      "title": "Suggerimenti",
+      "pickLanguageFirst": "Prima scegli lingua e insegnante, poi imposta il livello.",
+      "sendVoice": "Invia brevi messaggi vocali nella tua lingua target. Risponderemo e ti aiuteremo con delicatezza a suonare più naturale."
+    }
+  },
+  "checkout": {
+    "heroBadge": "Checkout sicuro",
+    "title": "Checkout",
+    "sub": "Completa il pagamento senza uscire da Telegram.",
+    "loading": "Caricamento checkout sicuro…",
+    "errors": {
+      "unavailable": "Checkout non disponibile al momento.",
+      "badTier": "Selezione piano non valida.",
+      "missingKey": "Stripe non è configurato per il checkout incorporato."
+    }
+  },
+  "subscription": {
+    "heroBadge": "Atelier Abbonamento",
+    "title": "Scegli il tuo ritmo di allenamento",
+    "sub": "Mantieni costante la pratica di conversazione. Scegli una cadenza adatta alla tua settimana e attiva/disattiva il rinnovo automatico quando vuoi.",
+    "manage": {
+      "yourPlan": "Il tuo piano",
+      "practiceTime": "Tempo di pratica",
+      "voiceReplies": "Risposte vocali",
+      "managePayments": "Gestisci pagamenti",
+      "turnOffAutoRenew": "Disattiva rinnovo automatico",
+      "resumeAutoRenew": "Riattiva rinnovo automatico"
+    },
+    "comparison": {
+      "kicker": "Vantaggio Pro",
+      "is": "è",
+      "sub": "Un chiaro segnale di upgrade: pensato per messaggi vocali più lunghi e più botta e risposta."
+    },
+    "period": {
+      "perMonth": "/ mese"
+    },
+    "actions": {
+      "openingCheckout": "Apertura checkout…",
+      "subscribe": "Abbonati",
+      "upgrade": "Upgrade",
+      "switchToPlus": "Passa a Plus",
+      "scheduled": "Programmato"
+    },
+    "notes": {
+      "downgradeEndOfPeriod": "Il cambio avverrà alla fine del periodo di fatturazione corrente.",
+      "alreadyTopTier": "Sei già nel piano più alto."
+    },
+    "upgradeConfirm": {
+      "title": "Conferma upgrade",
+      "chargeNow": "Addebito ora: {amount}",
+      "newMonthly": "Nuovo prezzo mensile: {amount}",
+      "cancel": "Annulla",
+      "confirm": "Conferma e fai upgrade"
+    },
+    "statusMessage": {
+      "checkoutCompleted": "Checkout completato. Stiamo attivando il tuo piano ora.",
+      "checkoutCanceled": "Checkout annullato. Il tuo piano attuale resta invariato."
+    },
+    "pending": {
+      "withDate": "Programmato: passaggio a {plan} il {date}.",
+      "atRenewal": "Programmato: passaggio a {plan} al rinnovo."
+    },
+    "autoRenew": {
+      "on": "Rinnovo automatico attivo",
+      "off": "Rinnovo automatico disattivo"
+    },
+    "taglines": {
+      "pro": "Modalità allenamento quotidiano: per messaggi vocali più lunghi e più botta e risposta.",
+      "plus": "Una cadenza settimanale stabile per mantenere il tuo slancio nel parlato.",
+      "free": "Un riscaldamento leggero per una pratica casuale."
+    },
+    "actionLabels": {
+      "notADowngrade": "Questo cambio piano non è disponibile.",
+      "switchUnavailable": "Cambio non disponibile al momento.",
+      "switchAtRenewal": "Effettueremo il cambio al rinnovo.",
+      "switchAtRenewalWithDate": "Effettueremo il cambio al rinnovo ({date}).",
+      "upgradeSuccess": "Upgrade applicato.",
+      "upgradePending": "Upgrade in attesa di conferma pagamento.",
+      "upgradePaymentFailed": "Impossibile confermare il pagamento dell'upgrade. Riprova.",
+      "checkoutUnavailable": "Checkout non disponibile al momento.",
+      "unableToLoadPlans": "Impossibile caricare i piani.",
+      "unexpectedError": "Errore imprevisto. Riprova più tardi.",
+      "billingNotAvailableYet": "La fatturazione non è ancora disponibile.",
+      "unableToOpenBillingPortal": "Impossibile aprire il portale di fatturazione."
+    }
+  },
+  "units": {
+    "minutesShort": "{count} min",
+    "hoursShort": "{count} h"
+  }
+}

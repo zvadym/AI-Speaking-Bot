@@ -42,8 +42,9 @@ const { t } = useI18n({ useScope: 'global' });
 function languageLabelForCode(codeRaw) {
   const code = (codeRaw || '').toString().trim().toLowerCase();
   if (!code) return '';
-  if (code === 'de') return t('practiceLanguages.de');
-  if (code === 'en') return t('practiceLanguages.en');
+  const key = `practiceLanguages.${code}`;
+  const label = t(key);
+  if (label !== key) return label;
   return code.toUpperCase();
 }
 

@@ -121,7 +121,11 @@ const effectiveBaseLanguage = computed(() => {
   const selectedBot = meBots.value.find(
     (row) => (row?.bot_key || '').toString().trim().toLowerCase() === selectedBotKey
   );
-  return (selectedBot?.base_language || '').toString().trim().toLowerCase();
+  const fromSelectedBot = (selectedBot?.base_language || '').toString().trim().toLowerCase();
+  if (fromSelectedBot) return fromSelectedBot;
+
+  const [fromBotKey] = selectedBotKey.split('-');
+  return (fromBotKey || '').toString().trim().toLowerCase();
 });
 
 const toastState = reactive({

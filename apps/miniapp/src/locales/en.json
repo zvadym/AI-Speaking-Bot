@@ -13,11 +13,14 @@
   },
   "locales": {
     "uk": "Ukrainian",
-    "en": "English"
+    "en": "English",
+    "de": "German",
+    "it": "Italian"
   },
   "practiceLanguages": {
     "en": "English",
-    "de": "German"
+    "de": "German",
+    "it": "Italian"
   },
   "plans": {
     "tiers": {

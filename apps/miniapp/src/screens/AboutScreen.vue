@@ -65,8 +65,9 @@ const schoolUrl = ((import.meta.env.VITE_SCHOOL_URL || 'https://ai-language-scho
 function languageLabelForCode(codeRaw) {
   const code = (codeRaw || '').toString().trim().toLowerCase();
   if (!code) return '';
-  if (code === 'en') return t('practiceLanguages.en');
-  if (code === 'de') return t('practiceLanguages.de');
+  const key = `practiceLanguages.${code}`;
+  const label = t(key);
+  if (label !== key) return label;
   return code.toUpperCase();
 }
 
