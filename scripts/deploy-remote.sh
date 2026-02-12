@@ -4,7 +4,7 @@ set -euo pipefail
 DEPLOY_HOST="${DEPLOY_HOST:-langbot-de-1}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-speaking-bot}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
-SSH_FORWARD_AGENT="${SSH_FORWARD_AGENT:-false}"
+SSH_FORWARD_AGENT="${SSH_FORWARD_AGENT:-true}"
 
 COMPOSE_FILE="${COMPOSE_FILE:-deploy/docker-compose.yml}"
 MIGRATE_SCRIPT="${MIGRATE_SCRIPT:-deploy/migrate.sh}"
