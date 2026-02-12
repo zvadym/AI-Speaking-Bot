@@ -1630,7 +1630,9 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
          END AS effective_tier
        FROM users u
        LEFT JOIN LATERAL (
-         SELECT b.bot_key
+         SELECT
+           b.bot_key,
+           b.last_seen_at
          FROM user_bots b
          WHERE b.chat_id = u.chat_id
          ORDER BY COALESCE(b.last_seen_at, b.updated_at, b.created_at) DESC, b.bot_key ASC
