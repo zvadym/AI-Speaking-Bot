@@ -1,11 +1,12 @@
 <template>
   <div class="app">
     <div class="loading" v-if="loading">
-      <div class="loading-card">
-        <div class="loading-kicker">{{ $t('app.loading.kicker') }}</div>
-        <div class="loading-title">{{ $t('app.loading.title') }}</div>
-        <div class="loading-sub">{{ $t('app.loading.sub') }}</div>
-      </div>
+      <div
+        class="loading-spinner"
+        role="status"
+        aria-live="polite"
+        :aria-label="$t('app.loading.title')"
+      />
     </div>
 
     <div class="error" v-else-if="fatalKey">
@@ -386,14 +387,30 @@ onBeforeUnmount(() => {
   place-items: stretch;
 }
 
-.loading,
+.loading {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.loading-spinner {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  border: 9px solid rgba(30, 26, 22, 0.14);
+  border-top-color: var(--accent-2);
+  box-shadow: 0 22px 56px var(--shadow);
+  animation: spinnerRotate 900ms linear infinite;
+}
+
 .error {
   width: min(860px, 100%);
   margin: 0 auto;
   padding: 44px 22px 80px;
 }
 
-.loading-card,
 .error-card {
   border: 1px solid var(--stroke);
   border-radius: 20px;
@@ -402,7 +419,6 @@ onBeforeUnmount(() => {
   box-shadow: 0 28px 70px var(--shadow);
 }
 
-.loading-kicker,
 .error-kicker {
   text-transform: uppercase;
   letter-spacing: 0.26em;
@@ -410,7 +426,6 @@ onBeforeUnmount(() => {
   color: var(--accent-2);
 }
 
-.loading-title,
 .error-title {
   font-family: var(--font-display);
   font-size: 28px;
@@ -418,7 +433,6 @@ onBeforeUnmount(() => {
   letter-spacing: -0.02em;
 }
 
-.loading-sub,
 .error-sub {
   margin-top: 8px;
   color: var(--muted);
@@ -457,6 +471,12 @@ onBeforeUnmount(() => {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes spinnerRotate {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>
