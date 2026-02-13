@@ -64,6 +64,7 @@ function requireAdmin(req, res, next) {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const PURCHASE_ALLOWED_TIERS = new Set(['pro']);
 
 function normalizeBotKey(raw) {
   const value = (raw ?? '').toString().trim().toLowerCase();
@@ -1902,7 +1903,7 @@ app.get('/plans', requireAuth, async (req, res) => {
          ON p.tier = pp.tier
         AND pp.currency = $1
         AND pp.active = true
-      WHERE p.tier IN ('plus','pro')
+      WHERE p.tier IN ('pro')
       ORDER BY p.tier`,
     [currency]
   );
@@ -2097,7 +2098,7 @@ app.post('/billing/checkout', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const { tier, currency } = req.body || {};
   const normalizedTier = String(tier || '').toLowerCase();
-  if (!['plus', 'pro'].includes(normalizedTier)) {
+  if (!PURCHASE_ALLOWED_TIERS.has(normalizedTier)) {
     return res.status(400).json({ error: 'bad_tier' });
   }
 
@@ -2189,7 +2190,7 @@ app.post('/billing/checkout/embedded', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const { tier, currency } = req.body || {};
   const normalizedTier = String(tier || '').toLowerCase();
-  if (!['plus', 'pro'].includes(normalizedTier)) {
+  if (!PURCHASE_ALLOWED_TIERS.has(normalizedTier)) {
     return res.status(400).json({ error: 'bad_tier' });
   }
 
@@ -2401,7 +2402,7 @@ app.post('/billing/upgrade/preview', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const { tier } = req.body || {};
   const targetTier = String(tier || '').toLowerCase();
-  if (!['plus', 'pro'].includes(targetTier)) {
+  if (!PURCHASE_ALLOWED_TIERS.has(targetTier)) {
     return res.status(400).json({ error: 'bad_tier' });
   }
 
@@ -2487,7 +2488,7 @@ app.post('/billing/upgrade', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const { tier, proration_date: prorationDateRaw } = req.body || {};
   const targetTier = String(tier || '').toLowerCase();
-  if (!['plus', 'pro'].includes(targetTier)) {
+  if (!PURCHASE_ALLOWED_TIERS.has(targetTier)) {
     return res.status(400).json({ error: 'bad_tier' });
   }
   const parsedProrationDate = Number(prorationDateRaw);
@@ -2612,144 +2613,7 @@ app.post('/billing/upgrade', requireAuth, async (req, res) => {
 });
 
 app.post('/billing/downgrade', requireAuth, async (req, res) => {
-  const chatId = req.auth.chatId;
-  const { tier } = req.body || {};
-  const targetTier = String(tier || '').toLowerCase();
-  if (targetTier !== 'plus') {
-    return res.status(400).json({ error: 'bad_tier' });
-  }
-
-  const { rows: userRows } = await pool.query(
-    `SELECT stripe_subscription_id
-       FROM users
-      WHERE chat_id = $1
-      LIMIT 1`,
-    [chatId]
-  );
-
-  const subscriptionId = userRows[0]?.stripe_subscription_id || null;
-  if (!subscriptionId) {
-    return res.status(400).json({ error: 'no_subscription' });
-  }
-
-  let subscription;
-  try {
-    subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-      expand: ['items.data.price', 'schedule']
-    });
-  } catch (err) {
-    console.error('Stripe: failed to retrieve subscription for downgrade', err);
-    return res.status(500).json({ error: 'stripe_error' });
-  }
-
-  const subscriptionItem = subscription.items?.data?.[0] || null;
-  const currentPriceId = subscriptionItem?.price?.id || null;
-  const currency = subscriptionItem?.price?.currency?.toUpperCase() || null;
-  const billingInterval = subscriptionItem?.price?.recurring?.interval || 'month';
-  const periodEndSeconds = typeof subscription.current_period_end === 'number' ? subscription.current_period_end : null;
-  const quantity = subscriptionItem?.quantity || 1;
-
-  if (!subscriptionItem?.id || !currentPriceId || !currency || !periodEndSeconds) {
-    return res.status(400).json({ error: 'subscription_not_downgradeable' });
-  }
-
-  const currentTier = await resolveTierByPrice(currentPriceId);
-  const tierRank = { free: 0, plus: 1, pro: 2 };
-  if (!currentTier || (tierRank[targetTier] ?? 0) >= (tierRank[currentTier] ?? 0)) {
-    return res.status(400).json({ error: 'not_a_downgrade', current_tier: currentTier });
-  }
-
-  const { rows: priceRows } = await pool.query(
-    `SELECT stripe_price_id
-       FROM plan_prices
-      WHERE tier = $1 AND currency = $2 AND billing_interval = $3 AND active = true
-      LIMIT 1`,
-    [targetTier, currency, billingInterval]
-  );
-
-  const targetPriceId = priceRows[0]?.stripe_price_id || null;
-  if (!targetPriceId) {
-    return res.status(400).json({ error: 'price_not_found' });
-  }
-
-  const existingScheduleId =
-    typeof subscription.schedule === 'string'
-      ? subscription.schedule
-      : typeof subscription.schedule === 'object'
-        ? subscription.schedule?.id || null
-        : null;
-
-  let scheduleId = existingScheduleId;
-  if (!scheduleId) {
-    try {
-      const created = await stripe.subscriptionSchedules.create({ from_subscription: subscriptionId });
-      scheduleId = created.id;
-    } catch (err) {
-      console.error('Stripe: failed to create subscription schedule for downgrade', err);
-      return res.status(500).json({ error: 'stripe_error' });
-    }
-  }
-
-  let schedule;
-  try {
-    schedule = await stripe.subscriptionSchedules.retrieve(scheduleId, {
-      expand: ['phases.items.price']
-    });
-  } catch (err) {
-    console.error('Stripe: failed to retrieve subscription schedule for downgrade', err);
-    return res.status(500).json({ error: 'stripe_error' });
-  }
-
-  const scheduleStart =
-    typeof schedule?.phases?.[0]?.start_date === 'number'
-      ? schedule.phases[0].start_date
-      : typeof schedule?.start_date === 'number'
-        ? schedule.start_date
-        : Math.floor(Date.now() / 1000);
-
-  if (periodEndSeconds <= scheduleStart) {
-    return res.status(400).json({ error: 'bad_period_end' });
-  }
-
-  try {
-    await stripe.subscriptionSchedules.update(scheduleId, {
-      end_behavior: 'release',
-      phases: [
-        {
-          start_date: scheduleStart,
-          end_date: periodEndSeconds,
-          items: [{ price: currentPriceId, quantity }]
-        },
-        {
-          start_date: periodEndSeconds,
-          iterations: 1,
-          items: [{ price: targetPriceId, quantity }]
-        }
-      ]
-    });
-  } catch (err) {
-    console.error('Stripe: failed to update subscription schedule for downgrade', err);
-    return res.status(500).json({ error: 'stripe_error' });
-  }
-
-  await pool.query(
-    `UPDATE users
-        SET pending_plan_tier = $1,
-            pending_plan_effective_at = $2,
-            updated_at = NOW()
-      WHERE chat_id = $3`,
-    [targetTier, new Date(periodEndSeconds * 1000), chatId]
-  );
-
-  return res.json({
-    ok: true,
-    scheduled: true,
-    current_tier: currentTier,
-    target_tier: targetTier,
-    effective_at: new Date(periodEndSeconds * 1000).toISOString(),
-    currency,
-    billing_interval: billingInterval
-  });
+  return res.status(400).json({ error: 'plan_change_unavailable' });
 });
 
 async function upsertUser(user, { botKey = null } = {}) {
