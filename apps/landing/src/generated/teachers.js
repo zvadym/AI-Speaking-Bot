@@ -5,10 +5,10 @@ export const teachers = [
   {
     "slug": "de-it",
     "botKey": "de-it",
-    "baseLanguage": "en",
+    "baseLanguage": "de",
     "learningLanguage": "it",
     "avatarEmoji": "👩‍🏫",
-    "avatarImage": "/teachers/de-it.png",
+    "avatarImage": "/teachers/thumbnail/de-it.png",
     "displayName": {
       "uk": "Giulia",
       "en": "Giulia",
@@ -32,7 +32,7 @@ export const teachers = [
     "baseLanguage": "it",
     "learningLanguage": "de",
     "avatarEmoji": "👩‍🏫",
-    "avatarImage": "/teachers/it-de.png",
+    "avatarImage": "/teachers/thumbnail/it-de.png",
     "displayName": {
       "uk": "Greta",
       "en": "Greta",
@@ -56,7 +56,7 @@ export const teachers = [
     "baseLanguage": "it",
     "learningLanguage": "en",
     "avatarEmoji": "👨‍🏫",
-    "avatarImage": "/teachers/it-en.png",
+    "avatarImage": "/teachers/thumbnail/it-en.png",
     "displayName": {
       "uk": "Luca",
       "en": "Luca",
@@ -80,7 +80,7 @@ export const teachers = [
     "baseLanguage": "uk",
     "learningLanguage": "de",
     "avatarEmoji": "👩‍🏫",
-    "avatarImage": "/teachers/uk-de.png",
+    "avatarImage": "/teachers/thumbnail/uk-de.png",
     "displayName": {
       "uk": "Леся",
       "en": "Lesia",
@@ -104,7 +104,7 @@ export const teachers = [
     "baseLanguage": "uk",
     "learningLanguage": "en",
     "avatarEmoji": "👨‍🏫",
-    "avatarImage": "/teachers/uk-en.png",
+    "avatarImage": "/teachers/thumbnail/uk-en.png",
     "displayName": {
       "uk": "Джекі",
       "en": "Jackie",

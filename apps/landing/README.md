@@ -3,6 +3,7 @@
 Static marketing site for `ai-language-school.online`.
 
 Teacher pages are generated from `deploy/bots/*.json` at build time (secrets are not included in the public bundle).
+Teacher thumbnails are generated into `apps/landing/public/teachers/thumbnail/*.png` from source images in `apps/landing/public/teachers/*`.
 
 ## Env vars
 
@@ -17,6 +18,13 @@ Optional (for Contact form):
 cd apps/landing
 npm install
 npm run dev
+```
+
+To regenerate teacher thumbnails manually:
+
+```bash
+cd apps/landing
+npm run prepare:thumbnails
 ```
 
 ## Vercel

@@ -24,6 +24,9 @@ fi
 
 echo "Using vercel: $(vercel_cmd --version)"
 
+echo "Preparing teacher thumbnails..."
+node "$ROOT_DIR/apps/landing/scripts/prepare-teacher-thumbnails.mjs"
+
 echo "Generating teachers from deploy/bots/*.json (sanitised)..."
 node "$ROOT_DIR/apps/landing/scripts/generate-teachers.mjs"
 

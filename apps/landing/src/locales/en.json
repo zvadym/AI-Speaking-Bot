@@ -91,7 +91,11 @@
   },
   "teachers": {
     "title": "Teachers",
-    "subhead": "Browse teachers and start your next lesson on Telegram."
+    "subhead": "Browse teachers and start your next lesson on Telegram.",
+    "baseTeachersHeading": "{language} teachers",
+    "showMoreTeachers": "Show more",
+    "showLessTeachers": "Show less",
+    "empty": "No teachers available yet."
   },
   "teacher": {
     "teachesPrefix": "Teaches",

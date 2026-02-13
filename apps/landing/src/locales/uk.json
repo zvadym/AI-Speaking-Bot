@@ -91,7 +91,11 @@
   },
   "teachers": {
     "title": "Викладачі",
-    "subhead": "Переглянь викладачів і почни наступний урок у Telegram."
+    "subhead": "Переглянь викладачів і почни наступний урок у Telegram.",
+    "baseTeachersHeading": "{language} викладачі",
+    "showMoreTeachers": "Показати більше",
+    "showLessTeachers": "Показати менше",
+    "empty": "Поки немає доступних викладачів."
   },
   "teacher": {
     "teachesPrefix": "Викладає",

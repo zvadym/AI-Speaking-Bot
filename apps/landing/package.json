@@ -3,9 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "predev": "node scripts/generate-teachers.mjs",
+    "prepare:thumbnails": "node scripts/prepare-teacher-thumbnails.mjs",
+    "predev": "npm run prepare:thumbnails && node scripts/generate-teachers.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/generate-teachers.mjs",
+    "prebuild": "npm run prepare:thumbnails && node scripts/generate-teachers.mjs",
     "build": "vite build",
     "preview": "vite preview --host"
   },

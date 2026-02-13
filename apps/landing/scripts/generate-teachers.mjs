@@ -11,6 +11,7 @@ const outputDir = path.resolve(repoRoot, 'apps/landing/src/generated');
 const outputFile = path.resolve(outputDir, 'teachers.js');
 const sitemapFile = path.resolve(repoRoot, 'apps/landing/public/sitemap.xml');
 const teacherAvatarsDir = path.resolve(repoRoot, 'apps/landing/public/teachers');
+const teacherAvatarsThumbnailDir = path.resolve(teacherAvatarsDir, 'thumbnail');
 
 const SITE_ORIGIN = 'https://ai-language-school.online';
 const SUPPORTED_LOCALES = ['en', 'uk', 'it'];
@@ -20,11 +21,13 @@ function isSupportedLocale(value) {
   return value === 'en' || value === 'uk' || value === 'it';
 }
 
-function normalizeLocale(input) {
+function normalizeLanguageCode(input) {
   const raw = (input || '').toString().trim().toLowerCase();
   if (raw === 'uk' || raw === 'uk-ua' || raw === 'ua' || raw === 'ua-ua') return 'uk';
+  if (raw === 'de' || raw.startsWith('de-')) return 'de';
   if (raw === 'it' || raw.startsWith('it-')) return 'it';
   if (raw === 'en' || raw.startsWith('en-')) return 'en';
+  if (/^[a-z]{2}(?:-[a-z]{2})?$/.test(raw)) return raw.slice(0, 2);
   return '';
 }
 
@@ -50,6 +53,10 @@ function extractEnglishName(config) {
 function detectAvatarImage(botKey) {
   const key = safeString(botKey);
   if (!key) return '';
+
+  const thumbPath = path.resolve(teacherAvatarsThumbnailDir, `${key}.png`);
+  if (fs.existsSync(thumbPath)) return `/teachers/thumbnail/${key}.png`;
+
   for (const ext of AVATAR_EXTS) {
     const filename = `${key}.${ext}`;
     const fullPath = path.resolve(teacherAvatarsDir, filename);
@@ -62,7 +69,7 @@ function buildTeacher(config, filename) {
   const botKey = safeString(config.bot_key) || safeString(config.bot_key ?? '') || filename;
   const slug = botKey || filename;
 
-  const baseLanguage = normalizeLocale(config.base_language) || 'en';
+  const baseLanguage = normalizeLanguageCode(config.base_language) || 'en';
   const learningLanguage = safeString(config.learning_language).toLowerCase();
 
   const nameUk = safeString(config.bot_name);
