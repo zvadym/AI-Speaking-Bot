@@ -225,14 +225,8 @@ def patch_set_locale_node(ai_data: Dict[str, Any], locale: Dict[str, Any]) -> No
     locale_keys = set(locale.keys())
 
     missing = sorted(template_key_set - locale_keys)
-    extra = sorted(locale_keys - template_key_set)
-    if missing or extra:
-        parts = []
-        if missing:
-            parts.append("missing keys: " + ", ".join(missing))
-        if extra:
-            parts.append("unknown keys: " + ", ".join(extra))
-        raise ValueError("Locale keys mismatch (" + "; ".join(parts) + ")")
+    if missing:
+        raise ValueError("Locale keys mismatch (missing keys: " + ", ".join(missing) + ")")
 
     for a in assignments:
         if not isinstance(a, dict):
