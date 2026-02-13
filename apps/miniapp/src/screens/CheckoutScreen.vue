@@ -97,7 +97,7 @@ function setError(key) {
 async function fetchClientSecret() {
   const { tier, currency } = parseCheckoutParams();
   addDebugLog('embedded_client_secret_request_started', { tier, currency });
-  if (!['plus', 'pro'].includes(tier)) {
+  if (tier !== 'pro') {
     setError('checkout.errors.badTier');
     throw new Error('bad_tier');
   }

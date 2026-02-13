@@ -111,26 +111,15 @@
           </div>
         </header>
 
-        <div class="pro-advantage" v-if="plan.tier === 'pro' && proVsPlusMultiplier">
-          <div class="pro-advantage-kicker">{{ $t('subscription.comparison.kicker') }}</div>
-          <div class="pro-advantage-line">
-            {{ $t('plans.tiers.pro') }} {{ $t('subscription.comparison.is') }} {{ proVsPlusMultiplier }}× {{ $t('plans.tiers.plus') }}
-          </div>
-        </div>
-
         <p class="plan-tagline">{{ planTagline(plan.tier) }}</p>
 
         <button
           class="cta"
-          :disabled="isBusy || (effectiveTier === 'pro' && plan.tier === 'plus' && user?.pending_plan_tier === 'plus')"
+          :disabled="isBusy"
           @click.stop="subscribe(plan.tier)"
         >
           {{ actionPending === plan.tier ? $t('subscription.actions.openingCheckout') : actionLabel(plan.tier) }}
         </button>
-
-        <p class="plan-note" v-if="effectiveTier === 'pro' && plan.tier === 'plus'">
-          {{ $t('subscription.notes.downgradeEndOfPeriod') }}
-        </p>
       </article>
 
       <div class="plan-empty" v-if="!visiblePlans.length">
@@ -142,34 +131,11 @@
       <BackToMenu @navigate="(path) => $emit('navigate', path)" />
     </div>
 
-    <div
-      v-if="upgradeConfirm.open"
-      class="upgrade-dialog-overlay"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="$t('subscription.upgradeConfirm.title')"
-      @click="handleUpgradeDialogBackdropClick"
-    >
-      <div class="upgrade-dialog" @click.stop>
-        <h3 class="upgrade-dialog-title">{{ $t('subscription.upgradeConfirm.title') }}</h3>
-        <p class="upgrade-dialog-line">{{ $t('subscription.upgradeConfirm.chargeNow', { amount: upgradeConfirmAmountNow }) }}</p>
-        <p class="upgrade-dialog-line">{{ $t('subscription.upgradeConfirm.newMonthly', { amount: upgradeConfirmAmountNext }) }}</p>
-        <div class="confirm-actions">
-          <button class="ghost" :disabled="isBusy" @click="cancelUpgradeConfirm">
-            {{ $t('subscription.upgradeConfirm.cancel') }}
-          </button>
-          <button class="cta confirm-cta" :disabled="isBusy" @click="confirmUpgrade">
-            {{ actionPending === 'upgrade_confirm' ? $t('subscription.actions.openingCheckout') : $t('subscription.upgradeConfirm.confirm') }}
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { onMounted, reactive, computed, ref } from 'vue';
-import { loadStripe } from '@stripe/stripe-js';
 import { useI18n } from '../i18n.js';
 import { tgOpenLink } from '../lib/tg.js';
 import { track } from '../lib/metrics.js';
@@ -204,16 +170,6 @@ const embeddedCheckoutEnabled = (import.meta.env.VITE_STRIPE_EMBEDDED_CHECKOUT |
 const stripePublishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').toString().trim();
 const stripePublishableKeyPresent = Boolean(stripePublishableKey);
 const useEmbeddedCheckout = computed(() => embeddedCheckoutEnabled && stripePublishableKeyPresent);
-const upgradeConfirm = reactive({
-  open: false,
-  tier: '',
-  currency: 'EUR',
-  amountDueCents: 0,
-  nextAmountCents: 0,
-  prorationDate: null
-});
-const upgradeConfirmAmountNow = computed(() => formatCurrencyAmount(upgradeConfirm.amountDueCents, upgradeConfirm.currency));
-const upgradeConfirmAmountNext = computed(() => formatCurrencyAmount(upgradeConfirm.nextAmountCents, upgradeConfirm.currency));
 
 function buildCheckoutPath(tier, currency) {
   const params = new URLSearchParams();
@@ -238,28 +194,6 @@ function clearMessages() {
   noticeState.value = null;
 }
 
-function resetUpgradeConfirm() {
-  upgradeConfirm.open = false;
-  upgradeConfirm.tier = '';
-  upgradeConfirm.currency = 'EUR';
-  upgradeConfirm.amountDueCents = 0;
-  upgradeConfirm.nextAmountCents = 0;
-  upgradeConfirm.prorationDate = null;
-}
-
-function formatCurrencyAmount(cents, currency) {
-  const safeCents = Number.isFinite(Number(cents)) ? Number(cents) : 0;
-  const safeCurrency = (currency || 'EUR').toString().toUpperCase();
-  try {
-    return new Intl.NumberFormat(locale.value || 'en', {
-      style: 'currency',
-      currency: safeCurrency
-    }).format(safeCents / 100);
-  } catch {
-    return `${(safeCents / 100).toFixed(2)} ${safeCurrency}`;
-  }
-}
-
 const statusMessage = computed(() => {
   const params = new URLSearchParams(window.location.search);
   if (params.get('session_id')) return t('subscription.statusMessage.checkoutCompleted');
@@ -273,16 +207,6 @@ const usage = computed(() => state.usage);
 const effectiveTier = computed(() => usage.value?.tier || state.user?.plan_tier || 'free');
 const showAutoRenewControls = computed(() => effectiveTier.value !== 'free');
 const showManagePayments = computed(() => showAutoRenewControls.value || Boolean(state.user?.stripe_subscription_status));
-const plusPlan = computed(() => plans.value.find((plan) => plan.tier === 'plus') || null);
-const proPlan = computed(() => plans.value.find((plan) => plan.tier === 'pro') || null);
-const proVsPlusMultiplier = computed(() => {
-  const plusSeconds = plusPlan.value?.user_audio_seconds_per_week;
-  const proSeconds = proPlan.value?.user_audio_seconds_per_week;
-  if (!plusSeconds || !proSeconds) return null;
-  const ratio = proSeconds / plusSeconds;
-  if (!Number.isFinite(ratio) || ratio <= 0) return null;
-  return Math.max(1, Math.round(ratio));
-});
 
 const currentPlanLabel = computed(() => {
   if (!effectiveTier.value) return t('plans.tiers.free');
@@ -314,13 +238,15 @@ const autoRenewLabel = computed(() => {
 });
 
 function planLabel(tier) {
-  if (tier !== 'pro' && tier !== 'plus' && tier !== 'free') return t('plans.tiers.free');
-  return t(`plans.tiers.${tier}`);
+  const normalized = (tier || '').toString().toLowerCase();
+  if (normalized === 'free') return t('plans.tiers.free');
+  if (normalized === 'pro') return t('plans.tiers.pro');
+  // Hide legacy/unknown paid tiers from user-facing UI.
+  return t('plans.tiers.pro');
 }
 
 function planTagline(tier) {
   if (tier === 'pro') return t('subscription.taglines.pro');
-  if (tier === 'plus') return t('subscription.taglines.plus');
   return t('subscription.taglines.free');
 }
 
@@ -335,185 +261,18 @@ function formatPrice(cents) {
   return (cents / 100).toFixed(0);
 }
 
-function formatSeconds(seconds) {
-  if (!seconds && seconds !== 0) return t('common.dash');
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return t('units.minutesShort', { count: minutes });
-  const hours = Math.round(minutes / 60);
-  return t('units.hoursShort', { count: hours });
-}
-
 function usagePercent(used, limit) {
   if (!limit || limit <= 0) return 0;
   return Math.min(100, Math.round((used / limit) * 100));
 }
 
 const visiblePlans = computed(() => {
-  if (!effectiveTier.value) return plans.value;
-  return plans.value.filter((plan) => plan.tier !== effectiveTier.value);
+  const isPro = effectiveTier.value === 'pro';
+  return plans.value.filter((plan) => plan.tier === 'pro' && !isPro);
 });
 
-function actionLabel(tier) {
-  if (effectiveTier.value === 'plus' && tier === 'pro') return t('subscription.actions.upgrade');
-  if (effectiveTier.value === 'pro' && tier === 'plus') {
-    if (state.user?.pending_plan_tier === 'plus') return t('subscription.actions.scheduled');
-    return t('subscription.actions.switchToPlus');
-  }
+function actionLabel() {
   return t('subscription.actions.subscribe');
-}
-
-async function confirmUpgradePaymentIntent(paymentIntent) {
-  const clientSecret = paymentIntent?.client_secret || '';
-  if (!clientSecret) return true;
-  if (!stripePublishableKey) {
-    setError('subscription.actionLabels.checkoutUnavailable');
-    addDebugLog('upgrade_payment_confirm_skipped_missing_key');
-    return false;
-  }
-
-  const stripe = await loadStripe(stripePublishableKey);
-  if (!stripe?.confirmCardPayment) {
-    setError('subscription.actionLabels.checkoutUnavailable');
-    addDebugLog('upgrade_payment_confirm_skipped_missing_stripe');
-    return false;
-  }
-
-  addDebugLog('upgrade_payment_confirm_started', {
-    status: paymentIntent?.status || null
-  });
-  const result = await stripe.confirmCardPayment(clientSecret);
-  if (result?.error) {
-    setError('subscription.actionLabels.upgradePaymentFailed');
-    addDebugLog('upgrade_payment_confirm_error', {
-      code: result.error.code || null,
-      type: result.error.type || null,
-      message: result.error.message || 'unknown_error'
-    });
-    return false;
-  }
-
-  const status = result?.paymentIntent?.status || null;
-  addDebugLog('upgrade_payment_confirm_result', { status });
-  if (status === 'succeeded' || status === 'processing' || status === 'requires_capture') {
-    return true;
-  }
-
-  setError('subscription.actionLabels.upgradePaymentFailed');
-  return false;
-}
-
-async function upgradePlan(tier, { prorationDate = null } = {}) {
-  const body = { tier };
-  if (prorationDate) {
-    body.proration_date = prorationDate;
-  }
-  addDebugLog('upgrade_request_started', { tier });
-  const resp = await fetch(`${props.apiBase}/billing/upgrade`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${props.token}`
-    },
-    body: JSON.stringify(body)
-  });
-  addDebugLog('upgrade_response_received', { ok: resp.ok, status: resp.status });
-
-  if (!resp.ok) {
-    const payload = await resp.json().catch(() => ({}));
-    setError(
-      payload?.error === 'not_an_upgrade'
-        ? 'subscription.actionLabels.notADowngrade'
-        : 'subscription.actionLabels.switchUnavailable'
-    );
-    return;
-  }
-
-  const data = await resp.json().catch(() => ({}));
-  addDebugLog('upgrade_response_parsed', {
-    pending: Boolean(data?.pending),
-    paymentIntentStatus: data?.payment_intent?.status || null,
-    hasPaymentIntentSecret: Boolean(data?.payment_intent?.client_secret),
-    invoiceStatus: data?.invoice?.status || null
-  });
-
-  const confirmed = await confirmUpgradePaymentIntent(data?.payment_intent || null);
-  if (!confirmed) return;
-
-  if (data?.pending) {
-    setNotice('subscription.actionLabels.upgradePending');
-  } else {
-    setNotice('subscription.actionLabels.upgradeSuccess');
-  }
-  await loadPlans({ keepNotice: true });
-}
-
-async function requestUpgradePreview(tier) {
-  addDebugLog('upgrade_preview_request_started', { tier });
-  const resp = await fetch(`${props.apiBase}/billing/upgrade/preview`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${props.token}`
-    },
-    body: JSON.stringify({ tier })
-  });
-  addDebugLog('upgrade_preview_response_received', { ok: resp.ok, status: resp.status });
-
-  if (!resp.ok) {
-    setError('subscription.actionLabels.switchUnavailable');
-    return null;
-  }
-
-  const data = await resp.json().catch(() => ({}));
-  addDebugLog('upgrade_preview_response_parsed', {
-    amountDueCents: data?.amount_due_cents ?? null,
-    nextAmountCents: data?.next_amount_cents ?? null,
-    currency: data?.currency || null,
-    prorationDate: data?.proration_date || null
-  });
-  return data;
-}
-
-function openUpgradeConfirm(preview, tier) {
-  upgradeConfirm.open = true;
-  upgradeConfirm.tier = tier;
-  upgradeConfirm.currency = (preview?.currency || state.currency || 'EUR').toUpperCase();
-  upgradeConfirm.amountDueCents = Number(preview?.amount_due_cents || 0);
-  upgradeConfirm.nextAmountCents = Number(preview?.next_amount_cents || 0);
-  upgradeConfirm.prorationDate = Number.isFinite(Number(preview?.proration_date)) ? Number(preview.proration_date) : null;
-  addDebugLog('upgrade_confirmation_opened', {
-    tier,
-    amountDueCents: upgradeConfirm.amountDueCents,
-    nextAmountCents: upgradeConfirm.nextAmountCents,
-    currency: upgradeConfirm.currency
-  });
-}
-
-function cancelUpgradeConfirm() {
-  addDebugLog('upgrade_confirmation_canceled');
-  resetUpgradeConfirm();
-}
-
-function handleUpgradeDialogBackdropClick() {
-  if (isBusy.value) return;
-  cancelUpgradeConfirm();
-}
-
-async function confirmUpgrade() {
-  if (!upgradeConfirm.open || !upgradeConfirm.tier) return;
-  actionPending.value = 'upgrade_confirm';
-  clearMessages();
-  try {
-    addDebugLog('upgrade_confirmation_accepted', { tier: upgradeConfirm.tier });
-    await upgradePlan(upgradeConfirm.tier, { prorationDate: upgradeConfirm.prorationDate });
-    resetUpgradeConfirm();
-  } catch (err) {
-    console.error(err);
-    addDebugLog('upgrade_confirmation_error', { message: err?.message || 'unknown_error' });
-    setError('subscription.actionLabels.switchUnavailable');
-  } finally {
-    actionPending.value = '';
-  }
 }
 
 async function loadPlans({ keepNotice = false } = {}) {
@@ -538,9 +297,12 @@ async function loadPlans({ keepNotice = false } = {}) {
 }
 
 async function subscribe(tier) {
+  if (tier !== 'pro') {
+    setError('subscription.actionLabels.checkoutUnavailable');
+    return;
+  }
   actionPending.value = tier;
   clearMessages();
-  resetUpgradeConfirm();
   try {
     track('ui_click', { id: 'subscription_subscribe', tier });
     addDebugLog('subscribe_clicked', {
@@ -551,44 +313,6 @@ async function subscribe(tier) {
       stripePublishableKeyPresent,
       useEmbeddedCheckout: useEmbeddedCheckout.value
     });
-    if (effectiveTier.value === 'plus' && tier === 'pro') {
-      const preview = await requestUpgradePreview(tier);
-      if (preview) openUpgradeConfirm(preview, tier);
-      return;
-    }
-
-    if (effectiveTier.value === 'pro' && tier === 'plus') {
-      const resp = await fetch(`${props.apiBase}/billing/downgrade`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${props.token}`
-        },
-        body: JSON.stringify({ tier })
-      });
-
-      if (!resp.ok) {
-        const payload = await resp.json().catch(() => ({}));
-        setError(
-          payload?.error === 'not_a_downgrade'
-            ? 'subscription.actionLabels.notADowngrade'
-            : 'subscription.actionLabels.switchUnavailable'
-        );
-        return;
-      }
-
-      const data = await resp.json().catch(() => ({}));
-      const effectiveAt = data?.effective_at ? new Date(data.effective_at) : null;
-      setNotice(
-        effectiveAt && Number.isFinite(effectiveAt.getTime())
-          ? 'subscription.actionLabels.switchAtRenewalWithDate'
-          : 'subscription.actionLabels.switchAtRenewal',
-        effectiveAt && Number.isFinite(effectiveAt.getTime()) ? { date: formatDate(effectiveAt) } : undefined
-      );
-      await loadPlans({ keepNotice: true });
-      return;
-    }
-
     if (useEmbeddedCheckout.value) {
       const target = buildCheckoutPath(tier, state.currency);
       addDebugLog('embedded_checkout_navigation', { target });
@@ -780,51 +504,6 @@ onMounted(async () => {
 }
 
 .status-text {
-  font-weight: 600;
-}
-
-.confirm-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.cta.confirm-cta {
-  width: auto;
-  min-width: 180px;
-}
-
-.upgrade-dialog-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  background: rgba(20, 18, 16, 0.45);
-  display: grid;
-  place-items: center;
-  padding: 24px;
-}
-
-.upgrade-dialog {
-  width: min(560px, 100%);
-  border: 1px solid rgba(31, 107, 99, 0.35);
-  border-radius: 18px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 24px 50px rgba(20, 18, 16, 0.28);
-  display: grid;
-  gap: 8px;
-}
-
-.upgrade-dialog-title {
-  margin: 0;
-  font-size: 18px;
-}
-
-.upgrade-dialog-line {
-  margin: 0;
-  color: rgba(30, 26, 22, 0.9);
-  line-height: 1.45;
   font-weight: 600;
 }
 

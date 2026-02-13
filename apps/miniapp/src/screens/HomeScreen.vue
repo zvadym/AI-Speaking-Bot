@@ -119,8 +119,9 @@ const levelLabel = computed(() => {
 
 const planLabel = computed(() => {
   const tier = (props.me?.plan_tier || 'free').toString().toLowerCase();
-  if (tier !== 'pro' && tier !== 'plus' && tier !== 'free') return t('plans.tiers.free');
-  return t(`plans.tiers.${tier}`);
+  if (tier === 'free') return t('plans.tiers.free');
+  if (tier === 'pro') return t('plans.tiers.pro');
+  return t('plans.tiers.pro');
 });
 </script>
 

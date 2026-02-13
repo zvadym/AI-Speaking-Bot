@@ -25,7 +25,6 @@
   "plans": {
     "tiers": {
       "free": "Free",
-      "plus": "Plus",
       "pro": "Pro"
     }
   },
@@ -80,6 +79,9 @@
     "title": "Choose your language and teacher",
     "sub": "Switch language first, then pick the teacher you want to practice with.",
     "teacherFallback": "Teacher",
+    "baseTeachersHeading": "{language} teachers",
+    "showMoreTeachers": "Show more",
+    "showLessTeachers": "Show less",
     "chooseTeacher": "Teachers for {language}",
     "teacherCount": "{count} teacher(s)",
     "noTeachers": "No teachers are available for this language yet.",
@@ -168,31 +170,15 @@
       "turnOffAutoRenew": "Turn off auto-renew",
       "resumeAutoRenew": "Resume auto-renew"
     },
-    "comparison": {
-      "kicker": "Pro advantage",
-      "is": "is",
-      "sub": "A single upgrade signal — built for longer voice messages and more back‑and‑forth."
-    },
     "period": {
       "perMonth": "/ month"
     },
     "actions": {
       "openingCheckout": "Opening Checkout…",
-      "subscribe": "Subscribe",
-      "upgrade": "Upgrade",
-      "switchToPlus": "Switch to Plus",
-      "scheduled": "Scheduled"
+      "subscribe": "Subscribe"
     },
     "notes": {
-      "downgradeEndOfPeriod": "Switches at the end of your current billing period.",
       "alreadyTopTier": "You're already on the top tier."
-    },
-    "upgradeConfirm": {
-      "title": "Confirm upgrade",
-      "chargeNow": "Charge now: {amount}",
-      "newMonthly": "New monthly price: {amount}",
-      "cancel": "Cancel",
-      "confirm": "Confirm and upgrade"
     },
     "statusMessage": {
       "checkoutCompleted": "Checkout completed. We are activating your plan now.",
@@ -208,17 +194,9 @@
     },
     "taglines": {
       "pro": "Daily training mode — for longer voice messages and more back‑and‑forth.",
-      "plus": "A steady weekly cadence to keep your speaking momentum.",
       "free": "A gentle warm‑up for casual practice."
     },
     "actionLabels": {
-      "notADowngrade": "This plan change is not available.",
-      "switchUnavailable": "Switch unavailable right now.",
-      "switchAtRenewal": "We’ll switch you at renewal.",
-      "switchAtRenewalWithDate": "We’ll switch you at renewal ({date}).",
-      "upgradeSuccess": "Upgrade applied.",
-      "upgradePending": "Upgrade is pending payment confirmation.",
-      "upgradePaymentFailed": "Couldn’t confirm upgrade payment. Try again.",
       "checkoutUnavailable": "Checkout unavailable right now.",
       "unableToLoadPlans": "Unable to load plans.",
       "unexpectedError": "Unexpected error. Try again later.",

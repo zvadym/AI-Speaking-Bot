@@ -25,7 +25,6 @@
   "plans": {
     "tiers": {
       "free": "Free",
-      "plus": "Plus",
       "pro": "Pro"
     }
   },
@@ -80,6 +79,9 @@
     "title": "Обери мову та викладача",
     "sub": "Спочатку обери мову, потім викладача для практики.",
     "teacherFallback": "Викладач",
+    "baseTeachersHeading": "{language} викладачі",
+    "showMoreTeachers": "Показати більше",
+    "showLessTeachers": "Показати менше",
     "chooseTeacher": "Викладачі для {language}",
     "teacherCount": "{count} викл.",
     "noTeachers": "Для цієї мови поки немає викладачів.",
@@ -168,31 +170,15 @@
       "turnOffAutoRenew": "Вимкнути автопродовження",
       "resumeAutoRenew": "Увімкнути автопродовження"
     },
-    "comparison": {
-      "kicker": "ПЕРЕВАГА PRO",
-      "is": "це",
-      "sub": "Один чіткий сигнал апгрейду — для довших голосових повідомлень і більшої кількості діалогів."
-    },
     "period": {
       "perMonth": "/ місяць"
     },
     "actions": {
       "openingCheckout": "Відкриваємо оплату…",
-      "subscribe": "Підписатися",
-      "upgrade": "Покращити",
-      "switchToPlus": "Перейти на Plus",
-      "scheduled": "Заплановано"
+      "subscribe": "Підписатися"
     },
     "notes": {
-      "downgradeEndOfPeriod": "Зміна відбудеться наприкінці поточного платіжного періоду.",
       "alreadyTopTier": "Ти вже на найвищому рівні."
-    },
-    "upgradeConfirm": {
-      "title": "Підтвердити покращення",
-      "chargeNow": "Списання зараз: {amount}",
-      "newMonthly": "Нова ціна за місяць: {amount}",
-      "cancel": "Скасувати",
-      "confirm": "Підтвердити та покращити"
     },
     "statusMessage": {
       "checkoutCompleted": "Оплату завершено. Активуємо твій план.",
@@ -208,17 +194,9 @@
     },
     "taglines": {
       "pro": "Режим щоденного тренування — для довших голосових і більшої кількості діалогів.",
-      "plus": "Стабільний тижневий ритм, щоб не втрачати прогрес.",
       "free": "Легкий розігрів для спокійної практики."
     },
     "actionLabels": {
-      "notADowngrade": "Ця зміна плану недоступна.",
-      "switchUnavailable": "Зараз зміну плану недоступно виконати.",
-      "switchAtRenewal": "Перемкнемо під час продовження.",
-      "switchAtRenewalWithDate": "Перемкнемо під час продовження ({date}).",
-      "upgradeSuccess": "Покращення плану застосовано.",
-      "upgradePending": "Покращення очікує підтвердження оплати.",
-      "upgradePaymentFailed": "Не вдалося підтвердити оплату покращення. Спробуй ще раз.",
       "checkoutUnavailable": "Зараз оплата недоступна.",
       "unableToLoadPlans": "Не вдалося завантажити плани.",
       "unexpectedError": "Несподівана помилка. Спробуй пізніше.",

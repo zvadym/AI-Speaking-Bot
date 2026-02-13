@@ -97,11 +97,6 @@
           <div class="meta">All-time: {{ fmt(totals.active_users_all_time) }} / {{ fmt(totals.total_users_all_time) }}</div>
         </div>
         <div class="stat">
-          <div class="label">Plus (range)</div>
-          <div class="value">{{ fmt(totals.plus_users_in_range) }}</div>
-          <div class="meta">All-time: {{ fmt(totals.plus_users_all_time) }}</div>
-        </div>
-        <div class="stat">
           <div class="label">Pro (range)</div>
           <div class="value">{{ fmt(totals.pro_users_in_range) }}</div>
           <div class="meta">All-time: {{ fmt(totals.pro_users_all_time) }}</div>
@@ -147,11 +142,10 @@
 
         <AdminChart
           title="New paid users by day (first time)"
-          subtitle="Split by tier at first payment"
+          subtitle="Pro activations by day"
           kind="bar"
           :data="newPaidSeries"
           :series="[
-            { key: 'plus', label: 'Plus', color: 'rgba(31, 107, 99, 0.88)' },
             { key: 'pro', label: 'Pro', color: 'rgba(199, 90, 36, 0.88)' }
           ]"
         />
@@ -243,7 +237,7 @@
                 <td>{{ row.username ? `@${row.username}` : '—' }}</td>
                 <td>{{ row.first_name || '—' }}</td>
                 <td>{{ row.bot_key || '—' }}</td>
-                <td>{{ row.effective_tier || 'free' }}</td>
+                <td>{{ displayTier(row.effective_tier) }}</td>
                 <td>{{ row.is_active ? 'yes' : 'no' }}</td>
                 <td>{{ row.last_seen_at ? formatFeedbackTime(row.last_seen_at) : '—' }}</td>
               </tr>
@@ -330,10 +324,6 @@
               <span>Free</span>
             </label>
             <label class="pill">
-              <input v-model="broadcast.planPlus" type="checkbox" />
-              <span>Plus</span>
-            </label>
-            <label class="pill">
               <input v-model="broadcast.planPro" type="checkbox" />
               <span>Pro</span>
             </label>
@@ -409,7 +399,7 @@
             <code>{{ row.chat_id }}</code>
             <span>{{ row.username ? `@${row.username}` : '(no username)' }}</span>
             <span class="bot-badge">{{ row.bot_key }}</span>
-            <span>{{ row.effective_tier }}</span>
+            <span>{{ displayTier(row.effective_tier) }}</span>
             <span>{{ formatLastActivity(row.last_activity_at) }}</span>
           </li>
         </ul>
@@ -608,11 +598,9 @@ const previewUpdatedAt = ref('');
 const totals = ref({
   total_users_all_time: 0,
   active_users_all_time: 0,
-  plus_users_all_time: 0,
   pro_users_all_time: 0,
   total_users_in_range: 0,
   active_users_in_range: 0,
-  plus_users_in_range: 0,
   pro_users_in_range: 0
 });
 
@@ -647,7 +635,6 @@ const broadcastPreview = reactive({
 const broadcast = reactive({
   username: '',
   planFree: true,
-  planPlus: true,
   planPro: true,
   lastActivityMode: 'any',
   lastActivityDays: 14,
@@ -788,6 +775,13 @@ function formatFeedbackTime(raw) {
   return d.toISOString().replace('T', ' ').replace('Z', 'Z');
 }
 
+function displayTier(rawTier) {
+  const tier = (rawTier || '').toString().toLowerCase();
+  if (tier === 'free') return 'free';
+  if (tier === 'pro') return 'pro';
+  return 'pro';
+}
+
 function feedbackBody(row) {
   const text = row?.kind === 'voice' ? (row?.transcript || '') : (row?.feedback_text || '');
   const cleaned = String(text || '').trim();
@@ -797,7 +791,6 @@ function feedbackBody(row) {
 const selectedPlans = computed(() => {
   const plans = [];
   if (broadcast.planFree) plans.push('free');
-  if (broadcast.planPlus) plans.push('plus');
   if (broadcast.planPro) plans.push('pro');
   return plans;
 });
@@ -809,7 +802,7 @@ function broadcastFiltersPayload() {
   const filters = {};
   if (broadcast.username.trim()) filters.username = broadcast.username.trim();
 
-  if (selectedPlans.value.length > 0 && selectedPlans.value.length < 3) {
+  if (selectedPlans.value.length > 0 && selectedPlans.value.length < 2) {
     filters.plans = selectedPlans.value;
   }
 
@@ -1144,7 +1137,6 @@ watch(
     password.value,
     broadcast.username,
     broadcast.planFree,
-    broadcast.planPlus,
     broadcast.planPro,
     broadcast.lastActivityMode,
     broadcast.lastActivityDays,

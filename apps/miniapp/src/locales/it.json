@@ -25,7 +25,6 @@
   "plans": {
     "tiers": {
       "free": "Gratis",
-      "plus": "Plus",
       "pro": "Pro"
     }
   },
@@ -80,6 +79,9 @@
     "title": "Scegli la tua lingua e il tuo insegnante",
     "sub": "Prima cambia lingua, poi scegli l'insegnante con cui vuoi esercitarti.",
     "teacherFallback": "Insegnante",
+    "baseTeachersHeading": "Insegnanti di {language}",
+    "showMoreTeachers": "Mostra altro",
+    "showLessTeachers": "Mostra meno",
     "chooseTeacher": "Insegnanti per {language}",
     "teacherCount": "{count} insegnante/i",
     "noTeachers": "Nessun insegnante disponibile per questa lingua.",
@@ -168,31 +170,15 @@
       "turnOffAutoRenew": "Disattiva rinnovo automatico",
       "resumeAutoRenew": "Riattiva rinnovo automatico"
     },
-    "comparison": {
-      "kicker": "Vantaggio Pro",
-      "is": "è",
-      "sub": "Un chiaro segnale di upgrade: pensato per messaggi vocali più lunghi e più botta e risposta."
-    },
     "period": {
       "perMonth": "/ mese"
     },
     "actions": {
       "openingCheckout": "Apertura checkout…",
-      "subscribe": "Abbonati",
-      "upgrade": "Upgrade",
-      "switchToPlus": "Passa a Plus",
-      "scheduled": "Programmato"
+      "subscribe": "Abbonati"
     },
     "notes": {
-      "downgradeEndOfPeriod": "Il cambio avverrà alla fine del periodo di fatturazione corrente.",
       "alreadyTopTier": "Sei già nel piano più alto."
-    },
-    "upgradeConfirm": {
-      "title": "Conferma upgrade",
-      "chargeNow": "Addebito ora: {amount}",
-      "newMonthly": "Nuovo prezzo mensile: {amount}",
-      "cancel": "Annulla",
-      "confirm": "Conferma e fai upgrade"
     },
     "statusMessage": {
       "checkoutCompleted": "Checkout completato. Stiamo attivando il tuo piano ora.",
@@ -208,17 +194,9 @@
     },
     "taglines": {
       "pro": "Modalità allenamento quotidiano: per messaggi vocali più lunghi e più botta e risposta.",
-      "plus": "Una cadenza settimanale stabile per mantenere il tuo slancio nel parlato.",
       "free": "Un riscaldamento leggero per una pratica casuale."
     },
     "actionLabels": {
-      "notADowngrade": "Questo cambio piano non è disponibile.",
-      "switchUnavailable": "Cambio non disponibile al momento.",
-      "switchAtRenewal": "Effettueremo il cambio al rinnovo.",
-      "switchAtRenewalWithDate": "Effettueremo il cambio al rinnovo ({date}).",
-      "upgradeSuccess": "Upgrade applicato.",
-      "upgradePending": "Upgrade in attesa di conferma pagamento.",
-      "upgradePaymentFailed": "Impossibile confermare il pagamento dell'upgrade. Riprova.",
       "checkoutUnavailable": "Checkout non disponibile al momento.",
       "unableToLoadPlans": "Impossibile caricare i piani.",
       "unexpectedError": "Errore imprevisto. Riprova più tardi.",

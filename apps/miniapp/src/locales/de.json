@@ -25,7 +25,6 @@
   "plans": {
     "tiers": {
       "free": "Kostenlos",
-      "plus": "Plus",
       "pro": "Pro"
     }
   },
@@ -80,6 +79,9 @@
     "title": "Wähle deine Sprache und Lehrkraft",
     "sub": "Wechsle zuerst die Sprache und wähle danach die Lehrkraft, mit der du üben möchtest.",
     "teacherFallback": "Lehrkraft",
+    "baseTeachersHeading": "{language}-Lehrkräfte",
+    "showMoreTeachers": "Mehr anzeigen",
+    "showLessTeachers": "Weniger anzeigen",
     "chooseTeacher": "Lehrkräfte für {language}",
     "teacherCount": "{count} Lehrkraft(en)",
     "noTeachers": "Für diese Sprache sind noch keine Lehrkräfte verfügbar.",
@@ -168,31 +170,15 @@
       "turnOffAutoRenew": "Automatische Verlängerung deaktivieren",
       "resumeAutoRenew": "Automatische Verlängerung fortsetzen"
     },
-    "comparison": {
-      "kicker": "Pro-Vorteil",
-      "is": "ist",
-      "sub": "Ein klares Upgrade-Signal - für längere Sprachnachrichten und mehr Hin und Her."
-    },
     "period": {
       "perMonth": "/ Monat"
     },
     "actions": {
       "openingCheckout": "Checkout wird geöffnet…",
-      "subscribe": "Abonnieren",
-      "upgrade": "Upgrade",
-      "switchToPlus": "Zu Plus wechseln",
-      "scheduled": "Geplant"
+      "subscribe": "Abonnieren"
     },
     "notes": {
-      "downgradeEndOfPeriod": "Wechselt am Ende deines aktuellen Abrechnungszeitraums.",
       "alreadyTopTier": "Du bist bereits im höchsten Tarif."
-    },
-    "upgradeConfirm": {
-      "title": "Upgrade bestätigen",
-      "chargeNow": "Jetzt belasten: {amount}",
-      "newMonthly": "Neuer Monatspreis: {amount}",
-      "cancel": "Abbrechen",
-      "confirm": "Bestätigen und upgraden"
     },
     "statusMessage": {
       "checkoutCompleted": "Checkout abgeschlossen. Wir aktivieren deinen Plan jetzt.",
@@ -208,17 +194,9 @@
     },
     "taglines": {
       "pro": "Täglicher Trainingsmodus - für längere Sprachnachrichten und mehr Hin und Her.",
-      "plus": "Ein stabiler Wochenrhythmus, der dein Sprechtempo hält.",
       "free": "Ein sanfter Einstieg für lockeres Üben."
     },
     "actionLabels": {
-      "notADowngrade": "Dieser Planwechsel ist nicht verfügbar.",
-      "switchUnavailable": "Wechsel derzeit nicht verfügbar.",
-      "switchAtRenewal": "Wir wechseln bei der Verlängerung.",
-      "switchAtRenewalWithDate": "Wir wechseln bei der Verlängerung ({date}).",
-      "upgradeSuccess": "Upgrade angewendet.",
-      "upgradePending": "Upgrade wartet auf Zahlungsbestätigung.",
-      "upgradePaymentFailed": "Upgrade-Zahlung konnte nicht bestätigt werden. Bitte erneut versuchen.",
       "checkoutUnavailable": "Checkout ist derzeit nicht verfügbar.",
       "unableToLoadPlans": "Pläne konnten nicht geladen werden.",
       "unexpectedError": "Unerwarteter Fehler. Bitte später erneut versuchen.",
