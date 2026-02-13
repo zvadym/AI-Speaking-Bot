@@ -56,7 +56,8 @@ const trap = ref('');
 const startedAt = ref(0);
 const state = ref('idle'); // idle | loading | success | error
 
-const webhookUrl = (import.meta.env.VITE_CONTACT_WEBHOOK_URL || '').toString().trim();
+const runtimeConfig = useRuntimeConfig();
+const webhookUrl = (runtimeConfig.public.contactWebhookUrl || '').toString().trim();
 const missingWebhook = computed(() => !webhookUrl);
 const isDisabled = computed(() => missingWebhook.value || state.value === 'loading');
 const submitDisabled = computed(() => isDisabled.value || !message.value);
@@ -178,4 +179,3 @@ async function onSubmit() {
   }
 }
 </style>
-

@@ -80,18 +80,19 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useRoute, useRouter } from 'vue-router';
-import { normalizeLocale, routeWithLocale, useI18n, supportedLocales } from '../i18n.js';
+import { useRoute } from 'vue-router';
+import { localizedPath, normalizeLocale, routeWithLocale, stripLocalePrefix, useI18n, supportedLocales } from '../i18n.js';
 
 const { t, locale, setAppLocale } = useI18n();
 const route = useRoute();
-const router = useRouter();
 
 const SECTION_IDS = ['pricing', 'blog', 'about', 'contact'];
 const activeSection = ref('');
 let observer = null;
 
-const isTeachersActive = computed(() => route.name === 'teachers' || route.name === 'teacher');
+const routeSuffix = computed(() => stripLocalePrefix(route.path || '/'));
+const isHomeRoute = computed(() => routeSuffix.value === '/');
+const isTeachersActive = computed(() => routeSuffix.value === '/teachers' || routeSuffix.value.startsWith('/teachers/'));
 
 function normalizeHash(hash) {
   const raw = (hash || '').toString().trim();
@@ -101,7 +102,7 @@ function normalizeHash(hash) {
 }
 
 function setActiveFromRouteHash() {
-  if (route.name !== 'home') {
+  if (!isHomeRoute.value) {
     activeSection.value = '';
     return;
   }
@@ -118,7 +119,7 @@ function teardownObserver() {
 
 function setupObserver() {
   teardownObserver();
-  if (route.name !== 'home') return;
+  if (!isHomeRoute.value) return;
   if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') return;
 
   const targets = SECTION_IDS.map((id) => document.getElementById(id)).filter(Boolean);
@@ -147,13 +148,14 @@ async function switchLocale(nextLocale) {
   const normalized = normalizeLocale(nextLocale);
   if (!normalized || normalized === locale.value) return;
   setAppLocale(normalized);
-  if (!route.name) return;
-  await router.replace({
-    name: route.name,
-    params: { ...route.params, locale: normalized },
-    query: route.query,
-    hash: route.hash
-  });
+  await navigateTo(
+    {
+      path: localizedPath(routeSuffix.value, normalized),
+      query: route.query,
+      hash: route.hash
+    },
+    { replace: true }
+  );
 }
 
 const localeOptions = computed(() => {
@@ -174,7 +176,7 @@ onMounted(() => {
 });
 
 watch(
-  () => route.name,
+  () => route.path,
   () => {
     setActiveFromRouteHash();
     setupObserver();

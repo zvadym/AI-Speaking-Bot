@@ -166,6 +166,24 @@
       </div>
     </section>
 
+    <section id="faq" class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container reveal-up">
+          <h2 class="h2">{{ t('faq.title') }}</h2>
+          <p class="muted faq-subhead">{{ t('faq.subhead') }}</p>
+
+          <div class="faq-list" style="--revealDelay: 120ms;">
+            <article v-for="item in faqItems" :key="item.q" class="card faq-item">
+              <h3 class="h3 faq-question">{{ item.q }}</h3>
+              <p class="muted faq-answer">{{ item.a }}</p>
+            </article>
+          </div>
+        </div>
+        <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
+      </div>
+    </section>
+
     <section id="contact" class="snap-section section">
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner contact-inner">
@@ -193,9 +211,19 @@ import { routeWithLocale, useI18n } from '../i18n.js';
 import { setupParallax } from '../lib/parallax.js';
 import { setupSectionReveal } from '../lib/reveal.js';
 
-const { t, locale } = useI18n();
+const { t, tm, locale } = useI18n();
 const previewTeachers = computed(() => teachers.slice(0, 2));
 const posts = computed(() => blogPosts.slice(0, 3));
+const faqItems = computed(() => {
+  const raw = tm('faq.items');
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => ({
+      q: (item?.q || '').toString().trim(),
+      a: (item?.a || '').toString().trim()
+    }))
+    .filter((item) => item.q && item.a);
+});
 
 const root = ref(null);
 let cleanupParallax = null;
@@ -423,6 +451,32 @@ onBeforeUnmount(() => {
   margin: 0;
   padding-left: 18px;
   line-height: 1.8;
+}
+
+.faq-subhead {
+  margin-top: 10px;
+  max-width: 68ch;
+  line-height: 1.7;
+}
+
+.faq-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.faq-item {
+  display: grid;
+  gap: 8px;
+}
+
+.faq-question {
+  margin: 0;
+}
+
+.faq-answer {
+  margin: 0;
+  line-height: 1.75;
 }
 
 .scroll-cue {

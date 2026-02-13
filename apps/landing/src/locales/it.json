@@ -77,6 +77,36 @@
       "three": "Un’abitudine quotidiana di speaking"
     }
   },
+  "faq": {
+    "title": "FAQ",
+    "subhead": "Risposte placeholder per SEO e indicizzazione. Il testo finale può essere aggiornato con il tuo SEO specialist.",
+    "items": [
+      {
+        "q": "Come funziona AI Language School?",
+        "a": "Scegli un insegnante, invii messaggi vocali o testuali su Telegram e ricevi correzioni e feedback in tempo reale."
+      },
+      {
+        "q": "Devo prenotare lezioni a orario fisso?",
+        "a": "No. La pratica è asincrona, quindi puoi esercitarti quando ti è più comodo."
+      },
+      {
+        "q": "È adatto anche ai principianti?",
+        "a": "Sì. Ci sono insegnanti per diversi livelli e puoi iniziare con prompt brevi e semplici."
+      },
+      {
+        "q": "Quali lingue sono disponibili?",
+        "a": "Le coppie linguistiche dipendono dagli insegnanti attivi. Controlla la pagina Insegnanti per le opzioni correnti."
+      },
+      {
+        "q": "Esiste un piano gratuito?",
+        "a": "Sì. Puoi iniziare gratis e passare a un piano a pagamento quando vuoi più volume di pratica."
+      },
+      {
+        "q": "Dove si svolge la pratica?",
+        "a": "La pratica avviene direttamente in Telegram, in un flusso chat familiare e facile da mantenere ogni giorno."
+      }
+    ]
+  },
   "contact": {
     "title": "Contatti",
     "subhead": "Domande o feedback? Scrivici — leggiamo tutto.",

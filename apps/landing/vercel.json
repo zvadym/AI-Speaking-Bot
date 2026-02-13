@@ -4,6 +4,5 @@
     { "source": "/teachers", "destination": "/en/teachers", "permanent": true },
     { "source": "/teachers/:slug", "destination": "/en/teachers/:slug", "permanent": true },
     { "source": "/blog/:slug", "destination": "/en/blog/:slug", "permanent": true }
-  ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  ]
 }

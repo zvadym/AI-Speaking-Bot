@@ -77,6 +77,36 @@
       "three": "Build a daily speaking habit"
     }
   },
+  "faq": {
+    "title": "FAQ",
+    "subhead": "Placeholder answers for SEO and crawlability. Final copy can be replaced by your SEO team.",
+    "items": [
+      {
+        "q": "How does AI Language School work?",
+        "a": "You pick a teacher, send voice or text messages in Telegram, and receive corrected phrasing and feedback in real time."
+      },
+      {
+        "q": "Do I need to schedule lessons?",
+        "a": "No. Practice is asynchronous, so you can send messages whenever it fits your day."
+      },
+      {
+        "q": "Can beginners use this?",
+        "a": "Yes. Teachers are designed for different levels and can guide practice with short, clear prompts."
+      },
+      {
+        "q": "Which languages are supported?",
+        "a": "Language pairs depend on available teachers. Check the Teachers page to see current options."
+      },
+      {
+        "q": "Is there a free plan?",
+        "a": "Yes. You can start with a free plan and upgrade when you want more practice volume."
+      },
+      {
+        "q": "Where does learning happen?",
+        "a": "Practice happens directly in Telegram, so you can keep a daily speaking habit in a familiar chat flow."
+      }
+    ]
+  },
   "contact": {
     "title": "Contact",
     "subhead": "Have a question or feedback? Send a message — we read everything.",

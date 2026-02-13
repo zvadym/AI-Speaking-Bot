@@ -5,6 +5,8 @@ node_modules
 apps/**/node_modules
 apps/miniapp/dist
 apps/landing/dist
+apps/landing/.nuxt
+apps/landing/.output
 apps/**/.vercel
 apps/landing/.env
 deploy/.env.api

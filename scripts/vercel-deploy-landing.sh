@@ -42,7 +42,7 @@ cd "$VERCEL_CWD"
 if [[ ! -f .vercel/project.json ]]; then
   echo ""
   echo "Project not linked yet. Running: vercel link"
-  echo "(Tip: set Root Directory to apps/landing in the prompts.)"
+  echo "(Tip: set Root Directory to apps/landing and Nuxt output to .output/public.)"
   vercel_cmd link
 fi
 

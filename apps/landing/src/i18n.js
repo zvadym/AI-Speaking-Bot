@@ -1,11 +1,10 @@
-import { watch, ref, inject } from 'vue';
+import { computed } from 'vue';
+import { useRoute } from '#imports';
 import en from './locales/en.json';
 import uk from './locales/uk.json';
 import it from './locales/it.json';
-import { getTeacherBySlug } from './data/teachers.js';
 
 const STORAGE_KEY = 'landing_ui_locale';
-const I18N_SYMBOL = Symbol('landing_i18n');
 
 const messages = { en, uk, it };
 export const supportedLocales = ['en', 'uk', 'it'];
@@ -18,31 +17,38 @@ export function normalizeLocale(input) {
   return '';
 }
 
+export function isSupportedLocale(input) {
+  return supportedLocales.includes(normalizeLocale(input));
+}
+
 export function getLocaleFromPathname(pathname = '') {
   const rawPath = (pathname || '').toString().trim();
   const segment = rawPath.split('/').filter(Boolean)[0] || '';
   return normalizeLocale(segment);
 }
 
-function stripLocalePrefix(pathname = '') {
-  const rawPath = (pathname || '').toString().trim();
-  const match = rawPath.match(/^\/([a-zA-Z-]+)(?=\/|$)/);
-  if (!match) return rawPath || '/';
-  const localeMatch = normalizeLocale(match[1]);
-  if (!localeMatch) return rawPath || '/';
-  const trimmed = rawPath.slice(match[0].length);
-  return trimmed || '/';
+function normalizePath(pathname = '') {
+  const raw = (pathname || '').toString().trim();
+  if (!raw || raw === '/') return '/';
+  return raw.startsWith('/') ? raw : `/${raw}`;
 }
 
-function loadSavedLocale() {
-  try {
-    return normalizeLocale(window.localStorage?.getItem(STORAGE_KEY));
-  } catch {
-    return '';
-  }
+export function stripLocalePrefix(pathname = '') {
+  const normalized = normalizePath(pathname);
+  const pattern = new RegExp(`^\\/(${supportedLocales.join('|')})(?=\\/|$)`, 'i');
+  const stripped = normalized.replace(pattern, '');
+  return stripped || '/';
+}
+
+export function localizedPath(pathname = '', locale = 'en') {
+  const activeLocale = normalizeLocale(locale) || 'en';
+  const suffix = stripLocalePrefix(pathname);
+  if (suffix === '/') return `/${activeLocale}`;
+  return `/${activeLocale}${suffix}`;
 }
 
 function saveLocale(value) {
+  if (!import.meta.client) return;
   try {
     window.localStorage?.setItem(STORAGE_KEY, value);
   } catch {
@@ -50,35 +56,14 @@ function saveLocale(value) {
   }
 }
 
-function getTeacherLocaleHintFromPathname() {
+export function getSavedLocale() {
+  if (!import.meta.client) return '';
   try {
-    const pathname = stripLocalePrefix(window.location?.pathname || '');
-    const match = pathname.match(/^\/teachers\/([^/]+)$/);
-    if (!match) return '';
-    const teacher = getTeacherBySlug(match[1]);
-    return normalizeLocale(teacher?.baseLanguage) || '';
+    return normalizeLocale(window.localStorage?.getItem(STORAGE_KEY));
   } catch {
     return '';
   }
 }
-
-export function getInitialLocale() {
-  const routeLocale = getLocaleFromPathname(window.location?.pathname || '');
-  if (routeLocale) return routeLocale;
-
-  const saved = loadSavedLocale();
-  if (saved) return saved;
-
-  const teacherHint = getTeacherLocaleHintFromPathname();
-  if (teacherHint) return teacherHint;
-
-  const browserHint = normalizeLocale(navigator?.language);
-  if (browserHint) return browserHint;
-
-  return 'en';
-}
-
-export const locale = ref(getInitialLocale());
 
 function getByPath(value, path) {
   if (!value) return null;
@@ -92,56 +77,112 @@ function getByPath(value, path) {
 }
 
 function format(template, params) {
-  if (!params) return template;
+  if (!params || typeof template !== 'string') return template;
   return template.replace(/\{(\w+)\}/g, (_, key) => {
     const value = params[key];
     return value === undefined || value === null ? '' : String(value);
   });
 }
 
-export function t(key, params) {
-  const primary = getByPath(messages[locale.value], key);
-  if (typeof primary === 'string') return format(primary, params);
-  const fallback = getByPath(messages.en, key);
-  if (typeof fallback === 'string') return format(fallback, params);
-  return key;
+function readMessage(key, localeCode) {
+  const normalized = normalizeLocale(localeCode) || 'en';
+  const primary = getByPath(messages[normalized], key);
+  if (primary !== null && primary !== undefined) return primary;
+  return getByPath(messages.en, key);
+}
+
+function toQueryString(query) {
+  if (!query || typeof query !== 'object') return '';
+  const params = new URLSearchParams();
+  for (const [key, rawValue] of Object.entries(query)) {
+    if (rawValue === undefined || rawValue === null) continue;
+    if (Array.isArray(rawValue)) {
+      for (const value of rawValue) {
+        if (value === undefined || value === null) continue;
+        params.append(key, String(value));
+      }
+      continue;
+    }
+    params.set(key, String(rawValue));
+  }
+  return params.toString();
+}
+
+function appendQueryAndHash(path, options = {}) {
+  let result = normalizePath(path);
+  const qs = toQueryString(options.query);
+  if (qs) result += `?${qs}`;
+
+  const hashRaw = (options.hash || '').toString().trim();
+  if (hashRaw) {
+    result += hashRaw.startsWith('#') ? hashRaw : `#${hashRaw}`;
+  }
+
+  return result;
+}
+
+function buildPathByName(name, params = {}) {
+  if (typeof name !== 'string') return '/';
+  if (name.startsWith('/')) return normalizePath(name);
+
+  if (name === 'home') return '/';
+  if (name === 'teachers') return '/teachers';
+
+  if (name === 'teacher') {
+    const slug = (params.slug || '').toString().trim();
+    return slug ? `/teachers/${encodeURIComponent(slug)}` : '/teachers';
+  }
+
+  if (name === 'blog-post') {
+    const slug = (params.slug || '').toString().trim();
+    return slug ? `/blog/${encodeURIComponent(slug)}` : '/';
+  }
+
+  if (name === 'not-found') {
+    const pathMatch = params.pathMatch;
+    if (Array.isArray(pathMatch)) {
+      return `/${pathMatch.map((part) => encodeURIComponent(String(part))).join('/')}`;
+    }
+    return normalizePath(pathMatch || '/');
+  }
+
+  return '/';
 }
 
 export function setAppLocale(nextLocale) {
   const normalized = normalizeLocale(nextLocale);
   if (!normalized) return;
-  locale.value = normalized;
   saveLocale(normalized);
 }
 
 export function routeWithLocale(name, params = {}, options = {}) {
-  const targetLocale =
-    normalizeLocale(options.locale) || normalizeLocale(params.locale) || normalizeLocale(locale.value) || 'en';
-  const nextParams = { ...params, locale: targetLocale };
-  const location = { name, params: nextParams };
-  if (options.hash) location.hash = options.hash;
-  if (options.query) location.query = options.query;
-  return location;
+  const route = useRoute();
+  const fromRoute = normalizeLocale(route.params?.locale);
+  const targetLocale = normalizeLocale(options.locale) || normalizeLocale(params.locale) || fromRoute || 'en';
+  const basePath = buildPathByName(name, params);
+  return appendQueryAndHash(localizedPath(basePath, targetLocale), options);
 }
-
-export const i18n = {
-  install(app) {
-    app.config.globalProperties.$t = t;
-    app.provide(I18N_SYMBOL, { t, locale, setAppLocale });
-  }
-};
-
-function syncHtmlLang(value) {
-  try {
-    document?.documentElement?.setAttribute('lang', value);
-  } catch {
-    // ignore
-  }
-}
-
-syncHtmlLang(locale.value);
-watch(locale, (value) => syncHtmlLang(value));
 
 export function useI18n() {
-  return inject(I18N_SYMBOL, { t, locale, setAppLocale });
+  const route = useRoute();
+  const locale = computed(() => normalizeLocale(route.params?.locale) || 'en');
+
+  function t(key, params) {
+    const value = readMessage(key, locale.value);
+    if (typeof value === 'string') return format(value, params);
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return key;
+  }
+
+  function tm(key, explicitLocale) {
+    const localeCode = normalizeLocale(explicitLocale) || locale.value;
+    return readMessage(key, localeCode);
+  }
+
+  return {
+    t,
+    tm,
+    locale,
+    setAppLocale
+  };
 }
