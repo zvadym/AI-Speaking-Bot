@@ -65,6 +65,21 @@ function requireAdmin(req, res, next) {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PURCHASE_ALLOWED_TIERS = new Set(['pro']);
+const PURCHASE_ALLOWED_BILLING_INTERVALS = new Set(['month', 'year']);
+const QUERY_TRUE_VALUES = new Set(['true', '1', 'yes']);
+
+function normalizeBillingInterval(raw, fallback = 'month') {
+  const value = (raw ?? '').toString().trim().toLowerCase();
+  if (!value) return fallback;
+  if (!PURCHASE_ALLOWED_BILLING_INTERVALS.has(value)) return null;
+  return value;
+}
+
+function parseQueryBoolean(raw) {
+  const value = (raw ?? '').toString().trim().toLowerCase();
+  if (!value) return false;
+  return QUERY_TRUE_VALUES.has(value);
+}
 
 function normalizeBotKey(raw) {
   const value = (raw ?? '').toString().trim().toLowerCase();
@@ -1884,6 +1899,9 @@ app.post('/auth/telegram', async (req, res) => {
 
 app.get('/plans', requireAuth, async (req, res) => {
   const currency = (req.query.currency || 'EUR').toString().toUpperCase();
+  const includeAllIntervals = parseQueryBoolean(
+    req.query.include_all_intervals ?? req.query.includeAllIntervals
+  );
   const chatId = req.auth.chatId;
 
   const { rows: userRows } = await pool.query(
@@ -1903,9 +1921,15 @@ app.get('/plans', requireAuth, async (req, res) => {
          ON p.tier = pp.tier
         AND pp.currency = $1
         AND pp.active = true
+        AND ($2::boolean = true OR pp.billing_interval = 'month')
       WHERE p.tier IN ('pro')
-      ORDER BY p.tier`,
-    [currency]
+      ORDER BY p.tier,
+               CASE
+                 WHEN pp.billing_interval = 'month' THEN 0
+                 WHEN pp.billing_interval = 'year' THEN 1
+                 ELSE 2
+               END`,
+    [currency, includeAllIntervals]
   );
 
   let usage = null;
@@ -2096,10 +2120,14 @@ app.post('/me/level', requireAuth, async (req, res) => {
 
 app.post('/billing/checkout', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
-  const { tier, currency } = req.body || {};
+  const { tier, currency, billing_interval: billingIntervalRaw } = req.body || {};
   const normalizedTier = String(tier || '').toLowerCase();
   if (!PURCHASE_ALLOWED_TIERS.has(normalizedTier)) {
     return res.status(400).json({ error: 'bad_tier' });
+  }
+  const normalizedBillingInterval = normalizeBillingInterval(billingIntervalRaw, 'month');
+  if (!normalizedBillingInterval) {
+    return res.status(400).json({ error: 'bad_billing_interval' });
   }
 
   const billingCurrency = (currency || 'EUR').toString().toUpperCase();
@@ -2107,9 +2135,9 @@ app.post('/billing/checkout', requireAuth, async (req, res) => {
   const { rows: priceRows } = await pool.query(
     `SELECT stripe_price_id
        FROM plan_prices
-      WHERE tier = $1 AND currency = $2 AND active = true
+      WHERE tier = $1 AND currency = $2 AND billing_interval = $3 AND active = true
       LIMIT 1`,
-    [normalizedTier, billingCurrency]
+    [normalizedTier, billingCurrency, normalizedBillingInterval]
   );
 
   if (!priceRows[0]?.stripe_price_id) {
@@ -2151,7 +2179,11 @@ app.post('/billing/checkout', requireAuth, async (req, res) => {
       : `${env.webappUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: env.webappReturnUrlIsCustom ? env.webappReturnUrl : `${env.webappUrl}/cancel`,
     allow_promotion_codes: true,
-    metadata: { chat_id: String(chatId), tier: normalizedTier }
+    metadata: {
+      chat_id: String(chatId),
+      tier: normalizedTier,
+      billing_interval: normalizedBillingInterval
+    }
   };
 
   let session;
@@ -2188,10 +2220,14 @@ app.post('/billing/checkout', requireAuth, async (req, res) => {
 
 app.post('/billing/checkout/embedded', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
-  const { tier, currency } = req.body || {};
+  const { tier, currency, billing_interval: billingIntervalRaw } = req.body || {};
   const normalizedTier = String(tier || '').toLowerCase();
   if (!PURCHASE_ALLOWED_TIERS.has(normalizedTier)) {
     return res.status(400).json({ error: 'bad_tier' });
+  }
+  const normalizedBillingInterval = normalizeBillingInterval(billingIntervalRaw, 'month');
+  if (!normalizedBillingInterval) {
+    return res.status(400).json({ error: 'bad_billing_interval' });
   }
 
   const billingCurrency = (currency || 'EUR').toString().toUpperCase();
@@ -2199,9 +2235,9 @@ app.post('/billing/checkout/embedded', requireAuth, async (req, res) => {
   const { rows: priceRows } = await pool.query(
     `SELECT stripe_price_id
        FROM plan_prices
-      WHERE tier = $1 AND currency = $2 AND active = true
+      WHERE tier = $1 AND currency = $2 AND billing_interval = $3 AND active = true
       LIMIT 1`,
-    [normalizedTier, billingCurrency]
+    [normalizedTier, billingCurrency, normalizedBillingInterval]
   );
 
   if (!priceRows[0]?.stripe_price_id) {
@@ -2242,7 +2278,11 @@ app.post('/billing/checkout/embedded', requireAuth, async (req, res) => {
     return_url: `${env.webappUrl}/success`,
     allow_promotion_codes: true,
     redirect_on_completion: 'always',
-    metadata: { chat_id: String(chatId), tier: normalizedTier }
+    metadata: {
+      chat_id: String(chatId),
+      tier: normalizedTier,
+      billing_interval: normalizedBillingInterval
+    }
   };
 
   let session;

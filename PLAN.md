@@ -24,14 +24,14 @@ Replace Telegram Stars with Stripe subscriptions inside a Telegram Mini App, wit
 - Production migration is a single `ALTER` batch and safe to run once.
 
 **Stripe Model**
-- Subscriptions for Plus and Pro, billing interval monthly.
+- Subscriptions for Pro with monthly and annual billing intervals (annual launch: EUR).
 - Auto-renew on by default, user can cancel at period end.
 - Webhook-driven entitlements based on `customer.subscription.*` and `invoice.*` events.
 
 **API Endpoints**
 - `POST /auth/telegram` validate initData, upsert user, issue short-lived JWT.
-- `GET /plans` return plan limits and price for current currency.
-- `POST /billing/checkout` create hosted Stripe Checkout Session.
+- `GET /plans` return plan limits and pricing for current currency (optionally all billing intervals).
+- `POST /billing/checkout` create hosted Stripe Checkout Session (monthly/annual).
 - `POST /billing/cancel` set cancel_at_period_end=true.
 - `POST /billing/resume` set cancel_at_period_end=false.
 - `POST /stripe/webhook` validate Stripe signature and update entitlements.

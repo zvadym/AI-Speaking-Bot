@@ -63,6 +63,9 @@ const debugLogs = ref(readDebugLogs());
 let unsubscribeDebug = null;
 
 const publishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').toString().trim();
+const BILLING_INTERVAL_MONTH = 'month';
+const BILLING_INTERVAL_YEAR = 'year';
+const BILLING_INTERVALS = new Set([BILLING_INTERVAL_MONTH, BILLING_INTERVAL_YEAR]);
 
 let embeddedCheckout = null;
 
@@ -86,7 +89,9 @@ function parseCheckoutParams() {
   const params = new URLSearchParams(window.location.search);
   const tier = (params.get('tier') || '').toLowerCase();
   const currency = (params.get('currency') || 'EUR').toUpperCase();
-  return { tier, currency };
+  const billingIntervalRaw = (params.get('billing_interval') || BILLING_INTERVAL_MONTH).toLowerCase();
+  const billingInterval = BILLING_INTERVALS.has(billingIntervalRaw) ? billingIntervalRaw : null;
+  return { tier, currency, billingInterval };
 }
 
 function setError(key) {
@@ -95,11 +100,15 @@ function setError(key) {
 }
 
 async function fetchClientSecret() {
-  const { tier, currency } = parseCheckoutParams();
-  addDebugLog('embedded_client_secret_request_started', { tier, currency });
+  const { tier, currency, billingInterval } = parseCheckoutParams();
+  addDebugLog('embedded_client_secret_request_started', { tier, currency, billingInterval });
   if (tier !== 'pro') {
     setError('checkout.errors.badTier');
     throw new Error('bad_tier');
+  }
+  if (!billingInterval) {
+    setError('checkout.errors.badBillingInterval');
+    throw new Error('bad_billing_interval');
   }
 
   const resp = await fetch(`${props.apiBase}/billing/checkout/embedded`, {
@@ -108,7 +117,7 @@ async function fetchClientSecret() {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${props.token}`
     },
-    body: JSON.stringify({ tier, currency })
+    body: JSON.stringify({ tier, currency, billing_interval: billingInterval })
   });
   addDebugLog('embedded_client_secret_response_received', { ok: resp.ok, status: resp.status });
 
@@ -124,7 +133,7 @@ async function fetchClientSecret() {
   }
 
   addDebugLog('embedded_client_secret_received', { hasClientSecret: Boolean(data?.client_secret) });
-  track('checkout_embedded_client_secret_loaded', { tier, currency });
+  track('checkout_embedded_client_secret_loaded', { tier, currency, billing_interval: billingInterval });
   return data.client_secret;
 }
 

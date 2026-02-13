@@ -155,6 +155,7 @@
     "errors": {
       "unavailable": "Checkout ist derzeit nicht verfügbar.",
       "badTier": "Ungültige Planauswahl.",
+      "badBillingInterval": "Ungültiges Abrechnungsintervall.",
       "missingKey": "Stripe ist für eingebetteten Checkout nicht konfiguriert."
     }
   },
@@ -171,7 +172,12 @@
       "resumeAutoRenew": "Automatische Verlängerung fortsetzen"
     },
     "period": {
-      "perMonth": "/ Monat"
+      "perMonth": "/ Monat",
+      "perYear": "/ Jahr"
+    },
+    "billingIntervals": {
+      "monthly": "Monatlich",
+      "annual": "Jährlich"
     },
     "actions": {
       "openingCheckout": "Checkout wird geöffnet…",

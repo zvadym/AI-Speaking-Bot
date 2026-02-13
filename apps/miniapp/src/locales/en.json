@@ -155,6 +155,7 @@
     "errors": {
       "unavailable": "Checkout unavailable right now.",
       "badTier": "Invalid plan selection.",
+      "badBillingInterval": "Invalid billing interval.",
       "missingKey": "Stripe is not configured for embedded checkout."
     }
   },
@@ -171,7 +172,12 @@
       "resumeAutoRenew": "Resume auto-renew"
     },
     "period": {
-      "perMonth": "/ month"
+      "perMonth": "/ month",
+      "perYear": "/ year"
+    },
+    "billingIntervals": {
+      "monthly": "Monthly",
+      "annual": "Annual"
     },
     "actions": {
       "openingCheckout": "Opening Checkout…",

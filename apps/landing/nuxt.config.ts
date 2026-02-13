@@ -52,7 +52,8 @@ export default defineNuxtConfig({
   ssr: true,
   srcDir: 'src/',
   dir: {
-    pages: 'routes'
+    pages: 'routes',
+    public: '../public'
   },
   css: ['~/style.css'],
   app: {

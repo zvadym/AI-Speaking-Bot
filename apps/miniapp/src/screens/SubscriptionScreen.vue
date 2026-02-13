@@ -97,9 +97,23 @@
     </section>
 
     <section class="plans">
+      <div class="billing-toggle" v-if="showBillingToggle">
+        <button
+          v-for="interval in availableBillingIntervals"
+          :key="interval"
+          type="button"
+          class="billing-toggle-btn"
+          :class="{ active: interval === selectedBillingInterval }"
+          :disabled="isBusy"
+          @click="selectBillingInterval(interval)"
+        >
+          {{ billingIntervalLabel(interval) }}
+        </button>
+      </div>
+
       <article
         v-for="(plan, index) in visiblePlans"
-        :key="plan.tier"
+        :key="`${plan.tier}-${plan.billing_interval}`"
         class="plan"
         :class="{ featured: plan.tier === 'pro' }"
         :style="{ animationDelay: `${index * 120}ms` }"
@@ -109,7 +123,7 @@
           <div class="plan-price">
             <span class="currency">{{ currencySymbol(plan.currency) }}</span>
             <span class="amount">{{ formatPrice(plan.amount_cents) }}</span>
-            <span class="period">{{ $t('subscription.period.perMonth') }}</span>
+            <span class="period">{{ periodLabel(plan.billing_interval) }}</span>
           </div>
         </header>
 
@@ -118,9 +132,9 @@
         <button
           class="cta"
           :disabled="isBusy"
-          @click.stop="subscribe(plan.tier)"
+          @click.stop="subscribe(plan.tier, plan.billing_interval)"
         >
-          {{ actionPending === plan.tier ? $t('subscription.actions.openingCheckout') : actionLabel(plan.tier) }}
+          {{ actionPending === planActionKey(plan) ? $t('subscription.actions.openingCheckout') : actionLabel() }}
         </button>
       </article>
 
@@ -172,11 +186,29 @@ const embeddedCheckoutEnabled = (import.meta.env.VITE_STRIPE_EMBEDDED_CHECKOUT |
 const stripePublishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').toString().trim();
 const stripePublishableKeyPresent = Boolean(stripePublishableKey);
 const useEmbeddedCheckout = computed(() => embeddedCheckoutEnabled && stripePublishableKeyPresent);
+const BILLING_INTERVAL_MONTH = 'month';
+const BILLING_INTERVAL_YEAR = 'year';
+const BILLING_INTERVALS = new Set([BILLING_INTERVAL_MONTH, BILLING_INTERVAL_YEAR]);
+const selectedBillingInterval = ref(BILLING_INTERVAL_MONTH);
 
-function buildCheckoutPath(tier, currency) {
+function normalizeBillingInterval(raw, fallback = null) {
+  const value = (raw ?? '').toString().trim().toLowerCase();
+  if (!value) return fallback;
+  if (!BILLING_INTERVALS.has(value)) return fallback;
+  return value;
+}
+
+function billingIntervalSortValue(interval) {
+  if (interval === BILLING_INTERVAL_MONTH) return 0;
+  if (interval === BILLING_INTERVAL_YEAR) return 1;
+  return 2;
+}
+
+function buildCheckoutPath(tier, currency, billingInterval) {
   const params = new URLSearchParams();
   params.set('tier', tier);
   params.set('currency', currency);
+  params.set('billing_interval', billingInterval);
   const currentParams = new URLSearchParams(window.location.search);
   const debugParam = currentParams.get('debug');
   if (debugParam) params.set('debug', debugParam);
@@ -268,20 +300,84 @@ function usagePercent(used, limit) {
   return Math.min(100, Math.round((used / limit) * 100));
 }
 
+const proPlans = computed(() =>
+  plans.value
+    .filter((plan) => plan.tier === 'pro')
+    .map((plan) => ({
+      ...plan,
+      billing_interval: normalizeBillingInterval(plan.billing_interval, BILLING_INTERVAL_MONTH)
+    }))
+);
+
+const availableBillingIntervals = computed(() => {
+  const intervals = Array.from(new Set(
+    proPlans.value.map((plan) => plan.billing_interval).filter(Boolean)
+  ));
+  return intervals.sort((a, b) => billingIntervalSortValue(a) - billingIntervalSortValue(b));
+});
+
+const selectedProPlan = computed(() => {
+  const selected = proPlans.value.find((plan) => plan.billing_interval === selectedBillingInterval.value);
+  return selected || proPlans.value[0] || null;
+});
+
+const showBillingToggle = computed(() => {
+  const isPro = effectiveTier.value === 'pro';
+  return !isPro && availableBillingIntervals.value.length > 1;
+});
+
+function syncSelectedBillingInterval() {
+  const intervals = availableBillingIntervals.value;
+  if (intervals.length === 0) {
+    selectedBillingInterval.value = BILLING_INTERVAL_MONTH;
+    return;
+  }
+  if (intervals.includes(selectedBillingInterval.value)) return;
+  selectedBillingInterval.value = intervals.includes(BILLING_INTERVAL_MONTH)
+    ? BILLING_INTERVAL_MONTH
+    : intervals[0];
+}
+
 const visiblePlans = computed(() => {
   const isPro = effectiveTier.value === 'pro';
-  return plans.value.filter((plan) => plan.tier === 'pro' && !isPro);
+  if (isPro) return [];
+  const selected = selectedProPlan.value;
+  return selected ? [selected] : [];
 });
 
 function actionLabel() {
   return t('subscription.actions.subscribe');
 }
 
+function periodLabel(intervalRaw) {
+  const interval = normalizeBillingInterval(intervalRaw, BILLING_INTERVAL_MONTH);
+  if (interval === BILLING_INTERVAL_YEAR) return t('subscription.period.perYear');
+  return t('subscription.period.perMonth');
+}
+
+function billingIntervalLabel(intervalRaw) {
+  const interval = normalizeBillingInterval(intervalRaw, BILLING_INTERVAL_MONTH);
+  if (interval === BILLING_INTERVAL_YEAR) return t('subscription.billingIntervals.annual');
+  return t('subscription.billingIntervals.monthly');
+}
+
+function selectBillingInterval(intervalRaw) {
+  const interval = normalizeBillingInterval(intervalRaw);
+  if (!interval) return;
+  if (!availableBillingIntervals.value.includes(interval)) return;
+  selectedBillingInterval.value = interval;
+}
+
+function planActionKey(plan) {
+  const interval = normalizeBillingInterval(plan?.billing_interval, BILLING_INTERVAL_MONTH);
+  return `${plan?.tier || 'unknown'}:${interval}`;
+}
+
 async function loadPlans({ keepNotice = false } = {}) {
   errorState.value = null;
   if (!keepNotice) noticeState.value = null;
   addDebugLog('plans_request_started');
-  const resp = await fetch(`${props.apiBase}/plans`, {
+  const resp = await fetch(`${props.apiBase}/plans?include_all_intervals=true`, {
     headers: { Authorization: `Bearer ${props.token}` }
   });
   addDebugLog('plans_response_received', { ok: resp.ok, status: resp.status });
@@ -296,19 +392,22 @@ async function loadPlans({ keepNotice = false } = {}) {
   state.user = data.user;
   state.currency = data.currency || 'EUR';
   state.usage = data.usage || null;
+  syncSelectedBillingInterval();
 }
 
-async function subscribe(tier) {
-  if (tier !== 'pro') {
+async function subscribe(tier, billingIntervalRaw = BILLING_INTERVAL_MONTH) {
+  const billingInterval = normalizeBillingInterval(billingIntervalRaw);
+  if (tier !== 'pro' || !billingInterval) {
     setError('subscription.actionLabels.checkoutUnavailable');
     return;
   }
-  actionPending.value = tier;
+  actionPending.value = `${tier}:${billingInterval}`;
   clearMessages();
   try {
-    track('ui_click', { id: 'subscription_subscribe', tier });
+    track('ui_click', { id: 'subscription_subscribe', tier, billing_interval: billingInterval });
     addDebugLog('subscribe_clicked', {
       tier,
+      billingInterval,
       effectiveTier: effectiveTier.value,
       currency: state.currency,
       embeddedCheckoutEnabled,
@@ -316,9 +415,9 @@ async function subscribe(tier) {
       useEmbeddedCheckout: useEmbeddedCheckout.value
     });
     if (useEmbeddedCheckout.value) {
-      const target = buildCheckoutPath(tier, state.currency);
+      const target = buildCheckoutPath(tier, state.currency, billingInterval);
       addDebugLog('embedded_checkout_navigation', { target });
-      track('checkout_opened', { tier, currency: state.currency, mode: 'embedded' });
+      track('checkout_opened', { tier, currency: state.currency, billing_interval: billingInterval, mode: 'embedded' });
       emit('navigate', target);
       return;
     }
@@ -329,7 +428,7 @@ async function subscribe(tier) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${props.token}`
       },
-      body: JSON.stringify({ tier, currency: state.currency })
+      body: JSON.stringify({ tier, currency: state.currency, billing_interval: billingInterval })
     });
 
     if (!resp.ok) {
@@ -339,7 +438,7 @@ async function subscribe(tier) {
 
     const data = await resp.json();
     addDebugLog('redirect_checkout_url_received', { hasUrl: Boolean(data?.url) });
-    track('checkout_opened', { tier, currency: state.currency, mode: 'redirect' });
+    track('checkout_opened', { tier, currency: state.currency, billing_interval: billingInterval, mode: 'redirect' });
     tgOpenLink(data.url);
   } catch (err) {
     console.error(err);
@@ -609,6 +708,39 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
+}
+
+.billing-toggle {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.55);
+  padding: 4px;
+  box-shadow: 0 14px 34px rgba(30, 26, 22, 0.12);
+}
+
+.billing-toggle-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.billing-toggle-btn.active {
+  background: rgba(30, 26, 22, 0.9);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.billing-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .plan {

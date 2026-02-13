@@ -155,6 +155,7 @@
     "errors": {
       "unavailable": "Зараз оплата недоступна.",
       "badTier": "Некоректний вибір плану.",
+      "badBillingInterval": "Некоректний інтервал оплати.",
       "missingKey": "Stripe не налаштований для вбудованої оплати."
     }
   },
@@ -171,7 +172,12 @@
       "resumeAutoRenew": "Увімкнути автопродовження"
     },
     "period": {
-      "perMonth": "/ місяць"
+      "perMonth": "/ місяць",
+      "perYear": "/ рік"
+    },
+    "billingIntervals": {
+      "monthly": "Щомісяця",
+      "annual": "Щороку"
     },
     "actions": {
       "openingCheckout": "Відкриваємо оплату…",

@@ -152,6 +152,21 @@ git pull --ff-only
 ./deploy/deploy.sh
 ```
 
+### 2.2.1 Activate Pro annual price after deploy
+
+The migration seeds `pro/EUR/year` with `active=false` and a placeholder Stripe price ID.
+After creating the real yearly Stripe price, activate it in Postgres:
+
+```sql
+UPDATE public.plan_prices
+SET stripe_price_id = '<REAL_YEARLY_PRICE_ID>',
+    active = true,
+    updated_at = NOW()
+WHERE tier = 'pro'
+  AND currency = 'EUR'
+  AND billing_interval = 'year';
+```
+
 ### 2.3 Restart n8n and re-import workflows (if workflow JSON changed)
 
 ```bash
