@@ -79,7 +79,7 @@
     "title": "Обери мову та викладача",
     "sub": "Спочатку обери мову, потім викладача для практики.",
     "teacherFallback": "Викладач",
-    "baseTeachersHeading": "{language} викладачі",
+    "baseTeachersHeading": "Мова викладання: {language}",
     "showMoreTeachers": "Показати більше",
     "showLessTeachers": "Показати менше",
     "chooseTeacher": "Викладачі для {language}",

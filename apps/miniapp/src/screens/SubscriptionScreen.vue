@@ -74,11 +74,12 @@
           >
             {{ $t('subscription.manage.managePayments') }}
           </button>
+        <template v-if="showAutoRenewControls">
           <button
             class="ghost"
             :disabled="isBusy"
             @click="cancel"
-            v-if="showAutoRenewControls && user.plan_autorenew"
+            v-if="false && user.plan_autorenew"
           >
             {{ $t('subscription.manage.turnOffAutoRenew') }}
           </button>
@@ -86,10 +87,11 @@
             class="ghost"
             :disabled="isBusy"
             @click="resume"
-            v-else-if="showAutoRenewControls"
+            v-if="!user.plan_autorenew"
           >
             {{ $t('subscription.manage.resumeAutoRenew') }}
           </button>
+          </template>
         </div>
       </div>
     </section>
