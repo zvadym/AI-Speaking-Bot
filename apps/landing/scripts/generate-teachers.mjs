@@ -72,7 +72,7 @@ function buildTeacher(config, filename) {
   const taglines = {
     uk: safeString(config.teacher_tagline_uk),
     en: safeString(config.teacher_tagline_en),
-    it: ''
+    it: safeString(config.teacher_tagline_it)
   };
   if (!taglines.it) taglines.it = taglines.en || taglines.uk;
 

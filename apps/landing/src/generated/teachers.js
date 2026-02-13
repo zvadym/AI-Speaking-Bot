@@ -3,12 +3,84 @@
 
 export const teachers = [
   {
+    "slug": "de-it",
+    "botKey": "de-it",
+    "baseLanguage": "en",
+    "learningLanguage": "it",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/de-it.png",
+    "displayName": {
+      "uk": "Giulia",
+      "en": "Giulia",
+      "it": "Giulia"
+    },
+    "taglines": {
+      "uk": "Italienisch für Alltag, Reisen und echte Gespräche 🇮🇹. Klare, sanfte Korrekturen.",
+      "en": "Italian for daily life, travel, and real conversations 🇮🇹. Clear and gentle feedback.",
+      "it": "Italiano per vita quotidiana, viaggi e conversazioni reali 🇮🇹. Correzioni chiare e delicate."
+    },
+    "styleTags": [
+      "friendly",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/giulia_italienisch_lehrerin_bot"
+  },
+  {
+    "slug": "it-de",
+    "botKey": "it-de",
+    "baseLanguage": "it",
+    "learningLanguage": "de",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/it-de.png",
+    "displayName": {
+      "uk": "Greta",
+      "en": "Greta",
+      "it": "Greta"
+    },
+    "taglines": {
+      "uk": "Tedesco per viaggio, lavoro e vita reale 🇩🇪. Correzioni chiare e gentili.",
+      "en": "German for travel, work, and real life 🇩🇪. Clear and gentle feedback.",
+      "it": "Tedesco per viaggio, lavoro e vita reale 🇩🇪. Correzioni chiare e gentili."
+    },
+    "styleTags": [
+      "gentle",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/greta_german_bot"
+  },
+  {
+    "slug": "it-en",
+    "botKey": "it-en",
+    "baseLanguage": "it",
+    "learningLanguage": "en",
+    "avatarEmoji": "👨‍🏫",
+    "avatarImage": "/teachers/it-en.png",
+    "displayName": {
+      "uk": "Luca",
+      "en": "Luca",
+      "it": "Luca"
+    },
+    "taglines": {
+      "uk": "Inglese pratico con un tocco British 🇬🇧. Ti aiuto a parlare con naturalezza.",
+      "en": "Practical English with a light British touch 🇬🇧. Speak naturally and confidently.",
+      "it": "Inglese pratico con un tocco British 🇬🇧. Ti aiuto a parlare con naturalezza."
+    },
+    "styleTags": [
+      "friendly",
+      "british-vibe",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/luca_coach_di_inglese_bot"
+  },
+  {
     "slug": "uk-de",
     "botKey": "uk-de",
     "baseLanguage": "uk",
     "learningLanguage": "de",
     "avatarEmoji": "👩‍🏫",
-    "avatarImage": "",
+    "avatarImage": "/teachers/uk-de.png",
     "displayName": {
       "uk": "Леся",
       "en": "Lesia",
@@ -32,7 +104,7 @@ export const teachers = [
     "baseLanguage": "uk",
     "learningLanguage": "en",
     "avatarEmoji": "👨‍🏫",
-    "avatarImage": "",
+    "avatarImage": "/teachers/uk-en.png",
     "displayName": {
       "uk": "Джекі",
       "en": "Jackie",

@@ -53,15 +53,10 @@
         "desc": "Try the format and see how it feels.",
         "features": "20 messages||Voice or text||Instant corrections"
       },
-      "plus": {
-        "name": "Plus",
-        "desc": "A steady practice rhythm.",
-        "features": "Limited practice time/month||Voice or text||Corrections + better phrasing"
-      },
       "pro": {
         "name": "Pro",
         "desc": "For serious progress.",
-        "features": "10× more practice time than Plus||Voice or text||More reps, faster habit"
+        "features": "Long daily practice windows||Voice or text||More reps, faster habit"
       }
     }
   },

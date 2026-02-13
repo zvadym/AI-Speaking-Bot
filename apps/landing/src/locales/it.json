@@ -53,15 +53,10 @@
         "desc": "Prova il formato e capisci se fa per te.",
         "features": "20 messaggi||Voce o testo||Correzioni istantanee"
       },
-      "plus": {
-        "name": "Plus",
-        "desc": "Un ritmo costante di pratica.",
-        "features": "Tempo di pratica limitato/mese||Voce o testo||Correzioni + frasi migliori"
-      },
       "pro": {
         "name": "Pro",
         "desc": "Per un progresso serio.",
-        "features": "10× più tempo di pratica di Plus||Voce o testo||Più ripetizioni, abitudine più forte"
+        "features": "Sessioni quotidiane più lunghe||Voce o testo||Più ripetizioni, abitudine più forte"
       }
     }
   },
