@@ -92,7 +92,7 @@
   "teachers": {
     "title": "Teachers",
     "subhead": "Browse teachers and start your next lesson on Telegram.",
-    "baseTeachersHeading": "{language} teachers",
+    "baseTeachersHeading": "Base language: {language}",
     "showMoreTeachers": "Show more",
     "showLessTeachers": "Show less",
     "empty": "No teachers available yet."

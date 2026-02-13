@@ -2153,8 +2153,18 @@
               "name": "Grid",
               "width": "fill_container",
               "layout": "vertical",
-              "gap": 20,
+              "gap": 14,
               "children": [
+                {
+                  "type": "text",
+                  "fill": "#000000",
+                  "fontFamily": "Outfit",
+                  "fontSize": 24,
+                  "fontWeight": "900",
+                  "id": "Ab1T4",
+                  "name": "Section — Ukrainian",
+                  "content": "Ukrainian teachers"
+                },
                 {
                   "type": "frame",
                   "id": "e6XPp",
@@ -2313,6 +2323,16 @@
                   ]
                 },
                 {
+                  "type": "text",
+                  "fill": "#000000",
+                  "fontFamily": "Outfit",
+                  "fontSize": 24,
+                  "fontWeight": "900",
+                  "id": "Ow6jf",
+                  "name": "Section — Italian",
+                  "content": "Italian teachers"
+                },
+                {
                   "type": "frame",
                   "id": "TxvVr",
                   "name": "Row",
@@ -2462,6 +2482,437 @@
                               "fontFamily": "Inter",
                               "fontSize": 14,
                               "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "fill": "#000000",
+                  "fontFamily": "Outfit",
+                  "fontSize": 24,
+                  "fontWeight": "900",
+                  "id": "N0cXR",
+                  "name": "Section — German",
+                  "content": "German teachers"
+                },
+                {
+                  "type": "frame",
+                  "id": "C32MP",
+                  "name": "Row",
+                  "width": "fill_container",
+                  "layout": "horizontal",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pOMDj",
+                      "name": "Teacher Card",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 24,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ljDbQ",
+                          "name": "Photo",
+                          "width": 84,
+                          "height": 84,
+                          "fill": "#F4F4F5",
+                          "cornerRadius": 42,
+                          "stroke": {
+                            "fill": "#E4E4E7",
+                            "thickness": 1
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "93V11",
+                          "name": "nameD",
+                          "fill": "#000000",
+                          "content": "Alex",
+                          "fontFamily": "Outfit",
+                          "fontSize": 28,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "bZc1D",
+                          "name": "metaD",
+                          "fill": "#71717A",
+                          "content": "German • Structured drills • Grammar",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Xvvv2",
+                          "name": "Open",
+                          "fill": "#000000",
+                          "cornerRadius": 16,
+                          "padding": [
+                            12,
+                            16
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "oBtwh",
+                              "name": "btnDText",
+                              "fill": "#FFFFFF",
+                              "content": "Open in Telegram",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "iu6cn",
+      "name": "Teacher — Desktop",
+      "x": 3080,
+      "y": 0,
+      "width": 1440,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "3KZuS",
+          "name": "Header",
+          "width": "fill_container",
+          "stroke": {
+            "fill": "#E4E4E7",
+            "thickness": {
+              "bottom": 1
+            }
+          },
+          "padding": [
+            20,
+            80
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "EAXhx",
+              "name": "Brand",
+              "fill": "#000000",
+              "content": "AI Language School",
+              "fontFamily": "Outfit",
+              "fontSize": 18,
+              "fontWeight": "800"
+            },
+            {
+              "type": "frame",
+              "id": "KKLFZ",
+              "name": "Nav",
+              "gap": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "yRqzg",
+                  "name": "navHome2",
+                  "fill": "#000000",
+                  "content": "Home",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "Bma7Y",
+                  "name": "navTeachers2",
+                  "fill": "#000000",
+                  "content": "Teachers",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "eGk3D",
+                  "name": "CTA",
+                  "fill": "#000000",
+                  "cornerRadius": 12,
+                  "padding": [
+                    10,
+                    14
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "8RE7i",
+                      "name": "cta2Text",
+                      "fill": "#FFFFFF",
+                      "content": "Start in Telegram",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Pogbg",
+          "name": "Content",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            80
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "9bDTF",
+              "name": "titleTeacher",
+              "content": "Teacher profile",
+              "fill": "#000000",
+              "fontFamily": "Outfit",
+              "fontSize": 56,
+              "fontWeight": "900",
+              "lineHeight": 1.05
+            },
+            {
+              "type": "text",
+              "id": "JSF19",
+              "name": "subTeacher",
+              "content": "See teacher style, languages, and start your next lesson in Telegram.",
+              "fill": "#71717A",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "normal",
+              "lineHeight": 1.5
+            },
+            {
+              "type": "frame",
+              "id": "h2fYN",
+              "name": "Profile Card",
+              "width": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 24,
+              "stroke": {
+                "fill": "#E4E4E7",
+                "thickness": 1
+              },
+              "padding": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "DV61n",
+                  "name": "Profile Row",
+                  "width": "fill_container",
+                  "layout": "horizontal",
+                  "alignItems": "start",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "suVmj",
+                      "name": "Photo",
+                      "width": 84,
+                      "height": 84,
+                      "fill": "#F4F4F5",
+                      "cornerRadius": 42,
+                      "stroke": {
+                        "fill": "#E4E4E7",
+                        "thickness": 1
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "wD9FS",
+                      "name": "Info",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "4VLmU",
+                          "name": "teacherName",
+                          "content": "Lesia",
+                          "fill": "#000000",
+                          "fontFamily": "Outfit",
+                          "fontSize": 42,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "oFvBo",
+                          "name": "teacherMeta",
+                          "content": "Teacher German • Ukrainian base language",
+                          "fill": "#71717A",
+                          "lineHeight": 1.4,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "gEVSa",
+                          "name": "teacherBio",
+                          "content": "German for life, work, and travel. Gentle feedback and natural phrasing practice.",
+                          "fill": "#000000",
+                          "lineHeight": 1.5,
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "rWMEu",
+                          "name": "Details",
+                          "width": "fill_container",
+                          "layout": "horizontal",
+                          "justifyContent": "space_between",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "UxyxG",
+                              "name": "Teaches",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "TdpnY",
+                                  "name": "label",
+                                  "content": "Teaches",
+                                  "fill": "#71717A",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "EBXPq",
+                                  "name": "value",
+                                  "content": "German",
+                                  "fill": "#000000",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "aSzqj",
+                              "name": "Explains",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "s4vhn",
+                                  "name": "label",
+                                  "content": "Explains in",
+                                  "fill": "#71717A",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "smPE6",
+                                  "name": "value",
+                                  "content": "Ukrainian",
+                                  "fill": "#000000",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "3UYc7",
+                          "name": "Actions",
+                          "layout": "horizontal",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "yqdR6",
+                              "name": "Open",
+                              "fill": "#000000",
+                              "cornerRadius": 16,
+                              "padding": [
+                                12,
+                                16
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "CG7Na",
+                                  "name": "btnText",
+                                  "fill": "#FFFFFF",
+                                  "content": "Open in Telegram",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "ttoEt",
+                              "name": "Back",
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 16,
+                              "stroke": {
+                                "fill": "#E4E4E7",
+                                "thickness": 1
+                              },
+                              "padding": [
+                                12,
+                                16
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "kzkyq",
+                                  "name": "backText",
+                                  "fill": "#000000",
+                                  "content": "Back to teachers",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                }
+                              ]
                             }
                           ]
                         }
