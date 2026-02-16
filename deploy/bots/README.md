@@ -24,6 +24,7 @@ Use `deploy/bots/<base>-<learning>.json` (example: `deploy/bots/uk-de.json`).
   "locale": {
     "model_system_prompt": "...",
     "model_support_prompt": "...",
+    "model_hints_prompt": "...",
     "model_summary_prompt": "...",
     "waiting_text": "...",
     "loader_messages": ["...", "..."],
