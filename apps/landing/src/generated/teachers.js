@@ -117,11 +117,11 @@ export const teachers = [
     "slug": "uk-de",
     "teacherKey": "uk-de",
     "legacyPairSlug": "uk-de",
-    "teacherSlugBase": "lesia",
+    "teacherSlugBase": "uk-de",
     "publicSlugs": {
-      "en": "lesia-german-teacher",
-      "uk": "lesia-nimetska-teacher",
-      "it": "lesia-tedesco-teacher"
+      "en": "uk-de-german-teacher",
+      "uk": "uk-de-nimetska-teacher",
+      "it": "uk-de-tedesco-teacher"
     },
     "botKey": "uk-de",
     "baseLanguage": "uk",
@@ -135,8 +135,8 @@ export const teachers = [
     },
     "displayName": {
       "uk": "Леся",
-      "en": "Lesia",
-      "it": "Lesia"
+      "en": "Леся",
+      "it": "Леся"
     },
     "taglines": {
       "uk": "Німецька для життя, роботи та подорожей. М’яко підказую і допомагаю звучати природно.",
@@ -154,11 +154,11 @@ export const teachers = [
     "slug": "uk-en",
     "teacherKey": "uk-en",
     "legacyPairSlug": "uk-en",
-    "teacherSlugBase": "jackie",
+    "teacherSlugBase": "uk-en",
     "publicSlugs": {
-      "en": "jackie-english-teacher",
-      "uk": "jackie-anhliyska-teacher",
-      "it": "jackie-inglese-teacher"
+      "en": "uk-en-english-teacher",
+      "uk": "uk-en-anhliyska-teacher",
+      "it": "uk-en-inglese-teacher"
     },
     "botKey": "uk-en",
     "baseLanguage": "uk",
@@ -172,8 +172,8 @@ export const teachers = [
     },
     "displayName": {
       "uk": "Джекі",
-      "en": "Jackie",
-      "it": "Jackie"
+      "en": "Джекі",
+      "it": "Джекі"
     },
     "taglines": {
       "uk": "Англійська з легким британським вайбом 🇬🇧. Допоможу говорити впевненіше й природніше.",

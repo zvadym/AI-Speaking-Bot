@@ -1,32 +1,28 @@
 <template>
   <section class="page">
     <div class="container">
-      <h1 class="h1">{{ t('teachers.title') }}</h1>
-      <p class="muted sub">{{ t('teachers.subhead') }}</p>
+      <header class="page-hero">
+        <p class="eyebrow">{{ t('nav.teachers') }}</p>
+        <h1 class="h1">{{ t('teachers.title') }}</h1>
+        <p class="muted sub">{{ t('teachers.subhead') }}</p>
+      </header>
 
-      <div v-if="primarySection" class="sections">
+      <div v-if="sections.length" class="sections">
         <section
-          v-for="section in visibleSections"
+          v-for="section in sections"
           :key="section.code"
-          class="teachers-section"
+          :class="['teachers-section', { primary: section.isPrimary }]"
         >
-          <h2 class="h3 section-title">{{ t('teachers.baseTeachersHeading', { language: section.label }) }}</h2>
+          <header class="section-head">
+            <h2 class="h3 section-title">{{ t('teachers.baseTeachersHeading', { language: section.label }) }}</h2>
+          </header>
           <div class="grid-2 list">
             <TeacherCard v-for="teacher in section.teachers" :key="teacher.teacherKey || teacher.slug" :teacher="teacher" />
           </div>
         </section>
       </div>
 
-      <button
-        v-if="hasSecondarySections"
-        class="show-more"
-        type="button"
-        @click="toggleShowMore"
-      >
-        {{ showMore ? t('teachers.showLessTeachers') : t('teachers.showMoreTeachers') }}
-      </button>
-
-      <p v-if="!primarySection" class="muted empty">
+      <p v-if="!sections.length" class="muted empty">
         {{ t('teachers.empty') }}
       </p>
     </div>
@@ -34,13 +30,12 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import TeacherCard from '../components/TeacherCard.vue';
 import { teachers } from '../data/teachers.js';
 import { useI18n } from '../i18n.js';
 
 const { t, locale } = useI18n();
-const showMore = ref(false);
 
 function normalizeLanguageCode(input) {
   const raw = (input || '').toString().trim().toLowerCase();
@@ -70,6 +65,7 @@ const normalizedTeachers = computed(() =>
 );
 
 const sections = computed(() => {
+  const currentLocaleCode = normalizeLanguageCode(locale.value);
   const grouped = new Map();
   for (const teacher of normalizedTeachers.value) {
     if (!grouped.has(teacher.baseCode)) grouped.set(teacher.baseCode, []);
@@ -80,6 +76,7 @@ const sections = computed(() => {
     .map(([code, rows]) => ({
       code,
       label: languageLabelForCode(code),
+      isPrimary: code === currentLocaleCode,
       teachers: rows.slice().sort((a, b) => {
         const aName = (a?.displayName?.[locale.value] || a?.displayName?.en || a?.slug || '').toString();
         const bName = (b?.displayName?.[locale.value] || b?.displayName?.en || b?.slug || '').toString();
@@ -88,95 +85,103 @@ const sections = computed(() => {
         return (a.slug || '').toString().localeCompare((b.slug || '').toString());
       })
     }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .sort((a, b) => {
+      if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
+      return a.label.localeCompare(b.label);
+    });
 });
-
-const primarySectionCode = computed(() => {
-  const availableCodes = sections.value.map((section) => section.code);
-  if (!availableCodes.length) return '';
-
-  const currentLocaleCode = normalizeLanguageCode(locale.value);
-  if (currentLocaleCode && availableCodes.includes(currentLocaleCode)) return currentLocaleCode;
-  if (availableCodes.includes('en')) return 'en';
-  return availableCodes.slice().sort((a, b) => a.localeCompare(b))[0];
-});
-
-const primarySection = computed(() =>
-  sections.value.find((section) => section.code === primarySectionCode.value) || null
-);
-
-const secondarySections = computed(() =>
-  sections.value
-    .filter((section) => section.code !== primarySectionCode.value)
-    .sort((a, b) => a.label.localeCompare(b.label))
-);
-
-const hasSecondarySections = computed(() => secondarySections.value.length > 0);
-
-const visibleSections = computed(() => {
-  if (!primarySection.value) return [];
-  if (!showMore.value) return [primarySection.value];
-  return [primarySection.value, ...secondarySections.value];
-});
-
-watch(primarySectionCode, () => {
-  showMore.value = false;
-});
-
-function toggleShowMore() {
-  showMore.value = !showMore.value;
-}
 </script>
 
 <style scoped>
 .page {
-  padding: 56px 0;
+  padding: 68px 0 84px;
+}
+
+.page-hero {
+  display: grid;
+  gap: 14px;
+  max-width: 70ch;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .sub {
-  max-width: 66ch;
-  margin-top: 10px;
+  max-width: 62ch;
+  margin: 0;
   font-size: 18px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .sections {
-  margin-top: 22px;
+  margin-top: 34px;
   display: grid;
-  gap: 26px;
+  gap: 34px;
 }
 
 .teachers-section {
   display: grid;
+  gap: 18px;
+  padding: 22px 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 36%, var(--bg)), var(--bg));
+}
+
+.teachers-section.primary {
+  border-color: color-mix(in srgb, #229ed9 35%, var(--border));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #229ed9 10%, var(--surface)),
+      color-mix(in srgb, #229ed9 4%, var(--bg))
+    );
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 12px;
 }
 
 .section-title {
   margin: 0;
-  font-size: 20px;
+  font-size: clamp(20px, 2.2vw, 28px);
 }
 
 .list {
   margin-top: 0;
-}
-
-.show-more {
-  margin-top: 18px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--fg);
-  border-radius: 999px;
-  padding: 10px 14px;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.show-more:hover {
-  border-color: color-mix(in srgb, var(--fg) 22%, var(--border));
+  gap: 14px;
 }
 
 .empty {
-  margin-top: 22px;
+  margin-top: 26px;
+}
+
+@media (max-width: 620px) {
+  .page {
+    padding-top: 54px;
+  }
+
+  .sections {
+    margin-top: 26px;
+    gap: 20px;
+  }
+
+  .teachers-section {
+    padding: 16px;
+  }
+
+  .sub {
+    font-size: 16px;
+  }
 }
 </style>

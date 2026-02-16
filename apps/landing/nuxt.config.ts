@@ -71,7 +71,14 @@ export default defineNuxtConfig({
   app: {
     head: {
       meta: [{ name: 'theme-color', content: '#ffffff' }],
-      link: [{ rel: 'icon', href: '/favicon.svg' }]
+      link: [{ rel: 'icon', href: '/favicon.svg' }],
+      script: [
+        {
+          src: 'https://analytics.ahrefs.com/analytics.js',
+          'data-key': 'pHeSsDVGTy5kHTPBLrCJNQ',
+          async: true
+        }
+      ]
     }
   },
   runtimeConfig: {

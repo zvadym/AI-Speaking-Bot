@@ -1,9 +1,12 @@
 <template>
   <RouterLink class="card teacher-card" :to="routeWithLocale('teacher', { slug: teacherPublicSlug })">
-    <TeacherAvatar :teacher="teacher" :name="name" :size="56" />
+    <TeacherAvatar :teacher="teacher" :name="name" :size="64" />
 
     <div class="info">
-      <div class="h3 name">{{ name }}</div>
+      <div class="name-row">
+        <div class="h3 name">{{ name }}</div>
+        <span class="go" aria-hidden="true">↗</span>
+      </div>
       <div class="muted meta">
         <span>{{ teachesLine }}</span>
       </div>
@@ -45,29 +48,45 @@ const teachesLine = computed(() => {
 <style scoped>
 .teacher-card {
   display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: 14px 16px;
+  grid-template-columns: 64px 1fr;
+  gap: 14px 18px;
   align-items: start;
-  transition: transform 120ms ease, border-color 120ms ease;
+  padding: 18px;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .teacher-card:hover {
   text-decoration: none;
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--fg) 22%, var(--border));
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--fg) 20%, var(--border));
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--fg) 10%, transparent);
 }
 
 .info {
   min-width: 0;
 }
 
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .name {
   margin: 0;
 }
 
+.go {
+  margin-left: auto;
+  line-height: 1;
+  font-size: 16px;
+  opacity: 0.7;
+}
+
 .meta {
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 </style>

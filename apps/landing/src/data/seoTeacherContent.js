@@ -80,7 +80,6 @@ function buildEnglishContent(teacher, languageForm) {
       'Pronunciation, fluency, and natural phrasing support in a daily chat format.',
       'Micro-practice that fits your schedule: consistent progress in 10–15 minutes.'
     ],
-    secondaryCta: 'See all teachers',
     howTitle: 'How it works',
     howSteps: [
       {
@@ -210,7 +209,6 @@ function buildUkrainianContent(teacher, languageForm) {
       'Фокус на вимові, плавності та природному формулюванні думки в діалозі.',
       'Щоденна мікропрактика в Telegram, яку реально підтримувати навіть у щільному графіку.'
     ],
-    secondaryCta: 'Подивитися всіх викладачів',
     howTitle: 'Як це працює',
     howSteps: [
       {
@@ -339,7 +337,6 @@ function buildItalianContent(teacher, languageForm) {
       'Supporto su pronuncia, scorrevolezza e naturalezza della frase.',
       'Micro-pratica quotidiana in Telegram, sostenibile anche con agenda piena.'
     ],
-    secondaryCta: 'Vedi tutti gli insegnanti',
     howTitle: 'Come funziona',
     howSteps: [
       {

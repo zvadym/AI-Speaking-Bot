@@ -9,6 +9,7 @@ import { isSupportedLocale, normalizeLocale, useI18n } from '~/i18n.js';
 import { useLocalizedSeo } from '~/seo.js';
 
 definePageMeta({
+  layout: 'default',
   validate: (route) => isSupportedLocale(route.params?.locale)
 });
 

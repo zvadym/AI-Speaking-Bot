@@ -13,11 +13,13 @@ import {
   getTeacherPathSuffix,
   isLegacyPairSlug
 } from '~/data/teacherSlugs.js';
+import { getTeacherTelegramUrl } from '~/lib/telegram.js';
 import { getTeacherSeoContent } from '~/data/seoTeacherContent.js';
 import { isSupportedLocale, normalizeLocale, useI18n } from '~/i18n.js';
 import { useLocalizedSeo } from '~/seo.js';
 
 definePageMeta({
+  layout: 'default',
   validate: (route) => isSupportedLocale(route.params?.locale)
 });
 
@@ -80,6 +82,7 @@ const structuredData = computed(() => {
     const pathSuffix = getTeacherPathSuffix(row, locale) || '/teachers';
     const url = toAbsoluteUrl(`/${locale}${pathSuffix}`);
     const image = row.avatarImage ? toAbsoluteUrl(row.avatarImage) : '';
+    const telegramUrl = getTeacherTelegramUrl(row);
     return {
       '@context': 'https://schema.org',
       '@type': 'Person',
@@ -88,7 +91,7 @@ const structuredData = computed(() => {
       description: getTeacherTagline(row, locale),
       image: image || undefined,
       url,
-      sameAs: row.telegramUrl ? [row.telegramUrl] : undefined,
+      sameAs: telegramUrl ? [telegramUrl] : undefined,
       knowsLanguage: [
         t(`languageName.${row.learningLanguage}`),
         t(`languageName.${row.baseLanguage}`)
