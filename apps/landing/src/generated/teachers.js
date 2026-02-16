@@ -4,11 +4,24 @@
 export const teachers = [
   {
     "slug": "de-it",
+    "teacherKey": "de-it",
+    "legacyPairSlug": "de-it",
+    "teacherSlugBase": "giulia",
+    "publicSlugs": {
+      "en": "giulia-italian-teacher",
+      "uk": "giulia-italiyska-teacher",
+      "it": "giulia-italiano-teacher"
+    },
     "botKey": "de-it",
     "baseLanguage": "de",
     "learningLanguage": "it",
     "avatarEmoji": "👩‍🏫",
     "avatarImage": "/teachers/thumbnail/de-it.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/de-it.avif",
+      "webp": "/teachers/thumbnail/de-it.webp",
+      "png": "/teachers/thumbnail/de-it.png"
+    },
     "displayName": {
       "uk": "Giulia",
       "en": "Giulia",
@@ -28,11 +41,24 @@ export const teachers = [
   },
   {
     "slug": "it-de",
+    "teacherKey": "it-de",
+    "legacyPairSlug": "it-de",
+    "teacherSlugBase": "greta",
+    "publicSlugs": {
+      "en": "greta-german-teacher",
+      "uk": "greta-nimetska-teacher",
+      "it": "greta-tedesco-teacher"
+    },
     "botKey": "it-de",
     "baseLanguage": "it",
     "learningLanguage": "de",
     "avatarEmoji": "👩‍🏫",
     "avatarImage": "/teachers/thumbnail/it-de.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/it-de.avif",
+      "webp": "/teachers/thumbnail/it-de.webp",
+      "png": "/teachers/thumbnail/it-de.png"
+    },
     "displayName": {
       "uk": "Greta",
       "en": "Greta",
@@ -52,11 +78,24 @@ export const teachers = [
   },
   {
     "slug": "it-en",
+    "teacherKey": "it-en",
+    "legacyPairSlug": "it-en",
+    "teacherSlugBase": "luca",
+    "publicSlugs": {
+      "en": "luca-english-teacher",
+      "uk": "luca-anhliyska-teacher",
+      "it": "luca-inglese-teacher"
+    },
     "botKey": "it-en",
     "baseLanguage": "it",
     "learningLanguage": "en",
     "avatarEmoji": "👨‍🏫",
     "avatarImage": "/teachers/thumbnail/it-en.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/it-en.avif",
+      "webp": "/teachers/thumbnail/it-en.webp",
+      "png": "/teachers/thumbnail/it-en.png"
+    },
     "displayName": {
       "uk": "Luca",
       "en": "Luca",
@@ -76,11 +115,24 @@ export const teachers = [
   },
   {
     "slug": "uk-de",
+    "teacherKey": "uk-de",
+    "legacyPairSlug": "uk-de",
+    "teacherSlugBase": "lesia",
+    "publicSlugs": {
+      "en": "lesia-german-teacher",
+      "uk": "lesia-nimetska-teacher",
+      "it": "lesia-tedesco-teacher"
+    },
     "botKey": "uk-de",
     "baseLanguage": "uk",
     "learningLanguage": "de",
     "avatarEmoji": "👩‍🏫",
     "avatarImage": "/teachers/thumbnail/uk-de.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/uk-de.avif",
+      "webp": "/teachers/thumbnail/uk-de.webp",
+      "png": "/teachers/thumbnail/uk-de.png"
+    },
     "displayName": {
       "uk": "Леся",
       "en": "Lesia",
@@ -100,11 +152,24 @@ export const teachers = [
   },
   {
     "slug": "uk-en",
+    "teacherKey": "uk-en",
+    "legacyPairSlug": "uk-en",
+    "teacherSlugBase": "jackie",
+    "publicSlugs": {
+      "en": "jackie-english-teacher",
+      "uk": "jackie-anhliyska-teacher",
+      "it": "jackie-inglese-teacher"
+    },
     "botKey": "uk-en",
     "baseLanguage": "uk",
     "learningLanguage": "en",
     "avatarEmoji": "👨‍🏫",
     "avatarImage": "/teachers/thumbnail/uk-en.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/uk-en.avif",
+      "webp": "/teachers/thumbnail/uk-en.webp",
+      "png": "/teachers/thumbnail/uk-en.png"
+    },
     "displayName": {
       "uk": "Джекі",
       "en": "Jackie",
@@ -124,16 +189,25 @@ export const teachers = [
   }
 ];
 
-export function getTeacherBySlug(slug) {
-  const key = (slug || '').toString().trim().toLowerCase();
-  return teachers.find((t) => (t.slug || '').toString().toLowerCase() === key) || null;
+export function getTeacherByKey(keyInput) {
+  const key = (keyInput || '').toString().trim().toLowerCase();
+  return teachers.find((t) => (t.teacherKey || '').toString().toLowerCase() === key) || null;
+}
+
+export function getTeacherByLegacyPairSlug(slugInput) {
+  const slug = (slugInput || '').toString().trim().toLowerCase();
+  return teachers.find((t) => (t.legacyPairSlug || '').toString().toLowerCase() === slug) || null;
+}
+
+export function getTeacherBySlug(slugInput) {
+  return getTeacherByLegacyPairSlug(slugInput);
 }
 
 export function getTeacherName(teacher, locale) {
   const l = (locale || '').toString();
   if (!teacher) return '';
   const map = teacher.displayName || {};
-  return (map[l] || map.en || map.uk || teacher.slug || '').toString();
+  return (map[l] || map.en || map.uk || teacher.teacherKey || '').toString();
 }
 
 export function getTeacherTagline(teacher, locale) {

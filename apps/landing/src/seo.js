@@ -35,6 +35,20 @@ function normalizeFaqItems(items) {
     .filter((item) => item.question && item.answer);
 }
 
+function normalizePathSuffixForLocale(pathname = '', locale = 'en') {
+  const normalized = normalizePath(pathname);
+  const localePrefix = `/${locale}`;
+  if (normalized === localePrefix) return '/';
+  if (normalized.startsWith(`${localePrefix}/`)) return stripLocalePrefix(normalized);
+  return normalized;
+}
+
+function normalizeStructuredData(items) {
+  if (!items) return [];
+  const rows = Array.isArray(items) ? items : [items];
+  return rows.filter((row) => row && typeof row === 'object' && !Array.isArray(row));
+}
+
 export function useLocalizedSeo(options = {}) {
   const route = useRoute();
   const siteUrl = getSiteUrl();
@@ -48,10 +62,27 @@ export function useLocalizedSeo(options = {}) {
     return stripLocalePrefix(route.path || '/');
   });
 
-  const canonicalPath = computed(() => localizedPath(pathSuffix.value, activeLocale.value));
+  const alternatePathByLocale = computed(() => {
+    const raw = readValue(options.alternatePathByLocale);
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const map = {};
+    for (const locale of supportedLocales) {
+      const value = raw[locale];
+      if (value === undefined || value === null || String(value).trim() === '') continue;
+      map[locale] = normalizePathSuffixForLocale(value, locale);
+    }
+    return map;
+  });
+
+  const canonicalPath = computed(() => {
+    const override = alternatePathByLocale.value[activeLocale.value];
+    const suffix = override || pathSuffix.value;
+    return localizedPath(suffix, activeLocale.value);
+  });
 
   useHead(() => {
     const faqItems = normalizeFaqItems(readValue(options.faqItems));
+    const structuredData = normalizeStructuredData(readValue(options.structuredData));
     const scripts = [];
 
     if (faqItems.length) {
@@ -73,6 +104,14 @@ export function useLocalizedSeo(options = {}) {
       });
     }
 
+    for (const [index, schemaObj] of structuredData.entries()) {
+      scripts.push({
+        key: `jsonld-${index}`,
+        type: 'application/ld+json',
+        children: JSON.stringify(schemaObj)
+      });
+    }
+
     return {
       title: (readValue(options.title) || 'AI Language School').toString(),
       link: [
@@ -85,13 +124,19 @@ export function useLocalizedSeo(options = {}) {
           key: `alternate-${altLocale}`,
           rel: 'alternate',
           hreflang: altLocale,
-          href: toAbsoluteUrl(siteUrl, localizedPath(pathSuffix.value, altLocale))
+          href: toAbsoluteUrl(
+            siteUrl,
+            localizedPath(alternatePathByLocale.value[altLocale] || pathSuffix.value, altLocale)
+          )
         })),
         {
           key: 'alternate-x-default',
           rel: 'alternate',
           hreflang: 'x-default',
-          href: toAbsoluteUrl(siteUrl, localizedPath(pathSuffix.value, 'en'))
+          href: toAbsoluteUrl(
+            siteUrl,
+            localizedPath(alternatePathByLocale.value.en || pathSuffix.value, 'en')
+          )
         }
       ],
       script: scripts

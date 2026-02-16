@@ -1,11 +1,9 @@
 <template>
-  <div ref="root">
+  <div class="home-root">
     <section id="home" class="snap-section hero" data-active="true">
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner">
         <div class="container hero-inner">
-          <div class="badge">{{ t('home.badge') }}</div>
-
           <h1 class="h1 reveal-up">{{ t('home.headline') }}</h1>
           <p class="muted hero-sub reveal-up" style="--revealDelay: 80ms;">
             {{ t('home.subhead') }}
@@ -63,24 +61,6 @@
       </div>
     </section>
 
-    <section id="teachers" class="snap-section section">
-      <div class="parallax-bg" aria-hidden="true" />
-      <div class="snap-inner">
-        <div class="container section-head reveal-up">
-          <div>
-            <h2 class="h2">{{ t('home.teachersTitle') }}</h2>
-            <p class="muted">{{ t('home.teachersDesc') }}</p>
-          </div>
-          <RouterLink class="btn" :to="routeWithLocale('teachers')">{{ t('cta.allTeachers') }}</RouterLink>
-        </div>
-
-        <div class="container grid-2 reveal-up" style="--revealDelay: 120ms;">
-          <TeacherCard v-for="teacher in previewTeachers" :key="teacher.slug" :teacher="teacher" />
-        </div>
-        <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
-      </div>
-    </section>
-
     <section id="pricing" class="snap-section section">
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner">
@@ -95,28 +75,37 @@
           <div class="grid-3 pricing-grid reveal-up" style="--revealDelay: 120ms;">
             <div v-for="tier in pricingTiers" :key="tier.id" class="card tier" :class="{ featured: tier.highlight }">
               <div class="tier-top">
-                <div class="h3">{{ t(`pricing.tiers.${tier.id}.name`) }}</div>
-                <div class="muted tier-desc">{{ t(`pricing.tiers.${tier.id}.desc`) }}</div>
+                <div class="tier-headline">
+                  <div class="h3">{{ t(`pricing.tiers.${tier.plan}.name`) }}</div>
+                  <span v-if="tier.plan === 'pro'" class="billing-chip">
+                    {{ billingIntervalLabel(tier.billingInterval) }}
+                  </span>
+                </div>
+                <div class="muted tier-desc">{{ t(`pricing.tiers.${tier.plan}.desc`) }}</div>
               </div>
 
               <div class="price">
-                <span v-if="tier.id === 'free'" class="amount">{{ t('pricing.freePrice') }}</span>
-                <span v-else class="amount">€{{ tier.price }}</span>
-                <span v-if="tier.id !== 'free'" class="muted cadence">/ {{ t('pricing.perMonth') }}</span>
+                <span v-if="tier.plan === 'free'" class="amount">{{ t('pricing.freePrice') }}</span>
+                <template v-else>
+                  <span class="amount">{{ formatPrice(tier.price) }}</span>
+                  <span class="muted cadence">/ {{ billingIntervalLabel(tier.billingInterval) }}</span>
+                </template>
               </div>
 
               <ul class="muted features">
-                <li v-for="(key, idx) in t(`pricing.tiers.${tier.id}.features`).split('||')" :key="idx">
+                <li v-for="(key, idx) in t(`pricing.tiers.${tier.plan}.features`).split('||')" :key="idx">
                   {{ key }}
                 </li>
               </ul>
 
-              <RouterLink v-if="tier.id === 'free'" class="btn" :to="routeWithLocale('teachers')">{{ t('pricing.ctaTry') }}</RouterLink>
+              <p v-if="tier.billingInterval === 'year'" class="muted annual-note">
+                {{ t('pricing.annualNote', { total: formatPrice(tier.price), perMonth: formatPrice(tier.monthlyEquivalent), save: tier.savingsPercent }) }}
+              </p>
+
+              <RouterLink v-if="tier.plan === 'free'" class="btn" :to="routeWithLocale('teachers')">{{ t('pricing.ctaTry') }}</RouterLink>
               <RouterLink v-else class="btn primary" :to="routeWithLocale('teachers')">{{ t('pricing.ctaChooseTeacher') }}</RouterLink>
             </div>
           </div>
-
-          <div class="muted note reveal-up" style="--revealDelay: 200ms;">{{ t('pricing.yearlySoon') }}</div>
         </div>
         <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
       </div>
@@ -199,20 +188,15 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import TeacherCard from '../components/TeacherCard.vue';
 import ContactForm from '../components/ContactForm.vue';
 import HomeFooterMini from '../components/HomeFooterMini.vue';
-import { teachers } from '../data/teachers.js';
 import { blogPosts } from '../data/blogPosts.js';
 import { pricingTiers } from '../data/pricing.js';
 import { routeWithLocale, useI18n } from '../i18n.js';
-import { setupParallax } from '../lib/parallax.js';
-import { setupSectionReveal } from '../lib/reveal.js';
 
 const { t, tm, locale } = useI18n();
-const previewTeachers = computed(() => teachers.slice(0, 2));
 const posts = computed(() => blogPosts.slice(0, 3));
 const faqItems = computed(() => {
   const raw = tm('faq.items');
@@ -224,10 +208,6 @@ const faqItems = computed(() => {
     }))
     .filter((item) => item.q && item.a);
 });
-
-const root = ref(null);
-let cleanupParallax = null;
-let cleanupReveal = null;
 
 function getLocalized(map) {
   const l = locale.value;
@@ -245,20 +225,53 @@ function formatDate(value) {
   }
 }
 
-onMounted(() => {
-  const host = root.value;
-  const sections = host ? Array.from(host.querySelectorAll('.snap-section')) : [];
-  cleanupParallax = setupParallax(sections);
-  cleanupReveal = setupSectionReveal(sections);
-});
+function formatPrice(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return '';
+  try {
+    return new Intl.NumberFormat(locale.value, {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  } catch {
+    return `€${amount}`;
+  }
+}
 
-onBeforeUnmount(() => {
-  if (cleanupParallax) cleanupParallax();
-  if (cleanupReveal) cleanupReveal();
-});
+function billingIntervalLabel(intervalRaw) {
+  return intervalRaw === 'year' ? t('pricing.perYear') : t('pricing.perMonth');
+}
 </script>
 
 <style scoped>
+.home-root {
+  position: relative;
+  isolation: isolate;
+}
+
+.home-root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70vw 70vw at 12% 10%, color-mix(in srgb, var(--surface) 45%, #60a5fa) 0%, transparent 65%),
+    radial-gradient(68vw 68vw at 88% 84%, color-mix(in srgb, var(--surface) 48%, #34d399) 0%, transparent 66%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg) 88%, var(--surface)), var(--bg) 35%, color-mix(in srgb, var(--bg) 92%, var(--surface)));
+}
+
+.home-root > .snap-section {
+  position: relative;
+  z-index: 1;
+}
+
+.parallax-bg {
+  display: none;
+}
+
 .hero {
   padding: 56px 0 18px;
 }
@@ -373,6 +386,26 @@ onBeforeUnmount(() => {
   border-color: color-mix(in srgb, var(--fg) 22%, var(--border));
 }
 
+.tier-headline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.billing-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--surface) 72%, var(--bg));
+}
+
 .tier-desc {
   margin-top: 6px;
   line-height: 1.6;
@@ -402,9 +435,10 @@ onBeforeUnmount(() => {
   line-height: 1.7;
 }
 
-.note {
-  margin-top: 14px;
+.annual-note {
+  margin: -4px 0 0;
   font-size: 14px;
+  line-height: 1.6;
 }
 
 .blog-grid {
@@ -480,13 +514,7 @@ onBeforeUnmount(() => {
 }
 
 .scroll-cue {
-  margin-top: auto;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding-top: 10px;
-  padding-bottom: 2px;
+  display: none;
 }
 
 .scroll-cue-icon {

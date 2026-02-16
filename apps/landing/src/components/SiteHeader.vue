@@ -148,9 +148,12 @@ async function switchLocale(nextLocale) {
   const normalized = normalizeLocale(nextLocale);
   if (!normalized || normalized === locale.value) return;
   setAppLocale(normalized);
+  const targetPath = routeSuffix.value.startsWith('/teachers/')
+    ? localizedPath('/', normalized)
+    : localizedPath(routeSuffix.value, normalized);
   await navigateTo(
     {
-      path: localizedPath(routeSuffix.value, normalized),
+      path: targetPath,
       query: route.query,
       hash: route.hash
     },

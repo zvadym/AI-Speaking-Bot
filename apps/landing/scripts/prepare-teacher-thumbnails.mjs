@@ -47,47 +47,67 @@ function detectSource(botKey) {
   return '';
 }
 
-function buildThumbnail({ processor, source, output }) {
-  if (processor === 'magick') {
-    run('magick', [
-      source,
-      '-auto-orient',
-      '-thumbnail', `${THUMB_SIZE}x${THUMB_SIZE}^`,
-      '-gravity', 'center',
-      '-extent', `${THUMB_SIZE}x${THUMB_SIZE}`,
-      '-strip',
-      output
-    ]);
-    return;
+function cleanupOldVariants(basePath) {
+  for (const ext of ['png', 'webp', 'avif']) {
+    const target = `${basePath}.${ext}`;
+    if (fs.existsSync(target)) fs.unlinkSync(target);
+  }
+}
+
+function convertWithImageMagick(processor, source, output, format) {
+  const args = [
+    source,
+    '-auto-orient',
+    '-thumbnail', `${THUMB_SIZE}x${THUMB_SIZE}^`,
+    '-gravity', 'center',
+    '-extent', `${THUMB_SIZE}x${THUMB_SIZE}`,
+    '-strip'
+  ];
+
+  if (format === 'webp') {
+    args.push('-define', 'webp:method=6', '-quality', '82');
   }
 
-  if (processor === 'convert') {
-    run('convert', [
-      source,
-      '-auto-orient',
-      '-thumbnail', `${THUMB_SIZE}x${THUMB_SIZE}^`,
-      '-gravity', 'center',
-      '-extent', `${THUMB_SIZE}x${THUMB_SIZE}`,
-      '-strip',
-      output
-    ]);
-    return;
+  if (format === 'avif') {
+    args.push('-quality', '55');
+  }
+
+  args.push(output);
+  run(processor, args);
+}
+
+function buildThumbnailSet({ processor, source, outputBase }) {
+  cleanupOldVariants(outputBase);
+
+  const generatedFormats = [];
+
+  if (processor === 'magick' || processor === 'convert') {
+    for (const format of ['png', 'webp', 'avif']) {
+      const output = `${outputBase}.${format}`;
+      convertWithImageMagick(processor, source, output, format);
+      generatedFormats.push(format);
+    }
+    return generatedFormats;
   }
 
   if (processor === 'sips') {
+    const output = `${outputBase}.png`;
     run('sips', [
       '-s', 'format', 'png',
       '-Z', String(THUMB_SIZE),
       source,
       '--out', output
     ]);
-    return;
+    generatedFormats.push('png');
+    return generatedFormats;
   }
 
   const ext = path.extname(source).toLowerCase();
   if (ext === '.png') {
+    const output = `${outputBase}.png`;
     fs.copyFileSync(source, output);
-    return;
+    generatedFormats.push('png');
+    return generatedFormats;
   }
 
   throw new Error(`No image processor found for non-PNG source: ${path.basename(source)}`);
@@ -114,6 +134,7 @@ function main() {
   fs.mkdirSync(outputDir, { recursive: true });
 
   let generated = 0;
+  let generatedVariants = 0;
   let missing = 0;
 
   for (const botKey of botKeys) {
@@ -124,13 +145,16 @@ function main() {
       continue;
     }
 
-    const output = path.resolve(outputDir, `${botKey}.png`);
-    buildThumbnail({ processor, source, output });
+    const outputBase = path.resolve(outputDir, botKey);
+    const formats = buildThumbnailSet({ processor, source, outputBase });
     generated += 1;
+    generatedVariants += formats.length;
   }
 
   const processorLabel = processor || 'png-copy fallback';
-  console.log(`Prepared ${generated} teacher thumbnail(s) using ${processorLabel}. Output: ${path.relative(repoRoot, outputDir)}`);
+  console.log(
+    `Prepared ${generated} teacher thumbnail set(s), ${generatedVariants} file variant(s), using ${processorLabel}. Output: ${path.relative(repoRoot, outputDir)}`
+  );
   if (missing > 0) {
     console.log(`Skipped ${missing} bot(s) due to missing source images.`);
   }

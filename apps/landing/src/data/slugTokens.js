@@ -1,0 +1,101 @@
+export const SUPPORTED_LOCALES = ['en', 'uk', 'it'];
+
+export const LANGUAGE_SLUG_TOKENS = {
+  en: {
+    en: 'english',
+    de: 'german',
+    it: 'italian',
+    uk: 'ukrainian',
+    ru: 'russian',
+    pl: 'polish',
+    es: 'spanish',
+    fr: 'french'
+  },
+  uk: {
+    en: 'anhliyska',
+    de: 'nimetska',
+    it: 'italiyska',
+    uk: 'ukrayinska',
+    ru: 'rosiyska',
+    pl: 'polska',
+    es: 'ispanska',
+    fr: 'frantsuzka'
+  },
+  it: {
+    en: 'inglese',
+    de: 'tedesco',
+    it: 'italiano',
+    uk: 'ucraino',
+    ru: 'russo',
+    pl: 'polacco',
+    es: 'spagnolo',
+    fr: 'francese'
+  }
+};
+
+export const HUB_TOPIC_SLUG_TOKENS = {
+  en: {
+    speaking: 'speaking-practice',
+    interview: 'interview-prep'
+  },
+  uk: {
+    speaking: 'rozmovna-praktyka',
+    interview: 'spivbesida'
+  },
+  it: {
+    speaking: 'pratica-conversazione',
+    interview: 'colloquio'
+  }
+};
+
+export const HUB_TOPIC_KEYS = ['speaking', 'interview'];
+
+export function normalizeLanguageCodeForSlugs(input) {
+  const raw = (input || '').toString().trim().toLowerCase();
+  if (!raw) return '';
+  if (raw === 'uk' || raw === 'uk-ua' || raw === 'ua' || raw === 'ua-ua') return 'uk';
+  if (/^[a-z]{2}(?:-[a-z]{2})?$/.test(raw)) return raw.slice(0, 2);
+  return '';
+}
+
+function normalizeLocaleForSlugs(input) {
+  const raw = (input || '').toString().trim().toLowerCase();
+  if (SUPPORTED_LOCALES.includes(raw)) return raw;
+  if (raw.startsWith('en')) return 'en';
+  if (raw.startsWith('uk') || raw.startsWith('ua')) return 'uk';
+  if (raw.startsWith('it')) return 'it';
+  return 'en';
+}
+
+export function getLanguageSlugToken(locale, languageCode) {
+  const loc = normalizeLocaleForSlugs(locale);
+  const code = normalizeLanguageCodeForSlugs(languageCode);
+  if (!code) return '';
+  const token = LANGUAGE_SLUG_TOKENS[loc]?.[code];
+  if (token) return token;
+  return code;
+}
+
+export function getLanguageCodeBySlugToken(locale, slugToken) {
+  const loc = normalizeLocaleForSlugs(locale);
+  const normalized = (slugToken || '').toString().trim().toLowerCase();
+  const entries = Object.entries(LANGUAGE_SLUG_TOKENS[loc] || {});
+  const found = entries.find(([, token]) => token === normalized);
+  if (found) return found[0];
+  return '';
+}
+
+export function getTopicSlugToken(locale, topicKey) {
+  const loc = normalizeLocaleForSlugs(locale);
+  const key = (topicKey || '').toString().trim().toLowerCase();
+  return HUB_TOPIC_SLUG_TOKENS[loc]?.[key] || '';
+}
+
+export function getTopicKeyBySlugToken(locale, topicSlug) {
+  const loc = normalizeLocaleForSlugs(locale);
+  const normalized = (topicSlug || '').toString().trim().toLowerCase();
+  const entries = Object.entries(HUB_TOPIC_SLUG_TOKENS[loc] || {});
+  const found = entries.find(([, token]) => token === normalized);
+  if (found) return found[0];
+  return '';
+}

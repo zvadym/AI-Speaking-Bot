@@ -12,13 +12,13 @@ function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
-async function loadTeacherSlugs() {
+async function loadTeachers() {
   try {
     const mod = await import(pathToFileURL(resolve(process.cwd(), 'src/generated/teachers.js')).href);
     const rows = Array.isArray(mod?.teachers) ? mod.teachers : [];
-    return unique(rows.map((row: Record<string, unknown>) => normalizeSlug(row?.slug)));
+    return rows as Record<string, unknown>[];
   } catch {
-    return [];
+    return [] as Record<string, unknown>[];
   }
 }
 
@@ -32,19 +32,31 @@ async function loadBlogSlugs() {
   }
 }
 
-const [teacherSlugs, blogSlugs] = await Promise.all([loadTeacherSlugs(), loadBlogSlugs()]);
+function buildTeacherSlugsByLocale(teachers: Record<string, unknown>[]) {
+  const map: Record<string, string[]> = {};
+  for (const locale of SUPPORTED_LOCALES) {
+    map[locale] = unique(
+      teachers.map((row) => normalizeSlug((row?.publicSlugs as Record<string, unknown>)?.[locale]))
+    );
+  }
+  return map;
+}
+
+const [teachers, blogSlugs] = await Promise.all([loadTeachers(), loadBlogSlugs()]);
+const teacherSlugsByLocale = buildTeacherSlugsByLocale(teachers);
+const englishTeacherSlugs = teacherSlugsByLocale.en || [];
 
 const localizedBaseRoutes = SUPPORTED_LOCALES.flatMap((locale) => [
   `/${locale}`,
   `/${locale}/teachers`,
-  ...teacherSlugs.map((slug) => `/${locale}/teachers/${encodeURIComponent(slug)}`),
+  ...teacherSlugsByLocale[locale].map((slug) => `/${locale}/teachers/${encodeURIComponent(slug)}`),
   ...blogSlugs.map((slug) => `/${locale}/blog/${encodeURIComponent(slug)}`)
 ]);
 
 const redirectRoutes = [
   '/',
   '/teachers',
-  ...teacherSlugs.map((slug) => `/teachers/${encodeURIComponent(slug)}`),
+  ...englishTeacherSlugs.map((slug) => `/teachers/${encodeURIComponent(slug)}`),
   ...blogSlugs.map((slug) => `/blog/${encodeURIComponent(slug)}`)
 ];
 

@@ -12,7 +12,7 @@
         >
           <h2 class="h3 section-title">{{ t('teachers.baseTeachersHeading', { language: section.label }) }}</h2>
           <div class="grid-2 list">
-            <TeacherCard v-for="teacher in section.teachers" :key="teacher.slug" :teacher="teacher" />
+            <TeacherCard v-for="teacher in section.teachers" :key="teacher.teacherKey || teacher.slug" :teacher="teacher" />
           </div>
         </section>
       </div>

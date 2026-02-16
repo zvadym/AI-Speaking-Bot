@@ -1,5 +1,5 @@
 <template>
-  <RouterLink class="card teacher-card" :to="routeWithLocale('teacher', { slug: teacher.slug })">
+  <RouterLink class="card teacher-card" :to="routeWithLocale('teacher', { slug: teacherPublicSlug })">
     <TeacherAvatar :teacher="teacher" :name="name" :size="56" />
 
     <div class="info">
@@ -17,6 +17,7 @@ import { RouterLink } from 'vue-router';
 import TeacherAvatar from './TeacherAvatar.vue';
 import { getTeacherName, getTeacherTagline } from '../data/teachers.js';
 import { routeWithLocale, useI18n } from '../i18n.js';
+import { getTeacherPublicSlug } from '../data/teacherSlugs.js';
 
 const props = defineProps({
   teacher: {
@@ -28,6 +29,10 @@ const props = defineProps({
 const { t, locale } = useI18n();
 
 const name = computed(() => getTeacherName(props.teacher, locale.value));
+const teacherPublicSlug = computed(() => {
+  const slug = getTeacherPublicSlug(props.teacher, locale.value);
+  return slug || props.teacher?.legacyPairSlug || props.teacher?.slug || '';
+});
 const tagline = computed(() => getTeacherTagline(props.teacher, locale.value));
 const teachesLine = computed(() => {
   const pieces = [];

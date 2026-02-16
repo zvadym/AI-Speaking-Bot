@@ -1,2 +1,8 @@
-export { teachers, getTeacherBySlug, getTeacherName, getTeacherTagline } from '../generated/teachers.js';
-
+export {
+  teachers,
+  getTeacherByKey,
+  getTeacherByLegacyPairSlug,
+  getTeacherBySlug,
+  getTeacherName,
+  getTeacherTagline
+} from '../generated/teachers.js';

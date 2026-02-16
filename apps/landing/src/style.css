@@ -31,16 +31,6 @@ body {
   text-rendering: geometricPrecision;
 }
 
-html.snap-home {
-  scroll-snap-type: y mandatory;
-  scroll-padding-top: 88px;
-  scroll-behavior: smooth;
-}
-
-html.snap-home body {
-  overscroll-behavior-y: contain;
-}
-
 section[id] {
   scroll-margin-top: 96px;
 }
@@ -89,18 +79,6 @@ a:hover {
   box-shadow: none;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--fg);
-  font-size: 12px;
-  font-weight: 600;
-}
 
 .card {
   border: 1px solid var(--border);
@@ -153,9 +131,7 @@ a:hover {
 }
 
 .snap-section {
-  min-height: 100svh;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  min-height: auto;
   position: relative;
   overflow: hidden;
   display: block;
@@ -163,12 +139,10 @@ a:hover {
 
 .snap-inner {
   width: 100%;
-  padding: 16px 0 6px;
+  padding: 16px 0;
   position: relative;
   z-index: 1;
-  min-height: calc(100svh - 96px);
-  display: flex;
-  flex-direction: column;
+  min-height: auto;
 }
 
 .parallax-bg {
@@ -206,52 +180,22 @@ a:hover {
   transform: rotate(-8deg);
 }
 
-html.snap-home .section,
-html.snap-home .hero {
-  padding: 0 !important;
-}
-
-html.snap-home .snap-inner {
-  padding: 12px 0 6px;
-  min-height: calc(100svh - 96px);
-}
-
-html.snap-home .container {
-  padding-left: 20px;
-  padding-right: 20px;
-}
-
 .reveal-up {
-  opacity: 0;
-  transform: translateY(18px);
-  transition: transform 520ms cubic-bezier(0.2, 0.9, 0.2, 1), opacity 520ms ease;
-  transition-delay: var(--revealDelay, 0ms);
-  will-change: transform, opacity;
+  opacity: 1;
+  transform: none;
 }
 
 .reveal-left {
-  opacity: 0;
-  transform: translateX(-18px);
-  transition: transform 520ms cubic-bezier(0.2, 0.9, 0.2, 1), opacity 520ms ease;
+  opacity: 1;
+  transform: none;
 }
 
 .reveal-right {
-  opacity: 0;
-  transform: translateX(18px);
-  transition: transform 520ms cubic-bezier(0.2, 0.9, 0.2, 1), opacity 520ms ease;
-}
-
-.snap-section[data-active='true'] .reveal-up,
-.snap-section[data-active='true'] .reveal-left,
-.snap-section[data-active='true'] .reveal-right {
   opacity: 1;
   transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.snap-home {
-    scroll-behavior: auto;
-  }
   .parallax-bg {
     transition: none;
     transform: none;

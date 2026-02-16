@@ -1,7 +1,7 @@
 <template>
-  <div class="app">
+  <div class="app layout-shell">
     <SiteHeader />
-    <main>
+    <main class="layout-main">
       <slot />
     </main>
     <SiteFooter v-if="!isHome" />
@@ -29,3 +29,18 @@ useHead(() => ({
   }
 }));
 </script>
+
+<style scoped>
+.layout-shell {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-main {
+  flex: 1 0 auto;
+  min-width: 0;
+}
+</style>

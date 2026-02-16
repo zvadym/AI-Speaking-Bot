@@ -27,10 +27,23 @@ const faqItems = computed(() => {
     .filter((item) => item.question && item.answer);
 });
 
+const structuredData = computed(() => ([
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'AI Language School',
+    applicationCategory: 'EducationalApplication',
+    operatingSystem: 'Telegram',
+    inLanguage: localeCode.value,
+    description: (t('home.seoDescription') || t('home.subhead') || '').toString()
+  }
+]));
+
 useLocalizedSeo({
   locale: localeCode,
-  title: () => 'AI Language School',
-  description: () => t('home.subhead'),
-  faqItems
+  title: () => t('home.seoTitle') || 'AI Language School',
+  description: () => t('home.seoDescription') || t('home.subhead'),
+  faqItems,
+  structuredData
 });
 </script>

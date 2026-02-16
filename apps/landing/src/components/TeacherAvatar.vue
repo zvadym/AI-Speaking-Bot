@@ -1,13 +1,28 @@
 <template>
   <div class="avatar" :style="sizeStyle">
-    <img
-      v-if="showImage"
-      class="avatar-img"
-      :src="teacher.avatarImage"
-      :alt="alt"
-      loading="lazy"
-      @error="onImgError"
-    />
+    <picture v-if="showImage" class="avatar-picture">
+      <source
+        v-if="teacher.avatarSources?.avif"
+        :srcset="teacher.avatarSources.avif"
+        type="image/avif"
+      />
+      <source
+        v-if="teacher.avatarSources?.webp"
+        :srcset="teacher.avatarSources.webp"
+        type="image/webp"
+      />
+      <img
+        class="avatar-img"
+        :src="teacher.avatarImage"
+        :alt="alt"
+        :loading="loading"
+        :fetchpriority="fetchpriority"
+        :decoding="decoding"
+        :width="size"
+        :height="size"
+        @error="onImgError"
+      />
+    </picture>
     <span v-else-if="teacher.avatarEmoji" class="avatar-emoji" aria-hidden="true">{{ teacher.avatarEmoji }}</span>
     <span v-else class="avatar-letter" aria-hidden="true">{{ letter }}</span>
   </div>
@@ -19,7 +34,10 @@ import { computed, ref } from 'vue';
 const props = defineProps({
   teacher: { type: Object, required: true },
   name: { type: String, default: '' },
-  size: { type: Number, default: 56 }
+  size: { type: Number, default: 56 },
+  loading: { type: String, default: 'lazy' },
+  fetchpriority: { type: String, default: 'auto' },
+  decoding: { type: String, default: 'async' }
 });
 
 const imgBroken = ref(false);
@@ -53,6 +71,12 @@ function onImgError() {
   display: block;
 }
 
+.avatar-picture {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .avatar-emoji {
   font-size: 24px;
   line-height: 1;
@@ -64,4 +88,3 @@ function onImgError() {
   font-size: 18px;
 }
 </style>
-

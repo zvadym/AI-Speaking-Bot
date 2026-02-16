@@ -15,9 +15,10 @@
     "backToTeachers": "Back to teachers"
   },
   "home": {
-    "badge": "Voice-first language practice",
     "headline": "Learn by speaking.",
-    "subhead": "Pick a teacher, send voice messages, get instant corrections and better phrasing — every day.",
+    "seoTitle": "AI Language School | Voice-first language learning bot in Telegram",
+    "seoDescription": "Practice speaking in Telegram with an AI language tutor. Send voice or text, get instant corrections, natural phrasing, translation support, and follow-up prompts.",
+    "subhead": "Practice speaking in Telegram with an AI tutor: send voice or text, get instant corrections, and keep the conversation going with useful next-step prompts.",
     "meetTeachers": "See teachers",
     "chat": {
       "you": "You",
@@ -31,20 +32,21 @@
     "teachersDesc": "Every teacher has their own style, languages, and focus.",
     "howTitle": "How it works",
     "steps": {
-      "oneTitle": "Pick a teacher",
-      "oneDesc": "Pick a teacher that matches your level and vibe.",
-      "twoTitle": "Send a voice message",
-      "twoDesc": "Speak naturally — you’ll get a better, corrected version.",
-      "threeTitle": "Improve daily",
-      "threeDesc": "Build a real speaking habit with consistent feedback."
+      "oneTitle": "Pick a teacher and level",
+      "oneDesc": "Choose a teacher for your language pair and set your level from A1 to C1.",
+      "twoTitle": "Send a short voice or text message",
+      "twoDesc": "Speak naturally in Telegram. The bot transcribes voice, reads context, and prepares a targeted response.",
+      "threeTitle": "Get corrections you can use right away",
+      "threeDesc": "Receive a better version, clear rule-based feedback, translation support, and follow-up hints for your next reply."
     }
   },
   "pricing": {
     "title": "Pricing",
     "subhead": "Start free. Upgrade when you want more practice time.",
     "perMonth": "month",
+    "perYear": "year",
     "freePrice": "Free",
-    "yearlySoon": "Yearly plan: coming soon.",
+    "annualNote": "{total}/year ({perMonth}/month). Save {save}%.",
     "ctaTry": "Try free",
     "ctaChooseTeacher": "Browse teachers",
     "tiers": {
@@ -79,31 +81,31 @@
   },
   "faq": {
     "title": "FAQ",
-    "subhead": "Placeholder answers for SEO and crawlability. Final copy can be replaced by your SEO team.",
+    "subhead": "Everything you need to know before you start practicing.",
     "items": [
       {
-        "q": "How does AI Language School work?",
-        "a": "You pick a teacher, send voice or text messages in Telegram, and receive corrected phrasing and feedback in real time."
+        "q": "How does the Telegram language learning bot work?",
+        "a": "You send a short voice or text message in Telegram, the bot analyzes it, and you receive a corrected, more natural reply plus practical feedback."
       },
       {
-        "q": "Do I need to schedule lessons?",
-        "a": "No. Practice is asynchronous, so you can send messages whenever it fits your day."
+        "q": "Does it adapt to my language level?",
+        "a": "Yes. You can choose your level (A1, A2, B1, B2, C1), and correction depth adapts so feedback stays useful and not overwhelming."
       },
       {
-        "q": "Can beginners use this?",
-        "a": "Yes. Teachers are designed for different levels and can guide practice with short, clear prompts."
+        "q": "Can I practice without booking live lessons?",
+        "a": "Yes. Practice is fully asynchronous in Telegram, so you can train whenever you have a free moment."
       },
       {
-        "q": "Which languages are supported?",
-        "a": "Language pairs depend on available teachers. Check the Teachers page to see current options."
+        "q": "Can I get translation and reply suggestions?",
+        "a": "Yes. Each response can include translation support and follow-up hint options to help you answer faster and keep the conversation moving."
+      },
+      {
+        "q": "Does the bot remember my progress?",
+        "a": "Yes. The bot keeps your level and conversation context, so your practice stays personalized over time."
       },
       {
         "q": "Is there a free plan?",
-        "a": "Yes. You can start with a free plan and upgrade when you want more practice volume."
-      },
-      {
-        "q": "Where does learning happen?",
-        "a": "Practice happens directly in Telegram, so you can keep a daily speaking habit in a familiar chat flow."
+        "a": "Yes. You can start with a free plan and upgrade when you want more weekly practice volume."
       }
     ]
   },
