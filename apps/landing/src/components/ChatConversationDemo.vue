@@ -17,9 +17,9 @@
             />
           </div>
           <div class="voice-meta">
-            <span>{{ t('home.chatDemo.userAudioDuration') }}</span>
+            <span>{{ scenarioAudio.user.duration }}</span>
             <span class="voice-dot" aria-hidden="true">•</span>
-            <span>{{ t('home.chatDemo.userAudioSentAt') }}</span>
+            <span>{{ scenarioAudio.user.sentAt }}</span>
             <span class="voice-check" aria-hidden="true">✓✓</span>
           </div>
         </div>
@@ -28,7 +28,7 @@
 
     <div class="bubble you transcript-bubble">
       <div class="muted mini">{{ t('home.chatDemo.transcriptLabel') }}</div>
-      <div>{{ demoTarget.userTranscriptText }}</div>
+      <div>{{ scenarioTarget.userTranscript }}</div>
       <div class="chat-inline-actions inline-right">
         <button
           class="chat-inline-btn"
@@ -41,7 +41,7 @@
       </div>
       <div v-if="showUserTranscriptTranslation" class="chat-translation">
         <div class="chat-translation-title">{{ translationHeaderLabel }}</div>
-        <div>{{ t('home.chatDemo.userTranscriptTranslation') }}</div>
+        <div>{{ scenarioBase.userTranscript }}</div>
       </div>
     </div>
 
@@ -62,9 +62,9 @@
             />
           </div>
           <div class="voice-meta">
-            <span>{{ t('home.chatDemo.botAudioDuration') }}</span>
+            <span>{{ scenarioAudio.bot.duration }}</span>
             <span class="voice-dot" aria-hidden="true">•</span>
-            <span>{{ t('home.chatDemo.botAudioSentAt') }}</span>
+            <span>{{ scenarioAudio.bot.sentAt }}</span>
           </div>
         </div>
       </div>
@@ -72,10 +72,10 @@
 
     <div class="bubble bot">
       <div class="muted mini">{{ t('home.chatDemo.botTranscriptLabel') }}</div>
-      <div>{{ demoTarget.botTranscriptText }}</div>
+      <div>{{ scenarioTarget.botTranscript }}</div>
       <div v-if="showReplyTranslation" class="chat-translation">
         <div class="chat-translation-title">{{ translationHeaderLabel }}</div>
-        <div>{{ t('home.chatDemo.botTranscriptTranslation') }}</div>
+        <div>{{ scenarioBase.botTranscript }}</div>
       </div>
     </div>
 
@@ -100,41 +100,41 @@
       <div class="hint-block">
         <div class="hint-label">{{ t('home.chatDemo.questionLabel') }}</div>
         <div class="hint-body">
-          <div>❓ {{ demoTarget.question }}</div>
-          <div>📝 {{ t('home.chatDemo.questionBase') }}</div>
+          <div>❓ {{ scenarioTarget.followUp.question }}</div>
+          <div>📝 {{ scenarioBase.followUp.question }}</div>
         </div>
       </div>
 
       <div class="hint-block">
         <div class="hint-label">{{ t('home.chatDemo.simpleLabel') }}</div>
         <div class="hint-body">
-          <code>{{ demoTarget.simple }}</code>
-          <div>{{ t('home.chatDemo.simpleBase') }}</div>
+          <code>{{ scenarioTarget.followUp.simple }}</code>
+          <div>{{ scenarioBase.followUp.simple }}</div>
         </div>
       </div>
 
       <div class="hint-block">
         <div class="hint-label">{{ t('home.chatDemo.conversationalLabel') }}</div>
         <div class="hint-body">
-          <code>{{ demoTarget.conversational }}</code>
-          <div>{{ t('home.chatDemo.conversationalBase') }}</div>
+          <code>{{ scenarioTarget.followUp.conversational }}</code>
+          <div>{{ scenarioBase.followUp.conversational }}</div>
         </div>
       </div>
 
       <div class="hint-block">
         <div class="hint-label">{{ t('home.chatDemo.advancedLabel') }}</div>
         <div class="hint-body">
-          <code>{{ demoTarget.advanced }}</code>
-          <div>{{ t('home.chatDemo.advancedBase') }}</div>
+          <code>{{ scenarioTarget.followUp.advanced }}</code>
+          <div>{{ scenarioBase.followUp.advanced }}</div>
         </div>
       </div>
 
       <div class="hint-block">
         <div class="hint-label">{{ t('home.chatDemo.phrasesLabel') }}</div>
         <div class="hint-body phrase-list">
-          <div><code>{{ demoTarget.phraseOne }}</code> - {{ t('home.chatDemo.phraseOneBase') }}</div>
-          <div><code>{{ demoTarget.phraseTwo }}</code> - {{ t('home.chatDemo.phraseTwoBase') }}</div>
-          <div><code>{{ demoTarget.phraseThree }}</code> - {{ t('home.chatDemo.phraseThreeBase') }}</div>
+          <div><code>{{ scenarioTarget.followUp.phrases[0] }}</code> - {{ scenarioBase.followUp.phrases[0] }}</div>
+          <div><code>{{ scenarioTarget.followUp.phrases[1] }}</code> - {{ scenarioBase.followUp.phrases[1] }}</div>
+          <div><code>{{ scenarioTarget.followUp.phrases[2] }}</code> - {{ scenarioBase.followUp.phrases[2] }}</div>
         </div>
       </div>
     </div>
@@ -142,8 +142,24 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from '../i18n.js';
+import { resolveScenario } from '../data/chatDemoScenarios.js';
+
+const props = defineProps({
+  scenarioId: {
+    type: String,
+    default: 'jobInterview'
+  },
+  targetByBaseLocale: {
+    type: Object,
+    default: () => ({})
+  },
+  scenarios: {
+    type: Object,
+    default: () => ({})
+  }
+});
 
 const { t, locale } = useI18n();
 
@@ -156,55 +172,25 @@ const LOCALE_FLAG_MAP = {
   uk: '🇺🇦',
   it: '🇮🇹'
 };
-const TARGET_BY_BASE_LOCALE = {
-  en: 'es',
-  de: 'en',
-  es: 'en',
-  pt: 'en',
-  uk: 'en',
-  it: 'en'
-};
-const TARGET_DEMO_CONTENT = {
-  en: {
-    userTranscriptText:
-      'Tomorrow I have a job interview for a Product Manager role. What can I say when they ask, "Why should we hire you?"',
-    botTranscriptText:
-      'Good question. Keep it short and concrete: connect your experience to results, then end with confidence. What is one achievement with a measurable impact you can mention?',
-    question: 'What is one achievement with a measurable impact you can mention?',
-    simple: 'In my last role, I improved onboarding and reduced drop-off by 12%.',
-    conversational:
-      'I focus on turning messy processes into clear steps, and that helped our team cut onboarding drop-off by 12%.',
-    advanced:
-      'I combine product thinking with execution: I mapped friction points, aligned the team on priorities, and we delivered changes that improved onboarding retention by 12%.',
-    phraseOne: 'I can add value from day one.',
-    phraseTwo: 'I focus on measurable outcomes.',
-    phraseThree: 'I work well across teams.'
-  },
-  es: {
-    userTranscriptText:
-      'Mañana tengo una entrevista de trabajo para un puesto de Product Manager. ¿Qué puedo decir cuando me pregunten: «¿Por qué deberíamos contratarte?»',
-    botTranscriptText:
-      'Buena pregunta. Mantenlo breve y concreto: conecta tu experiencia con resultados y termina con seguridad. ¿Qué logro con impacto medible puedes mencionar?',
-    question: '¿Qué logro con impacto medible puedes mencionar?',
-    simple: 'En mi último puesto, mejoré el onboarding y reduje el abandono en un 12%.',
-    conversational:
-      'Me enfoco en convertir procesos desordenados en pasos claros, y eso ayudó a nuestro equipo a reducir el abandono del onboarding en un 12%.',
-    advanced:
-      'Combino pensamiento de producto con ejecución: identifiqué puntos de fricción, alineé al equipo en prioridades y aplicamos cambios que mejoraron la retención en onboarding en un 12%.',
-    phraseOne: 'Puedo aportar valor desde el primer día.',
-    phraseTwo: 'Me enfoco en resultados medibles.',
-    phraseThree: 'Trabajo bien entre equipos.'
-  }
-};
+
+const baseLocaleCode = computed(() => (locale.value || 'en').toString().trim().toLowerCase());
+const resolvedScenario = computed(() =>
+  resolveScenario({
+    scenarioId: props.scenarioId,
+    baseLocale: baseLocaleCode.value,
+    targetByBaseLocale: props.targetByBaseLocale,
+    scenarios: props.scenarios
+  })
+);
+const scenarioTarget = computed(() => resolvedScenario.value.targetContent);
+const scenarioBase = computed(() => resolvedScenario.value.baseContent);
+const scenarioAudio = computed(() => resolvedScenario.value.audio);
+const baseLocaleFlag = computed(() => LOCALE_FLAG_MAP[baseLocaleCode.value] || '🏳️');
 
 function stripLeadingDecorators(value) {
   return String(value || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
 }
 
-const baseLocaleCode = computed(() => (locale.value || 'en').toString().trim().toLowerCase());
-const baseLocaleFlag = computed(() => LOCALE_FLAG_MAP[baseLocaleCode.value] || '🏳️');
-const activeTargetCode = computed(() => TARGET_BY_BASE_LOCALE[baseLocaleCode.value] || 'en');
-const demoTarget = computed(() => TARGET_DEMO_CONTENT[activeTargetCode.value] || TARGET_DEMO_CONTENT.en);
 const translateActionLabel = computed(() => `${baseLocaleFlag.value} ${stripLeadingDecorators(t('home.chatDemo.translateAction'))}`);
 const translationHeaderLabel = computed(() => `${baseLocaleFlag.value} ${stripLeadingDecorators(t('home.chatDemo.translationHeader'))}`);
 
@@ -231,6 +217,16 @@ function clearDemoTimers() {
     clearTimeout(hintsTimer);
     hintsTimer = null;
   }
+}
+
+function resetDemoState() {
+  clearDemoTimers();
+  showUserTranscriptTranslation.value = false;
+  showReplyTranslation.value = false;
+  showFollowUp.value = false;
+  isTranslatingUserTranscript.value = false;
+  isTranslatingReply.value = false;
+  isLoadingHints.value = false;
 }
 
 function handleTranslateUserTranscript() {
@@ -262,6 +258,17 @@ function handleFollowUp() {
     hintsTimer = null;
   }, 650);
 }
+
+watch(
+  () => `${props.scenarioId}|${baseLocaleCode.value}|${resolvedScenario.value.targetLocale}`,
+  () => resetDemoState()
+);
+
+watch(
+  () => [props.targetByBaseLocale, props.scenarios],
+  () => resetDemoState(),
+  { deep: true }
+);
 
 onBeforeUnmount(() => clearDemoTimers());
 </script>

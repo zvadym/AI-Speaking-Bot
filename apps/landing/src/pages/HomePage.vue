@@ -14,7 +14,7 @@
           </div>
 
           <div class="shot card reveal-up" style="--revealDelay: 220ms;">
-            <ChatConversationDemo />
+            <ChatConversationDemo scenario-id="jobInterview" />
           </div>
         </div>
         <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>

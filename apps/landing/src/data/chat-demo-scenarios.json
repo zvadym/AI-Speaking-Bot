@@ -1,0 +1,286 @@
+{
+  "defaults": {
+    "targetByBaseLocale": {
+      "en": "es",
+      "de": "en",
+      "es": "en",
+      "pt": "en",
+      "uk": "en",
+      "it": "en"
+    }
+  },
+  "scenarios": {
+    "jobInterview": {
+      "audio": {
+        "user": {
+          "duration": "0:14",
+          "sentAt": "18:58"
+        },
+        "bot": {
+          "duration": "0:18",
+          "sentAt": "18:59"
+        }
+      },
+      "target": {
+        "en": {
+          "userTranscript": "Tomorrow I have a job interview for a Product Manager role. What can I say when they ask, \"Why should we hire you?\"",
+          "botTranscript": "Good question. Keep it short and concrete: connect your experience to results, then end with confidence. What is one achievement with a measurable impact you can mention?",
+          "followUp": {
+            "question": "What is one achievement with a measurable impact you can mention?",
+            "simple": "In my last role, I improved onboarding and reduced drop-off by 12%.",
+            "conversational": "I focus on turning messy processes into clear steps, and that helped our team cut onboarding drop-off by 12%.",
+            "advanced": "I combine product thinking with execution: I mapped friction points, aligned the team on priorities, and we delivered changes that improved onboarding retention by 12%.",
+            "phrases": [
+              "I can add value from day one.",
+              "I focus on measurable outcomes.",
+              "I work well across teams."
+            ]
+          }
+        },
+        "es": {
+          "userTranscript": "Manana tengo una entrevista de trabajo para un puesto de Product Manager. ?Que puedo decir cuando me pregunten: \"?Por que deberiamos contratarte?\"",
+          "botTranscript": "Buena pregunta. Mantenlo breve y concreto: conecta tu experiencia con resultados y termina con seguridad. ?Que logro con impacto medible puedes mencionar?",
+          "followUp": {
+            "question": "?Que logro con impacto medible puedes mencionar?",
+            "simple": "En mi ultimo puesto, mejore el onboarding y reduje el abandono en un 12%.",
+            "conversational": "Me enfoco en convertir procesos desordenados en pasos claros, y eso ayudo a nuestro equipo a reducir el abandono del onboarding en un 12%.",
+            "advanced": "Combino pensamiento de producto con ejecucion: identifique puntos de friccion, alinee al equipo en prioridades y aplicamos cambios que mejoraron la retencion en onboarding en un 12%.",
+            "phrases": [
+              "Puedo aportar valor desde el primer dia.",
+              "Me enfoco en resultados medibles.",
+              "Trabajo bien entre equipos."
+            ]
+          }
+        }
+      },
+      "base": {
+        "en": {
+          "userTranscript": "Tomorrow I have a job interview for a Product Manager role. What can I say when they ask, \"Why should we hire you?\"",
+          "botTranscript": "Good question. Keep it short and concrete: connect your experience to results, then end with confidence. What is one achievement with a measurable impact you can mention?",
+          "followUp": {
+            "question": "What is one achievement with a measurable impact you can mention?",
+            "simple": "In my last role, I improved onboarding and reduced drop-off by 12%.",
+            "conversational": "I focus on turning messy processes into clear steps, and that helped our team cut onboarding drop-off by 12%.",
+            "advanced": "I combine product thinking with execution: I mapped friction points, aligned the team on priorities, and we delivered changes that improved onboarding retention by 12%.",
+            "phrases": [
+              "I can add value from day one.",
+              "I focus on measurable outcomes.",
+              "I work well across teams."
+            ]
+          }
+        },
+        "de": {
+          "userTranscript": "Morgen habe ich ein Vorstellungsgesprach fur eine Product-Manager-Position. Was kann ich sagen, wenn sie fragen: \"Warum sollten wir Sie einstellen?\"",
+          "botTranscript": "Gute Frage. Halte es kurz und konkret: verbinde deine Erfahrung mit Ergebnissen und ende selbstbewusst. Welchen Erfolg mit messbarem Effekt kannst du nennen?",
+          "followUp": {
+            "question": "Welchen Erfolg mit messbarem Effekt kannst du nennen?",
+            "simple": "In meiner letzten Rolle habe ich das Onboarding verbessert und den Abbruch um 12% reduziert.",
+            "conversational": "Ich verwandle chaotische Prozesse in klare Schritte, und dadurch hat unser Team den Onboarding-Abbruch um 12% gesenkt.",
+            "advanced": "Ich verbinde Produktdenken mit Umsetzung: Ich habe Reibungspunkte analysiert, das Team auf Prioritaten ausgerichtet und Anderungen umgesetzt, die die Onboarding-Bindung um 12% verbessert haben.",
+            "phrases": [
+              "Ich kann vom ersten Tag an Mehrwert schaffen.",
+              "Ich konzentriere mich auf messbare Ergebnisse.",
+              "Ich arbeite gut teamubergreifend."
+            ]
+          }
+        },
+        "es": {
+          "userTranscript": "Manana tengo una entrevista de trabajo para un puesto de Product Manager. ?Que puedo decir cuando me pregunten: \"?Por que deberiamos contratarte?\"",
+          "botTranscript": "Buena pregunta. Mantenlo breve y concreto: conecta tu experiencia con resultados y termina con seguridad. ?Que logro con impacto medible puedes mencionar?",
+          "followUp": {
+            "question": "?Que logro con impacto medible puedes mencionar?",
+            "simple": "En mi ultimo puesto, mejore el onboarding y reduje el abandono en un 12%.",
+            "conversational": "Me enfoco en convertir procesos desordenados en pasos claros, y eso ayudo a nuestro equipo a reducir el abandono del onboarding en un 12%.",
+            "advanced": "Combino pensamiento de producto con ejecucion: identifique puntos de friccion, alinee al equipo en prioridades y aplicamos cambios que mejoraron la retencion en onboarding en un 12%.",
+            "phrases": [
+              "Puedo aportar valor desde el primer dia.",
+              "Me enfoco en resultados medibles.",
+              "Trabajo bien entre equipos."
+            ]
+          }
+        },
+        "pt": {
+          "userTranscript": "Amanha tenho uma entrevista para uma vaga de Product Manager. O que posso dizer quando perguntarem: \"Por que deveriamos contratar voce?\"",
+          "botTranscript": "Boa pergunta. Seja breve e concreto: conecte sua experiencia a resultados e termine com confianca. Qual conquista com impacto mensuravel voce pode mencionar?",
+          "followUp": {
+            "question": "Qual conquista com impacto mensuravel voce pode mencionar?",
+            "simple": "No meu ultimo cargo, melhorei o onboarding e reduzi a evasao em 12%.",
+            "conversational": "Eu me concentro em transformar processos confusos em passos claros, e isso ajudou nosso time a reduzir a evasao no onboarding em 12%.",
+            "advanced": "Eu uno pensamento de produto com execucao: mapeei pontos de atrito, alinhei o time nas prioridades e implementamos mudancas que melhoraram a retencao no onboarding em 12%.",
+            "phrases": [
+              "Posso agregar valor desde o primeiro dia.",
+              "Eu foco em resultados mensuraveis.",
+              "Trabalho bem entre equipes."
+            ]
+          }
+        },
+        "uk": {
+          "userTranscript": "Zavtra u mene spivbesida na posytsiiu Product Manager. Shcho ya mozhu skazaty, koly mene zapytaiut: \"Chomu my maiemo vas naiaty?\"",
+          "botTranscript": "Harne pytannia. Trymai korotko i konkretno: poviazhi dosvid iz rezultatom i zavershy vpevneno. Yake dosiahnennia z vymiriuvanym vplyvom ty mozhesh nazvaty?",
+          "followUp": {
+            "question": "Yake dosiahnennia z vymiriuvanym vplyvom ty mozhesh nazvaty?",
+            "simple": "U moii ostannii roli ya pokrashchyv onboarding i znyzyv vidsotok vidmovy na 12%.",
+            "conversational": "Ya zoseredzhuius na tomu, shchob peretvoriuvaty khotychni protsesy na zrozumili kroky, i tse dopomohlo nashii komandi znyzyty vidsotok vidmovy pid chas onboarding na 12%.",
+            "advanced": "Ya poiednuiu produktove myslennia z vykonanniam: ya vyznav tochky tertia, uzghodyv priorytety komandy i my vprovadyly zminy, yaki pidvyshchyly utrymannia pid chas onboarding na 12%.",
+            "phrases": [
+              "Ya mozhu davaty tsinnist iz pershoho dnia.",
+              "Ya fokusuius na vymiriuvanykh rezultatakh.",
+              "Ya dobre pratsiuiu mizh komandamy."
+            ]
+          }
+        },
+        "it": {
+          "userTranscript": "Domani ho un colloquio per un ruolo da Product Manager. Cosa posso dire quando chiedono: \"Perche dovremmo assumerti?\"",
+          "botTranscript": "Ottima domanda. Tienilo breve e concreto: collega la tua esperienza ai risultati e chiudi con sicurezza. Qual e un risultato con impatto misurabile che puoi citare?",
+          "followUp": {
+            "question": "Qual e un risultato con impatto misurabile che puoi citare?",
+            "simple": "Nel mio ultimo ruolo ho migliorato l'onboarding e ridotto l'abbandono del 12%.",
+            "conversational": "Mi concentro nel trasformare processi disordinati in passaggi chiari, e questo ha aiutato il nostro team a ridurre l'abbandono nell'onboarding del 12%.",
+            "advanced": "Unisco visione di prodotto ed esecuzione: ho mappato i punti di attrito, allineato il team sulle priorita e implementato cambiamenti che hanno migliorato la retention nell'onboarding del 12%.",
+            "phrases": [
+              "Posso creare valore fin dal primo giorno.",
+              "Mi concentro su risultati misurabili.",
+              "Lavoro bene tra team diversi."
+            ]
+          }
+        }
+      }
+    },
+    "doctorVisit": {
+      "audio": {
+        "user": {
+          "duration": "0:12",
+          "sentAt": "09:21"
+        },
+        "bot": {
+          "duration": "0:16",
+          "sentAt": "09:22"
+        }
+      },
+      "target": {
+        "en": {
+          "userTranscript": "I have had a sore throat and mild fever for two days. How can I explain my symptoms clearly to the doctor?",
+          "botTranscript": "Say it in a short order: duration, symptoms, then request. For example: I have had a sore throat for two days and a mild fever. Could you please check what this might be?",
+          "followUp": {
+            "question": "Can you describe when the symptoms started and whether they are getting worse?",
+            "simple": "The symptoms started two days ago, and today I feel a little worse.",
+            "conversational": "It started two days ago with a sore throat, and by today the fever feels a bit stronger.",
+            "advanced": "The symptoms began around two days ago and have gradually intensified, especially the throat pain and low-grade fever.",
+            "phrases": [
+              "Could you please check this?",
+              "Do I need any tests?",
+              "What treatment do you recommend?"
+            ]
+          }
+        },
+        "es": {
+          "userTranscript": "Tengo dolor de garganta y fiebre leve desde hace dos dias. ?Como puedo explicar mis sintomas con claridad al medico?",
+          "botTranscript": "Dilo en un orden corto: duracion, sintomas y luego peticion. Por ejemplo: Tengo dolor de garganta desde hace dos dias y fiebre leve. ?Podria revisarme para ver que puede ser?",
+          "followUp": {
+            "question": "?Puedes describir cuando empezaron los sintomas y si estan empeorando?",
+            "simple": "Los sintomas empezaron hace dos dias y hoy me siento un poco peor.",
+            "conversational": "Empezo hace dos dias con dolor de garganta, y hoy siento que la fiebre esta un poco mas fuerte.",
+            "advanced": "Los sintomas comenzaron hace aproximadamente dos dias y se han intensificado de forma gradual, sobre todo el dolor de garganta y la fiebre baja.",
+            "phrases": [
+              "?Podria revisarme, por favor?",
+              "?Necesito hacerme alguna prueba?",
+              "?Que tratamiento me recomienda?"
+            ]
+          }
+        }
+      },
+      "base": {
+        "en": {
+          "userTranscript": "I have had a sore throat and mild fever for two days. How can I explain my symptoms clearly to the doctor?",
+          "botTranscript": "Say it in a short order: duration, symptoms, then request. For example: I have had a sore throat for two days and a mild fever. Could you please check what this might be?",
+          "followUp": {
+            "question": "Can you describe when the symptoms started and whether they are getting worse?",
+            "simple": "The symptoms started two days ago, and today I feel a little worse.",
+            "conversational": "It started two days ago with a sore throat, and by today the fever feels a bit stronger.",
+            "advanced": "The symptoms began around two days ago and have gradually intensified, especially the throat pain and low-grade fever.",
+            "phrases": [
+              "Could you please check this?",
+              "Do I need any tests?",
+              "What treatment do you recommend?"
+            ]
+          }
+        },
+        "de": {
+          "userTranscript": "Ich habe seit zwei Tagen Halsschmerzen und leichtes Fieber. Wie kann ich meine Symptome dem Arzt klar erklaren?",
+          "botTranscript": "Sag es in kurzer Reihenfolge: Dauer, Symptome, dann Bitte. Zum Beispiel: Ich habe seit zwei Tagen Halsschmerzen und leichtes Fieber. Konnten Sie bitte prufen, was das sein konnte?",
+          "followUp": {
+            "question": "Kannst du beschreiben, wann die Symptome begonnen haben und ob sie schlimmer werden?",
+            "simple": "Die Symptome haben vor zwei Tagen begonnen, und heute fuhle ich mich etwas schlechter.",
+            "conversational": "Es fing vor zwei Tagen mit Halsschmerzen an, und heute fuhlt sich das Fieber etwas starker an.",
+            "advanced": "Die Symptome begannen vor etwa zwei Tagen und haben sich allmahlich verstarkt, besonders die Halsschmerzen und das leichte Fieber.",
+            "phrases": [
+              "Konnten Sie das bitte untersuchen?",
+              "Brauche ich irgendwelche Tests?",
+              "Welche Behandlung empfehlen Sie?"
+            ]
+          }
+        },
+        "es": {
+          "userTranscript": "Tengo dolor de garganta y fiebre leve desde hace dos dias. ?Como puedo explicar mis sintomas con claridad al medico?",
+          "botTranscript": "Dilo en un orden corto: duracion, sintomas y luego peticion. Por ejemplo: Tengo dolor de garganta desde hace dos dias y fiebre leve. ?Podria revisarme para ver que puede ser?",
+          "followUp": {
+            "question": "?Puedes describir cuando empezaron los sintomas y si estan empeorando?",
+            "simple": "Los sintomas empezaron hace dos dias y hoy me siento un poco peor.",
+            "conversational": "Empezo hace dos dias con dolor de garganta, y hoy siento que la fiebre esta un poco mas fuerte.",
+            "advanced": "Los sintomas comenzaron hace aproximadamente dos dias y se han intensificado de forma gradual, sobre todo el dolor de garganta y la fiebre baja.",
+            "phrases": [
+              "?Podria revisarme, por favor?",
+              "?Necesito hacerme alguna prueba?",
+              "?Que tratamiento me recomienda?"
+            ]
+          }
+        },
+        "pt": {
+          "userTranscript": "Estou com dor de garganta e febre leve ha dois dias. Como posso explicar meus sintomas com clareza ao medico?",
+          "botTranscript": "Diga em ordem curta: duracao, sintomas e depois pedido. Por exemplo: Estou com dor de garganta ha dois dias e febre leve. Voce poderia verificar o que isso pode ser?",
+          "followUp": {
+            "question": "Voce pode descrever quando os sintomas comecaram e se estao piorando?",
+            "simple": "Os sintomas comecaram ha dois dias e hoje me sinto um pouco pior.",
+            "conversational": "Comecou ha dois dias com dor de garganta, e hoje a febre parece um pouco mais forte.",
+            "advanced": "Os sintomas comecaram ha cerca de dois dias e foram se intensificando gradualmente, especialmente a dor de garganta e a febre baixa.",
+            "phrases": [
+              "Poderia me examinar, por favor?",
+              "Preciso fazer algum exame?",
+              "Que tratamento voce recomenda?"
+            ]
+          }
+        },
+        "uk": {
+          "userTranscript": "U mene vzhe dva dni bolyt horlo i ye nevelyka temperatura. Yak meni chitko poiasnyty likariu svoi symptomy?",
+          "botTranscript": "Skazhy tse korotko po poriadku: tryvalist, symptomy, potim zapyt. Napryklad: U mene dva dni bolyt horlo i ye nevelyka temperatura. Chy mohly b vy pereviryty, shcho tse mozhe buty?",
+          "followUp": {
+            "question": "Chy mozhesh opysaty, koly pochalysia symptomy i chy staiut vony hirshe?",
+            "simple": "Symptomy pochalysia dva dni tomu, i sohodni ya vidchuvaiu sebe trokhy hirshe.",
+            "conversational": "Vse pochalosia dva dni tomu z boliu v horli, a sohodni temperatura vidchuvaietsia trokhy sylnishoiu.",
+            "advanced": "Symptomy poialysia blyzko dvokh dniv tomu i postupovo posyliuvalysia, osoblyvo bil u horli ta subfebrylna temperatura.",
+            "phrases": [
+              "Bud laska, perevirte tse.",
+              "Chy potribni meni yakis analizy?",
+              "Yake likuvannia vy rekomenduiete?"
+            ]
+          }
+        },
+        "it": {
+          "userTranscript": "Ho mal di gola e febbre lieve da due giorni. Come posso spiegare chiaramente i miei sintomi al medico?",
+          "botTranscript": "Dillo in un ordine breve: durata, sintomi e poi richiesta. Per esempio: Ho mal di gola da due giorni e febbre lieve. Potrebbe controllare cosa potrebbe essere?",
+          "followUp": {
+            "question": "Puoi descrivere quando sono iniziati i sintomi e se stanno peggiorando?",
+            "simple": "I sintomi sono iniziati due giorni fa e oggi mi sento un po peggio.",
+            "conversational": "E iniziato due giorni fa con mal di gola, e oggi la febbre sembra un po piu forte.",
+            "advanced": "I sintomi sono iniziati circa due giorni fa e si sono intensificati gradualmente, soprattutto il dolore alla gola e la febbre lieve.",
+            "phrases": [
+              "Potrebbe controllarmi, per favore?",
+              "Devo fare qualche esame?",
+              "Che trattamento consiglia?"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
