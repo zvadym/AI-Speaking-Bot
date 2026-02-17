@@ -9,6 +9,9 @@ export const teachers = [
     "teacherSlugBase": "giulia",
     "publicSlugs": {
       "en": "giulia-italian-teacher",
+      "de": "giulia-italienisch-teacher",
+      "es": "giulia-italiano-teacher",
+      "pt": "giulia-italiano-teacher",
       "uk": "giulia-italiyska-teacher",
       "it": "giulia-italiano-teacher"
     },
@@ -46,6 +49,9 @@ export const teachers = [
     "teacherSlugBase": "greta",
     "publicSlugs": {
       "en": "greta-german-teacher",
+      "de": "greta-deutsch-teacher",
+      "es": "greta-aleman-teacher",
+      "pt": "greta-alemao-teacher",
       "uk": "greta-nimetska-teacher",
       "it": "greta-tedesco-teacher"
     },
@@ -83,6 +89,9 @@ export const teachers = [
     "teacherSlugBase": "luca",
     "publicSlugs": {
       "en": "luca-english-teacher",
+      "de": "luca-englisch-teacher",
+      "es": "luca-ingles-teacher",
+      "pt": "luca-ingles-teacher",
       "uk": "luca-anhliyska-teacher",
       "it": "luca-inglese-teacher"
     },
@@ -120,6 +129,9 @@ export const teachers = [
     "teacherSlugBase": "uk-de",
     "publicSlugs": {
       "en": "uk-de-german-teacher",
+      "de": "uk-de-deutsch-teacher",
+      "es": "uk-de-aleman-teacher",
+      "pt": "uk-de-alemao-teacher",
       "uk": "uk-de-nimetska-teacher",
       "it": "uk-de-tedesco-teacher"
     },
@@ -157,6 +169,9 @@ export const teachers = [
     "teacherSlugBase": "uk-en",
     "publicSlugs": {
       "en": "uk-en-english-teacher",
+      "de": "uk-en-englisch-teacher",
+      "es": "uk-en-ingles-teacher",
+      "pt": "uk-en-ingles-teacher",
       "uk": "uk-en-anhliyska-teacher",
       "it": "uk-en-inglese-teacher"
     },

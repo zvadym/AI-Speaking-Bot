@@ -141,6 +141,9 @@
   "language": {
     "label": "Lingua",
     "en": "Inglese",
+    "de": "Tedesco",
+    "es": "Spagnolo",
+    "pt": "Portoghese",
     "uk": "Ucraino",
     "it": "Italiano"
   },

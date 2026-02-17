@@ -1,4 +1,4 @@
-export const SUPPORTED_LOCALES = ['en', 'uk', 'it'];
+export const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it'];
 
 export const LANGUAGE_SLUG_TOKENS = {
   en: {
@@ -10,6 +10,36 @@ export const LANGUAGE_SLUG_TOKENS = {
     pl: 'polish',
     es: 'spanish',
     fr: 'french'
+  },
+  de: {
+    en: 'englisch',
+    de: 'deutsch',
+    it: 'italienisch',
+    uk: 'ukrainisch',
+    ru: 'russisch',
+    pl: 'polnisch',
+    es: 'spanisch',
+    fr: 'franzoesisch'
+  },
+  es: {
+    en: 'ingles',
+    de: 'aleman',
+    it: 'italiano',
+    uk: 'ucraniano',
+    ru: 'ruso',
+    pl: 'polaco',
+    es: 'espanol',
+    fr: 'frances'
+  },
+  pt: {
+    en: 'ingles',
+    de: 'alemao',
+    it: 'italiano',
+    uk: 'ucraniano',
+    ru: 'russo',
+    pl: 'polones',
+    es: 'espanhol',
+    fr: 'frances'
   },
   uk: {
     en: 'anhliyska',
@@ -38,6 +68,18 @@ export const HUB_TOPIC_SLUG_TOKENS = {
     speaking: 'speaking-practice',
     interview: 'interview-prep'
   },
+  de: {
+    speaking: 'sprechpraxis',
+    interview: 'vorstellungsgespraech'
+  },
+  es: {
+    speaking: 'practica-conversacion',
+    interview: 'entrevista'
+  },
+  pt: {
+    speaking: 'pratica-conversacao',
+    interview: 'entrevista'
+  },
   uk: {
     speaking: 'rozmovna-praktyka',
     interview: 'spivbesida'
@@ -62,6 +104,9 @@ function normalizeLocaleForSlugs(input) {
   const raw = (input || '').toString().trim().toLowerCase();
   if (SUPPORTED_LOCALES.includes(raw)) return raw;
   if (raw.startsWith('en')) return 'en';
+  if (raw.startsWith('de')) return 'de';
+  if (raw.startsWith('es')) return 'es';
+  if (raw.startsWith('pt')) return 'pt';
   if (raw.startsWith('uk') || raw.startsWith('ua')) return 'uk';
   if (raw.startsWith('it')) return 'it';
   return 'en';

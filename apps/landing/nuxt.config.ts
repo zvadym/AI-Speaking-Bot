@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const DEFAULT_SITE_URL = 'https://ai-language-school.online';
-const SUPPORTED_LOCALES = ['en', 'uk', 'it'];
+const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it'];
 
 function normalizeSlug(input: unknown) {
   return String(input ?? '').trim();
@@ -36,7 +36,10 @@ function buildTeacherSlugsByLocale(teachers: Record<string, unknown>[]) {
   const map: Record<string, string[]> = {};
   for (const locale of SUPPORTED_LOCALES) {
     map[locale] = unique(
-      teachers.map((row) => normalizeSlug((row?.publicSlugs as Record<string, unknown>)?.[locale]))
+      teachers.map((row) => {
+        const publicSlugs = (row?.publicSlugs as Record<string, unknown>) || {};
+        return normalizeSlug(publicSlugs[locale] ?? publicSlugs.en);
+      })
     );
   }
   return map;

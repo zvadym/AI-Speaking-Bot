@@ -232,7 +232,7 @@ const localeOptions = computed(() => {
   return supportedLocales.map((value) => ({
     value,
     label: value.toUpperCase(),
-    name: value === 'uk' ? 'Ukrainian' : value === 'it' ? 'Italian' : 'English'
+    name: t(`language.${value}`)
   }));
 });
 

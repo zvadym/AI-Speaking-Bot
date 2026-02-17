@@ -1,0 +1,160 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "teachers": "Profesores",
+    "pricing": "Precios",
+    "blog": "Blog",
+    "about": "Acerca de",
+    "contact": "Contacto"
+  },
+  "cta": {
+    "start": "Ver profesores",
+    "openTelegram": "Abrir en Telegram",
+    "viewProfile": "Ver perfil",
+    "allTeachers": "Todos los profesores",
+    "backToTeachers": "Volver a profesores"
+  },
+  "home": {
+    "headline": "Aprende hablando.",
+    "seoTitle": "AI Language School | Bot de aprendizaje de idiomas en Telegram",
+    "seoDescription": "Practica speaking en Telegram con un tutor de IA. Envía voz o texto, recibe correcciones instantáneas, frases más naturales, apoyo de traducción y sugerencias para continuar.",
+    "subhead": "Practica speaking en Telegram con un tutor de IA: envía voz o texto, recibe correcciones al instante y mantén la conversación con sugerencias útiles.",
+    "meetTeachers": "Ver profesores",
+    "chat": {
+      "you": "Tú",
+      "bot": "Bot profesor",
+      "tip": "Corrección",
+      "youMsg": "Quiero hablar inglés con más confianza, pero no sé qué decir.",
+      "botMsg": "Perfecto: cuéntame tu día en 5 frases. Te ayudo a sonar más natural.",
+      "tipMsg": "Prueba: \"Quiero practicar speaking cada día, incluso 10 minutos ayudan.\""
+    },
+    "teachersTitle": "Profesores",
+    "teachersDesc": "Cada profesor tiene su propio estilo, idiomas y enfoque.",
+    "howTitle": "Cómo funciona",
+    "steps": {
+      "oneTitle": "Elige profesor y nivel",
+      "oneDesc": "Elige un profesor para tu combinación de idiomas y define tu nivel de A1 a C1.",
+      "twoTitle": "Envía un mensaje corto de voz o texto",
+      "twoDesc": "Habla con naturalidad en Telegram. El bot transcribe la voz, lee el contexto y prepara una respuesta enfocada.",
+      "threeTitle": "Recibe correcciones que puedes usar de inmediato",
+      "threeDesc": "Obtén una versión mejor, feedback claro basado en reglas, ayuda de traducción y pistas para tu siguiente respuesta."
+    }
+  },
+  "pricing": {
+    "title": "Precios",
+    "subhead": "Empieza gratis. Mejora el plan cuando quieras más tiempo de práctica.",
+    "perMonth": "mes",
+    "perYear": "año",
+    "freePrice": "Gratis",
+    "annualNote": "{total}/año ({perMonth}/mes). Ahorra {save}%.",
+    "ctaTry": "Probar gratis",
+    "ctaChooseTeacher": "Ver profesores",
+    "tiers": {
+      "free": {
+        "name": "Free",
+        "desc": "Prueba el formato y mira cómo se siente.",
+        "features": "20 mensajes||Voz o texto||Correcciones instantáneas"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "Para progreso real.",
+        "features": "Sesiones diarias más largas||Voz o texto||Más repeticiones, hábito más rápido"
+      }
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "subhead": "Lecturas breves y prácticas sobre speaking y cómo superar la barrera del idioma.",
+    "read": "Leer",
+    "backToBlog": "Volver al blog",
+    "readingMinutes": "{n} min de lectura"
+  },
+  "about": {
+    "title": "Acerca de",
+    "p1": "Creamos AI Language School porque queríamos una forma más simple de practicar speaking, sin horarios, llamadas incómodas ni miedo a ser juzgado.",
+    "p2": "Telegram siempre está contigo. Un bot-profesor siempre está listo. Y unos minutos de práctica real cada día valen más que el plan perfecto que nunca empiezas.",
+    "bullets": {
+      "one": "Practica en un formato de chat familiar",
+      "two": "Recibe correcciones suaves y frases mejores",
+      "three": "Construye un hábito diario de speaking"
+    }
+  },
+  "faq": {
+    "title": "FAQ",
+    "subhead": "Todo lo que necesitas saber antes de empezar a practicar.",
+    "items": [
+      {
+        "q": "¿Cómo funciona el bot de idiomas en Telegram?",
+        "a": "Envías un mensaje corto de voz o texto en Telegram, el bot lo analiza y recibes una respuesta corregida y más natural con feedback práctico."
+      },
+      {
+        "q": "¿Se adapta a mi nivel de idioma?",
+        "a": "Sí. Puedes elegir tu nivel (A1, A2, B1, B2, C1), y la profundidad de las correcciones se adapta para que el feedback sea útil y no abrumador."
+      },
+      {
+        "q": "¿Puedo practicar sin reservar clases en vivo?",
+        "a": "Sí. La práctica es totalmente asíncrona en Telegram, así que puedes entrenar cuando tengas tiempo libre."
+      },
+      {
+        "q": "¿Incluye traducción y sugerencias de respuesta?",
+        "a": "Sí. Cada respuesta puede incluir apoyo de traducción y sugerencias de seguimiento para que respondas más rápido y mantengas la conversación."
+      },
+      {
+        "q": "¿El bot recuerda mi progreso?",
+        "a": "Sí. El bot guarda tu nivel y el contexto de conversación para que la práctica siga siendo personalizada con el tiempo."
+      },
+      {
+        "q": "¿Hay un plan gratuito?",
+        "a": "Sí. Puedes empezar con un plan gratis y mejorar cuando quieras más práctica semanal."
+      }
+    ]
+  },
+  "contact": {
+    "title": "Contacto",
+    "subhead": "¿Tienes una pregunta o feedback? Escríbenos: leemos todo.",
+    "name": "Nombre",
+    "telegram": "Telegram",
+    "message": "Mensaje",
+    "send": "Enviar",
+    "sending": "Enviando...",
+    "sent": "Enviado. ¡Gracias!",
+    "error": "No se pudo enviar. Inténtalo más tarde.",
+    "unavailable": "El contacto no está disponible temporalmente."
+  },
+  "teachers": {
+    "title": "Profesores",
+    "subhead": "Explora profesores y empieza tu próxima clase en Telegram.",
+    "baseTeachersHeading": "Idioma base: {language}",
+    "showMoreTeachers": "Mostrar más",
+    "showLessTeachers": "Mostrar menos",
+    "empty": "Aún no hay profesores disponibles."
+  },
+  "teacher": {
+    "teachesPrefix": "Enseña",
+    "baseLanguagePrefix": "Explica en",
+    "stylePrefix": "Estilo"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "desc": "Prueba la página de inicio."
+  },
+  "language": {
+    "label": "Idioma",
+    "en": "Inglés",
+    "de": "Alemán",
+    "es": "Español",
+    "pt": "Portugués",
+    "uk": "Ucraniano",
+    "it": "Italiano"
+  },
+  "languageName": {
+    "en": "Inglés",
+    "de": "Alemán",
+    "uk": "Ucraniano",
+    "it": "Italiano",
+    "ru": "Ruso",
+    "pl": "Polaco",
+    "es": "Español",
+    "fr": "Francés"
+  }
+}

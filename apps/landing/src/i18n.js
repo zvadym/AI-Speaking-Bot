@@ -1,17 +1,23 @@
 import { computed } from 'vue';
 import { useRoute } from '#imports';
 import en from './locales/en.json';
+import de from './locales/de.json';
+import es from './locales/es.json';
+import pt from './locales/pt.json';
 import uk from './locales/uk.json';
 import it from './locales/it.json';
 
 const STORAGE_KEY = 'landing_ui_locale';
 
-const messages = { en, uk, it };
-export const supportedLocales = ['en', 'uk', 'it'];
+const messages = { en, de, es, pt, uk, it };
+export const supportedLocales = ['en', 'de', 'es', 'pt', 'uk', 'it'];
 
 export function normalizeLocale(input) {
   const raw = (input || '').toString().trim().toLowerCase();
   if (raw === 'uk' || raw === 'uk-ua' || raw === 'ua' || raw === 'ua-ua') return 'uk';
+  if (raw === 'de' || raw.startsWith('de-')) return 'de';
+  if (raw === 'es' || raw.startsWith('es-')) return 'es';
+  if (raw === 'pt' || raw === 'pt-br' || raw === 'pt-pt' || raw.startsWith('pt-')) return 'pt';
   if (raw === 'it' || raw.startsWith('it-')) return 'it';
   if (raw === 'en' || raw.startsWith('en-')) return 'en';
   return '';
