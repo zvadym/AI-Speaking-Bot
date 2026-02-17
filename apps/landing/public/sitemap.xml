@@ -7,21 +7,6 @@
     <loc>https://ai-language-school.online/en/teachers</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/en/teachers/giulia-italian-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/en/teachers/greta-german-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/en/teachers/luca-english-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/en/teachers/uk-de-german-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/en/teachers/uk-en-english-teacher</loc>
-  </url>
-  <url>
     <loc>https://ai-language-school.online/en/blog/daily-habit-10-min</loc>
   </url>
   <url>
@@ -35,21 +20,6 @@
   </url>
   <url>
     <loc>https://ai-language-school.online/de/teachers</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/de/teachers/giulia-italienisch-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/de/teachers/greta-deutsch-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/de/teachers/luca-englisch-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/de/teachers/uk-de-deutsch-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/de/teachers/uk-en-englisch-teacher</loc>
   </url>
   <url>
     <loc>https://ai-language-school.online/de/blog/daily-habit-10-min</loc>
@@ -67,21 +37,6 @@
     <loc>https://ai-language-school.online/es/teachers</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/es/teachers/giulia-italiano-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/es/teachers/greta-aleman-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/es/teachers/luca-ingles-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/es/teachers/uk-de-aleman-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/es/teachers/uk-en-ingles-teacher</loc>
-  </url>
-  <url>
     <loc>https://ai-language-school.online/es/blog/daily-habit-10-min</loc>
   </url>
   <url>
@@ -95,21 +50,6 @@
   </url>
   <url>
     <loc>https://ai-language-school.online/pt/teachers</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/pt/teachers/giulia-italiano-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/pt/teachers/greta-alemao-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/pt/teachers/luca-ingles-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/pt/teachers/uk-de-alemao-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/pt/teachers/uk-en-ingles-teacher</loc>
   </url>
   <url>
     <loc>https://ai-language-school.online/pt/blog/daily-habit-10-min</loc>
@@ -127,21 +67,6 @@
     <loc>https://ai-language-school.online/uk/teachers</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/uk/teachers/giulia-italiyska-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/uk/teachers/greta-nimetska-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/uk/teachers/luca-anhliyska-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/uk/teachers/uk-de-nimetska-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/uk/teachers/uk-en-anhliyska-teacher</loc>
-  </url>
-  <url>
     <loc>https://ai-language-school.online/uk/blog/daily-habit-10-min</loc>
   </url>
   <url>
@@ -157,7 +82,16 @@
     <loc>https://ai-language-school.online/it/teachers</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/it/teachers/giulia-italiano-teacher</loc>
+    <loc>https://ai-language-school.online/it/blog/daily-habit-10-min</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/it/blog/speaking-anxiety-language-barrier</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/it/blog/what-to-talk-about</loc>
+  </url>
+  <url>
+    <loc>https://ai-language-school.online/de/teachers/giulia-italienisch-teacher</loc>
   </url>
   <url>
     <loc>https://ai-language-school.online/it/teachers/greta-tedesco-teacher</loc>
@@ -166,18 +100,9 @@
     <loc>https://ai-language-school.online/it/teachers/luca-inglese-teacher</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/it/teachers/uk-de-tedesco-teacher</loc>
+    <loc>https://ai-language-school.online/uk/teachers/uk-de-nimetska-teacher</loc>
   </url>
   <url>
-    <loc>https://ai-language-school.online/it/teachers/uk-en-inglese-teacher</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/it/blog/daily-habit-10-min</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/it/blog/speaking-anxiety-language-barrier</loc>
-  </url>
-  <url>
-    <loc>https://ai-language-school.online/it/blog/what-to-talk-about</loc>
+    <loc>https://ai-language-school.online/uk/teachers/uk-en-anhliyska-teacher</loc>
   </url>
 </urlset>

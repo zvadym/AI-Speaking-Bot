@@ -74,8 +74,8 @@
           <div class="dialogues-grid">
             <article v-for="example in content.dialogueExamples" :key="example.scenario" class="dialogue-item">
               <h3 class="h3">{{ example.scenario }}</h3>
-              <p class="dialogue-line"><span class="label">Learner:</span> {{ example.learnerLine }}</p>
-              <p class="dialogue-line"><span class="label">Teacher:</span> {{ example.teacherLine }}</p>
+              <p class="dialogue-line"><span class="label">{{ t('teacherProfile.dialogueLearnerLabel') }}:</span> {{ example.learnerLine }}</p>
+              <p class="dialogue-line"><span class="label">{{ t('teacherProfile.dialogueTeacherLabel') }}:</span> {{ example.teacherLine }}</p>
               <p class="muted dialogue-note">{{ example.note }}</p>
             </article>
           </div>
@@ -122,7 +122,7 @@ import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import TeacherAvatar from '../components/TeacherAvatar.vue';
 import TeacherCard from '../components/TeacherCard.vue';
-import { teachers, getTeacherName, getTeacherTagline } from '../data/teachers.js';
+import { teachers, getTeacherName } from '../data/teachers.js';
 import { getTeacherTelegramUrl } from '../lib/telegram.js';
 import { routeWithLocale, useI18n } from '../i18n.js';
 import { getTeacherSeoContent } from '../data/seoTeacherContent.js';
@@ -142,12 +142,12 @@ const content = computed(() => {
 });
 
 const name = computed(() => getTeacherName(props.teacher, locale.value));
-const tagline = computed(() => getTeacherTagline(props.teacher, locale.value));
+const localizedTagline = computed(() => (props.teacher?.taglines?.[locale.value] || '').toString().trim());
 const teachesLine = computed(() => {
   if (!props.teacher) return '';
   const parts = [];
   parts.push(`${t('teacher.teachesPrefix')} ${t(`languageName.${props.teacher.learningLanguage}`)}`);
-  if (tagline.value) parts.push(tagline.value);
+  if (localizedTagline.value) parts.push(localizedTagline.value);
   return parts.join(' • ');
 });
 

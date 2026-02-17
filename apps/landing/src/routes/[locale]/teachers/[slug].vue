@@ -8,10 +8,9 @@ import { setResponseStatus } from 'h3';
 import TeacherProfilePage from '~/pages/TeacherProfilePage.vue';
 import { teachers, getTeacherName, getTeacherTagline } from '~/data/teachers.js';
 import {
-  findTeacherByPublicSlug,
-  getAlternateTeacherPaths,
-  getTeacherPathSuffix,
-  isLegacyPairSlug
+  getTeacherCanonicalPath,
+  getTeacherCanonicalPathSuffix,
+  resolveTeacherRouteBySlug
 } from '~/data/teacherSlugs.js';
 import { getTeacherTelegramUrl } from '~/lib/telegram.js';
 import { getTeacherSeoContent } from '~/data/seoTeacherContent.js';
@@ -33,11 +32,23 @@ const slug = computed(() => {
   return (raw || '').toString();
 });
 
-const teacher = computed(() => findTeacherByPublicSlug(localeCode.value, slug.value));
-const legacyPairSlug = computed(() => isLegacyPairSlug(slug.value));
+const resolution = computed(() => resolveTeacherRouteBySlug(localeCode.value, slug.value));
+if (resolution.value?.canonicalPath && !resolution.value.isCanonicalRequest) {
+  await navigateTo(
+    {
+      path: resolution.value.canonicalPath,
+      query: route.query,
+      hash: route.hash
+    },
+    { redirectCode: 301 }
+  );
+}
+
+const teacher = computed(() => resolution.value?.teacher || null);
+const pageLocale = computed(() => normalizeLocale(resolution.value?.canonicalLocale) || localeCode.value || 'en');
 const { t } = useI18n();
 
-if (event && (!teacher.value || legacyPairSlug.value)) {
+if (event && !teacher.value) {
   setResponseStatus(event, 404);
 }
 
@@ -53,12 +64,19 @@ function toAbsoluteUrl(pathname = '/') {
 
 const seoContent = computed(() => {
   if (!teacher.value) return null;
-  return getTeacherSeoContent(teacher.value, localeCode.value);
+  return getTeacherSeoContent(teacher.value, pageLocale.value);
+});
+
+const canonicalPathSuffix = computed(() => {
+  if (!teacher.value) return `/teachers/${encodeURIComponent(slug.value)}`;
+  return getTeacherCanonicalPathSuffix(teacher.value) || '/teachers';
 });
 
 const alternatePaths = computed(() => {
   if (!teacher.value) return {};
-  return getAlternateTeacherPaths(teacher.value);
+  return {
+    [pageLocale.value]: canonicalPathSuffix.value
+  };
 });
 
 const faqItems = computed(() => {
@@ -74,13 +92,11 @@ const faqItems = computed(() => {
 const structuredData = computed(() => {
   if (!teacher.value || !seoContent.value) return [];
 
-  const locale = localeCode.value;
+  const locale = pageLocale.value;
   const languageLabel = t(`languageName.${teacher.value.learningLanguage}`);
-  const teacherPathSuffix = getTeacherPathSuffix(teacher.value, locale) || '/teachers';
 
   const personSchemas = teachers.map((row) => {
-    const pathSuffix = getTeacherPathSuffix(row, locale) || '/teachers';
-    const url = toAbsoluteUrl(`/${locale}${pathSuffix}`);
+    const url = toAbsoluteUrl(getTeacherCanonicalPath(row));
     const image = row.avatarImage ? toAbsoluteUrl(row.avatarImage) : '';
     const telegramUrl = getTeacherTelegramUrl(row);
     return {
@@ -136,7 +152,7 @@ const structuredData = computed(() => {
           '@type': 'ListItem',
           position: 3,
           name: getTeacherName(teacher.value, locale),
-          item: toAbsoluteUrl(`/${locale}${teacherPathSuffix}`)
+          item: toAbsoluteUrl(getTeacherCanonicalPath(teacher.value))
         }
       ]
     },
@@ -145,11 +161,10 @@ const structuredData = computed(() => {
       '@type': 'ItemList',
       name: t('nav.teachers'),
       itemListElement: teachers.map((row, idx) => {
-        const rowPathSuffix = getTeacherPathSuffix(row, locale) || '/teachers';
         return {
           '@type': 'ListItem',
           position: idx + 1,
-          url: toAbsoluteUrl(`/${locale}${rowPathSuffix}`),
+          url: toAbsoluteUrl(getTeacherCanonicalPath(row)),
           name: getTeacherName(row, locale)
         };
       })
@@ -179,21 +194,20 @@ const structuredData = computed(() => {
         price: '0',
         priceCurrency: 'EUR'
       },
-      url: toAbsoluteUrl(`/${locale}${teacherPathSuffix}`)
+      url: toAbsoluteUrl(getTeacherCanonicalPath(teacher.value))
     }
   ];
 });
 
 useLocalizedSeo({
-  locale: localeCode,
-  pathSuffix: () => {
-    if (teacher.value) return getTeacherPathSuffix(teacher.value, localeCode.value) || '/teachers';
-    return `/teachers/${encodeURIComponent(slug.value)}`;
-  },
+  locale: pageLocale,
+  pathSuffix: () => canonicalPathSuffix.value,
   alternatePathByLocale: () => alternatePaths.value,
+  allowedAlternateLocales: () => [pageLocale.value],
+  xDefaultLocale: () => pageLocale.value,
   title: () => seoContent.value?.metaTitle || `${t('notFound.title')} — AI Language School`,
   description: () => seoContent.value?.metaDescription || t('notFound.desc'),
-  noindex: () => !teacher.value || legacyPairSlug.value,
+  noindex: () => !teacher.value,
   structuredData
 });
 </script>

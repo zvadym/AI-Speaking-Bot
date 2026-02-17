@@ -117,6 +117,7 @@ const localePickerRef = ref(null);
 const routeSuffix = computed(() => stripLocalePrefix(route.path || '/'));
 const isHomeRoute = computed(() => routeSuffix.value === '/');
 const isTeachersActive = computed(() => routeSuffix.value === '/teachers' || routeSuffix.value.startsWith('/teachers/'));
+const isTeacherProfileRoute = computed(() => /^\/teachers\/[^/]+\/?$/u.test(routeSuffix.value));
 
 function normalizeHash(hash) {
   const raw = (hash || '').toString().trim();
@@ -230,7 +231,7 @@ async function switchLocale(nextLocale) {
   const normalized = normalizeLocale(nextLocale);
   if (!normalized || normalized === locale.value) return;
   setAppLocale(normalized);
-  const targetPath = routeSuffix.value.startsWith('/teachers/')
+  const targetPath = isTeacherProfileRoute.value
     ? localizedPath('/', normalized)
     : localizedPath(routeSuffix.value, normalized);
   await navigateTo(

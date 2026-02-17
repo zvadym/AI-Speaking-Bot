@@ -74,6 +74,26 @@ export function useLocalizedSeo(options = {}) {
     return map;
   });
 
+  const alternateLocales = computed(() => {
+    const raw = readValue(options.allowedAlternateLocales);
+    if (!Array.isArray(raw) || raw.length === 0) return supportedLocales;
+
+    const normalized = Array.from(
+      new Set(
+        raw
+          .map((value) => normalizeLocale(value))
+          .filter(Boolean)
+      )
+    );
+    return normalized.length ? normalized : supportedLocales;
+  });
+
+  const xDefaultLocale = computed(() => {
+    const explicit = normalizeLocale(readValue(options.xDefaultLocale));
+    if (explicit) return explicit;
+    return alternateLocales.value[0] || 'en';
+  });
+
   const canonicalPath = computed(() => {
     const override = alternatePathByLocale.value[activeLocale.value];
     const suffix = override || pathSuffix.value;
@@ -120,7 +140,7 @@ export function useLocalizedSeo(options = {}) {
           rel: 'canonical',
           href: toAbsoluteUrl(siteUrl, canonicalPath.value)
         },
-        ...supportedLocales.map((altLocale) => ({
+        ...alternateLocales.value.map((altLocale) => ({
           key: `alternate-${altLocale}`,
           rel: 'alternate',
           hreflang: altLocale,
@@ -135,7 +155,10 @@ export function useLocalizedSeo(options = {}) {
           hreflang: 'x-default',
           href: toAbsoluteUrl(
             siteUrl,
-            localizedPath(alternatePathByLocale.value.en || pathSuffix.value, 'en')
+            localizedPath(
+              alternatePathByLocale.value[xDefaultLocale.value] || pathSuffix.value,
+              xDefaultLocale.value
+            )
           )
         }
       ],

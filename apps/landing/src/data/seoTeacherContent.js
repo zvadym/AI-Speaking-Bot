@@ -9,6 +9,12 @@ const LANGUAGE_FORMS = {
     it: { display: 'Italian', adjective: 'Italian' },
     uk: { display: 'Ukrainian', adjective: 'Ukrainian' }
   },
+  de: {
+    en: { display: 'Englisch' },
+    de: { display: 'Deutsch' },
+    it: { display: 'Italienisch' },
+    uk: { display: 'Ukrainisch' }
+  },
   uk: {
     en: { display: 'англійська', genitive: 'англійської' },
     de: { display: 'німецька', genitive: 'німецької' },
@@ -322,6 +328,134 @@ function buildUkrainianContent(teacher, languageForm) {
   };
 }
 
+function buildGermanContent(teacher, languageForm) {
+  const teacherName = getTeacherName(teacher, 'de') || getTeacherName(teacher, 'en') || 'Lehrkraft';
+  const targetLanguage = languageForm.display || 'Englisch';
+
+  return {
+    metaTitle: `${targetLanguage} Sprechpraxis in Telegram mit ${teacherName} | AI Language School`,
+    metaDescription: `Trainiere gesprochenes ${targetLanguage} in Telegram: kurze Voice-Nachrichten, sofortige Korrekturen, natürlichere Formulierungen und klare Hinweise. Starte in einer Minute mit ${teacherName}.`,
+    h1: `${targetLanguage} Sprechpraxis in Telegram mit ${teacherName}`,
+    heroLead: `Diese Seite ist für Lernende, die ${targetLanguage} wirklich sprechen wollen, nicht nur Theorie lesen. Du schickst eine kurze Sprachnachricht, ${teacherName} antwortet direkt mit einer korrigierten und natürlicheren Version.`,
+    heroOutcome: `Das Ziel ist klar: weniger Blockaden, mehr Flüssigkeit, deutlichere Aussprache und schnellere Antworten in echten Situationen wie Arbeit, Vorstellungsgespräch, Behördengang, Arzttermin oder Wohnungssuche.`,
+    coreBullets: [
+      'Sofortige Korrekturen mit konkreten Alternativen, die du direkt wiederverwenden kannst.',
+      'Fokus auf Aussprache, Sprachfluss und natürliche Formulierungen im Dialog.',
+      'Tägliche Mikro-Praxis in Telegram, die auch mit vollem Kalender realistisch bleibt.'
+    ],
+    howTitle: 'So funktioniert es',
+    howSteps: [
+      {
+        title: '1. Sende eine echte Sprachnachricht',
+        description: 'Sprich über deinen Alltag, Pläne oder ein reales Problem. Kein Skript nötig - sprich in deinem aktuellen Niveau.'
+      },
+      {
+        title: '2. Erhalte Korrektur und bessere Version',
+        description: `Du bekommst eine präzisere und natürlichere Formulierung plus kurze Erklärung, was du sofort verbessern kannst.`
+      },
+      {
+        title: '3. Führe den Dialog weiter',
+        description: 'Jede Antwort endet mit einer Anschlussfrage. So bleibst du im Sprechen und baust täglich Sicherheit auf.'
+      }
+    ],
+    forWhoTitle: 'Für wen ist das geeignet?',
+    forWhoIntro: `${teacherName} ist für Lernende gemacht, die praktische Ergebnisse im gesprochenen ${targetLanguage} brauchen.`,
+    forWhoItems: [
+      {
+        title: 'Berufliche Kommunikation',
+        description: 'Trainiere Updates, kurze Calls, Rückfragen und klare Argumentation für den Arbeitsalltag.'
+      },
+      {
+        title: 'Vorstellungsgespräche',
+        description: 'Übe Selbstvorstellung, Erfahrung, Projektergebnisse und Follow-up-Fragen mit natürlichem Sprachrhythmus.'
+      },
+      {
+        title: 'Alltag und Umzug',
+        description: 'Trainiere Sprache für Miete, Bank, Arzt, Termine und typische Behördensituationen.'
+      },
+      {
+        title: 'Reisen',
+        description: 'Lerne hochfrequente Formulierungen für Flughafen, Hotel, Restaurant und spontane Alltagssituationen.'
+      }
+    ],
+    dialoguesTitle: 'Dialogbeispiele',
+    dialoguesIntro: 'Typische Situationen, die Lernende am häufigsten trainieren: Bank/ATM, Arztbesuch und Wohnungsanmietung.',
+    dialogueExamples: [
+      {
+        scenario: 'ATM / Bank',
+        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'atm'),
+        teacherLine: 'Guter Start. Wir machen den Satz natürlicher und ergänzen eine präzise Rückfrage.',
+        note: 'Fokus: höfliche Bitten, Gebühren klären, klar nachfragen.'
+      },
+      {
+        scenario: 'Arzttermin',
+        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'doctor'),
+        teacherLine: 'Sehr gut. Jetzt ergänzen wir Dauer, Intensität und eine direkte Frage zum nächsten Schritt.',
+        note: 'Fokus: Symptome strukturieren, Zeitangaben, klare medizinische Formulierungen.'
+      },
+      {
+        scenario: 'Wohnung mieten',
+        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'rent'),
+        teacherLine: 'Stark. Wir machen daraus eine verhandlungssichere Version mit Zahlungs- und Vertragsdetails.',
+        note: 'Fokus: Verhandlungssprache, Vertragsbegriffe, konkrete Bestätigungen.'
+      }
+    ],
+    deepDiveTitle: `Wie du mit Telegram wirklich flüssiger in ${targetLanguage} sprichst`,
+    deepDiveParagraphs: [
+      `Die meisten Lernenden scheitern nicht an fehlenden Regeln, sondern am Abrufen der richtigen Formulierung unter Zeitdruck. Genau hier setzt dieses Format an: kurze, echte Sprechversuche, sofortige Korrektur und direktes Wiederholen im selben Kontext.`,
+      `Der Kern ist ein schneller Lernzyklus: sprechen, korrigieren, neu formulieren, weitersprechen. Dadurch sammelst du in wenigen Minuten mehrere sinnvolle Wiederholungen statt einer langen passiven Lerneinheit.`,
+      `Telegram reduziert die Einstiegshürde. Du musst keine Calls planen und keine zusätzliche App öffnen. Diese niedrige Reibung macht tägliche Kontinuität realistisch - und Kontinuität ist der wichtigste Hebel für Speaking Progress.`,
+      `Wichtig ist die Qualität des Feedbacks: nicht nur „so klingt es besser“, sondern konkrete Alternativen mit kurzer Regel-Logik. Dadurch entwickelst du schneller ein Sprachgefühl für natürliche Muster.`,
+      `Das Format skaliert mit deinem Niveau. Auf A1-A2 konzentrierst du dich auf kurze, klare Antworten. Auf B1-C1 trainierst du komplexere Struktur, Kollokationen und präzise Argumentation für Beruf und Gespräche.`,
+      `Mit ${teacherName} baust du einen klaren Ablauf auf: sprechen, korrigieren, wiederverwenden, wiederholen. Nach wenigen Wochen berichten Lernende meist von weniger Zögern, flüssigerem Satzbau und mehr Sicherheit in echten Situationen.`
+    ],
+    faqTitle: 'FAQ',
+    faqItems: [
+      {
+        question: `Ist das echte ${targetLanguage}-Sprechpraxis oder nur Grammatik?`,
+        answer: 'Der Fokus liegt klar auf Sprechen. Grammatik erscheint als praktische Korrektur im realen Dialog.'
+      },
+      {
+        question: 'Wie viel Zeit sollte ich täglich einplanen?',
+        answer: '10–15 Minuten pro Tag reichen aus. Regelmäßigkeit ist wichtiger als seltene lange Sessions.'
+      },
+      {
+        question: 'Muss ich Unterrichtstermine buchen?',
+        answer: 'Nein. Die Praxis läuft asynchron in Telegram - wann immer es für dich passt.'
+      },
+      {
+        question: 'Ist das auch für Anfänger geeignet?',
+        answer: 'Ja. Starte mit sehr kurzen Nachrichten und baue Schritt für Schritt aus.'
+      },
+      {
+        question: 'Bekomme ich auch Hilfe bei Aussprache?',
+        answer: 'Ja. Das Feedback umfasst Aussprache, Sprachfluss und natürliche Ausdrucksweise.'
+      },
+      {
+        question: 'Hilft das bei der Interviewvorbereitung?',
+        answer: 'Ja. Du kannst typische Interviewfragen und strukturierte Antworten gezielt üben.'
+      },
+      {
+        question: 'Ist das für Umzug und Alltag nützlich?',
+        answer: 'Ja. Häufige Szenarien wie Miete, Arzt, Bank und Behördengänge sind Teil der Praxis.'
+      },
+      {
+        question: 'Was ist der Unterschied zu generischen Chatbots?',
+        answer: 'Hier gibt es einen klaren Lernprozess: Versuch, präzise Korrektur, direkte Wiederverwendung.'
+      },
+      {
+        question: 'Kann ich später die Lehrkraft wechseln?',
+        answer: 'Ja. Du kannst jederzeit eine andere Lehrkraft aus der Liste wählen.'
+      },
+      {
+        question: 'Wie sehe ich möglichst schnell Fortschritt?',
+        answer: 'Sprich täglich, übernimm korrigierte Formulierungen und antworte vollständig auf Anschlussfragen.'
+      }
+    ],
+    otherTeachersTitle: 'Andere Lehrkraft wählen'
+  };
+}
+
 function buildItalianContent(teacher, languageForm) {
   const teacherName = getTeacherName(teacher, 'it') || getTeacherName(teacher, 'en') || 'insegnante';
   const targetLanguage = languageForm.display || 'inglese';
@@ -454,6 +588,7 @@ export function getTeacherSeoContent(teacher, localeInput) {
   const locale = normalizeLocale(localeInput) || 'en';
   const languageForm = getLanguageForm(locale, teacher?.learningLanguage);
 
+  if (locale === 'de') return buildGermanContent(teacher, languageForm);
   if (locale === 'uk') return buildUkrainianContent(teacher, languageForm);
   if (locale === 'it') return buildItalianContent(teacher, languageForm);
   return buildEnglishContent(teacher, languageForm);

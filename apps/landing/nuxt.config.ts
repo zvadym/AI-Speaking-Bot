@@ -8,6 +8,11 @@ function normalizeSlug(input: unknown) {
   return String(input ?? '').trim();
 }
 
+function normalizeLocaleCode(input: unknown) {
+  const raw = String(input ?? '').trim().toLowerCase();
+  return SUPPORTED_LOCALES.includes(raw) ? raw : 'en';
+}
+
 function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
@@ -32,34 +37,58 @@ async function loadBlogSlugs() {
   }
 }
 
-function buildTeacherSlugsByLocale(teachers: Record<string, unknown>[]) {
-  const map: Record<string, string[]> = {};
-  for (const locale of SUPPORTED_LOCALES) {
-    map[locale] = unique(
-      teachers.map((row) => {
-        const publicSlugs = (row?.publicSlugs as Record<string, unknown>) || {};
-        return normalizeSlug(publicSlugs[locale] ?? publicSlugs.en);
-      })
-    );
+function buildTeacherRouteSets(teachers: Record<string, unknown>[]) {
+  const canonicalRoutes: string[] = [];
+  const localizedAliasRoutes: string[] = [];
+  const bareAliasRoutes: string[] = [];
+
+  for (const row of teachers) {
+    const publicSlugs = (row?.publicSlugs as Record<string, unknown>) || {};
+    const canonicalLocale = normalizeLocaleCode(row?.canonicalLocale);
+    const canonicalSlug = normalizeSlug(row?.canonicalSlug || publicSlugs[canonicalLocale] || publicSlugs.en);
+    const canonicalRoute = canonicalSlug
+      ? `/${canonicalLocale}/teachers/${encodeURIComponent(canonicalSlug)}`
+      : `/${canonicalLocale}/teachers`;
+
+    if (canonicalSlug) canonicalRoutes.push(canonicalRoute);
+
+    const slugAliases = unique([
+      canonicalSlug,
+      normalizeSlug(row?.legacyPairSlug),
+      normalizeSlug(row?.slug),
+      ...Object.values(publicSlugs).map((value) => normalizeSlug(value))
+    ]);
+
+    for (const slug of slugAliases) {
+      bareAliasRoutes.push(`/teachers/${encodeURIComponent(slug)}`);
+
+      for (const locale of SUPPORTED_LOCALES) {
+        const localizedRoute = `/${locale}/teachers/${encodeURIComponent(slug)}`;
+        if (localizedRoute !== canonicalRoute) localizedAliasRoutes.push(localizedRoute);
+      }
+    }
   }
-  return map;
+
+  return {
+    canonicalRoutes: unique(canonicalRoutes),
+    localizedAliasRoutes: unique(localizedAliasRoutes),
+    bareAliasRoutes: unique(bareAliasRoutes)
+  };
 }
 
 const [teachers, blogSlugs] = await Promise.all([loadTeachers(), loadBlogSlugs()]);
-const teacherSlugsByLocale = buildTeacherSlugsByLocale(teachers);
-const englishTeacherSlugs = teacherSlugsByLocale.en || [];
+const teacherRoutes = buildTeacherRouteSets(teachers);
 
 const localizedBaseRoutes = SUPPORTED_LOCALES.flatMap((locale) => [
   `/${locale}`,
   `/${locale}/teachers`,
-  ...teacherSlugsByLocale[locale].map((slug) => `/${locale}/teachers/${encodeURIComponent(slug)}`),
   ...blogSlugs.map((slug) => `/${locale}/blog/${encodeURIComponent(slug)}`)
 ]);
 
 const redirectRoutes = [
   '/',
   '/teachers',
-  ...englishTeacherSlugs.map((slug) => `/teachers/${encodeURIComponent(slug)}`),
+  ...teacherRoutes.bareAliasRoutes,
   ...blogSlugs.map((slug) => `/blog/${encodeURIComponent(slug)}`)
 ];
 
@@ -93,7 +122,12 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       crawlLinks: false,
-      routes: unique([...localizedBaseRoutes, ...redirectRoutes])
+      routes: unique([
+        ...localizedBaseRoutes,
+        ...teacherRoutes.canonicalRoutes,
+        ...teacherRoutes.localizedAliasRoutes,
+        ...redirectRoutes
+      ])
     }
   }
 });

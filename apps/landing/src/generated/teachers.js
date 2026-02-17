@@ -33,14 +33,18 @@ export const teachers = [
     "taglines": {
       "uk": "Italienisch für Alltag, Reisen und echte Gespräche 🇮🇹. Klare, sanfte Korrekturen.",
       "en": "Italian for daily life, travel, and real conversations 🇮🇹. Clear and gentle feedback.",
-      "it": "Italiano per vita quotidiana, viaggi e conversazioni reali 🇮🇹. Correzioni chiare e delicate."
+      "it": "Italiano per vita quotidiana, viaggi e conversazioni reali 🇮🇹. Correzioni chiare e delicate.",
+      "de": "Italienisch für Alltag, Reisen und echte Gespräche 🇮🇹. Klare, sanfte Korrekturen."
     },
     "styleTags": [
       "friendly",
       "structured",
       "conversation-first"
     ],
-    "telegramUrl": "https://t.me/giulia_italienisch_lehrerin_bot"
+    "telegramUrl": "https://t.me/giulia_italienisch_lehrerin_bot",
+    "canonicalLocale": "de",
+    "canonicalSlug": "giulia-italienisch-teacher",
+    "canonicalPath": "/de/teachers/giulia-italienisch-teacher"
   },
   {
     "slug": "it-de",
@@ -80,7 +84,10 @@ export const teachers = [
       "structured",
       "conversation-first"
     ],
-    "telegramUrl": "https://t.me/greta_german_bot"
+    "telegramUrl": "https://t.me/greta_german_bot",
+    "canonicalLocale": "it",
+    "canonicalSlug": "greta-tedesco-teacher",
+    "canonicalPath": "/it/teachers/greta-tedesco-teacher"
   },
   {
     "slug": "it-en",
@@ -120,7 +127,10 @@ export const teachers = [
       "british-vibe",
       "conversation-first"
     ],
-    "telegramUrl": "https://t.me/luca_coach_di_inglese_bot"
+    "telegramUrl": "https://t.me/luca_coach_di_inglese_bot",
+    "canonicalLocale": "it",
+    "canonicalSlug": "luca-inglese-teacher",
+    "canonicalPath": "/it/teachers/luca-inglese-teacher"
   },
   {
     "slug": "uk-de",
@@ -160,7 +170,10 @@ export const teachers = [
       "structured",
       "conversation-first"
     ],
-    "telegramUrl": "https://t.me/lesia_language_bot"
+    "telegramUrl": "https://t.me/lesia_language_bot",
+    "canonicalLocale": "uk",
+    "canonicalSlug": "uk-de-nimetska-teacher",
+    "canonicalPath": "/uk/teachers/uk-de-nimetska-teacher"
   },
   {
     "slug": "uk-en",
@@ -200,7 +213,10 @@ export const teachers = [
       "british-vibe",
       "conversation-first"
     ],
-    "telegramUrl": "https://t.me/jackie_english_tutor_bot"
+    "telegramUrl": "https://t.me/jackie_english_tutor_bot",
+    "canonicalLocale": "uk",
+    "canonicalSlug": "uk-en-anhliyska-teacher",
+    "canonicalPath": "/uk/teachers/uk-en-anhliyska-teacher"
   }
 ];
 

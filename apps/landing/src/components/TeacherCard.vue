@@ -1,5 +1,5 @@
 <template>
-  <RouterLink class="card teacher-card" :to="routeWithLocale('teacher', { slug: teacherPublicSlug })">
+  <RouterLink class="card teacher-card" :to="teacherCanonicalPath">
     <TeacherAvatar :teacher="teacher" :name="name" :size="64" />
 
     <div class="info">
@@ -18,9 +18,9 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import TeacherAvatar from './TeacherAvatar.vue';
-import { getTeacherName, getTeacherTagline } from '../data/teachers.js';
-import { routeWithLocale, useI18n } from '../i18n.js';
-import { getTeacherPublicSlug } from '../data/teacherSlugs.js';
+import { getTeacherName } from '../data/teachers.js';
+import { useI18n } from '../i18n.js';
+import { getTeacherCanonicalPath } from '../data/teacherSlugs.js';
 
 const props = defineProps({
   teacher: {
@@ -32,15 +32,12 @@ const props = defineProps({
 const { t, locale } = useI18n();
 
 const name = computed(() => getTeacherName(props.teacher, locale.value));
-const teacherPublicSlug = computed(() => {
-  const slug = getTeacherPublicSlug(props.teacher, locale.value);
-  return slug || props.teacher?.legacyPairSlug || props.teacher?.slug || '';
-});
-const tagline = computed(() => getTeacherTagline(props.teacher, locale.value));
+const teacherCanonicalPath = computed(() => getTeacherCanonicalPath(props.teacher));
+const localizedTagline = computed(() => (props.teacher?.taglines?.[locale.value] || '').toString().trim());
 const teachesLine = computed(() => {
   const pieces = [];
   if (props.teacher?.learningLanguage) pieces.push(`${t('teacher.teachesPrefix')} ${t(`languageName.${props.teacher.learningLanguage}`)}`);
-  if (tagline.value) pieces.push(tagline.value);
+  if (localizedTagline.value) pieces.push(localizedTagline.value);
   return pieces.filter(Boolean).join(' • ');
 });
 </script>

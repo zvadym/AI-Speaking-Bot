@@ -30,6 +30,12 @@ function normalizeLanguageCode(input) {
   return normalizeLanguageCodeForSlugs(input);
 }
 
+function normalizeCanonicalLocale(input) {
+  const normalized = normalizeLanguageCode(input) || '';
+  if (SUPPORTED_LOCALES.includes(normalized)) return normalized;
+  return 'en';
+}
+
 function slugifyAscii(input) {
   return safeString(input)
     .normalize('NFKD')
@@ -102,11 +108,20 @@ function finalizeTeacherSlugs(teachers) {
     }
 
     seenBases.add(teacherSlugBase);
+    const publicSlugs = buildPublicSlugs(teacherSlugBase, teacher.learningLanguage);
+    const canonicalLocale = normalizeCanonicalLocale(teacher.baseLanguage);
+    const canonicalSlug = safeString(publicSlugs[canonicalLocale] || publicSlugs.en || teacher.legacyPairSlug);
+    const canonicalPath = canonicalSlug
+      ? `/${canonicalLocale}/teachers/${encodeURIComponent(canonicalSlug)}`
+      : `/${canonicalLocale}/teachers`;
 
     return {
       ...teacher,
       teacherSlugBase,
-      publicSlugs: buildPublicSlugs(teacherSlugBase, teacher.learningLanguage)
+      publicSlugs,
+      canonicalLocale,
+      canonicalSlug,
+      canonicalPath
     };
   });
 }
@@ -123,11 +138,13 @@ function buildTeacher(config, filename) {
   const nameEn = extractEnglishName(config);
   const nameFallback = nameEn || nameUk || teacherKey;
 
+  const baseTagline = safeString(config.teacher_tagline_uk);
   const taglines = {
-    uk: safeString(config.teacher_tagline_uk),
+    uk: baseTagline,
     en: safeString(config.teacher_tagline_en),
     it: safeString(config.teacher_tagline_it)
   };
+  if (baseLanguage) taglines[baseLanguage] = baseTagline || taglines[baseLanguage] || '';
   if (!taglines.it) taglines.it = taglines.en || taglines.uk;
 
   const { avatarImage, avatarSources } = detectAvatarAssets(botKey);
@@ -209,26 +226,26 @@ function xmlEscape(value) {
 }
 
 function writeSitemap(teachers, blogPosts) {
-  const urls = SUPPORTED_LOCALES.flatMap((locale) => {
-    const teacherPaths = teachers
-      .map((teacher) => safeString(teacher?.publicSlugs?.[locale]))
-      .filter(Boolean)
-      .map((slug) => `/teachers/${encodeURIComponent(slug)}`);
+  const blogPaths = (Array.isArray(blogPosts) ? blogPosts : [])
+    .map((post) => safeString(post?.slug))
+    .filter(Boolean)
+    .map((slug) => `/blog/${encodeURIComponent(slug)}`);
 
-    const blogPaths = (Array.isArray(blogPosts) ? blogPosts : [])
-      .map((post) => safeString(post?.slug))
-      .filter(Boolean)
-      .map((slug) => `/blog/${encodeURIComponent(slug)}`);
-
+  const localePages = SUPPORTED_LOCALES.flatMap((locale) => {
     const localizedPaths = [
       '',
       '/teachers',
-      ...teacherPaths,
       ...blogPaths
     ];
-
     return localizedPaths.map((pathSuffix) => `${SITE_ORIGIN}/${locale}${pathSuffix}`);
   });
+
+  const teacherCanonicalPages = teachers
+    .map((teacher) => safeString(teacher?.canonicalPath))
+    .filter(Boolean)
+    .map((pathname) => `${SITE_ORIGIN}${pathname}`);
+
+  const urls = [...localePages, ...teacherCanonicalPages];
 
   const uniqueUrls = Array.from(new Set(urls));
 
