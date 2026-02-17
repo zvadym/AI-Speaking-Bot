@@ -57,8 +57,20 @@
           <div class="nav-divider" aria-hidden="true" />
 
           <div class="nav-actions">
-            <div class="locale-picker" :aria-label="t('language.label')">
-              <button class="locale-trigger" type="button" :aria-label="t('language.label')" aria-haspopup="true">
+            <div
+              ref="localePickerRef"
+              class="locale-picker"
+              :class="{ open: isLocaleMenuOpen }"
+              :aria-label="t('language.label')"
+            >
+              <button
+                class="locale-trigger"
+                type="button"
+                :aria-label="t('language.label')"
+                aria-haspopup="true"
+                :aria-expanded="isLocaleMenuOpen ? 'true' : 'false'"
+                @click="toggleLocaleMenu"
+              >
                 <span class="locale-trigger-code">{{ currentLocaleOption.label }}</span>
                 <span class="locale-trigger-caret" aria-hidden="true">▾</span>
               </button>
@@ -99,6 +111,8 @@ const activeSection = ref('');
 let observer = null;
 let rafId = 0;
 let isScrollBound = false;
+const isLocaleMenuOpen = ref(false);
+const localePickerRef = ref(null);
 
 const routeSuffix = computed(() => stripLocalePrefix(route.path || '/'));
 const isHomeRoute = computed(() => routeSuffix.value === '/');
@@ -212,6 +226,7 @@ function setupObserver() {
 }
 
 async function switchLocale(nextLocale) {
+  closeLocaleMenu();
   const normalized = normalizeLocale(nextLocale);
   if (!normalized || normalized === locale.value) return;
   setAppLocale(normalized);
@@ -228,6 +243,33 @@ async function switchLocale(nextLocale) {
   );
 }
 
+function openLocaleMenu() {
+  isLocaleMenuOpen.value = true;
+}
+
+function closeLocaleMenu() {
+  isLocaleMenuOpen.value = false;
+}
+
+function toggleLocaleMenu() {
+  if (isLocaleMenuOpen.value) {
+    closeLocaleMenu();
+    return;
+  }
+  openLocaleMenu();
+}
+
+function onGlobalPointerDown(event) {
+  const picker = localePickerRef.value;
+  const target = event?.target;
+  if (!picker || !target || picker.contains(target)) return;
+  closeLocaleMenu();
+}
+
+function onGlobalKeydown(event) {
+  if (event?.key === 'Escape') closeLocaleMenu();
+}
+
 const localeOptions = computed(() => {
   return supportedLocales.map((value) => ({
     value,
@@ -241,6 +283,10 @@ const currentLocaleOption = computed(() => {
 });
 
 onMounted(() => {
+  if (import.meta.client) {
+    document.addEventListener('pointerdown', onGlobalPointerDown);
+    window.addEventListener('keydown', onGlobalKeydown);
+  }
   setActiveFromRouteHash();
   setupObserver();
 });
@@ -248,6 +294,7 @@ onMounted(() => {
 watch(
   () => route.path,
   () => {
+    closeLocaleMenu();
     setActiveFromRouteHash();
     setupObserver();
   }
@@ -255,10 +302,19 @@ watch(
 
 watch(
   () => route.hash,
-  () => setActiveFromRouteHash()
+  () => {
+    closeLocaleMenu();
+    setActiveFromRouteHash();
+  }
 );
 
-onBeforeUnmount(() => teardownObserver());
+onBeforeUnmount(() => {
+  if (import.meta.client) {
+    document.removeEventListener('pointerdown', onGlobalPointerDown);
+    window.removeEventListener('keydown', onGlobalKeydown);
+  }
+  teardownObserver();
+});
 </script>
 
 <style scoped>
@@ -399,8 +455,9 @@ onBeforeUnmount(() => teardownObserver());
 
 .locale-menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 4px);
   right: 0;
+  z-index: 20;
   width: 210px;
   display: grid;
   gap: 2px;
@@ -417,14 +474,14 @@ onBeforeUnmount(() => teardownObserver());
   transition: opacity 160ms ease, transform 160ms ease;
 }
 
-.locale-picker:hover .locale-menu,
+.locale-picker.open .locale-menu,
 .locale-picker:focus-within .locale-menu {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
 }
 
-.locale-picker:hover .locale-trigger,
+.locale-picker.open .locale-trigger,
 .locale-picker:focus-within .locale-trigger {
   border-color: color-mix(in srgb, var(--fg) 30%, var(--border));
   background: color-mix(in srgb, var(--surface) 40%, var(--bg));
