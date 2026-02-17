@@ -26,6 +26,18 @@ const LANGUAGE_FORMS = {
     de: { display: 'tedesco' },
     it: { display: 'italiano' },
     uk: { display: 'ucraino' }
+  },
+  es: {
+    en: { display: 'inglés' },
+    de: { display: 'alemán' },
+    it: { display: 'italiano' },
+    uk: { display: 'ucraniano' }
+  },
+  pt: {
+    en: { display: 'inglês' },
+    de: { display: 'alemão' },
+    it: { display: 'italiano' },
+    uk: { display: 'ucraniano' }
   }
 };
 
@@ -78,9 +90,9 @@ function buildEnglishContent(teacher, languageForm) {
   return {
     metaTitle: `${targetLanguage} speaking practice in Telegram with ${teacherName} | AI Language School`,
     metaDescription: `Practice spoken ${targetLanguage} in Telegram with instant corrections, natural phrasing, and daily micro-lessons. Learn with ${teacherName} and start in one minute.`,
-    h1: `${targetLanguage} speaking practice in Telegram with ${teacherName}`,
-    heroLead: `AI Language School gives you structured, voice-first speaking practice directly inside Telegram. You send a short voice message, ${teacherName} replies in ${targetLanguage}, and you immediately see where to improve.`,
-    heroOutcome: `The goal is practical fluency: clearer sentences, faster responses, and more confidence in real situations such as travel, work calls, interviews, doctor visits, and renting a flat abroad.`,
+    h1: `${targetLanguage} speaking practice on Telegram with ${teacherName}`,
+    heroLead: `Practice real ${targetLanguage} conversations directly in Telegram. Send a short voice message, and ${teacherName} replies with a corrected, more natural version you can reuse right away.`,
+    heroOutcome: `Build practical fluency for work, interviews, travel, and daily life with faster responses, clearer pronunciation, and less hesitation.`,
     coreBullets: [
       'Instant correction with clear alternatives you can reuse in the next message.',
       'Pronunciation, fluency, and natural phrasing support in a daily chat format.',
@@ -207,9 +219,9 @@ function buildUkrainianContent(teacher, languageForm) {
   return {
     metaTitle: `Практика розмовної ${targetGenitive} в Telegram з ${teacherName} — AI викладач | AI Language School`,
     metaDescription: `Практикуй розмовну ${targetGenitive} щодня: надсилай голосові в Telegram, отримуй миттєві виправлення, природні фрази та чіткий фідбек. Почни за 1 хвилину з ${teacherName}.`,
-    h1: `Практика розмовної ${targetGenitive} в Telegram з ${teacherName}`,
-    heroLead: `Це сторінка для тих, хто хоче не просто “вчити правила”, а реально говорити ${targetDisplay} в живих ситуаціях. Ти надсилаєш голосове повідомлення, а ${teacherName} одразу повертає виправлену та природнішу версію.`,
-    heroOutcome: `Результат — менше пауз, краща вимова, впевненіші відповіді та відчутний прогрес у щоденному speaking practice: робота, співбесіда, переїзд, подорожі та побутові діалоги.`,
+    h1: `Практика розмовної ${targetGenitive} у Telegram з ${teacherName}`,
+    heroLead: `Практикуй живе спілкування ${targetGenitive} у Telegram. Надішли коротке голосове, і ${teacherName} поверне виправлену та природнішу версію, яку можна одразу повторити.`,
+    heroOutcome: `Ти швидше формулюєш думки, говориш чіткіше й упевненіше в роботі, на співбесідах, у подорожах та щоденних ситуаціях.`,
     coreBullets: [
       'Миттєві виправлення: помилки, кращі фрази, чітка логіка, чому саме так.',
       'Фокус на вимові, плавності та природному формулюванні думки в діалозі.',
@@ -335,9 +347,9 @@ function buildGermanContent(teacher, languageForm) {
   return {
     metaTitle: `${targetLanguage} Sprechpraxis in Telegram mit ${teacherName} | AI Language School`,
     metaDescription: `Trainiere gesprochenes ${targetLanguage} in Telegram: kurze Voice-Nachrichten, sofortige Korrekturen, natürlichere Formulierungen und klare Hinweise. Starte in einer Minute mit ${teacherName}.`,
-    h1: `${targetLanguage} Sprechpraxis in Telegram mit ${teacherName}`,
-    heroLead: `Diese Seite ist für Lernende, die ${targetLanguage} wirklich sprechen wollen, nicht nur Theorie lesen. Du schickst eine kurze Sprachnachricht, ${teacherName} antwortet direkt mit einer korrigierten und natürlicheren Version.`,
-    heroOutcome: `Das Ziel ist klar: weniger Blockaden, mehr Flüssigkeit, deutlichere Aussprache und schnellere Antworten in echten Situationen wie Arbeit, Vorstellungsgespräch, Behördengang, Arzttermin oder Wohnungssuche.`,
+    h1: `${targetLanguage} Sprechpraxis auf Telegram mit ${teacherName}`,
+    heroLead: `Übe echte Gespräche auf ${targetLanguage} direkt in Telegram. Du sendest eine kurze Sprachnachricht, und ${teacherName} antwortet mit einer korrigierten, natürlicheren Version, die du sofort übernehmen kannst.`,
+    heroOutcome: `So baust du alltagstaugliche Sprachsicherheit auf: klarere Aussprache, schnellere Antworten und weniger Hemmungen bei Arbeit, Interviews, Reisen und im Alltag.`,
     coreBullets: [
       'Sofortige Korrekturen mit konkreten Alternativen, die du direkt wiederverwenden kannst.',
       'Fokus auf Aussprache, Sprachfluss und natürliche Formulierungen im Dialog.',
@@ -464,8 +476,8 @@ function buildItalianContent(teacher, languageForm) {
     metaTitle: `Pratica di conversazione in ${targetLanguage} su Telegram con ${teacherName} | AI Language School`,
     metaDescription: `Allena il parlato in ${targetLanguage} ogni giorno su Telegram: messaggi vocali, correzioni immediate, frasi naturali e feedback pratico. Inizia in un minuto con ${teacherName}.`,
     h1: `Pratica di conversazione in ${targetLanguage} su Telegram con ${teacherName}`,
-    heroLead: `Questa pagina è pensata per chi vuole parlare davvero ${targetLanguage}, non solo studiare teoria. Invi un vocale, ${teacherName} risponde subito con la versione corretta e più naturale.`,
-    heroOutcome: `L'obiettivo è concreto: meno blocchi, più fluidità, pronuncia più chiara e frasi utili per lavoro, colloqui, trasferimento, viaggi e situazioni quotidiane.`,
+    heroLead: `Fai pratica di conversazione reale in ${targetLanguage} direttamente su Telegram. Invia un vocale breve e ${teacherName} ti risponde con una versione corretta e più naturale, pronta da riutilizzare subito.`,
+    heroOutcome: `Migliori la fluidità in modo pratico: risposte più rapide, pronuncia più chiara e meno blocchi in lavoro, colloqui, viaggi e vita quotidiana.`,
     coreBullets: [
       'Correzione immediata con alternative pronte da riutilizzare nella risposta successiva.',
       'Supporto su pronuncia, scorrevolezza e naturalezza della frase.',
@@ -584,11 +596,45 @@ function buildItalianContent(teacher, languageForm) {
   };
 }
 
+function buildSpanishContent(teacher, languageForm) {
+  const teacherName = getTeacherName(teacher, 'es') || getTeacherName(teacher, 'en') || 'profesor';
+  const targetLanguage = languageForm.display || 'inglés';
+  const base = buildEnglishContent(teacher, languageForm);
+
+  return {
+    ...base,
+    metaTitle: `Práctica de conversación en ${targetLanguage} por Telegram con ${teacherName} | AI Language School`,
+    metaDescription: `Practica ${targetLanguage} hablado en Telegram con correcciones al instante, frases naturales y microlecciones diarias. Empieza en un minuto con ${teacherName}.`,
+    h1: `Práctica de conversación en ${targetLanguage} por Telegram con ${teacherName}`,
+    heroLead: `Practica conversaciones reales en ${targetLanguage} dentro de Telegram. Envías un audio corto y ${teacherName} te responde con una versión corregida y más natural que puedes reutilizar al instante.`,
+    heroOutcome: `Ganas fluidez útil para la vida real: respuestas más rápidas, pronunciación más clara y menos bloqueos en trabajo, entrevistas, viajes y gestiones diarias.`,
+    otherTeachersTitle: 'Elige otro profesor'
+  };
+}
+
+function buildPortugueseContent(teacher, languageForm) {
+  const teacherName = getTeacherName(teacher, 'pt') || getTeacherName(teacher, 'en') || 'professor';
+  const targetLanguage = languageForm.display || 'inglês';
+  const base = buildEnglishContent(teacher, languageForm);
+
+  return {
+    ...base,
+    metaTitle: `Prática de conversação em ${targetLanguage} no Telegram com ${teacherName} | AI Language School`,
+    metaDescription: `Pratique ${targetLanguage} falado no Telegram com correções imediatas, frases naturais e microlições diárias. Comece em um minuto com ${teacherName}.`,
+    h1: `Prática de conversação em ${targetLanguage} no Telegram com ${teacherName}`,
+    heroLead: `Pratique conversas reais em ${targetLanguage} direto no Telegram. Você envia um áudio curto e ${teacherName} responde com uma versão corrigida e mais natural para reutilizar na hora.`,
+    heroOutcome: `Você ganha fluência prática para o dia a dia: respostas mais rápidas, pronúncia mais clara e menos travas em trabalho, entrevistas, viagens e rotina.`,
+    otherTeachersTitle: 'Escolha outro professor'
+  };
+}
+
 export function getTeacherSeoContent(teacher, localeInput) {
   const locale = normalizeLocale(localeInput) || 'en';
   const languageForm = getLanguageForm(locale, teacher?.learningLanguage);
 
   if (locale === 'de') return buildGermanContent(teacher, languageForm);
+  if (locale === 'es') return buildSpanishContent(teacher, languageForm);
+  if (locale === 'pt') return buildPortugueseContent(teacher, languageForm);
   if (locale === 'uk') return buildUkrainianContent(teacher, languageForm);
   if (locale === 'it') return buildItalianContent(teacher, languageForm);
   return buildEnglishContent(teacher, languageForm);

@@ -143,13 +143,17 @@
 
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import { useI18n } from '../i18n.js';
+import { normalizeLocale, useI18n } from '../i18n.js';
 import { resolveScenario } from '../data/chatDemoScenarios.js';
 
 const props = defineProps({
   scenarioId: {
     type: String,
     default: 'jobInterview'
+  },
+  baseLocale: {
+    type: String,
+    default: ''
   },
   targetByBaseLocale: {
     type: Object,
@@ -173,7 +177,7 @@ const LOCALE_FLAG_MAP = {
   it: '🇮🇹'
 };
 
-const baseLocaleCode = computed(() => (locale.value || 'en').toString().trim().toLowerCase());
+const baseLocaleCode = computed(() => normalizeLocale(props.baseLocale || locale.value) || 'en');
 const resolvedScenario = computed(() =>
   resolveScenario({
     scenarioId: props.scenarioId,
@@ -419,6 +423,7 @@ onBeforeUnmount(() => clearDemoTimers());
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .chat-inline-btn {
@@ -427,9 +432,12 @@ onBeforeUnmount(() => clearDemoTimers());
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 800;
+  line-height: 1.2;
   background: color-mix(in srgb, var(--bg) 84%, var(--surface));
   color: var(--fg);
   cursor: pointer;
+  align-self: flex-start;
+  height: auto;
 }
 
 .chat-inline-btn:disabled {

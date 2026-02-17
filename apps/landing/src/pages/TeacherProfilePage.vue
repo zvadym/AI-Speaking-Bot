@@ -72,12 +72,16 @@
           <h2 id="dialogues-title" class="h2">{{ content.dialoguesTitle }}</h2>
           <p class="muted section-intro">{{ content.dialoguesIntro }}</p>
           <div class="dialogues-grid">
-            <article v-for="example in content.dialogueExamples" :key="example.scenario" class="dialogue-item">
-              <h3 class="h3">{{ example.scenario }}</h3>
-              <p class="dialogue-line"><span class="label">{{ t('teacherProfile.dialogueLearnerLabel') }}:</span> {{ example.learnerLine }}</p>
-              <p class="dialogue-line"><span class="label">{{ t('teacherProfile.dialogueTeacherLabel') }}:</span> {{ example.teacherLine }}</p>
-              <p class="muted dialogue-note">{{ example.note }}</p>
-            </article>
+            <ChatConversationDemo
+              scenario-id="jobInterview"
+              :base-locale="teacherChatBaseLocale"
+              :target-by-base-locale="teacherChatTargetByBaseLocale"
+            />
+            <ChatConversationDemo
+              scenario-id="doctorVisit"
+              :base-locale="teacherChatBaseLocale"
+              :target-by-base-locale="teacherChatTargetByBaseLocale"
+            />
           </div>
         </section>
 
@@ -120,11 +124,12 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import ChatConversationDemo from '../components/ChatConversationDemo.vue';
 import TeacherAvatar from '../components/TeacherAvatar.vue';
 import TeacherCard from '../components/TeacherCard.vue';
 import { teachers, getTeacherName } from '../data/teachers.js';
 import { getTeacherTelegramUrl } from '../lib/telegram.js';
-import { routeWithLocale, useI18n } from '../i18n.js';
+import { normalizeLocale, routeWithLocale, supportedLocales, useI18n } from '../i18n.js';
 import { getTeacherSeoContent } from '../data/seoTeacherContent.js';
 
 const props = defineProps({
@@ -153,6 +158,14 @@ const teachesLine = computed(() => {
 
 const telegramUrl = computed(() => getTeacherTelegramUrl(props.teacher));
 const otherTeachers = computed(() => (Array.isArray(teachers) ? teachers : []));
+const teacherChatBaseLocale = computed(() => normalizeLocale(props.teacher?.baseLanguage) || 'en');
+const teacherChatTargetLocale = computed(() => normalizeLocale(props.teacher?.learningLanguage) || 'en');
+const teacherChatTargetByBaseLocale = computed(() =>
+  supportedLocales.reduce((acc, localeCode) => {
+    acc[localeCode] = teacherChatTargetLocale.value;
+    return acc;
+  }, {})
+);
 
 useHead(() => {
   if (!props.teacher?.avatarImage) return {};
@@ -308,6 +321,11 @@ useHead(() => {
   gap: 12px;
 }
 
+.dialogues-grid {
+  position: relative;
+  align-items: start;
+}
+
 .step-item,
 .focus-item,
 .dialogue-item,
@@ -361,9 +379,26 @@ useHead(() => {
   }
 
   .steps-grid,
-  .for-who-grid,
+  .for-who-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dialogues-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    row-gap: 12px;
+  }
+
+  .dialogues-grid::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-0.5px);
+    background: color-mix(in srgb, var(--fg) 16%, var(--border));
+    pointer-events: none;
   }
 }
 
