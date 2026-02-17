@@ -6,6 +6,13 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+PROMPT_KEYS = {
+    "model_system_prompt",
+    "model_support_prompt",
+    "model_hints_prompt",
+    "model_summary_prompt",
+}
+
 
 def load_json(path: Path) -> Any:
     with path.open() as f:
@@ -135,6 +142,10 @@ def extract_locale(workflow: Dict[str, Any]) -> Dict[str, Any]:
         parsed = parse_loader_messages(loader_val)
         if parsed is not None:
             out["loader_messages"] = parsed
+
+    # Prompt templates are source-of-truth in deploy/prompts/.
+    for key in PROMPT_KEYS:
+        out.pop(key, None)
     return out
 
 

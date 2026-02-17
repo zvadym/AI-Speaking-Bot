@@ -74,7 +74,8 @@ Schema matches `deploy/bots/` (see [deploy/bots/README.md](../bots/README.md)):
 
 - `bot_key`, `base_language`, `learning_language`
 - `telegram_credential_id` – **must be your local n8n Telegram credential ID**
-- `locale` – same structure as production (prompts, loader_messages, etc.)
+- `locale` – same UI text structure as production (loader/messages/buttons/etc.)
+  - LLM prompts are generated from `deploy/prompts/*.md` during render.
 
 ## Dev vs production
 

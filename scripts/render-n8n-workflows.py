@@ -9,6 +9,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
 EXPLICIT_ENV = {
     "openAiApi": "N8N_CRED_OPENAI_ID",
     "postgres": "N8N_CRED_POSTGRES_ID",
@@ -21,6 +23,67 @@ EXPLICIT_ENV = {
 BOT_TEMPLATES = {
     "ai-bot.json": "ai-bot",
     "loader-messages-rotator.json": "loader-messages-rotator",
+}
+
+PROMPT_KEYS = (
+    "model_system_prompt",
+    "model_support_prompt",
+    "model_hints_prompt",
+    "model_summary_prompt",
+)
+
+PROMPT_TEMPLATE_FILES = {
+    "model_system_prompt": "model_system_prompt.md",
+    "model_support_prompt": "model_support_prompt.md",
+    "model_hints_prompt": "model_hints_prompt.md",
+    "model_summary_prompt": "model_summary_prompt.md",
+}
+
+COMMON_DETECTED_LANGUAGE_CODES = ("en", "de", "it", "uk", "ru")
+
+PLACEHOLDER_RE = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
+
+LANGUAGE_META = {
+    "en": {
+        "label": "English",
+        "explanation_title": "Explanation",
+        "article_gender_example": (
+            "we need the article ... and we use ..., because the noun has ... gender"
+        ),
+        "vague_reason_example": "this sounds better",
+    },
+    "de": {
+        "label": "German",
+        "explanation_title": "Erklärung",
+        "article_gender_example": (
+            "wir brauchen den Artikel ... und wir verwenden ..., weil das Nomen das Geschlecht ... hat"
+        ),
+        "vague_reason_example": "klingt natürlicher",
+    },
+    "it": {
+        "label": "Italian",
+        "explanation_title": "Spiegazione",
+        "article_gender_example": (
+            "serve l'articolo ... e usiamo ..., perché il sostantivo è di genere ..."
+        ),
+        "vague_reason_example": "suona meglio",
+    },
+    "uk": {
+        "label": "Ukrainian",
+        "explanation_title": "Пояснення",
+        "article_gender_example": (
+            "потрібен артикль ... і використовуємо ..., бо іменник ... роду"
+        ),
+        "vague_reason_example": "так більш природно",
+    },
+    "ru": {
+        "label": "Russian",
+        "explanation_title": "Пояснение",
+        "article_gender_example": (
+            "нужен артикль ... и используем ..., потому что существительное ... рода"
+        ),
+        "vague_reason_example": "так звучит естественнее",
+    },
 }
 
 
@@ -48,6 +111,163 @@ def write_json(path: Path, data: Dict[str, Any]) -> None:
     with path.open("w") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
         f.write("\n")
+
+
+def normalize_language_code(value: Any) -> str:
+    return str(value or "").strip().lower()
+
+
+def resolve_path(path_str: str) -> Path:
+    p = Path(path_str)
+    if p.is_absolute():
+        return p
+    return (REPO_ROOT / p).resolve()
+
+
+def get_language_meta(code: str) -> Dict[str, str]:
+    meta = LANGUAGE_META.get(code)
+    if meta:
+        return meta
+    supported = ", ".join(sorted(LANGUAGE_META.keys()))
+    raise ValueError(f"Unsupported language code {code!r}. Supported codes: {supported}")
+
+
+def load_prompt_templates(prompts_dir: Path) -> Dict[str, str]:
+    templates: Dict[str, str] = {}
+    for key, filename in PROMPT_TEMPLATE_FILES.items():
+        path = prompts_dir / filename
+        if not path.exists():
+            raise ValueError(f"Missing prompt template file: {path}")
+        text = path.read_text(encoding="utf-8").strip()
+        if not text:
+            raise ValueError(f"Prompt template file is empty: {path}")
+        templates[key] = text
+    return templates
+
+
+def render_template_strict(template: str, context: Dict[str, str], *, template_name: str) -> str:
+    def repl(match: re.Match[str]) -> str:
+        key = match.group(1)
+        if key not in context:
+            raise ValueError(f"Template {template_name} has unknown placeholder: {key}")
+        return str(context[key])
+
+    rendered = PLACEHOLDER_RE.sub(repl, template)
+    unresolved = sorted(set(PLACEHOLDER_RE.findall(rendered)))
+    if unresolved:
+        raise ValueError(
+            f"Template {template_name} left unresolved placeholders: {', '.join(unresolved)}"
+        )
+    return rendered
+
+
+def build_prompt_context(
+    *,
+    bot_key: str,
+    bot_name: str,
+    base_language_code: str,
+    target_language_code: str,
+) -> Dict[str, str]:
+    base_meta = get_language_meta(base_language_code)
+    target_meta = get_language_meta(target_language_code)
+    english_style_rule = (
+        '- For target_language_code "en": keep a light British English vibe '
+        '(spelling and a few gentle Britishisms like "cheers", "brilliant", "mate"), '
+        "but avoid heavy slang and keep it clear for learners."
+        if target_language_code == "en"
+        else ""
+    )
+    return {
+        "bot_name": bot_name,
+        "bot_key": bot_key,
+        "base_language_code": base_language_code,
+        "target_language_code": target_language_code,
+        "base_language_label": base_meta["label"],
+        "target_language_label": target_meta["label"],
+        "explanation_title": base_meta["explanation_title"],
+        "article_gender_example": base_meta["article_gender_example"],
+        "vague_reason_example": base_meta["vague_reason_example"],
+        "english_style_rule": english_style_rule,
+    }
+
+
+def compose_locale_with_generated_prompts(
+    locale: Dict[str, Any],
+    prompt_templates: Dict[str, str],
+    prompt_context: Dict[str, str],
+    *,
+    bot_key: str,
+) -> Dict[str, Any]:
+    merged = dict(locale)
+    deprecated_present = [k for k in PROMPT_KEYS if k in merged]
+    if deprecated_present:
+        print(
+            f"Warning: {bot_key} locale contains deprecated prompt keys: {', '.join(sorted(deprecated_present))}. "
+            "Using generated templates instead.",
+            file=sys.stderr,
+        )
+    for prompt_key in PROMPT_KEYS:
+        tmpl = prompt_templates.get(prompt_key)
+        if tmpl is None:
+            raise ValueError(f"Prompt template missing for key: {prompt_key}")
+        merged[prompt_key] = render_template_strict(
+            tmpl, prompt_context, template_name=f"{prompt_key} ({bot_key})"
+        )
+    return merged
+
+
+def build_detected_language_enum(base_language: str, learning_language: str) -> List[str]:
+    out: List[str] = []
+    for code in (*COMMON_DETECTED_LANGUAGE_CODES, base_language, learning_language, "other"):
+        c = normalize_language_code(code)
+        if c and c not in out:
+            out.append(c)
+    if "other" not in out:
+        out.append("other")
+    return out
+
+
+def patch_message_model_node(ai_data: Dict[str, Any], base_language: str, learning_language: str) -> None:
+    node = find_node(ai_data, "Message a model")
+    params = node.get("parameters")
+    if not isinstance(params, dict):
+        raise ValueError("Message a model node parameters missing/invalid")
+
+    responses = params.get("responses")
+    values = (responses or {}).get("values") if isinstance(responses, dict) else None
+    if isinstance(values, list):
+        for msg in values:
+            if not isinstance(msg, dict):
+                continue
+            content = msg.get("content")
+            if not isinstance(content, str):
+                continue
+            msg["content"] = content.replace(
+                "Summary so far (UA):", "Summary so far (base language):"
+            )
+
+    options = params.get("options")
+    text_format = (options or {}).get("textFormat") if isinstance(options, dict) else None
+    text_opts = (text_format or {}).get("textOptions") if isinstance(text_format, dict) else None
+    schema_raw = text_opts.get("schema") if isinstance(text_opts, dict) else None
+    if not isinstance(schema_raw, str):
+        raise ValueError("Message a model schema missing/invalid")
+
+    try:
+        schema_obj = json.loads(schema_raw)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Message a model schema JSON is invalid: {e}") from e
+
+    props = schema_obj.get("properties")
+    if not isinstance(props, dict):
+        raise ValueError("Message a model schema properties missing/invalid")
+
+    detected = props.get("detected_language")
+    if not isinstance(detected, dict):
+        raise ValueError("Message a model schema detected_language property missing/invalid")
+
+    detected["enum"] = build_detected_language_enum(base_language, learning_language)
+    text_opts["schema"] = json.dumps(schema_obj, indent=2, ensure_ascii=False)
 
 
 def find_required_env(files: List[Path], *, ignore_types: Optional[Set[str]] = None) -> Dict[str, Set[str]]:
@@ -275,8 +495,8 @@ def load_bot_configs(bots_dir: Path) -> List[Tuple[str, Dict[str, Any]]]:
     bots: List[Tuple[str, Dict[str, Any]]] = []
     for path in sorted([p for p in bots_dir.glob("*.json") if p.is_file()]):
         data = load_json(path)
-        base = (data.get("base_language") or "").strip()
-        learn = (data.get("learning_language") or "").strip()
+        base = normalize_language_code(data.get("base_language"))
+        learn = normalize_language_code(data.get("learning_language"))
         bot_key = (data.get("bot_key") or "").strip() or f"{base}-{learn}"
         tg_cred = (data.get("telegram_credential_id") or "").strip()
         locale = data.get("locale")
@@ -284,10 +504,15 @@ def load_bot_configs(bots_dir: Path) -> List[Tuple[str, Dict[str, Any]]]:
             raise ValueError(f"Invalid bot config (missing base/learning/bot_key): {path}")
         if bot_key != f"{base}-{learn}":
             raise ValueError(f"Invalid bot config (bot_key must equal {base}-{learn}): {path}")
+        # Fail-fast validation: currently supported language codes for prompt generation.
+        get_language_meta(base)
+        get_language_meta(learn)
         if not tg_cred:
             raise ValueError(f"Invalid bot config (missing telegram_credential_id): {path}")
         if not isinstance(locale, dict):
             raise ValueError(f"Invalid bot config (missing locale object): {path}")
+        data["base_language"] = base
+        data["learning_language"] = learn
         bots.append((bot_key, data))
     return bots
 
@@ -309,11 +534,13 @@ def main() -> int:
     parser.add_argument("--input", default="deploy/workflows", help="Directory with source workflow JSON files")
     parser.add_argument("--output", default="deploy/workflows/.rendered", help="Directory to write rendered workflows")
     parser.add_argument("--bots", default="deploy/bots", help="Directory with per-bot JSON configs (enables multi-bot mode if present)")
+    parser.add_argument("--prompts", default="deploy/prompts", help="Directory with prompt template files")
     args = parser.parse_args()
 
-    input_dir = Path(args.input)
-    output_dir = Path(args.output)
-    bots_dir = Path(args.bots)
+    input_dir = resolve_path(args.input)
+    output_dir = resolve_path(args.output)
+    bots_dir = resolve_path(args.bots)
+    prompts_dir = resolve_path(args.prompts)
 
     if not input_dir.exists():
         print(f"Input directory not found: {input_dir}", file=sys.stderr)
@@ -333,6 +560,11 @@ def main() -> int:
         return 1
     
     bots = load_bot_configs(bots_dir)
+    try:
+        prompt_templates = load_prompt_templates(prompts_dir)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
 
     # Telegram credentials come from bot configs, not env vars
     required = find_required_env(files, ignore_types={"telegramApi"})
@@ -370,9 +602,22 @@ def main() -> int:
     for bot_key, bot in bots:
         base = bot["base_language"]
         learn = bot["learning_language"]
+        bot_name = str(bot.get("bot_name") or "").strip() or bot_key
         bot_voice = str(bot.get("bot_voice") or "").strip() or "nova"
         tg_cred = bot["telegram_credential_id"]
         locale = bot["locale"]
+        prompt_context = build_prompt_context(
+            bot_key=bot_key,
+            bot_name=bot_name,
+            base_language_code=base,
+            target_language_code=learn,
+        )
+        full_locale = compose_locale_with_generated_prompts(
+            locale=locale,
+            prompt_templates=prompt_templates,
+            prompt_context=prompt_context,
+            bot_key=bot_key,
+        )
 
         ai = copy.deepcopy(ai_tpl)
         loader = copy.deepcopy(loader_tpl)
@@ -390,7 +635,8 @@ def main() -> int:
         patch_webhook_ids_for_bot(loader, "loader-messages-rotator", bot_key)
 
         patch_settings_node(ai, bot_key, base, learn, bot_voice)
-        patch_set_locale_node(ai, locale)
+        patch_set_locale_node(ai, full_locale)
+        patch_message_model_node(ai, base, learn)
         patch_start_loader(ai, loader_id, loader["name"], bot_key)
 
         set_telegram_credential_id(ai, tg_cred)
