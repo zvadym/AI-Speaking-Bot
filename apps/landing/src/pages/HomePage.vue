@@ -14,20 +14,7 @@
           </div>
 
           <div class="shot card reveal-up" style="--revealDelay: 220ms;">
-            <div class="chat">
-              <div class="bubble you">
-                <div class="muted mini">{{ t('home.chat.you') }}</div>
-                <div>{{ t('home.chat.youMsg') }}</div>
-              </div>
-              <div class="bubble bot">
-                <div class="muted mini">{{ t('home.chat.bot') }}</div>
-                <div>{{ t('home.chat.botMsg') }}</div>
-              </div>
-              <div class="bubble tip">
-                <div class="muted mini">{{ t('home.chat.tip') }}</div>
-                <div>{{ t('home.chat.tipMsg') }}</div>
-              </div>
-            </div>
+            <ChatConversationDemo />
           </div>
         </div>
         <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
@@ -190,6 +177,7 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import ChatConversationDemo from '../components/ChatConversationDemo.vue';
 import ContactForm from '../components/ContactForm.vue';
 import HomeFooterMini from '../components/HomeFooterMini.vue';
 import { blogPosts } from '../data/blogPosts.js';
@@ -197,6 +185,7 @@ import { pricingTiers } from '../data/pricing.js';
 import { routeWithLocale, useI18n } from '../i18n.js';
 
 const { t, tm, locale } = useI18n();
+
 const posts = computed(() => blogPosts.slice(0, 3));
 const faqItems = computed(() => {
   const raw = tm('faq.items');
@@ -294,50 +283,12 @@ function billingIntervalLabel(intervalRaw) {
 }
 
 .shot {
-  height: 280px;
+  min-height: 280px;
+  height: auto;
   display: grid;
-  place-items: center;
+  place-items: start center;
   background: var(--surface);
   overflow: hidden;
-}
-
-.chat {
-  width: min(680px, 100%);
-  display: grid;
-  gap: 10px;
-}
-
-.bubble {
-  width: fit-content;
-  max-width: 78%;
-  padding: 12px 14px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--bg);
-  box-shadow: var(--shadow);
-  line-height: 1.55;
-}
-
-.mini {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.you {
-  justify-self: start;
-}
-
-.bot {
-  justify-self: end;
-  background: color-mix(in srgb, var(--bg) 70%, var(--surface));
-}
-
-.tip {
-  justify-self: start;
-  background: color-mix(in srgb, var(--surface) 65%, var(--bg));
 }
 
 .section {

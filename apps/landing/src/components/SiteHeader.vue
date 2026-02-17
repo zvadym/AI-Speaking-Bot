@@ -405,6 +405,7 @@ onBeforeUnmount(() => {
 }
 
 .nav-divider {
+  display: none;
   width: 1px;
   height: 24px;
   background: color-mix(in srgb, var(--fg) 18%, var(--border));
