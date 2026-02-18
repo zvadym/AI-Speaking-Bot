@@ -84,7 +84,7 @@ export const teachers = [
       "structured",
       "conversation-first"
     ],
-    "telegramUrl": "https://t.me/your_en_de_bot",
+    "telegramUrl": "https://t.me/language_en_de_bot",
     "canonicalLocale": "en",
     "canonicalSlug": "john-german-teacher",
     "canonicalPath": "/en/teachers/john-german-teacher"
@@ -127,7 +127,7 @@ export const teachers = [
       "structured",
       "conversation-first"
     ],
-    "telegramUrl": "https://t.me/your_en_es_bot",
+    "telegramUrl": "https://t.me/language_en_es_bot",
     "canonicalLocale": "en",
     "canonicalSlug": "mateo-spanish-teacher",
     "canonicalPath": "/en/teachers/mateo-spanish-teacher"
@@ -170,7 +170,7 @@ export const teachers = [
       "structured",
       "conversation-first"
     ],
-    "telegramUrl": "https://t.me/your_en_it_bot",
+    "telegramUrl": "https://t.me/language_en_it_bot",
     "canonicalLocale": "en",
     "canonicalSlug": "emma-italian-teacher",
     "canonicalPath": "/en/teachers/emma-italian-teacher"
