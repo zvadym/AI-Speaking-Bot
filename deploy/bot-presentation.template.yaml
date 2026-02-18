@@ -1,0 +1,45 @@
+version: 1
+section: telegram_presentation
+
+required_fields:
+  - name
+  - description
+  - short_description
+  - commands
+  - menu_button
+  - username
+
+limits:
+  name_min: 1
+  name_max: 64
+  description_max: 512
+  short_description_max: 120
+  menu_button_text_max: 14
+  commands_max: 100
+  command_description_max: 256
+
+patterns:
+  command: "^[a-z0-9_]{1,32}$"
+
+mappings:
+  name:
+    telegram_method: setMyName
+    telegram_field: name
+  description:
+    telegram_method: setMyDescription
+    telegram_field: description
+  short_description:
+    telegram_method: setMyShortDescription
+    telegram_field: short_description
+  commands:
+    telegram_method: setMyCommands
+    telegram_field: commands
+  menu_button.text:
+    telegram_method: setChatMenuButton
+    telegram_field: menu_button.text
+  menu_button.web_app_url:
+    telegram_method: setChatMenuButton
+    telegram_field: menu_button.web_app.url
+  profile_photo_path:
+    telegram_method: setMyProfilePhoto
+    telegram_field: photo
