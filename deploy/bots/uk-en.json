@@ -93,5 +93,41 @@
     "msg_feedback_prompt": "Дякую! Напиши, будь ласка, свій фідбек текстом або надішли голосове повідомлення 🎙️",
     "msg_feedback_thanks": "Дякую! Я отримав твій фідбек 💛",
     "msg_feedback_needs_text_or_voice": "Надішли, будь ласка, фідбек текстом або голосовим повідомленням 🎙️"
+  },
+  "telegram_presentation": {
+    "name": "Джекі 🇺🇦→🇬🇧 репетитор англійської",
+    "description": "Англійська з легким британським вайбом 🇬🇧. Допоможу говорити впевненіше й природніше.\nhttps://ai-language-school.online/uk",
+    "short_description": "Англійська з легким британським вайбом 🇬🇧. Допоможу говорити впевненіше й природніше.",
+    "commands": [
+      {
+        "command": "start",
+        "description": "Запустити бота"
+      },
+      {
+        "command": "level",
+        "description": "Встановити рівень мови"
+      },
+      {
+        "command": "voice",
+        "description": "Обрати голосовий або текстовий режим"
+      },
+      {
+        "command": "stats",
+        "description": "Перевірити статус підписки"
+      },
+      {
+        "command": "feedback",
+        "description": "Надіслати фідбек"
+      },
+      {
+        "command": "lang",
+        "description": "Показати фіксовану мову навчання"
+      }
+    ],
+    "menu_button": {
+      "text": "Меню",
+      "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=uk-en"
+    },
+    "username": "jackie_english_tutor_bot"
   }
 }

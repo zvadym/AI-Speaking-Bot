@@ -1,0 +1,134 @@
+{
+  "bot_key": "en-it",
+  "base_language": "en",
+  "learning_language": "it",
+  "bot_name": "Emma",
+  "teacher_avatar_emoji": "👩‍🏫",
+  "teacher_tagline_uk": "Italian for real life, travel, and everyday confidence 🇮🇹. Friendly guidance, natural speech.",
+  "teacher_tagline_en": "Italian for real life, travel, and everyday confidence 🇮🇹. Friendly guidance, natural speech.",
+  "teacher_tagline_it": "Italiano per vita reale, viaggi e sicurezza quotidiana 🇮🇹. Guida gentile e parlato naturale.",
+  "teacher_style_tags": [
+    "gentle",
+    "structured",
+    "conversation-first"
+  ],
+  "bot_voice": "Nova",
+  "telegram_url": "https://t.me/language_en_it_bot",
+  "telegram_credential_id": "AlxHEIUzoTwaPctH",
+  "telegram_bot_token": "REDACTED_SECRET",
+  "locale": {
+    "btn_translation": "Translation 🇬🇧",
+    "btn_follow_up_hints": "What can I say next?",
+    "waiting_text": "⏳ Got it! I’m listening carefully...",
+    "loader_messages": [
+      "⏳ Checking everything... great effort!",
+      "🧠 Untangling the language knots...",
+      "✍️ Polishing your answer...",
+      "🎧 Checking meaning and natural flow...",
+      "✨ Picking the best wording...",
+      "🪄 A little language magic...",
+      "🧩 Putting the sentence puzzle together...",
+      "📝 Smoothing the grammar gently...",
+      "🚀 Helping your speaking confidence grow...",
+      "🔍 Looking for tiny improvements...",
+      "🌟 Polishing the final version...",
+      "🎯 Aiming for the clearest response...",
+      "🕵️ Finding small hidden mistakes...",
+      "💡 Suggestion mode on...",
+      "🎵 Tuning rhythm and sound...",
+      "☕ One sip of tea and I’m done 😄",
+      "📌 Capturing the key points...",
+      "🧪 Trying a few options and choosing the best one."
+    ],
+    "better_audio_please": "It’s better if we practice with real conversation 🎙️ Next time, please send a voice message.",
+    "callback_saved": "Done, saved ✅",
+    "callback_translating": "Translating...",
+    "translation_fallback_missing": "I don’t have a translation for this message yet.",
+    "translation_header": "🇬🇧 Translation:",
+    "translation_transcript_header": "📝 Transcript:",
+    "callback_hints_loading": "Preparing suggestions...",
+    "hints_intro": "Here are a few options you can say next:",
+    "hints_empty": "I don’t have suggestions for this message yet. Try with the next reply.",
+    "choose_level_text": "What’s your level? Choose 👇",
+    "hi_message_text": "={{ (() => { const lang = $('Settings').item.json.learning_language === 'it' ? 'Italian' : 'English'; return `Hi! This is AI Language School 🙂\\n\\nI’m Emma, your tutor. Here we practice ${lang}.\\n\\n🎧 Send voice messages with 1–2 sentences and I’ll reply with gentle corrections.\\n💾 I remember your level to keep practice comfortable.\\n🎯 You can change your level with /level\\n🎧 You can switch voice replies on/off with /voice\\n`; })() }}",
+    "choose_voice_mode_text": "How would you like to receive my replies: voice or text? 🎧💬",
+    "voice_mode_text": "💬 Text",
+    "voice_mode_voice": "🎧 Voice",
+    "voice_reply_prefix": "📝 ",
+    "msg_too_long": "That’s a bit long 🙂 Try 1–2 sentences for better quality corrections.",
+    "msg_to_bot": "🤖→🤖 Hey colleague! If you’re a bot, blink twice 😄 Please send me one spoken sentence.",
+    "msg_error_command": "Oops, I don’t know that command yet 🙈",
+    "level_saved_prefix": "Great! Your level is ",
+    "msg_next_step": "Now send me a short voice message (1–2 sentences) 🎙️ I’ll correct mistakes and explain clearly 🙂",
+    "lang_saved_prefix": "Perfect! We’re practicing ",
+    "lang_label_de": "Italian 🇮🇹",
+    "lang_label_en": "English 🇬🇧",
+    "reply_mode_saved_prefix": "Perfect! I’ll reply ",
+    "reply_mode_voice": "🎧 with voice",
+    "reply_mode_text": "💬 in text",
+    "stats_title": "<b>💎 Subscription</b>",
+    "stats_plan_prefix": "Plan: ",
+    "tier_pro": "PRO 🚀",
+    "tier_plus": "PLUS ⭐",
+    "tier_free": "FREE",
+    "plan_valid_until_prefix": "Valid until: ",
+    "pro_vs_plus_prefix": "PRO = ",
+    "pro_vs_plus_suffix": "× PLUS",
+    "stats_week_title": "<b>This week</b>",
+    "stats_practice_prefix": "🎙️ Practice: ",
+    "stats_tts_prefix": "🎧 Voice replies: ",
+    "stats_autorenew_prefix": "Auto-renew: ",
+    "autorenew_on": "on ✅",
+    "autorenew_off": "off ⛔",
+    "stats_pending_prefix": "Scheduled change: ",
+    "pending_change_prefix": "switch to ",
+    "pending_change_suffix": " at period end",
+    "stats_footer": "Details and subscription management are available in the mini-app below.",
+    "btn_open_miniapp": "Open mini-app",
+    "msg_limit_reached": "I’d love to keep practicing with you, but your weekly limit is already used up 😔\\nTo continue, open the subscription in the mini-app with the button below ✨\\nYou can check your status with /stats.",
+    "msg_tts_limit_reached": "You’ve reached the weekly limit for my voice replies 😔 Check /stats or change mode with /voice.",
+    "btn_open_subscription": "💎 Open subscription",
+    "msg_too_short": "I couldn’t hear anything 😭 Please try a slightly longer voice message.",
+    "user_text_prefix_multiline": "📝 Your text:\\n",
+    "user_text_preview": "📝 Your text: ...",
+    "msg_feedback_prompt": "Thanks! Please send your feedback as text or a voice message 🎙️",
+    "msg_feedback_thanks": "Thanks! I received your feedback 💛",
+    "msg_feedback_needs_text_or_voice": "Please send feedback as text or voice message 🎙️"
+  },
+  "telegram_presentation": {
+    "name": "Emma 🇬🇧→🇮🇹 Italian tutor",
+    "description": "Italian for real life, travel, and everyday confidence 🇮🇹. Friendly guidance, natural speech.\nhttps://ai-language-school.online/en",
+    "short_description": "Italian for real life, travel, and everyday confidence 🇮🇹. Friendly guidance, natural speech.",
+    "commands": [
+      {
+        "command": "start",
+        "description": "Start the bot"
+      },
+      {
+        "command": "level",
+        "description": "Set your language level"
+      },
+      {
+        "command": "voice",
+        "description": "Choose voice or text replies"
+      },
+      {
+        "command": "stats",
+        "description": "Check subscription status"
+      },
+      {
+        "command": "feedback",
+        "description": "Send feedback"
+      },
+      {
+        "command": "lang",
+        "description": "Show fixed learning language"
+      }
+    ],
+    "menu_button": {
+      "text": "Menu",
+      "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=en-it"
+    },
+    "username": "language_en_it_bot"
+  }
+}

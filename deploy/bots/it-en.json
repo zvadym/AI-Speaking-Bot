@@ -94,5 +94,41 @@
     "msg_feedback_thanks": "Grazie! Ho ricevuto il tuo feedback 💛",
     "msg_feedback_needs_text_or_voice": "Per favore invia il feedback in testo o con un messaggio vocale 🎙️",
     "hi_message_text": "={{ (() => { const lang = $('Settings').item.json.learning_language === 'de' ? 'tedesco' : 'inglese'; return `Ciao! Questa è AI Language School 🙂\\n\\nIo sono Luca, il tuo tutor. Qui pratichiamo ${lang} con un tocco British 🇬🇧.\\n\\n🎧 Invia vocali di 1–2 frasi: ti rispondo e ti correggo in modo semplice.\\n💾 Ricordo il tuo livello per adattare gli esercizi.\\n🎯 Puoi cambiare livello con /level\\n🎧 Puoi attivare o disattivare le risposte vocali con /voice\\n`; })() }}"
+  },
+  "telegram_presentation": {
+    "name": "Luca 🇮🇹→🇬🇧 tutor di inglese",
+    "description": "Inglese pratico con un tocco British 🇬🇧. Ti aiuto a parlare con naturalezza.\nhttps://ai-language-school.online/it",
+    "short_description": "Inglese pratico con un tocco British 🇬🇧. Ti aiuto a parlare con naturalezza.",
+    "commands": [
+      {
+        "command": "start",
+        "description": "Avvia il bot"
+      },
+      {
+        "command": "level",
+        "description": "Imposta il tuo livello"
+      },
+      {
+        "command": "voice",
+        "description": "Scegli risposte vocali o testuali"
+      },
+      {
+        "command": "stats",
+        "description": "Controlla stato abbonamento"
+      },
+      {
+        "command": "feedback",
+        "description": "Invia feedback"
+      },
+      {
+        "command": "lang",
+        "description": "Mostra lingua di studio fissa"
+      }
+    ],
+    "menu_button": {
+      "text": "Menu",
+      "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=it-en"
+    },
+    "username": "luca_coach_di_inglese_bot"
   }
 }

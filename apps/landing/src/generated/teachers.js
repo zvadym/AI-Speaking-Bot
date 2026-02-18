@@ -47,6 +47,135 @@ export const teachers = [
     "canonicalPath": "/de/teachers/giulia-italienisch-teacher"
   },
   {
+    "slug": "en-de",
+    "teacherKey": "en-de",
+    "legacyPairSlug": "en-de",
+    "teacherSlugBase": "john",
+    "publicSlugs": {
+      "en": "john-german-teacher",
+      "de": "john-deutsch-teacher",
+      "es": "john-aleman-teacher",
+      "pt": "john-alemao-teacher",
+      "uk": "john-nimetska-teacher",
+      "it": "john-tedesco-teacher"
+    },
+    "botKey": "en-de",
+    "baseLanguage": "en",
+    "learningLanguage": "de",
+    "avatarEmoji": "👨‍🏫",
+    "avatarImage": "/teachers/thumbnail/en-de.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/en-de.avif",
+      "webp": "/teachers/thumbnail/en-de.webp",
+      "png": "/teachers/thumbnail/en-de.png"
+    },
+    "displayName": {
+      "uk": "John",
+      "en": "John",
+      "it": "John"
+    },
+    "taglines": {
+      "uk": "German for real life, work, and travel 🇩🇪. I help you speak naturally and confidently.",
+      "en": "German for real life, work, and travel 🇩🇪. I help you speak naturally and confidently.",
+      "it": "Tedesco per vita reale, lavoro e viaggi 🇩🇪. Ti aiuto a parlare in modo naturale e sicuro."
+    },
+    "styleTags": [
+      "gentle",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/your_en_de_bot",
+    "canonicalLocale": "en",
+    "canonicalSlug": "john-german-teacher",
+    "canonicalPath": "/en/teachers/john-german-teacher"
+  },
+  {
+    "slug": "en-es",
+    "teacherKey": "en-es",
+    "legacyPairSlug": "en-es",
+    "teacherSlugBase": "mateo",
+    "publicSlugs": {
+      "en": "mateo-spanish-teacher",
+      "de": "mateo-spanisch-teacher",
+      "es": "mateo-espanol-teacher",
+      "pt": "mateo-espanhol-teacher",
+      "uk": "mateo-ispanska-teacher",
+      "it": "mateo-spagnolo-teacher"
+    },
+    "botKey": "en-es",
+    "baseLanguage": "en",
+    "learningLanguage": "es",
+    "avatarEmoji": "👨‍🏫",
+    "avatarImage": "/teachers/thumbnail/en-es.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/en-es.avif",
+      "webp": "/teachers/thumbnail/en-es.webp",
+      "png": "/teachers/thumbnail/en-es.png"
+    },
+    "displayName": {
+      "uk": "Mateo",
+      "en": "Mateo",
+      "it": "Mateo"
+    },
+    "taglines": {
+      "uk": "Spanish for real life, travel, and everyday confidence 🇪🇸. Friendly guidance, natural speech.",
+      "en": "Spanish for real life, travel, and everyday confidence 🇪🇸. Friendly guidance, natural speech.",
+      "it": "Spagnolo per vita reale, viaggi e sicurezza quotidiana 🇪🇸. Guida gentile e parlato naturale."
+    },
+    "styleTags": [
+      "gentle",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/your_en_es_bot",
+    "canonicalLocale": "en",
+    "canonicalSlug": "mateo-spanish-teacher",
+    "canonicalPath": "/en/teachers/mateo-spanish-teacher"
+  },
+  {
+    "slug": "en-it",
+    "teacherKey": "en-it",
+    "legacyPairSlug": "en-it",
+    "teacherSlugBase": "emma",
+    "publicSlugs": {
+      "en": "emma-italian-teacher",
+      "de": "emma-italienisch-teacher",
+      "es": "emma-italiano-teacher",
+      "pt": "emma-italiano-teacher",
+      "uk": "emma-italiyska-teacher",
+      "it": "emma-italiano-teacher"
+    },
+    "botKey": "en-it",
+    "baseLanguage": "en",
+    "learningLanguage": "it",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/thumbnail/en-it.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/en-it.avif",
+      "webp": "/teachers/thumbnail/en-it.webp",
+      "png": "/teachers/thumbnail/en-it.png"
+    },
+    "displayName": {
+      "uk": "Emma",
+      "en": "Emma",
+      "it": "Emma"
+    },
+    "taglines": {
+      "uk": "Italian for real life, travel, and everyday confidence 🇮🇹. Friendly guidance, natural speech.",
+      "en": "Italian for real life, travel, and everyday confidence 🇮🇹. Friendly guidance, natural speech.",
+      "it": "Italiano per vita reale, viaggi e sicurezza quotidiana 🇮🇹. Guida gentile e parlato naturale."
+    },
+    "styleTags": [
+      "gentle",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/your_en_it_bot",
+    "canonicalLocale": "en",
+    "canonicalSlug": "emma-italian-teacher",
+    "canonicalPath": "/en/teachers/emma-italian-teacher"
+  },
+  {
     "slug": "it-de",
     "teacherKey": "it-de",
     "legacyPairSlug": "it-de",

@@ -94,5 +94,41 @@
     "msg_feedback_prompt": "Danke! Schreib mir dein Feedback als Text oder sende eine Sprachnachricht 🎙️",
     "msg_feedback_thanks": "Danke! Ich habe dein Feedback erhalten 💛",
     "msg_feedback_needs_text_or_voice": "Bitte sende dein Feedback als Text oder Sprachnachricht 🎙️"
+  },
+  "telegram_presentation": {
+    "name": "Giulia 🇩🇪→🇮🇹 Italienisch-Tutor",
+    "description": "Italian for daily life, travel, and real conversations 🇮🇹. Clear and gentle feedback.\nhttps://ai-language-school.online/de",
+    "short_description": "Italian for daily life, travel, and real conversations 🇮🇹. Clear and gentle feedback.",
+    "commands": [
+      {
+        "command": "start",
+        "description": "Bot starten"
+      },
+      {
+        "command": "level",
+        "description": "Sprachniveau festlegen"
+      },
+      {
+        "command": "voice",
+        "description": "Sprach- oder Textantworten wählen"
+      },
+      {
+        "command": "stats",
+        "description": "Abo-Status prüfen"
+      },
+      {
+        "command": "feedback",
+        "description": "Feedback senden"
+      },
+      {
+        "command": "lang",
+        "description": "Feste Lernsprache anzeigen"
+      }
+    ],
+    "menu_button": {
+      "text": "Menü",
+      "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=de-it"
+    },
+    "username": "giulia_italienisch_lehrerin_bot"
   }
 }
