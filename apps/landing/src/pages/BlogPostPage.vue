@@ -26,6 +26,16 @@
             </div>
           </template>
         </article>
+
+        <section v-if="relatedPosts.length" class="related">
+          <h2 class="h2 related-title">{{ t('blog.title') }}</h2>
+          <div class="related-grid">
+            <RouterLink v-for="item in relatedPosts" :key="item.slug" class="card related-card" :to="routeWithLocale('blog-post', { slug: item.slug })">
+              <div class="h3 related-name">{{ readLocalized(item.title) }}</div>
+              <p class="muted related-excerpt">{{ readLocalized(item.excerpt) }}</p>
+            </RouterLink>
+          </div>
+        </section>
       </div>
 
       <div v-else class="card">
@@ -40,7 +50,7 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { getBlogPostBySlug } from '../data/blogPosts.js';
+import { blogPosts, getBlogPostBySlug } from '../data/blogPosts.js';
 import { routeWithLocale, useI18n } from '../i18n.js';
 
 const props = defineProps({
@@ -49,6 +59,10 @@ const props = defineProps({
 
 const { t, locale } = useI18n();
 const post = computed(() => getBlogPostBySlug(props.slug));
+const relatedPosts = computed(() => {
+  const currentSlug = (props.slug || '').toString().trim().toLowerCase();
+  return blogPosts.filter((item) => (item.slug || '').toString().toLowerCase() !== currentSlug).slice(0, 3);
+});
 
 const postTitle = computed(() => {
   const map = post.value?.title || {};
@@ -75,6 +89,11 @@ const publishedLabel = computed(() => {
     return dateRaw;
   }
 });
+
+function readLocalized(map) {
+  if (!map || typeof map !== 'object') return '';
+  return (map[locale.value] || map.en || map.uk || map.it || '').toString();
+}
 </script>
 
 <style scoped>
@@ -158,5 +177,43 @@ const publishedLabel = computed(() => {
 
 .callout-text {
   line-height: 1.7;
+}
+
+.related {
+  margin-top: 24px;
+}
+
+.related-title {
+  margin-bottom: 14px;
+}
+
+.related-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+.related-card {
+  display: grid;
+  gap: 8px;
+}
+
+.related-card:hover {
+  text-decoration: none;
+}
+
+.related-name {
+  font-size: 20px;
+}
+
+.related-excerpt {
+  margin: 0;
+  line-height: 1.65;
+}
+
+@media (min-width: 860px) {
+  .related-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 </style>

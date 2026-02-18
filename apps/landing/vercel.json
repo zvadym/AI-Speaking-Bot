@@ -1,5 +1,16 @@
 {
   "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.ai-language-school.online"
+        }
+      ],
+      "destination": "https://ai-language-school.online/:path*",
+      "permanent": true
+    },
     { "source": "/", "destination": "/en", "permanent": true },
     { "source": "/teachers", "destination": "/en/teachers", "permanent": true },
     { "source": "/blog/:slug", "destination": "/en/blog/:slug", "permanent": true }

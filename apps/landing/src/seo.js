@@ -1,8 +1,9 @@
 import { computed, unref } from 'vue';
-import { useHead, useRuntimeConfig, useSeoMeta, useRoute } from '#imports';
+import { useHead, useRuntimeConfig, useRoute } from '#imports';
 import { localizedPath, normalizeLocale, stripLocalePrefix, supportedLocales } from './i18n.js';
 
 const DEFAULT_SITE_URL = 'https://ai-language-school.online';
+const DEFAULT_DESCRIPTION = 'Voice-first language practice in Telegram.';
 
 function normalizePath(pathname = '') {
   const raw = (pathname || '').toString().trim();
@@ -101,6 +102,10 @@ export function useLocalizedSeo(options = {}) {
   });
 
   useHead(() => {
+    const title = (readValue(options.title) || 'AI Language School').toString();
+    const description = (readValue(options.description) || '').toString().trim() || DEFAULT_DESCRIPTION;
+    const robots = readValue(options.noindex) ? 'noindex,follow' : 'index,follow';
+    const canonicalUrl = toAbsoluteUrl(siteUrl, canonicalPath.value);
     const faqItems = normalizeFaqItems(readValue(options.faqItems));
     const structuredData = normalizeStructuredData(readValue(options.structuredData));
     const scripts = [];
@@ -133,12 +138,24 @@ export function useLocalizedSeo(options = {}) {
     }
 
     return {
-      title: (readValue(options.title) || 'AI Language School').toString(),
+      title,
+      meta: [
+        { key: 'description', name: 'description', content: description },
+        { key: 'robots', name: 'robots', content: robots },
+        { key: 'og:type', property: 'og:type', content: 'website' },
+        { key: 'og:site_name', property: 'og:site_name', content: 'AI Language School' },
+        { key: 'og:title', property: 'og:title', content: title },
+        { key: 'og:description', property: 'og:description', content: description },
+        { key: 'og:url', property: 'og:url', content: canonicalUrl },
+        { key: 'twitter:card', name: 'twitter:card', content: 'summary_large_image' },
+        { key: 'twitter:title', name: 'twitter:title', content: title },
+        { key: 'twitter:description', name: 'twitter:description', content: description }
+      ],
       link: [
         {
           key: 'canonical',
           rel: 'canonical',
-          href: toAbsoluteUrl(siteUrl, canonicalPath.value)
+          href: canonicalUrl
         },
         ...alternateLocales.value.map((altLocale) => ({
           key: `alternate-${altLocale}`,
@@ -165,9 +182,4 @@ export function useLocalizedSeo(options = {}) {
       script: scripts
     };
   });
-
-  useSeoMeta(() => ({
-    description: (readValue(options.description) || '').toString(),
-    robots: readValue(options.noindex) ? 'noindex,follow' : 'index,follow'
-  }));
 }

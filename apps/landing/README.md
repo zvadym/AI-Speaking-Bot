@@ -10,7 +10,7 @@ Teacher thumbnails are generated into `apps/landing/public/teachers/thumbnail/*.
 Optional:
 
 - `NUXT_PUBLIC_CONTACT_WEBHOOK_URL` — n8n webhook URL that receives contact form submissions.
-- `NUXT_PUBLIC_SITE_URL` — canonical site origin for SEO links (defaults to `https://ai-language-school.online`).
+- `NUXT_PUBLIC_SITE_URL` — canonical site origin for SEO links and sitemap URLs (defaults to `https://ai-language-school.online`).
 
 Temporary backwards-compatible fallbacks are supported:
 
@@ -57,3 +57,5 @@ From repo root:
 ```
 
 No env vars are required for a basic deploy. Teacher links come from `deploy/bots/*.json`.
+
+Set `NUXT_PUBLIC_SITE_URL` to the canonical production host. Current canonical target is non-`www`: `https://ai-language-school.online`.

@@ -18,8 +18,34 @@ const sitemapFile = path.resolve(repoRoot, 'apps/landing/public/sitemap.xml');
 const teacherAvatarsDir = path.resolve(repoRoot, 'apps/landing/public/teachers');
 const teacherAvatarsThumbnailDir = path.resolve(teacherAvatarsDir, 'thumbnail');
 
-const SITE_ORIGIN = 'https://ai-language-school.online';
+const DEFAULT_SITE_ORIGIN = 'https://ai-language-school.online';
 const AVATAR_EXTS = ['avif', 'webp', 'png', 'jpg', 'jpeg', 'svg'];
+
+function getSiteOrigin() {
+  const candidates = [
+    process.env.NUXT_PUBLIC_SITE_URL,
+    process.env.VITE_SITE_URL,
+    process.env.SITE_URL,
+    DEFAULT_SITE_ORIGIN
+  ];
+
+  for (const candidate of candidates) {
+    const raw = safeString(candidate);
+    if (!raw) continue;
+
+    try {
+      const url = new URL(raw);
+      if (!/^https?:$/i.test(url.protocol)) continue;
+      return `${url.protocol}//${url.host}`.replace(/\/+$/, '');
+    } catch {
+      // Ignore malformed env values and continue with fallbacks.
+    }
+  }
+
+  return DEFAULT_SITE_ORIGIN;
+}
+
+const SITE_ORIGIN = getSiteOrigin();
 
 function safeString(value) {
   if (value === undefined || value === null) return '';
