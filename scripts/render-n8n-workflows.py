@@ -43,47 +43,39 @@ COMMON_DETECTED_LANGUAGE_CODES = ("en", "de", "it", "uk", "ru")
 
 PLACEHOLDER_RE = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
 
-LANGUAGE_META = {
-    "en": {
-        "label": "English",
-        "explanation_title": "Explanation",
-        "article_gender_example": (
-            "we need the article ... and we use ..., because the noun has ... gender"
-        ),
-        "vague_reason_example": "this sounds better",
-    },
-    "de": {
-        "label": "German",
-        "explanation_title": "Erklärung",
-        "article_gender_example": (
-            "wir brauchen den Artikel ... und wir verwenden ..., weil das Nomen das Geschlecht ... hat"
-        ),
-        "vague_reason_example": "klingt natürlicher",
-    },
-    "it": {
-        "label": "Italian",
-        "explanation_title": "Spiegazione",
-        "article_gender_example": (
-            "serve l'articolo ... e usiamo ..., perché il sostantivo è di genere ..."
-        ),
-        "vague_reason_example": "suona meglio",
-    },
-    "uk": {
-        "label": "Ukrainian",
-        "explanation_title": "Пояснення",
-        "article_gender_example": (
-            "потрібен артикль ... і використовуємо ..., бо іменник ... роду"
-        ),
-        "vague_reason_example": "так більш природно",
-    },
-    "ru": {
-        "label": "Russian",
-        "explanation_title": "Пояснение",
-        "article_gender_example": (
-            "нужен артикль ... и используем ..., потому что существительное ... рода"
-        ),
-        "vague_reason_example": "так звучит естественнее",
-    },
+# Basic language name mapping for common ISO 639-1 codes
+LANGUAGE_LABELS = {
+    "en": "English",
+    "de": "German",
+    "es": "Spanish",
+    "it": "Italian",
+    "fr": "French",
+    "pt": "Portuguese",
+    "ru": "Russian",
+    "uk": "Ukrainian",
+    "pl": "Polish",
+    "nl": "Dutch",
+    "sv": "Swedish",
+    "da": "Danish",
+    "no": "Norwegian",
+    "fi": "Finnish",
+    "cs": "Czech",
+    "sk": "Slovak",
+    "hu": "Hungarian",
+    "ro": "Romanian",
+    "bg": "Bulgarian",
+    "hr": "Croatian",
+    "sr": "Serbian",
+    "sl": "Slovenian",
+    "tr": "Turkish",
+    "ar": "Arabic",
+    "he": "Hebrew",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "zh": "Chinese",
+    "hi": "Hindi",
+    "th": "Thai",
+    "vi": "Vietnamese",
 }
 
 
@@ -124,12 +116,9 @@ def resolve_path(path_str: str) -> Path:
     return (REPO_ROOT / p).resolve()
 
 
-def get_language_meta(code: str) -> Dict[str, str]:
-    meta = LANGUAGE_META.get(code)
-    if meta:
-        return meta
-    supported = ", ".join(sorted(LANGUAGE_META.keys()))
-    raise ValueError(f"Unsupported language code {code!r}. Supported codes: {supported}")
+def get_language_label(code: str) -> str:
+    """Get human-readable language name from ISO code."""
+    return LANGUAGE_LABELS.get(code, code.upper())
 
 
 def load_prompt_templates(prompts_dir: Path) -> Dict[str, str]:
@@ -168,8 +157,11 @@ def build_prompt_context(
     base_language_code: str,
     target_language_code: str,
 ) -> Dict[str, str]:
-    base_meta = get_language_meta(base_language_code)
-    target_meta = get_language_meta(target_language_code)
+    """
+    Build context for rendering prompt templates.
+    Uses English defaults for instruction examples - the AI model understands
+    English instructions and will respond in the appropriate base_language.
+    """
     english_style_rule = (
         '- For target_language_code "en": keep a light British English vibe '
         '(spelling and a few gentle Britishisms like "cheers", "brilliant", "mate"), '
@@ -182,11 +174,14 @@ def build_prompt_context(
         "bot_key": bot_key,
         "base_language_code": base_language_code,
         "target_language_code": target_language_code,
-        "base_language_label": base_meta["label"],
-        "target_language_label": target_meta["label"],
-        "explanation_title": base_meta["explanation_title"],
-        "article_gender_example": base_meta["article_gender_example"],
-        "vague_reason_example": base_meta["vague_reason_example"],
+        "base_language_label": get_language_label(base_language_code),
+        "target_language_label": get_language_label(target_language_code),
+        # Instruction fields - AI understands English, will respond in base_language
+        "explanation_title": "Explanation",
+        "article_gender_example": (
+            "we need the article ... and we use ..., because the noun has ... gender"
+        ),
+        "vague_reason_example": "this sounds better",
         "english_style_rule": english_style_rule,
     }
 
@@ -504,9 +499,6 @@ def load_bot_configs(bots_dir: Path) -> List[Tuple[str, Dict[str, Any]]]:
             raise ValueError(f"Invalid bot config (missing base/learning/bot_key): {path}")
         if bot_key != f"{base}-{learn}":
             raise ValueError(f"Invalid bot config (bot_key must equal {base}-{learn}): {path}")
-        # Fail-fast validation: currently supported language codes for prompt generation.
-        get_language_meta(base)
-        get_language_meta(learn)
         if not tg_cred:
             raise ValueError(f"Invalid bot config (missing telegram_credential_id): {path}")
         if not isinstance(locale, dict):
