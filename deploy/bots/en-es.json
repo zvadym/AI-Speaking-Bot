@@ -96,7 +96,14 @@
     "msg_feedback_needs_text_or_voice": "Please send feedback as text or voice message 🎙️",
     "level_label_beginner": "Beginner (A1-A2)",
     "level_label_conversational": "Conversational (B1-B2)",
-    "level_label_advanced": "Advanced (C1+)"
+    "level_label_advanced": "Advanced (C1+)",
+    "starter_prompt_text": "Pick a starter topic 👇 I'll ask the first question.",
+    "starter_btn_intro": "Introduce yourself",
+    "starter_btn_day": "Your day",
+    "starter_btn_weekend": "Weekend plans",
+    "starter_question_intro": "¿Puedes presentarte en 2-3 frases?",
+    "starter_question_day": "¿Cómo fue tu día hoy? Cuéntame 1-2 cosas.",
+    "starter_question_weekend": "¿Qué planes tienes para el fin de semana?"
   },
   "telegram_presentation": {
     "name": "Mateo 🇬🇧→🇪🇸 Spanish tutor",

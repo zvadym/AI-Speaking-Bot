@@ -96,7 +96,14 @@
     "msg_feedback_needs_text_or_voice": "Надішли, будь ласка, фідбек текстом або голосовим повідомленням 🎙️",
     "level_label_beginner": "Початковий (A1-A2)",
     "level_label_conversational": "Розмовний (B1-B2)",
-    "level_label_advanced": "Просунутий (C1+)"
+    "level_label_advanced": "Просунутий (C1+)",
+    "starter_prompt_text": "Обери тему для старту 👇 Я надішлю перше запитання.",
+    "starter_btn_intro": "Про себе",
+    "starter_btn_day": "Твій день",
+    "starter_btn_weekend": "Плани на вихідні",
+    "starter_question_intro": "Kannst du dich in 2-3 Sätzen vorstellen?",
+    "starter_question_day": "Wie war dein Tag heute? Erzähl 1-2 Dinge.",
+    "starter_question_weekend": "Was sind deine Pläne fürs Wochenende?"
   },
   "telegram_presentation": {
     "name": "Леся 🇺🇦→🇩🇪 репетитор німецької",

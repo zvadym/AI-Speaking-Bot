@@ -51,6 +51,36 @@
               "Trabajo bien entre equipos."
             ]
           }
+        },
+        "de": {
+          "userTranscript": "Morgen habe ich ein Vorstellungsgesprach fur eine Product-Manager-Position. Was kann ich sagen, wenn sie fragen: \"Warum sollten wir Sie einstellen?\"",
+          "botTranscript": "Gute Frage. Halte es kurz und konkret: Verbinde deine Erfahrung mit Ergebnissen und schliesse selbstbewusst ab. Welchen Erfolg mit messbarem Effekt kannst du nennen?",
+          "followUp": {
+            "question": "Welchen Erfolg mit messbarem Effekt kannst du nennen?",
+            "simple": "In meiner letzten Rolle habe ich das Onboarding verbessert und den Abbruch um 12% reduziert.",
+            "conversational": "Ich verwandle chaotische Prozesse in klare Schritte, und dadurch hat unser Team den Onboarding-Abbruch um 12% gesenkt.",
+            "advanced": "Ich verbinde Produktdenken mit Umsetzung: Ich habe Reibungspunkte analysiert, das Team auf Prioritaten ausgerichtet und Anderungen umgesetzt, die die Onboarding-Bindung um 12% verbessert haben.",
+            "phrases": [
+              "Ich kann vom ersten Tag an Mehrwert schaffen.",
+              "Ich konzentriere mich auf messbare Ergebnisse.",
+              "Ich arbeite gut teamubergreifend."
+            ]
+          }
+        },
+        "it": {
+          "userTranscript": "Domani ho un colloquio per un ruolo da Product Manager. Cosa posso dire quando chiedono: \"Perche dovremmo assumerti?\"",
+          "botTranscript": "Ottima domanda. Tienilo breve e concreto: collega la tua esperienza ai risultati e chiudi con sicurezza. Qual e un risultato con impatto misurabile che puoi citare?",
+          "followUp": {
+            "question": "Qual e un risultato con impatto misurabile che puoi citare?",
+            "simple": "Nel mio ultimo ruolo ho migliorato l'onboarding e ridotto l'abbandono del 12%.",
+            "conversational": "Mi concentro nel trasformare processi disordinati in passaggi chiari, e questo ha aiutato il nostro team a ridurre l'abbandono nell'onboarding del 12%.",
+            "advanced": "Unisco visione di prodotto ed esecuzione: ho mappato i punti di attrito, allineato il team sulle priorita e implementato cambiamenti che hanno migliorato la retention nell'onboarding del 12%.",
+            "phrases": [
+              "Posso creare valore fin dal primo giorno.",
+              "Mi concentro su risultati misurabili.",
+              "Lavoro bene tra team diversi."
+            ]
+          }
         }
       },
       "base": {
@@ -115,17 +145,17 @@
           }
         },
         "uk": {
-          "userTranscript": "Zavtra u mene spivbesida na posytsiiu Product Manager. Shcho ya mozhu skazaty, koly mene zapytaiut: \"Chomu my maiemo vas naiaty?\"",
-          "botTranscript": "Harne pytannia. Trymai korotko i konkretno: poviazhi dosvid iz rezultatom i zavershy vpevneno. Yake dosiahnennia z vymiriuvanym vplyvom ty mozhesh nazvaty?",
+          "userTranscript": "Завтра у мене співбесіда на позицію Product Manager. Що я можу сказати, коли мене запитають: \"Чому ми маємо вас найняти?\"",
+          "botTranscript": "Гарне питання. Тримай відповідь короткою і конкретною: пов’яжи свій досвід із результатами та заверш упевнено. Яке досягнення з вимірюваним впливом ти можеш назвати?",
           "followUp": {
-            "question": "Yake dosiahnennia z vymiriuvanym vplyvom ty mozhesh nazvaty?",
-            "simple": "U moii ostannii roli ya pokrashchyv onboarding i znyzyv vidsotok vidmovy na 12%.",
-            "conversational": "Ya zoseredzhuius na tomu, shchob peretvoriuvaty khotychni protsesy na zrozumili kroky, i tse dopomohlo nashii komandi znyzyty vidsotok vidmovy pid chas onboarding na 12%.",
-            "advanced": "Ya poiednuiu produktove myslennia z vykonanniam: ya vyznav tochky tertia, uzghodyv priorytety komandy i my vprovadyly zminy, yaki pidvyshchyly utrymannia pid chas onboarding na 12%.",
+            "question": "Яке досягнення з вимірюваним впливом ти можеш назвати?",
+            "simple": "На моїй останній ролі я покращила онбординг і знизила відтік на 12%.",
+            "conversational": "Я фокусуюся на тому, щоб перетворювати хаотичні процеси на чіткі кроки, і це допомогло нашій команді зменшити відтік в онбордингу на 12%.",
+            "advanced": "Я поєдную продуктовий підхід із сильною реалізацією: визначила точки тертя, синхронізувала пріоритети команди та впровадила зміни, які підвищили утримання в онбордингу на 12%.",
             "phrases": [
-              "Ya mozhu davaty tsinnist iz pershoho dnia.",
-              "Ya fokusuius na vymiriuvanykh rezultatakh.",
-              "Ya dobre pratsiuiu mizh komandamy."
+              "Я можу приносити цінність із першого дня.",
+              "Я фокусуюся на вимірюваних результатах.",
+              "Я добре працюю між командами."
             ]
           }
         },
@@ -185,6 +215,36 @@
               "?Podria revisarme, por favor?",
               "?Necesito hacerme alguna prueba?",
               "?Que tratamiento me recomienda?"
+            ]
+          }
+        },
+        "de": {
+          "userTranscript": "Ich habe seit zwei Tagen Halsschmerzen und leichtes Fieber. Wie kann ich meine Symptome dem Arzt klar erklaren?",
+          "botTranscript": "Sag es in kurzer Reihenfolge: Dauer, Symptome, dann Bitte. Zum Beispiel: Ich habe seit zwei Tagen Halsschmerzen und leichtes Fieber. Konnten Sie bitte prufen, was das sein konnte?",
+          "followUp": {
+            "question": "Kannst du beschreiben, wann die Symptome begonnen haben und ob sie schlimmer werden?",
+            "simple": "Die Symptome haben vor zwei Tagen begonnen, und heute fuhle ich mich etwas schlechter.",
+            "conversational": "Es fing vor zwei Tagen mit Halsschmerzen an, und heute fuhlt sich das Fieber etwas starker an.",
+            "advanced": "Die Symptome begannen vor etwa zwei Tagen und haben sich allmahlich verstarkt, besonders die Halsschmerzen und das leichte Fieber.",
+            "phrases": [
+              "Konnten Sie das bitte untersuchen?",
+              "Brauche ich irgendwelche Tests?",
+              "Welche Behandlung empfehlen Sie?"
+            ]
+          }
+        },
+        "it": {
+          "userTranscript": "Ho mal di gola e febbre lieve da due giorni. Come posso spiegare chiaramente i miei sintomi al medico?",
+          "botTranscript": "Dillo in un ordine breve: durata, sintomi e poi richiesta. Per esempio: Ho mal di gola da due giorni e febbre lieve. Potrebbe controllare cosa potrebbe essere?",
+          "followUp": {
+            "question": "Puoi descrivere quando sono iniziati i sintomi e se stanno peggiorando?",
+            "simple": "I sintomi sono iniziati due giorni fa e oggi mi sento un po peggio.",
+            "conversational": "E iniziato due giorni fa con mal di gola, e oggi la febbre sembra un po piu forte.",
+            "advanced": "I sintomi sono iniziati circa due giorni fa e si sono intensificati gradualmente, soprattutto il dolore alla gola e la febbre lieve.",
+            "phrases": [
+              "Potrebbe controllarmi, per favore?",
+              "Devo fare qualche esame?",
+              "Che trattamento consiglia?"
             ]
           }
         }
@@ -251,17 +311,17 @@
           }
         },
         "uk": {
-          "userTranscript": "U mene vzhe dva dni bolyt horlo i ye nevelyka temperatura. Yak meni chitko poiasnyty likariu svoi symptomy?",
-          "botTranscript": "Skazhy tse korotko po poriadku: tryvalist, symptomy, potim zapyt. Napryklad: U mene dva dni bolyt horlo i ye nevelyka temperatura. Chy mohly b vy pereviryty, shcho tse mozhe buty?",
+          "userTranscript": "У мене вже два дні болить горло і є невелика температура. Як мені чітко пояснити лікарю свої симптоми?",
+          "botTranscript": "Скажи це коротко і по порядку: тривалість, симптоми, потім запит. Наприклад: У мене два дні болить горло і є невелика температура. Чи могли б ви перевірити, що це може бути?",
           "followUp": {
-            "question": "Chy mozhesh opysaty, koly pochalysia symptomy i chy staiut vony hirshe?",
-            "simple": "Symptomy pochalysia dva dni tomu, i sohodni ya vidchuvaiu sebe trokhy hirshe.",
-            "conversational": "Vse pochalosia dva dni tomu z boliu v horli, a sohodni temperatura vidchuvaietsia trokhy sylnishoiu.",
-            "advanced": "Symptomy poialysia blyzko dvokh dniv tomu i postupovo posyliuvalysia, osoblyvo bil u horli ta subfebrylna temperatura.",
+            "question": "Чи можеш описати, коли почалися симптоми і чи стає тобі гірше?",
+            "simple": "Симптоми почалися два дні тому, і сьогодні я почуваюся трохи гірше.",
+            "conversational": "Усе почалося два дні тому з болю в горлі, а сьогодні температура відчувається трохи вищою.",
+            "advanced": "Симптоми з’явилися приблизно два дні тому і поступово посилювалися, особливо біль у горлі та субфебрильна температура.",
             "phrases": [
-              "Bud laska, perevirte tse.",
-              "Chy potribni meni yakis analizy?",
-              "Yake likuvannia vy rekomenduiete?"
+              "Будь ласка, перевірте це.",
+              "Чи потрібні мені якісь аналізи?",
+              "Яке лікування ви рекомендуєте?"
             ]
           }
         },

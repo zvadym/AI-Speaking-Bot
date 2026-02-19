@@ -96,7 +96,14 @@
     "msg_feedback_needs_text_or_voice": "Please send feedback as text or voice message 🎙️",
     "level_label_beginner": "Beginner (A1-A2)",
     "level_label_conversational": "Conversational (B1-B2)",
-    "level_label_advanced": "Advanced (C1+)"
+    "level_label_advanced": "Advanced (C1+)",
+    "starter_prompt_text": "Pick a starter topic 👇 I'll ask the first question.",
+    "starter_btn_intro": "Introduce yourself",
+    "starter_btn_day": "Your day",
+    "starter_btn_weekend": "Weekend plans",
+    "starter_question_intro": "Puoi presentarti in 2-3 frasi?",
+    "starter_question_day": "Com'è andata la tua giornata oggi? Dimmi 1-2 cose.",
+    "starter_question_weekend": "Quali sono i tuoi programmi per il weekend?"
   },
   "telegram_presentation": {
     "name": "Emma 🇬🇧→🇮🇹 Italian tutor",

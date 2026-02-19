@@ -96,7 +96,14 @@
     "hi_message_text": "={{ (() => { const lang = $('Settings').item.json.learning_language === 'de' ? 'tedesco' : 'inglese'; return `Ciao! Questa è AI Language School 🙂\\n\\nIo sono Luca, il tuo tutor. Qui pratichiamo ${lang} con un tocco British 🇬🇧.\\n\\n🎧 Invia vocali di 1–2 frasi: ti rispondo e ti correggo in modo semplice.\\n💾 Ricordo il tuo livello per adattare gli esercizi.\\n🎯 Puoi cambiare livello con /level\\n🎧 Puoi attivare o disattivare le risposte vocali con /voice\\n`; })() }}",
     "level_label_beginner": "Principiante (A1-A2)",
     "level_label_conversational": "Intermedio (B1-B2)",
-    "level_label_advanced": "Avanzato (C1+)"
+    "level_label_advanced": "Avanzato (C1+)",
+    "starter_prompt_text": "Scegli un tema per iniziare 👇 Ti faccio la prima domanda.",
+    "starter_btn_intro": "Presentati",
+    "starter_btn_day": "La tua giornata",
+    "starter_btn_weekend": "Piani weekend",
+    "starter_question_intro": "Can you introduce yourself in 2-3 sentences?",
+    "starter_question_day": "How was your day today? Tell me 1-2 things.",
+    "starter_question_weekend": "What are your weekend plans?"
   },
   "telegram_presentation": {
     "name": "Luca 🇮🇹→🇬🇧 tutor di inglese",
