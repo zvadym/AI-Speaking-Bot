@@ -1063,30 +1063,9 @@ async function processBroadcastCampaign(campaignId) {
         const botKey = recipientBotKey || normalizeBotKey(env.defaultBotKey) || 'uk-de';
 
         try {
-          // Send via n8n webhook instead of direct Telegram API
-          const url = webhookUrlForBot(env.broadcastWebhookUrl, 'send-message', botKey);
-          
-          if (!url) {
-            throw new Error('BROADCAST_WEBHOOK_URL not configured');
-          }
-
-          const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: row.chat_id,
-              message_text: telegramSafeMessageText,
-              bot_key: botKey
-            })
-          });
-
-          if (!resp.ok) {
-            const body = await resp.text().catch(() => '');
-            throw new Error(`Webhook returned ${resp.status}: ${body}`);
-          }
-
-          // n8n webhook doesn't return message_id, so we leave it null
-          // If needed, we can update n8n workflow to return it in the response
+          const telegramResult = await sendTelegramTextMessage(row.chat_id, telegramSafeMessageText, { botKey });
+          const messageId = Number(telegramResult?.message_id ?? 0);
+          telegramMessageId = Number.isFinite(messageId) && messageId > 0 ? messageId : null;
         } catch (err) {
           status = 'failed';
           lastError = sanitizeErrorText(err?.message || String(err));
@@ -1160,10 +1139,12 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
      SELECT
        COUNT(*)::int AS total_users_all_time,
        SUM((is_active)::int)::int AS active_users_all_time,
+       SUM((NOT is_active)::int)::int AS inactive_users_all_time,
        SUM((effective_tier = 'plus')::int)::int AS plus_users_all_time,
        SUM((effective_tier = 'pro')::int)::int AS pro_users_all_time,
        COUNT(*) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS total_users_in_range,
        SUM((is_active)::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS active_users_in_range,
+       SUM((NOT is_active)::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS inactive_users_in_range,
        SUM((effective_tier = 'plus')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS plus_users_in_range,
        SUM((effective_tier = 'pro')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS pro_users_in_range
      FROM filtered`,
@@ -1178,10 +1159,12 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
     totals: rows[0] || {
       total_users_all_time: 0,
       active_users_all_time: 0,
+      inactive_users_all_time: 0,
       plus_users_all_time: 0,
       pro_users_all_time: 0,
       total_users_in_range: 0,
       active_users_in_range: 0,
+      inactive_users_in_range: 0,
       plus_users_in_range: 0,
       pro_users_in_range: 0
     }

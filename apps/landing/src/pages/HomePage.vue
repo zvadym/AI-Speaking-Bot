@@ -578,14 +578,12 @@ function billingIntervalLabel(intervalRaw) {
 }
 
 .contact-inner {
-  min-height: calc(100svh - 104px);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  gap: 10px;
 }
 
 .contact-footer-wrap {
-  margin-top: auto;
-  padding-top: 10px;
+  padding-top: 0;
 }
 
 @keyframes cue-bounce {

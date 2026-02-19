@@ -97,6 +97,11 @@
           <div class="meta">All-time: {{ fmt(totals.active_users_all_time) }} / {{ fmt(totals.total_users_all_time) }}</div>
         </div>
         <div class="stat">
+          <div class="label">Inactive users</div>
+          <div class="value">{{ fmt(totals.inactive_users_all_time) }}</div>
+          <div class="meta">Current users with failed Telegram delivery</div>
+        </div>
+        <div class="stat">
           <div class="label">Pro (range)</div>
           <div class="value">{{ fmt(totals.pro_users_in_range) }}</div>
           <div class="meta">All-time: {{ fmt(totals.pro_users_all_time) }}</div>
@@ -614,9 +619,11 @@ const previewUpdatedAt = ref('');
 const totals = ref({
   total_users_all_time: 0,
   active_users_all_time: 0,
+  inactive_users_all_time: 0,
   pro_users_all_time: 0,
   total_users_in_range: 0,
   active_users_in_range: 0,
+  inactive_users_in_range: 0,
   pro_users_in_range: 0
 });
 
