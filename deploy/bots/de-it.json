@@ -50,7 +50,7 @@
     "hints_intro": "Hier sind ein paar Sätze, die du als Nächstes sagen kannst:",
     "hints_empty": "Für diese Nachricht habe ich noch keine Vorschläge vorbereitet. Versuch es mit der nächsten Antwort.",
     "choose_level_text": "Wähle dein Niveau 👇",
-    "hi_message_text": "={{ (() => { const lang = $('Settings').item.json.learning_language === 'it' ? 'Italienisch' : 'Englisch'; return `Ciao! Hier ist AI Language School 🙂\\n\\nIch bin Giulia, deine Tutorin. Hier üben wir ${lang}.\\n\\n🎧 Schick mir Sprachnachrichten mit 1–2 Sätzen: Ich antworte dir und korrigiere sanft.\\n💾 Ich merke mir dein Niveau, damit alles zu dir passt.\\n🎯 Dein Niveau kannst du jederzeit mit /level ändern\\n🎧 Sprachantworten kannst du mit /voice ein- oder ausschalten\\n`; })() }}",
+    "hi_message_text": "Hallo! Ich bin Giulia, deine Tutorin bei AI Language School 🙂\nWir üben Italienisch: Schick mir 1–2 Sätze als Sprachnachricht 🎙️, ich korrigiere sanft.\n🌐 https://ai-language-school.online/de",
     "choose_voice_mode_text": "Wie möchtest du meine Antworten erhalten: Sprache oder Text? 🎧💬",
     "voice_mode_text": "💬 Text",
     "voice_mode_voice": "🎧 Stimme",

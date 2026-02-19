@@ -50,7 +50,7 @@
     "hints_intro": "Here are a few options you can say next:",
     "hints_empty": "I don’t have suggestions for this message yet. Try with the next reply.",
     "choose_level_text": "Choose your level 👇",
-    "hi_message_text": "={{ (() => { const lang = $('Settings').item.json.learning_language === 'es' ? 'Spanish' : 'English'; return `Hi! This is AI Language School 🙂\\n\\nI’m Mateo, your tutor. Here we practice ${lang}.\\n\\n🎧 Send voice messages with 1–2 sentences and I’ll reply with gentle corrections.\\n💾 I remember your level to keep practice comfortable.\\n🎯 You can change your level with /level\\n🎧 You can switch voice replies on/off with /voice\\n`; })() }}",
+    "hi_message_text": "Hi! I’m Mateo, your tutor at AI Language School 🙂\nPractice Spanish with me: send a 1–2 sentence voice message 🎙️ and I’ll reply with gentle corrections.\n🌐 https://ai-language-school.online/en",
     "choose_voice_mode_text": "How would you like to receive my replies: voice or text? 🎧💬",
     "voice_mode_text": "💬 Text",
     "voice_mode_voice": "🎧 Voice",
