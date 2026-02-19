@@ -164,7 +164,10 @@
   "teachers": {
     "title": "Teachers",
     "subhead": "Browse teachers and start your next lesson on Telegram.",
-    "baseTeachersHeading": "Base language: {language}",
+    "baseLanguageLabel": "Base language",
+    "baseTeachersHeading": "{language}-speaking teachers",
+    "baseTeachersSubhead": "Learn {targets} with teachers who explain in {language}.",
+    "baseTeachersSubheadFallback": "Practice with teachers who explain in {language}.",
     "showMoreTeachers": "Show more",
     "showLessTeachers": "Show less",
     "empty": "No teachers available yet."

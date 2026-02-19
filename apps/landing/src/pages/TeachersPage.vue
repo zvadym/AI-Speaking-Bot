@@ -14,7 +14,21 @@
           :class="['teachers-section', { primary: section.isPrimary }]"
         >
           <header class="section-head">
+            <p class="section-eyebrow">{{ t('teachers.baseLanguageLabel') }}</p>
             <h2 class="h3 section-title">{{ t('teachers.baseTeachersHeading', { language: section.label }) }}</h2>
+            <p class="muted section-sub">
+              {{
+                t(
+                  section.learningSummary ? 'teachers.baseTeachersSubhead' : 'teachers.baseTeachersSubheadFallback',
+                  { language: section.label, targets: section.learningSummary }
+                )
+              }}
+            </p>
+            <div v-if="section.learningLabels.length" class="section-language-pills">
+              <span v-for="target in section.learningLabels" :key="`${section.code}-${target}`" class="section-language-pill">
+                {{ target }}
+              </span>
+            </div>
           </header>
           <div class="grid-2 list">
             <TeacherCard v-for="teacher in section.teachers" :key="teacher.teacherKey || teacher.slug" :teacher="teacher" />
@@ -53,6 +67,19 @@ function languageLabelForCode(codeRaw) {
   return code.toUpperCase();
 }
 
+function formatLanguageList(labelsInput) {
+  const labels = Array.isArray(labelsInput) ? labelsInput.filter(Boolean) : [];
+  if (!labels.length) return '';
+  try {
+    return new Intl.ListFormat(locale.value || 'en', { style: 'long', type: 'conjunction' }).format(labels);
+  } catch {
+    if (labels.length === 1) return labels[0];
+    if (labels.length === 2) return `${labels[0]} & ${labels[1]}`;
+    const first = labels.slice(0, -1).join(', ');
+    return `${first}, ${labels[labels.length - 1]}`;
+  }
+}
+
 const normalizedTeachers = computed(() =>
   (Array.isArray(teachers) ? teachers : [])
     .map((teacher) => {
@@ -73,18 +100,29 @@ const sections = computed(() => {
   }
 
   return Array.from(grouped.entries())
-    .map(([code, rows]) => ({
-      code,
-      label: languageLabelForCode(code),
-      isPrimary: code === currentLocaleCode,
-      teachers: rows.slice().sort((a, b) => {
-        const aName = (a?.displayName?.[locale.value] || a?.displayName?.en || a?.slug || '').toString();
-        const bName = (b?.displayName?.[locale.value] || b?.displayName?.en || b?.slug || '').toString();
-        const byName = aName.localeCompare(bName);
-        if (byName !== 0) return byName;
-        return (a.slug || '').toString().localeCompare((b.slug || '').toString());
-      })
-    }))
+    .map(([code, rows]) => {
+      const learningCodes = Array.from(
+        new Set(rows.map((row) => normalizeLanguageCode(row?.learningLanguage)).filter(Boolean))
+      );
+      const learningLabels = learningCodes
+        .map((learningCode) => languageLabelForCode(learningCode))
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+      return {
+        code,
+        label: languageLabelForCode(code),
+        learningLabels,
+        learningSummary: formatLanguageList(learningLabels),
+        isPrimary: code === currentLocaleCode,
+        teachers: rows.slice().sort((a, b) => {
+          const aName = (a?.displayName?.[locale.value] || a?.displayName?.en || a?.slug || '').toString();
+          const bName = (b?.displayName?.[locale.value] || b?.displayName?.en || b?.slug || '').toString();
+          const byName = aName.localeCompare(bName);
+          if (byName !== 0) return byName;
+          return (a.slug || '').toString().localeCompare((b.slug || '').toString());
+        })
+      };
+    })
     .sort((a, b) => {
       if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
       return a.label.localeCompare(b.label);
@@ -146,15 +184,50 @@ const sections = computed(() => {
 }
 
 .section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.section-eyebrow {
+  margin: 0;
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
+  background: color-mix(in srgb, var(--surface) 76%, var(--bg));
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .section-title {
   margin: 0;
-  font-size: clamp(20px, 2.2vw, 28px);
+  font-size: clamp(21px, 2.2vw, 29px);
+}
+
+.section-sub {
+  margin: 0;
+  max-width: 64ch;
+  line-height: 1.55;
+}
+
+.section-language-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.section-language-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
+  background: color-mix(in srgb, var(--surface) 66%, var(--bg));
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .list {

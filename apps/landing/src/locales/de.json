@@ -164,7 +164,10 @@
   "teachers": {
     "title": "Lehrkräfte",
     "subhead": "Lehrkräfte ansehen und deine nächste Lektion in Telegram starten.",
-    "baseTeachersHeading": "Basissprache: {language}",
+    "baseLanguageLabel": "Basissprache",
+    "baseTeachersHeading": "Lehrkräfte mit Basissprache {language}",
+    "baseTeachersSubhead": "{targets} lernen mit Lehrkräften, die auf {language} erklären.",
+    "baseTeachersSubheadFallback": "Mit Lehrkräften üben, die auf {language} erklären.",
     "showMoreTeachers": "Mehr anzeigen",
     "showLessTeachers": "Weniger anzeigen",
     "empty": "Noch keine Lehrkräfte verfügbar."

@@ -164,7 +164,10 @@
   "teachers": {
     "title": "Викладачі",
     "subhead": "Переглянь викладачів і почни наступний урок у Telegram.",
-    "baseTeachersHeading": "Мова викладання: {language}",
+    "baseLanguageLabel": "Базова мова",
+    "baseTeachersHeading": "Викладачі з базовою мовою {language}",
+    "baseTeachersSubhead": "Вивчайте {targets} з викладачами, які пояснюють {language}.",
+    "baseTeachersSubheadFallback": "Практикуйтеся з викладачами, які пояснюють {language}.",
     "showMoreTeachers": "Показати більше",
     "showLessTeachers": "Показати менше",
     "empty": "Поки немає доступних викладачів."
