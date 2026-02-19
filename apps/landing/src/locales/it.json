@@ -10,7 +10,10 @@
   },
   "cta": {
     "start": "Vedi insegnanti",
+    "try": "TRY",
+    "tryNow": "Prova ora",
     "openTelegram": "Apri su Telegram",
+    "close": "Chiudi",
     "viewProfile": "Profilo",
     "allTeachers": "Tutti gli insegnanti",
     "backToTeachers": "Torna agli insegnanti"
@@ -20,6 +23,8 @@
     "seoTitle": "AI Language School | Bot per imparare le lingue su Telegram",
     "seoDescription": "Allena lo speaking su Telegram con un tutor AI: invia messaggi vocali o testo, ricevi correzioni immediate, frasi più naturali, supporto traduzione e suggerimenti per la risposta successiva.",
     "subhead": "Allena lo speaking su Telegram con un tutor AI: invia voce o testo, ricevi correzioni immediate e suggerimenti pratici per continuare la conversazione.",
+    "tryModalTitle": "Scegli un insegnante",
+    "tryModalSubhead": "Scegli un insegnante per aprire la chat in Telegram.",
     "meetTeachers": "Scopri gli insegnanti",
     "chat": {
       "you": "Tu",

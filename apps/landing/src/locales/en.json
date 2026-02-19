@@ -10,7 +10,10 @@
   },
   "cta": {
     "start": "Browse teachers",
+    "try": "TRY",
+    "tryNow": "Try now",
     "openTelegram": "Open in Telegram",
+    "close": "Close",
     "viewProfile": "View profile",
     "allTeachers": "All teachers",
     "backToTeachers": "Back to teachers"
@@ -20,6 +23,8 @@
     "seoTitle": "AI Language School | Voice-first language learning bot in Telegram",
     "seoDescription": "Practice speaking in Telegram with an AI language tutor. Send voice or text, get instant corrections, natural phrasing, translation support, and follow-up prompts.",
     "subhead": "Practice speaking in Telegram with an AI tutor: send voice or text, get instant corrections, and keep the conversation going with useful next-step prompts.",
+    "tryModalTitle": "Choose a teacher",
+    "tryModalSubhead": "Pick a teacher to open their Telegram chat.",
     "meetTeachers": "See teachers",
     "chat": {
       "you": "You",

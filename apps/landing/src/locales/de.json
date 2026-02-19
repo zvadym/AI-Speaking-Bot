@@ -10,7 +10,10 @@
   },
   "cta": {
     "start": "Lehrkräfte ansehen",
+    "try": "TRY",
+    "tryNow": "Jetzt testen",
     "openTelegram": "In Telegram öffnen",
+    "close": "Schließen",
     "viewProfile": "Profil ansehen",
     "allTeachers": "Alle Lehrkräfte",
     "backToTeachers": "Zurück zu den Lehrkräften"
@@ -20,6 +23,8 @@
     "seoTitle": "AI Language School | Sprachlern-Bot mit Fokus auf Sprechen in Telegram",
     "seoDescription": "Trainiere Sprechen in Telegram mit einem KI-Sprachcoach. Sende Sprache oder Text, erhalte sofortige Korrekturen, natürlichere Formulierungen, Übersetzungshilfe und Anschlussfragen.",
     "subhead": "Trainiere Sprechen in Telegram mit einem KI-Coach: sende Sprache oder Text, erhalte sofortige Korrekturen und halte den Dialog mit praktischen Anschlussimpulsen am Laufen.",
+    "tryModalTitle": "Lehrkraft wählen",
+    "tryModalSubhead": "Wähle eine Lehrkraft und öffne den Chat in Telegram.",
     "meetTeachers": "Lehrkräfte entdecken",
     "chat": {
       "you": "Du",

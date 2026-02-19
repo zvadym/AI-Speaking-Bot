@@ -108,6 +108,18 @@
             </div>
           </div>
         </div>
+
+        <button type="button" class="try-now" :aria-label="t('cta.tryNow')" @click="tryModalOpen = true">
+          <span class="telegram-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M20.66 4.21a2.05 2.05 0 0 0-2.08-.24L3.61 10.3a1.17 1.17 0 0 0 .09 2.18l3.08 1.06 1.16 4.38a1.19 1.19 0 0 0 2.02.51l2.2-2.26 4.24 3.14a1.77 1.77 0 0 0 2.78-1.01l2.46-12.3a2.05 2.05 0 0 0-.98-1.79Z" />
+              <path d="m8.01 13.14 8.99-5.49a.45.45 0 0 1 .57.67l-7.39 7.36-.47 2.34-.95-3.55a1.46 1.46 0 0 1-.75-1.33Z" />
+            </svg>
+          </span>
+          <span class="try-now-text">{{ t('cta.tryNow') }}</span>
+        </button>
+
+        <TeacherTryModal v-model:open="tryModalOpen" />
       </nav>
     </div>
   </header>
@@ -117,6 +129,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useRoute } from 'vue-router';
+import TeacherTryModal from './TeacherTryModal.vue';
 import { localizedPath, normalizeLocale, routeWithLocale, stripLocalePrefix, useI18n, supportedLocales } from '../i18n.js';
 
 const { t, locale, setAppLocale } = useI18n();
@@ -127,6 +140,7 @@ const activeSection = ref('');
 let observer = null;
 let rafId = 0;
 let isScrollBound = false;
+const tryModalOpen = ref(false);
 const isLocaleMenuOpen = ref(false);
 const localePickerRef = ref(null);
 const LOCALE_FLAGS = {
@@ -374,11 +388,13 @@ onBeforeUnmount(() => {
   min-width: 0;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
 }
 
 .nav-rail {
-  width: 100%;
   max-width: 760px;
+  flex: 0 1 760px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -442,6 +458,57 @@ onBeforeUnmount(() => {
   align-items: center;
   flex: 0 0 132px;
   min-width: 132px;
+}
+
+.try-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #229ed9 24%, var(--border));
+  background:
+    radial-gradient(140% 140% at 10% 10%, color-mix(in srgb, #229ed9 18%, transparent), transparent 55%),
+    radial-gradient(140% 140% at 90% 84%, color-mix(in srgb, #34d399 14%, transparent), transparent 58%),
+    color-mix(in srgb, var(--bg) 90%, var(--surface));
+  color: var(--fg);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+  transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+.try-now * {
+  cursor: pointer;
+}
+
+.try-now:hover {
+  border-color: color-mix(in srgb, #229ed9 42%, var(--border));
+  transform: translateY(-1px);
+}
+
+.try-now:active {
+  transform: translateY(0);
+}
+
+.telegram-mark {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, #229ed9 78%, var(--fg));
+}
+
+.telegram-mark svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.try-now-text {
+  white-space: nowrap;
 }
 
 .locale-picker {
@@ -603,10 +670,12 @@ onBeforeUnmount(() => {
 
   .nav {
     width: 100%;
+    justify-content: space-between;
   }
 
   .nav-rail {
     max-width: none;
+    flex: 1 1 auto;
   }
 }
 
@@ -626,6 +695,19 @@ onBeforeUnmount(() => {
   .nav-actions {
     flex-basis: 116px;
     min-width: 116px;
+  }
+
+  .nav {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .try-now-text {
+    display: none;
+  }
+  .try-now {
+    padding: 10px;
   }
 }
 </style>
