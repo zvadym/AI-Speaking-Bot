@@ -42,23 +42,12 @@
           </p>
           <div class="manage-usage" v-if="usage">
             <div class="usage-item">
-              <span class="label">{{ $t('subscription.manage.practiceTime') }}</span>
-              <div class="usage-bar">
-                <div class="usage-track">
-                  <div
-                    class="usage-fill"
-                    :style="{ width: `${usagePercent(usage.used_user, usage.limit_user)}%` }"
-                  ></div>
-                </div>
-              </div>
-            </div>
-            <div class="usage-item">
-              <span class="label">{{ $t('subscription.manage.voiceReplies') }}</span>
+              <span class="label">{{ $t('subscription.manage.voiceTotal') }}</span>
               <div class="usage-bar">
                 <div class="usage-track">
                   <div
                     class="usage-fill accent"
-                    :style="{ width: `${usagePercent(usage.used_tts, usage.limit_tts)}%` }"
+                    :style="{ width: `${usagePercent(totalVoiceUsed(usage), totalVoiceLimit(usage))}%` }"
                   ></div>
                 </div>
               </div>
@@ -298,6 +287,18 @@ function formatPrice(cents) {
 function usagePercent(used, limit) {
   if (!limit || limit <= 0) return 0;
   return Math.min(100, Math.round((used / limit) * 100));
+}
+
+function totalVoiceUsed(usageData) {
+  if (!usageData || typeof usageData !== 'object') return 0;
+  if (Number.isFinite(Number(usageData.used_total))) return Number(usageData.used_total);
+  return Number(usageData.used_user || 0) + Number(usageData.used_tts || 0);
+}
+
+function totalVoiceLimit(usageData) {
+  if (!usageData || typeof usageData !== 'object') return 0;
+  if (Number.isFinite(Number(usageData.limit_total))) return Number(usageData.limit_total);
+  return Number(usageData.limit_user || 0) + Number(usageData.limit_tts || 0);
 }
 
 const proPlans = computed(() =>

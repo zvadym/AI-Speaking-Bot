@@ -644,24 +644,21 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         a.last_activity_at,
         COALESCE(w.used_user, 0)::int AS used_user,
         COALESCE(w.used_tts, 0)::int AS used_tts,
+        (COALESCE(w.used_user, 0) + COALESCE(w.used_tts, 0))::int AS used_total,
         COALESCE(p.user_audio_seconds_per_week, 0)::int AS limit_user,
         COALESCE(p.tts_seconds_per_week, 0)::int AS limit_tts,
-        GREATEST(
-          CASE
-            WHEN COALESCE(p.user_audio_seconds_per_week, 0) > 0
-              THEN (COALESCE(w.used_user, 0)::numeric * 100.0) / p.user_audio_seconds_per_week
-            ELSE 0
-          END,
-          CASE
-            WHEN COALESCE(p.tts_seconds_per_week, 0) > 0
-              THEN (COALESCE(w.used_tts, 0)::numeric * 100.0) / p.tts_seconds_per_week
-            ELSE 0
-          END
-        )::numeric AS usage_percent,
+        (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0))::int AS limit_total,
+        CASE
+          WHEN (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0)) > 0
+            THEN ((COALESCE(w.used_user, 0) + COALESCE(w.used_tts, 0))::numeric * 100.0)
+              / (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0))
+          ELSE 0
+        END::numeric AS usage_percent,
         (
-          (COALESCE(p.user_audio_seconds_per_week, 0) > 0 AND COALESCE(w.used_user, 0) >= p.user_audio_seconds_per_week)
-          OR
-          (COALESCE(p.tts_seconds_per_week, 0) > 0 AND COALESCE(w.used_tts, 0) >= p.tts_seconds_per_week)
+          (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0)) > 0
+          AND
+          (COALESCE(w.used_user, 0) + COALESCE(w.used_tts, 0))
+            >= (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0))
         ) AS limit_reached
       FROM effective_users e
       LEFT JOIN last_activity a ON a.chat_id = e.chat_id
@@ -680,8 +677,10 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         e.last_activity_at,
         e.used_user,
         e.used_tts,
+        e.used_total,
         e.limit_user,
         e.limit_tts,
+        e.limit_total,
         e.usage_percent,
         e.limit_reached
       FROM enriched e
@@ -1915,6 +1914,7 @@ app.get('/plans', requireAuth, async (req, res) => {
 
   const { rows: plans } = await pool.query(
     `SELECT p.tier, p.user_audio_seconds_per_week, p.tts_seconds_per_week,
+            (p.user_audio_seconds_per_week + p.tts_seconds_per_week)::int AS voice_seconds_per_week,
             pp.currency, pp.amount_cents, pp.billing_interval, pp.stripe_price_id
        FROM plans p
        LEFT JOIN plan_prices pp
@@ -1969,7 +1969,8 @@ app.get('/plans', requireAuth, async (req, res) => {
          SELECT
            tier,
            user_audio_seconds_per_week AS limit_user,
-           tts_seconds_per_week AS limit_tts
+           tts_seconds_per_week AS limit_tts,
+           (user_audio_seconds_per_week + tts_seconds_per_week)::int AS limit_total
          FROM plans
          WHERE tier = (SELECT effective_tier FROM effective)
          LIMIT 1
@@ -1991,10 +1992,13 @@ app.get('/plans', requireAuth, async (req, res) => {
          (SELECT pending_plan_effective_at FROM effective) AS pending_plan_effective_at,
          (SELECT limit_user FROM p) AS limit_user,
          (SELECT limit_tts FROM p) AS limit_tts,
+         (SELECT limit_total FROM p) AS limit_total,
          COALESCE((SELECT used_user FROM w), 0) AS used_user,
          COALESCE((SELECT used_tts FROM w), 0) AS used_tts,
+         COALESCE((SELECT used_user FROM w), 0) + COALESCE((SELECT used_tts FROM w), 0) AS used_total,
          GREATEST((SELECT limit_user FROM p) - COALESCE((SELECT used_user FROM w), 0), 0) AS remaining_user,
-         GREATEST((SELECT limit_tts FROM p) - COALESCE((SELECT used_tts FROM w), 0), 0) AS remaining_tts`,
+         GREATEST((SELECT limit_tts FROM p) - COALESCE((SELECT used_tts FROM w), 0), 0) AS remaining_tts,
+         GREATEST((SELECT limit_total FROM p) - (COALESCE((SELECT used_user FROM w), 0) + COALESCE((SELECT used_tts FROM w), 0)), 0) AS remaining_total`,
       [chatId]
     );
     usage = usageRows[0] || null;
