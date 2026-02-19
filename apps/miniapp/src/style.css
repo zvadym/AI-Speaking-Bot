@@ -2,6 +2,7 @@
   font-family: 'Chivo', system-ui, sans-serif;
   --font-display: 'Fraunces', serif;
   --font-body: 'Chivo', system-ui, sans-serif;
+  --button-max-height: 120px;
   color-scheme: light;
   --ink: #1e1a16;
   --muted: #7a6a59;
@@ -21,6 +22,8 @@ button {
   font: inherit;
   color: inherit;
   -webkit-tap-highlight-color: transparent;
+  max-height: var(--button-max-height);
+  align-self: start;
 }
 
 body {
