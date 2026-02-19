@@ -156,15 +156,10 @@
   },
   "contact": {
     "title": "Contact",
-    "subhead": "Have a question or feedback? Send a message — we read everything.",
-    "name": "Name",
-    "telegram": "Telegram",
-    "message": "Message",
-    "send": "Send",
-    "sending": "Sending…",
-    "sent": "Sent. Thank you!",
-    "error": "Could not send. Try again later.",
-    "unavailable": "Contact is temporarily unavailable."
+    "subhead": "For feedback, use the bot directly in Telegram.",
+    "stepOpenBot": "Open your bot in Telegram.",
+    "stepTypeCommand": "Type",
+    "stepSend": "Send your feedback as text or audio."
   },
   "teachers": {
     "title": "Teachers",

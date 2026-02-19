@@ -9,12 +9,10 @@ Teacher thumbnails are generated into `apps/landing/public/teachers/thumbnail/*.
 
 Optional:
 
-- `NUXT_PUBLIC_CONTACT_WEBHOOK_URL` — n8n webhook URL that receives contact form submissions.
 - `NUXT_PUBLIC_SITE_URL` — canonical site origin for SEO links and sitemap URLs (defaults to `https://ai-language-school.online`).
 
 Temporary backwards-compatible fallbacks are supported:
 
-- `VITE_CONTACT_WEBHOOK_URL`
 - `VITE_SITE_URL`
 
 ## Local dev

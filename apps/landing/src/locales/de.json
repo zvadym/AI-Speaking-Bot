@@ -156,15 +156,10 @@
   },
   "contact": {
     "title": "Kontakt",
-    "subhead": "Frage oder Feedback? Schreib uns - wir lesen alles.",
-    "name": "Name",
-    "telegram": "Telegram",
-    "message": "Nachricht",
-    "send": "Senden",
-    "sending": "Wird gesendet...",
-    "sent": "Gesendet. Danke!",
-    "error": "Senden fehlgeschlagen. Bitte später erneut versuchen.",
-    "unavailable": "Kontakt ist vorübergehend nicht verfügbar."
+    "subhead": "Für Feedback nutze den Bot direkt in Telegram.",
+    "stepOpenBot": "Öffne deinen Bot in Telegram.",
+    "stepTypeCommand": "Gib ein",
+    "stepSend": "Sende dein Feedback als Text oder Sprachnachricht."
   },
   "teachers": {
     "title": "Lehrkräfte",

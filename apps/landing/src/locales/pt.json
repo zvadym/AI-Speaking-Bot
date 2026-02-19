@@ -156,15 +156,10 @@
   },
   "contact": {
     "title": "Contato",
-    "subhead": "Tem uma pergunta ou feedback? Envie uma mensagem - lemos tudo.",
-    "name": "Nome",
-    "telegram": "Telegram",
-    "message": "Mensagem",
-    "send": "Enviar",
-    "sending": "Enviando...",
-    "sent": "Enviado. Obrigado!",
-    "error": "Não foi possível enviar. Tente novamente mais tarde.",
-    "unavailable": "Contato temporariamente indisponível."
+    "subhead": "Para feedback, use o bot diretamente no Telegram.",
+    "stepOpenBot": "Abra seu bot no Telegram.",
+    "stepTypeCommand": "Digite",
+    "stepSend": "Envie seu feedback como texto ou audio."
   },
   "teachers": {
     "title": "Professores",
