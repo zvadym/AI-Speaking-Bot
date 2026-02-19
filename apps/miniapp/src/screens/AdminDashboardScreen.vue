@@ -1238,6 +1238,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: flex-start;
 }
 
 .tab-btn {
@@ -1325,6 +1326,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: flex-start;
 }
 
 .btn {
@@ -1380,12 +1382,14 @@ h1 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .broadcast {
@@ -1613,6 +1617,7 @@ h1 {
 .feedback-pager {
   display: flex;
   gap: 10px;
+  align-items: flex-start;
 }
 
 .users-table-card {
@@ -1698,6 +1703,7 @@ h1 {
   padding: 14px 14px 12px;
   display: grid;
   gap: 6px;
+  align-self: start;
 }
 
 .label {
@@ -1761,6 +1767,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .bot-stat {
@@ -1770,6 +1777,7 @@ h1 {
   padding: 12px;
   display: grid;
   gap: 10px;
+  align-self: start;
 }
 
 .bot-stat-header {

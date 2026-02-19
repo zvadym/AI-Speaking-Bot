@@ -235,6 +235,7 @@ const pointDots = computed(() => {
   padding: 14px 14px 10px;
   display: grid;
   gap: 10px;
+  align-self: start;
 }
 
 .head {
@@ -324,4 +325,3 @@ svg {
   font-size: 12px;
 }
 </style>
-
