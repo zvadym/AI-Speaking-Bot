@@ -3,6 +3,94 @@
 
 export const teachers = [
   {
+    "slug": "de-en",
+    "teacherKey": "de-en",
+    "legacyPairSlug": "de-en",
+    "teacherSlugBase": "lina",
+    "publicSlugs": {
+      "en": "lina-english-teacher",
+      "de": "lina-englisch-teacher",
+      "es": "lina-ingles-teacher",
+      "pt": "lina-ingles-teacher",
+      "uk": "lina-anhliyska-teacher",
+      "it": "lina-inglese-teacher"
+    },
+    "botKey": "de-en",
+    "baseLanguage": "de",
+    "learningLanguage": "en",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/thumbnail/de-en.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/de-en.avif",
+      "webp": "/teachers/thumbnail/de-en.webp",
+      "png": "/teachers/thumbnail/de-en.png"
+    },
+    "displayName": {
+      "uk": "Lina",
+      "en": "Lina",
+      "it": "Lina"
+    },
+    "taglines": {
+      "uk": "Englisch für Alltag, Reisen und echte Gespräche 🇬🇧. Klare, sanfte Korrekturen.",
+      "en": "English for daily life, travel, and real conversations 🇬🇧. Clear and gentle feedback.",
+      "it": "Inglese per vita quotidiana, viaggi e conversazioni reali 🇬🇧. Correzioni chiare e delicate.",
+      "de": "Englisch für Alltag, Reisen und echte Gespräche 🇬🇧. Klare, sanfte Korrekturen."
+    },
+    "styleTags": [
+      "friendly",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/language_de_en_bot",
+    "canonicalLocale": "de",
+    "canonicalSlug": "lina-englisch-teacher",
+    "canonicalPath": "/de/teachers/lina-englisch-teacher"
+  },
+  {
+    "slug": "de-es",
+    "teacherKey": "de-es",
+    "legacyPairSlug": "de-es",
+    "teacherSlugBase": "mila",
+    "publicSlugs": {
+      "en": "mila-spanish-teacher",
+      "de": "mila-spanisch-teacher",
+      "es": "mila-espanol-teacher",
+      "pt": "mila-espanhol-teacher",
+      "uk": "mila-ispanska-teacher",
+      "it": "mila-spagnolo-teacher"
+    },
+    "botKey": "de-es",
+    "baseLanguage": "de",
+    "learningLanguage": "es",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/thumbnail/de-es.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/de-es.avif",
+      "webp": "/teachers/thumbnail/de-es.webp",
+      "png": "/teachers/thumbnail/de-es.png"
+    },
+    "displayName": {
+      "uk": "Mila",
+      "en": "Mila",
+      "it": "Mila"
+    },
+    "taglines": {
+      "uk": "Spanisch für Alltag, Reisen und echte Gespräche 🇪🇸. Klare, sanfte Korrekturen.",
+      "en": "Spanish for daily life, travel, and real conversations 🇪🇸. Clear and gentle feedback.",
+      "it": "Spagnolo per vita quotidiana, viaggi e conversazioni reali 🇪🇸. Correzioni chiare e delicate.",
+      "de": "Spanisch für Alltag, Reisen und echte Gespräche 🇪🇸. Klare, sanfte Korrekturen."
+    },
+    "styleTags": [
+      "friendly",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/language_de_es_bot",
+    "canonicalLocale": "de",
+    "canonicalSlug": "mila-spanisch-teacher",
+    "canonicalPath": "/de/teachers/mila-spanisch-teacher"
+  },
+  {
     "slug": "de-it",
     "teacherKey": "de-it",
     "legacyPairSlug": "de-it",
