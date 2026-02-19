@@ -1,6 +1,7 @@
 {
   "nav": {
     "home": "Inicio",
+    "features": "Funciones",
     "teachers": "Profesores",
     "pricing": "Precios",
     "blog": "Blog",
@@ -50,6 +51,30 @@
     },
     "teachersTitle": "Profesores",
     "teachersDesc": "Cada profesor tiene su propio estilo, idiomas y enfoque.",
+    "featuresTitle": "Funciones",
+    "featuresSubhead": "Herramientas centradas en voz para mantener la conversación en marcha.",
+    "featureCards": {
+      "voice": {
+        "tag": "Voz",
+        "title": "Mensajes de voz",
+        "desc": "Habla de forma natural con audio. El bot transcribe tu mensaje y responde con contexto."
+      },
+      "translation": {
+        "tag": "Traducir",
+        "title": "Traducción",
+        "desc": "Obtén ayuda de traducción al instante para seguir conversando sin bloquearte."
+      },
+      "followUp": {
+        "tag": "Seguimiento",
+        "title": "Seguimiento",
+        "desc": "Después de cada respuesta recibes sugerencias útiles para saber qué decir a continuación."
+      },
+      "memory": {
+        "tag": "Memoria",
+        "title": "Memoria",
+        "desc": "El bot recuerda el contexto de tu conversación para que la práctica sea continua y personalizada."
+      }
+    },
     "howTitle": "Cómo funciona",
     "steps": {
       "oneTitle": "Elige profesor y nivel",

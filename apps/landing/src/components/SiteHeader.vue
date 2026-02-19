@@ -8,6 +8,16 @@
           <div class="nav-links">
             <RouterLink
               class="nav-link"
+              :to="routeWithLocale('home', {}, { hash: '#features' })"
+              :class="{ active: activeSection === 'features' }"
+              active-class=""
+              exact-active-class=""
+            >
+              {{ t('nav.features') }}
+            </RouterLink>
+
+            <RouterLink
+              class="nav-link"
               :to="routeWithLocale('teachers')"
               :class="{ active: isTeachersActive }"
               active-class=""
@@ -106,7 +116,7 @@ import { localizedPath, normalizeLocale, routeWithLocale, stripLocalePrefix, use
 const { t, locale, setAppLocale } = useI18n();
 const route = useRoute();
 
-const SECTION_IDS = ['pricing', 'blog', 'about', 'contact'];
+const SECTION_IDS = ['features', 'pricing', 'blog', 'about', 'contact'];
 const activeSection = ref('');
 let observer = null;
 let rafId = 0;
@@ -530,16 +540,29 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1020px) {
+  .site-header .container {
+    padding-inline: clamp(22px, 3.4vw, 34px);
+  }
+
   .header-inner {
     flex-wrap: wrap;
+    row-gap: 10px;
   }
 
   .nav {
     width: 100%;
   }
+
+  .nav-rail {
+    max-width: none;
+  }
 }
 
 @media (max-width: 820px) {
+  .site-header .container {
+    padding-inline: 18px;
+  }
+
   .nav-rail {
     border-radius: 18px;
   }

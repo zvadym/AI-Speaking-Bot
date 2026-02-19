@@ -1,6 +1,7 @@
 {
   "nav": {
     "home": "Startseite",
+    "features": "Funktionen",
     "teachers": "Lehrkräfte",
     "pricing": "Preise",
     "blog": "Blog",
@@ -50,6 +51,30 @@
     },
     "teachersTitle": "Lehrkräfte",
     "teachersDesc": "Jede Lehrkraft hat einen eigenen Stil, Sprachen und Fokus.",
+    "featuresTitle": "Funktionen",
+    "featuresSubhead": "Voice-first Tools, die dein Gespräch im Fluss halten.",
+    "featureCards": {
+      "voice": {
+        "tag": "Voice",
+        "title": "Sprachnachrichten",
+        "desc": "Sende deine Nachricht als Audio. Der Bot transkribiert sie und antwortet mit passendem Kontext."
+      },
+      "translation": {
+        "tag": "Übersetzen",
+        "title": "Übersetzung",
+        "desc": "Erhalte schnelle Übersetzungshilfe, damit du beim Sprechen nicht aus dem Rhythmus kommst."
+      },
+      "followUp": {
+        "tag": "Follow-up",
+        "title": "Anschlussimpulse",
+        "desc": "Nach jeder Antwort bekommst du konkrete Ideen, was du als Nächstes sagen kannst."
+      },
+      "memory": {
+        "tag": "Memory",
+        "title": "Kontextspeicher",
+        "desc": "Der Bot merkt sich euren Gesprächsverlauf, damit deine Übung persönlich und zusammenhängend bleibt."
+      }
+    },
     "howTitle": "So funktioniert es",
     "steps": {
       "oneTitle": "Lehrkraft und Niveau wählen",

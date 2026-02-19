@@ -21,6 +21,29 @@
       </div>
     </section>
 
+    <section id="features" class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container reveal-up">
+          <div class="section-head stacked">
+            <div>
+              <h2 class="h2">{{ t('home.featuresTitle') }}</h2>
+              <p class="muted">{{ t('home.featuresSubhead') }}</p>
+            </div>
+          </div>
+
+          <div class="grid-2 feature-grid" style="--revealDelay: 120ms;">
+            <article v-for="item in featureCards" :key="item.id" class="card feature-card">
+              <div class="feature-tag">{{ item.tag }}</div>
+              <h3 class="h3">{{ item.title }}</h3>
+              <p class="muted feature-desc">{{ item.desc }}</p>
+            </article>
+          </div>
+        </div>
+        <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
+      </div>
+    </section>
+
     <section id="how" class="snap-section section">
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner">
@@ -187,6 +210,15 @@ import { routeWithLocale, useI18n } from '../i18n.js';
 const { t, tm, locale } = useI18n();
 
 const posts = computed(() => blogPosts.slice(0, 3));
+const featureCards = computed(() => {
+  const ids = ['voice', 'translation', 'followUp', 'memory'];
+  return ids.map((id) => ({
+    id,
+    tag: t(`home.featureCards.${id}.tag`),
+    title: t(`home.featureCards.${id}.title`),
+    desc: t(`home.featureCards.${id}.desc`)
+  }));
+});
 const faqItems = computed(() => {
   const raw = tm('faq.items');
   if (!Array.isArray(raw)) return [];
@@ -309,6 +341,34 @@ function billingIntervalLabel(intervalRaw) {
 
 .steps {
   margin-top: 16px;
+}
+
+.feature-grid {
+  margin-top: 18px;
+}
+
+.feature-card {
+  display: grid;
+  gap: 8px;
+}
+
+.feature-tag {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, var(--fg) 16%, var(--border));
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--fg) 80%, var(--muted));
+  background: color-mix(in srgb, var(--surface) 72%, var(--bg));
+}
+
+.feature-desc {
+  margin: 0;
+  line-height: 1.7;
 }
 
 .step-num {

@@ -1,6 +1,7 @@
 {
   "nav": {
     "home": "Home",
+    "features": "Funzionalità",
     "teachers": "Insegnanti",
     "pricing": "Prezzi",
     "blog": "Blog",
@@ -50,6 +51,30 @@
     },
     "teachersTitle": "Insegnanti",
     "teachersDesc": "Ogni insegnante ha il proprio stile, le lingue e un focus diverso.",
+    "featuresTitle": "Funzionalità",
+    "featuresSubhead": "Strumenti voice-first per mantenere la conversazione sempre attiva.",
+    "featureCards": {
+      "voice": {
+        "tag": "Voce",
+        "title": "Messaggi vocali",
+        "desc": "Parla in modo naturale con audio. Il bot trascrive il messaggio e risponde usando il contesto."
+      },
+      "translation": {
+        "tag": "Traduci",
+        "title": "Traduzione",
+        "desc": "Ottieni supporto traduzione in tempo reale per continuare a parlare senza bloccarti."
+      },
+      "followUp": {
+        "tag": "Follow-up",
+        "title": "Suggerimenti follow-up",
+        "desc": "Dopo ogni risposta ricevi idee pratiche su cosa dire subito dopo."
+      },
+      "memory": {
+        "tag": "Memoria",
+        "title": "Memoria",
+        "desc": "Il bot ricorda il contesto della conversazione, così la pratica resta continua e personalizzata."
+      }
+    },
     "howTitle": "Come funziona",
     "steps": {
       "oneTitle": "Scegli insegnante e livello",

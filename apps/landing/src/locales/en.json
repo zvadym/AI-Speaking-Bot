@@ -1,6 +1,7 @@
 {
   "nav": {
     "home": "Home",
+    "features": "Features",
     "teachers": "Teachers",
     "pricing": "Pricing",
     "blog": "Blog",
@@ -50,6 +51,30 @@
     },
     "teachersTitle": "Teachers",
     "teachersDesc": "Every teacher has their own style, languages, and focus.",
+    "featuresTitle": "Features",
+    "featuresSubhead": "Voice-first tools that keep the conversation moving.",
+    "featureCards": {
+      "voice": {
+        "tag": "Voice",
+        "title": "Voice messages",
+        "desc": "Speak naturally in audio. The bot transcribes your message and responds with context-aware guidance."
+      },
+      "translation": {
+        "tag": "Translate",
+        "title": "Translation",
+        "desc": "Get fast translation support whenever you need it, so you can stay in the flow instead of getting stuck."
+      },
+      "followUp": {
+        "tag": "Follow-up",
+        "title": "Follow-up",
+        "desc": "Receive useful next-reply ideas after each answer to keep your conversation active and natural."
+      },
+      "memory": {
+        "tag": "Memory",
+        "title": "Memory",
+        "desc": "The bot remembers your conversation context, so your practice feels continuous and personalized over time."
+      }
+    },
     "howTitle": "How it works",
     "steps": {
       "oneTitle": "Pick a teacher and level",
