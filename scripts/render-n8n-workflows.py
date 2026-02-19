@@ -78,6 +78,15 @@ LANGUAGE_LABELS = {
     "vi": "Vietnamese",
 }
 
+EXPLANATION_TITLES = {
+    # User-facing title used in explanation_html blocks.
+    "en": "Explanation",
+    "de": "Erklärung",
+    "it": "Spiegazione",
+    "uk": "Пояснення",
+    "ru": "Пояснение",
+}
+
 
 def to_env_key(credential_type: str) -> str:
     if credential_type in EXPLICIT_ENV:
@@ -177,7 +186,7 @@ def build_prompt_context(
         "base_language_label": get_language_label(base_language_code),
         "target_language_label": get_language_label(target_language_code),
         # Instruction fields - AI understands English, will respond in base_language
-        "explanation_title": "Explanation",
+        "explanation_title": EXPLANATION_TITLES.get(base_language_code, "Explanation"),
         "article_gender_example": (
             "we need the article ... and we use ..., because the noun has ... gender"
         ),
