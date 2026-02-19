@@ -81,7 +81,10 @@
                 :aria-expanded="isLocaleMenuOpen ? 'true' : 'false'"
                 @click="toggleLocaleMenu"
               >
-                <span class="locale-trigger-code">{{ currentLocaleOption.label }}</span>
+                <span class="locale-trigger-main">
+                  <span class="locale-trigger-flag" aria-hidden="true">{{ currentLocaleOption.flag }}</span>
+                  <span class="locale-trigger-code">{{ currentLocaleOption.label }}</span>
+                </span>
                 <span class="locale-trigger-caret" aria-hidden="true">▾</span>
               </button>
 
@@ -94,8 +97,11 @@
                   :aria-pressed="locale.value === opt.value"
                   @click="switchLocale(opt.value)"
                 >
-                  <span class="locale-item-code">{{ opt.label }}</span>
-                  <span class="locale-item-name">{{ opt.name }}</span>
+                  <span class="locale-item-flag" aria-hidden="true">{{ opt.flag }}</span>
+                  <span class="locale-item-meta">
+                    <span class="locale-item-name">{{ opt.name }}</span>
+                    <span class="locale-item-code">{{ opt.label }}</span>
+                  </span>
                   <span class="locale-item-check" aria-hidden="true">{{ locale.value === opt.value ? '✓' : '' }}</span>
                 </button>
               </div>
@@ -123,6 +129,14 @@ let rafId = 0;
 let isScrollBound = false;
 const isLocaleMenuOpen = ref(false);
 const localePickerRef = ref(null);
+const LOCALE_FLAGS = {
+  en: '🇺🇸',
+  de: '🇩🇪',
+  es: '🇪🇸',
+  pt: '🇵🇹',
+  uk: '🇺🇦',
+  it: '🇮🇹'
+};
 
 const routeSuffix = computed(() => stripLocalePrefix(route.path || '/'));
 const isHomeRoute = computed(() => routeSuffix.value === '/');
@@ -284,6 +298,7 @@ function onGlobalKeydown(event) {
 const localeOptions = computed(() => {
   return supportedLocales.map((value) => ({
     value,
+    flag: LOCALE_FLAGS[value] || '🏳️',
     label: value.toUpperCase(),
     name: t(`language.${value}`)
   }));
@@ -453,6 +468,19 @@ onBeforeUnmount(() => {
   transition: border-color 140ms ease, transform 140ms ease, background-color 140ms ease;
 }
 
+.locale-trigger-main {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.locale-trigger-flag {
+  font-size: 14px;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
 .locale-trigger-code {
   display: inline-block;
   min-width: 20px;
@@ -470,7 +498,8 @@ onBeforeUnmount(() => {
   top: calc(100% + 4px);
   right: 0;
   z-index: 20;
-  width: 210px;
+  width: 224px;
+  min-width: 100%;
   display: grid;
   gap: 2px;
   padding: 6px;
@@ -504,7 +533,7 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 10px;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
@@ -523,13 +552,36 @@ onBeforeUnmount(() => {
 .locale-item-code {
   font-size: 11px;
   letter-spacing: 0.05em;
-  font-weight: 800;
+  font-weight: 700;
+  text-transform: uppercase;
   color: var(--muted);
+  margin-left: auto;
 }
 
 .locale-item-name {
   font-size: 13px;
   font-weight: 650;
+  line-height: 1;
+}
+
+.locale-item-flag {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.locale-item-meta {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.locale-item-meta .locale-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .locale-item-check {
