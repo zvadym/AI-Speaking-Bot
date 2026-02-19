@@ -74,6 +74,7 @@ async function setLevel(code) {
       body: { level: code }
     });
     await props.refreshMe();
+    track('profile_set_level', { level: code, source: 'miniapp' });
     track('setting_saved', { key: 'level', value: code });
     props.toast(t('level.toasts.saved'));
   } catch (err) {

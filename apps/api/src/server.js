@@ -67,6 +67,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PURCHASE_ALLOWED_TIERS = new Set(['pro']);
 const PURCHASE_ALLOWED_BILLING_INTERVALS = new Set(['month', 'year']);
 const QUERY_TRUE_VALUES = new Set(['true', '1', 'yes']);
+const ACTION_EVENT_TYPES = [
+  'start',
+  'profile_set_level',
+  'first_voice_sent',
+  'first_answer_delivered',
+  'paywall_shown',
+  'purchase_success',
+  'day1_return'
+];
 
 function normalizeBillingInterval(raw, fallback = 'month') {
   const value = (raw ?? '').toString().trim().toLowerCase();
@@ -495,6 +504,73 @@ function parseAdminRange(req) {
   const payload = payloadRaw ? payloadRaw.slice(0, 200) : null;
 
   return { ok: true, from, to, payload };
+}
+
+function safeActionProperties(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  try {
+    return JSON.parse(JSON.stringify(raw));
+  } catch {
+    return {};
+  }
+}
+
+async function recordActionEvent({
+  chatId,
+  botKey = null,
+  actionType,
+  source = 'api',
+  idempotencyKey = null,
+  properties = {},
+  occurredAt = null
+}) {
+  if (!ACTION_EVENT_TYPES.includes(actionType)) return;
+  const normalizedChatId = Number(chatId);
+  if (!Number.isFinite(normalizedChatId)) return;
+
+  await pool.query(
+    `INSERT INTO action_events (
+       chat_id,
+       bot_key,
+       action_type,
+       source,
+       idempotency_key,
+       properties,
+       occurred_at
+     )
+     VALUES (
+       $1,
+       $2,
+       $3,
+       $4,
+       $5,
+       $6::jsonb,
+       COALESCE($7::timestamptz, NOW())
+     )
+     ON CONFLICT (idempotency_key) DO NOTHING`,
+    [
+      normalizedChatId,
+      normalizeBotKey(botKey),
+      actionType,
+      (source || 'api').toString().slice(0, 64),
+      idempotencyKey ? idempotencyKey.toString().slice(0, 200) : null,
+      JSON.stringify(safeActionProperties(properties)),
+      occurredAt
+    ]
+  );
+}
+
+async function recordActionEventSafe(payload) {
+  try {
+    await recordActionEvent(payload);
+  } catch (err) {
+    console.warn('action_events insert failed', {
+      actionType: payload?.actionType || null,
+      chatId: payload?.chatId || null,
+      botKey: payload?.botKey || null,
+      err: err?.message || String(err)
+    });
+  }
 }
 
 const BROADCAST_ALLOWED_TIERS = new Set(['free', 'plus', 'pro']);
@@ -1532,6 +1608,107 @@ app.get('/admin/metrics/acquisition-payloads', requireAdmin, async (req, res) =>
   });
 });
 
+app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     counts AS (
+       SELECT
+         date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+         e.action_type,
+         COUNT(*)::int AS count
+       FROM action_events e
+       JOIN filtered_users u ON u.chat_id = e.chat_id
+       WHERE e.occurred_at >= (SELECT from_ts FROM params)
+         AND e.occurred_at < (SELECT to_ts FROM params)
+         AND e.action_type = ANY($4::text[])
+       GROUP BY 1, 2
+     )
+     SELECT
+       d.day_utc::text AS day,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'start'), 0)::int AS start,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'profile_set_level'), 0)::int AS profile_set_level,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_voice_sent'), 0)::int AS first_voice_sent,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_answer_delivered'), 0)::int AS first_answer_delivered,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'paywall_shown'), 0)::int AS paywall_shown,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'purchase_success'), 0)::int AS purchase_success,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'day1_return'), 0)::int AS day1_return
+     FROM days d
+     LEFT JOIN counts c USING (day_utc)
+     GROUP BY d.day_utc
+     ORDER BY d.day_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload, ACTION_EVENT_TYPES]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/action-totals', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     action_types AS (
+       SELECT unnest($4::text[]) AS action_type
+     ),
+     counts AS (
+       SELECT
+         e.action_type,
+         COUNT(*)::int AS count
+       FROM action_events e
+       JOIN filtered_users u ON u.chat_id = e.chat_id
+       WHERE e.occurred_at >= $1::timestamptz
+         AND e.occurred_at < $2::timestamptz
+         AND e.action_type = ANY($4::text[])
+       GROUP BY e.action_type
+     )
+     SELECT
+       a.action_type AS action,
+       COALESCE(c.count, 0)::int AS count
+     FROM action_types a
+     LEFT JOIN counts c ON c.action_type = a.action_type
+     ORDER BY array_position($4::text[], a.action_type) ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload, ACTION_EVENT_TYPES]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
 app.get('/admin/feedbacks', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
@@ -2119,6 +2296,15 @@ app.post('/me/level', requireAuth, async (req, res) => {
   if (!rowCount) return res.status(404).json({ error: 'user_not_found' });
   const user = await getMeUserRow(chatId, currentBotKey);
   if (!user) return res.status(404).json({ error: 'user_not_found' });
+
+  await recordActionEventSafe({
+    chatId,
+    botKey: currentBotKey,
+    actionType: 'profile_set_level',
+    source: 'api',
+    properties: { level: raw, via: 'miniapp' }
+  });
+
   return res.json({ user });
 });
 
@@ -2854,15 +3040,50 @@ async function handleStripeEvent(event) {
     const session = obj;
     if (!session.customer || !session.subscription) return;
 
-    await pool.query(
-      `UPDATE users
-          SET stripe_customer_id = $1,
-              stripe_subscription_id = $2,
-              stripe_subscription_status = $3,
-              updated_at = NOW()
-        WHERE chat_id = $4`,
-      [session.customer, session.subscription, session.status, Number(session.client_reference_id)]
-    );
+    const sessionChatId = Number(session.client_reference_id);
+    if (Number.isFinite(sessionChatId)) {
+      await pool.query(
+        `UPDATE users
+            SET stripe_customer_id = $1,
+                stripe_subscription_id = $2,
+                stripe_subscription_status = $3,
+                updated_at = NOW()
+          WHERE chat_id = $4`,
+        [session.customer, session.subscription, session.status, sessionChatId]
+      );
+    } else {
+      console.warn('Stripe checkout.session.completed missing numeric client_reference_id', {
+        eventId: event.id,
+        client_reference_id: session.client_reference_id ?? null
+      });
+    }
+
+    const trackedChatId = Number.isFinite(sessionChatId)
+      ? sessionChatId
+      : (Number.isFinite(Number(paymentChatId)) ? Number(paymentChatId) : null);
+
+    if (trackedChatId) {
+      const trackedBotKey = await resolveUserBotKey(trackedChatId);
+      const occurredAt = typeof event?.created === 'number' ? new Date(event.created * 1000) : null;
+      await recordActionEventSafe({
+        chatId: trackedChatId,
+        botKey: trackedBotKey,
+        actionType: 'purchase_success',
+        source: 'stripe_webhook',
+        idempotencyKey: `purchase_success:${event.id}`,
+        occurredAt,
+        properties: {
+          stripe_event_id: event.id,
+          stripe_checkout_session_id: session.id || null,
+          stripe_customer_id: session.customer || null,
+          stripe_subscription_id: session.subscription || null,
+          amount_total: session.amount_total ?? null,
+          currency: session.currency || null,
+          tier: session.metadata?.tier || null,
+          billing_interval: session.metadata?.billing_interval || null
+        }
+      });
+    }
   }
 
   if (type.startsWith('customer.subscription.')) {

@@ -49,7 +49,7 @@
     "callback_hints_loading": "Preparing suggestions...",
     "hints_intro": "Here are a few options you can say next:",
     "hints_empty": "I don’t have suggestions for this message yet. Try with the next reply.",
-    "choose_level_text": "What’s your level? Choose 👇",
+    "choose_level_text": "Choose your level 👇",
     "hi_message_text": "={{ (() => { const lang = $('Settings').item.json.learning_language === 'de' ? 'German' : 'English'; return `Hi! This is AI Language School 🙂\\n\\nI’m John, your tutor. Here we practice ${lang}.\\n\\n🎧 Send voice messages with 1–2 sentences and I’ll reply with gentle corrections.\\n💾 I remember your level to keep practice comfortable.\\n🎯 You can change your level with /level\\n🎧 You can switch voice replies on/off with /voice\\n`; })() }}",
     "choose_voice_mode_text": "How would you like to receive my replies: voice or text? 🎧💬",
     "voice_mode_text": "💬 Text",
@@ -93,7 +93,10 @@
     "user_text_preview": "📝 Your text: ...",
     "msg_feedback_prompt": "Thanks! Please send your feedback as text or a voice message 🎙️",
     "msg_feedback_thanks": "Thanks! I received your feedback 💛",
-    "msg_feedback_needs_text_or_voice": "Please send feedback as text or voice message 🎙️"
+    "msg_feedback_needs_text_or_voice": "Please send feedback as text or voice message 🎙️",
+    "level_label_beginner": "Beginner (A1-A2)",
+    "level_label_conversational": "Conversational (B1-B2)",
+    "level_label_advanced": "Advanced (C1+)"
   },
   "telegram_presentation": {
     "name": "John 🇬🇧→🇩🇪 German tutor",

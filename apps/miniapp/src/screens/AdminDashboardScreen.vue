@@ -151,6 +151,22 @@
         />
 
         <AdminChart
+          title="Action events by day"
+          subtitle="Tracked product actions (stacked)"
+          kind="bar"
+          :data="actionEventsSeries"
+          :series="actionSeriesConfig"
+        />
+
+        <AdminChart
+          title="Action funnel totals"
+          subtitle="Total events in selected range"
+          kind="bar"
+          :data="actionTotalsSeries"
+          :series="[{ key: 'count', label: 'Events', color: 'rgba(87, 60, 127, 0.86)' }]"
+        />
+
+        <AdminChart
           title="Active users by day"
           subtitle="Active = at least one voice usage event that day"
           kind="bar"
@@ -608,6 +624,8 @@ const botStats = ref([]);
 
 const newUsersSeries = ref([]);
 const newPaidSeries = ref([]);
+const actionEventsSeries = ref([]);
+const actionTotalsSeries = ref([]);
 const activeUsersSeries = ref([]);
 const activeUsersByBotSeries = ref([]);
 const activeUsersByBotSeriesConfig = ref([]);
@@ -615,6 +633,15 @@ const inactiveUsersSeries = ref([]);
 const usageSecondsSeries = ref([]);
 const activeUsersByHourSeries = ref([]);
 const activeUsersByHourTodaySeries = ref([]);
+const actionSeriesConfig = [
+  { key: 'start', label: 'start', color: 'rgba(31, 107, 99, 0.88)' },
+  { key: 'profile_set_level', label: 'profile_set_level', color: 'rgba(199, 90, 36, 0.88)' },
+  { key: 'first_voice_sent', label: 'first_voice_sent', color: 'rgba(46, 88, 142, 0.88)' },
+  { key: 'first_answer_delivered', label: 'first_answer_delivered', color: 'rgba(103, 78, 167, 0.88)' },
+  { key: 'paywall_shown', label: 'paywall_shown', color: 'rgba(174, 43, 40, 0.86)' },
+  { key: 'purchase_success', label: 'purchase_success', color: 'rgba(117, 156, 56, 0.88)' },
+  { key: 'day1_return', label: 'day1_return', color: 'rgba(33, 124, 146, 0.88)' }
+];
 const usersRows = ref([]);
 const usersTotal = ref(0);
 const usersOffset = ref(0);
@@ -780,6 +807,13 @@ function displayTier(rawTier) {
   if (tier === 'free') return 'free';
   if (tier === 'pro') return 'pro';
   return 'pro';
+}
+
+function actionLabel(rawAction) {
+  return (rawAction || '')
+    .toString()
+    .trim()
+    .replaceAll('_', ' ');
 }
 
 function feedbackBody(row) {
@@ -964,11 +998,28 @@ async function refresh() {
   try {
     const q = query();
     const headers = adminHeaders();
-    const [summary, botStatsData, newUsers, newPaid, activeUsers, activeUsersByBot, inactiveUsers, usageSeconds, byHour, byHourToday, payloads, users] = await Promise.all([
+    const [
+      summary,
+      botStatsData,
+      newUsers,
+      newPaid,
+      actionEvents,
+      actionTotals,
+      activeUsers,
+      activeUsersByBot,
+      inactiveUsers,
+      usageSeconds,
+      byHour,
+      byHourToday,
+      payloads,
+      users
+    ] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers }),
       apiJson(props.apiBase, '/admin/metrics/new-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/new-paid-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/actions-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
@@ -983,6 +1034,13 @@ async function refresh() {
     botStats.value = Array.isArray(botStatsData?.bots) ? botStatsData.bots : [];
     newUsersSeries.value = Array.isArray(newUsers?.series) ? newUsers.series : [];
     newPaidSeries.value = Array.isArray(newPaid?.series) ? newPaid.series : [];
+    actionEventsSeries.value = Array.isArray(actionEvents?.series) ? actionEvents.series : [];
+    actionTotalsSeries.value = Array.isArray(actionTotals?.series)
+      ? actionTotals.series.map((row) => ({
+          day: actionLabel(row?.action),
+          count: Number(row?.count || 0)
+        }))
+      : [];
     activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];

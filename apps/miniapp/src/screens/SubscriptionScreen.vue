@@ -224,6 +224,33 @@ const statusMessage = computed(() => {
   return '';
 });
 
+function trackPurchaseSuccessOnce() {
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = (params.get('session_id') || '').toString().trim();
+  const isSuccessPath = window.location.pathname.endsWith('/success');
+  if (!sessionId && !isSuccessPath) return;
+
+  const dedupeKey = sessionId
+    ? `purchase_success:${sessionId}`
+    : `purchase_success:path:${window.location.pathname}`;
+
+  try {
+    const storageKey = 'miniapp_purchase_success_seen';
+    const existingRaw = window.sessionStorage.getItem(storageKey) || '';
+    const seen = new Set(existingRaw.split('|').filter(Boolean));
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    window.sessionStorage.setItem(storageKey, Array.from(seen).slice(-20).join('|'));
+  } catch {
+    // Best-effort dedupe only.
+  }
+
+  track('purchase_success', {
+    source: 'miniapp',
+    session_id: sessionId || null
+  });
+}
+
 const plans = computed(() => state.plans || []);
 const user = computed(() => state.user);
 const usage = computed(() => state.usage);
@@ -521,6 +548,7 @@ async function resume() {
 }
 
 onMounted(async () => {
+  trackPurchaseSuccessOnce();
   addDebugLog('subscription_screen_mounted', {
     path: window.location.pathname,
     search: window.location.search,
