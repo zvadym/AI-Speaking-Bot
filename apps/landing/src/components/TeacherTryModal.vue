@@ -61,6 +61,7 @@
                   v-for="teacher in sortedTeachersFor(section)"
                   :key="teacher.teacherKey || teacher.slug"
                   :teacher="teacher"
+                  :highlighted="isTeacherHighlighted(section, teacher)"
                   @choose="close"
                 />
               </TransitionGroup>
@@ -79,6 +80,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import TeacherTelegramCard from './TeacherTelegramCard.vue';
 import { teachers } from '../data/teachers.js';
 import { useI18n } from '../i18n.js';
+import { useTeacherLearningTargetSort } from '../lib/teacherLearningTargetSort.js';
 import { useTeacherSections } from '../lib/teacherSections.js';
 
 const props = defineProps({
@@ -97,50 +99,11 @@ const titleId = 'try-teacher-title';
 const closeBtnRef = ref(null);
 const dialogRef = ref(null);
 const previousOverflow = ref('');
-const activeLearningBySection = ref({});
+const { activeLearningCodeFor, toggleLearningTarget, sortedTeachersFor, isTeacherHighlighted, reset } =
+  useTeacherLearningTargetSort();
 
 function close() {
   emit('update:open', false);
-}
-
-function normalizeLanguageCode(input) {
-  const raw = (input || '').toString().trim().toLowerCase();
-  if (raw === 'ua' || raw === 'uk-ua' || raw === 'ua-ua') return 'uk';
-  if (!raw) return '';
-  return raw.split('-')[0];
-}
-
-function activeLearningCodeFor(sectionCode) {
-  return (activeLearningBySection.value?.[sectionCode] || '').toString();
-}
-
-function toggleLearningTarget(sectionCode, learningCode) {
-  const normalized = normalizeLanguageCode(learningCode);
-  const current = normalizeLanguageCode(activeLearningCodeFor(sectionCode));
-  if (normalized && normalized === current) {
-    const { [sectionCode]: _omitted, ...rest } = activeLearningBySection.value || {};
-    activeLearningBySection.value = rest;
-    return;
-  }
-  activeLearningBySection.value = {
-    ...(activeLearningBySection.value || {}),
-    [sectionCode]: normalized
-  };
-}
-
-function sortedTeachersFor(section) {
-  const selected = normalizeLanguageCode(activeLearningCodeFor(section.code));
-  if (!selected) return section.teachers;
-  const rows = Array.isArray(section.teachers) ? section.teachers : [];
-  return rows
-    .map((teacher, idx) => ({ teacher, idx }))
-    .sort((a, b) => {
-      const aMatches = normalizeLanguageCode(a.teacher?.learningLanguage) === selected;
-      const bMatches = normalizeLanguageCode(b.teacher?.learningLanguage) === selected;
-      if (aMatches !== bMatches) return aMatches ? -1 : 1;
-      return a.idx - b.idx;
-    })
-    .map((row) => row.teacher);
 }
 
 function onOverlayClick(event) {
@@ -171,7 +134,7 @@ watch(
       closeBtnRef.value?.focus?.();
       return;
     }
-    activeLearningBySection.value = {};
+    reset();
     unlockBodyScroll();
   },
   { immediate: true }

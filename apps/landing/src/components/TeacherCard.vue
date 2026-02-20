@@ -1,5 +1,5 @@
 <template>
-  <RouterLink class="card teacher-card" :to="teacherCanonicalPath">
+  <RouterLink :class="['card', 'teacher-card', { highlighted }]" :to="teacherCanonicalPath">
     <TeacherAvatar :teacher="teacher" :name="name" :size="64" />
 
     <div class="info">
@@ -26,6 +26,10 @@ const props = defineProps({
   teacher: {
     type: Object,
     required: true
+  },
+  highlighted: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -50,6 +54,13 @@ const teachesLine = computed(() => {
   align-items: start;
   padding: 18px;
   transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.teacher-card.highlighted {
+  border-color: color-mix(in srgb, #229ed9 40%, var(--border));
+  box-shadow:
+    0 16px 34px color-mix(in srgb, #229ed9 14%, transparent),
+    0 0 0 1px color-mix(in srgb, #229ed9 18%, transparent);
 }
 
 .teacher-card:hover {

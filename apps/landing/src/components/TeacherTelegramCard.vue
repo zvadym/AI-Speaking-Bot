@@ -1,6 +1,6 @@
 <template>
   <a
-    class="card teacher-card"
+    :class="['card', 'teacher-card', { highlighted }]"
     :href="telegramUrl"
     target="_blank"
     rel="noreferrer"
@@ -40,6 +40,10 @@ const props = defineProps({
   teacher: {
     type: Object,
     required: true
+  },
+  highlighted: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -74,6 +78,13 @@ const ariaLabel = computed(() => {
   align-items: start;
   padding: 18px;
   transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.teacher-card.highlighted {
+  border-color: color-mix(in srgb, #229ed9 42%, var(--border));
+  box-shadow:
+    0 18px 42px color-mix(in srgb, #229ed9 18%, transparent),
+    0 0 0 1px color-mix(in srgb, #229ed9 20%, transparent);
 }
 
 .teacher-card:hover {
