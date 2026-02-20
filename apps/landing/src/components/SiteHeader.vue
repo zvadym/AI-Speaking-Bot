@@ -395,6 +395,7 @@ onBeforeUnmount(() => {
 .nav-rail {
   max-width: 760px;
   flex: 0 1 760px;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -464,6 +465,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
   padding: 10px 12px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, #229ed9 24%, var(--border));
@@ -700,6 +702,36 @@ onBeforeUnmount(() => {
   .nav {
     gap: 10px;
   }
+
+  .nav-link {
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .header-inner {
+    padding: 12px 0;
+  }
+
+  .nav {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .nav-rail {
+    flex: 1 1 100%;
+  }
+
+  .nav-actions {
+    flex-basis: 96px;
+    min-width: 96px;
+  }
+
+  .nav-link {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
 }
 
 @media (max-width: 520px) {
@@ -708,6 +740,22 @@ onBeforeUnmount(() => {
   }
   .try-now {
     padding: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand {
+    max-width: 70vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .locale-trigger-code {
+    display: none;
+  }
+
+  .locale-trigger {
+    padding: 8px 10px;
   }
 }
 </style>

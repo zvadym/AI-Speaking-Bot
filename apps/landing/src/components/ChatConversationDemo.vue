@@ -314,14 +314,18 @@ onBeforeUnmount(() => clearDemoTimers());
 }
 
 .audio-bubble {
-  min-width: min(320px, 78%);
+  width: min(420px, 100%);
+  max-width: 92%;
+  min-width: 0;
 }
 
 .voice-card {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 280px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   border-radius: 26px;
   padding: 8px 10px;
 }
@@ -360,6 +364,7 @@ onBeforeUnmount(() => clearDemoTimers());
   display: grid;
   gap: 4px;
   width: 100%;
+  min-width: 0;
 }
 
 .voice-title {
@@ -375,6 +380,7 @@ onBeforeUnmount(() => clearDemoTimers());
   display: flex;
   align-items: flex-end;
   gap: 2px;
+  overflow: hidden;
 }
 
 .voice-wave-bar {
@@ -385,12 +391,14 @@ onBeforeUnmount(() => clearDemoTimers());
 }
 
 .voice-meta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
   font-weight: 800;
   opacity: 0.94;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .voice-check {
@@ -403,6 +411,11 @@ onBeforeUnmount(() => clearDemoTimers());
 
 .transcript-bubble {
   max-width: min(620px, 100%);
+}
+
+.transcript-bubble,
+.follow-up {
+  max-width: 92%;
 }
 
 .chat-translation {
@@ -495,5 +508,35 @@ onBeforeUnmount(() => clearDemoTimers());
 
 .phrase-list {
   gap: 6px;
+}
+
+@media (max-width: 420px) {
+  .bubble {
+    padding: 10px 12px;
+  }
+
+  .voice-card {
+    border-radius: 22px;
+    padding: 7px 9px;
+    gap: 8px;
+  }
+
+  .voice-play {
+    width: 40px;
+    height: 40px;
+  }
+
+  .voice-wave {
+    height: 16px;
+  }
+
+  .voice-wave-bar {
+    width: 2px;
+  }
+
+  .voice-meta {
+    font-size: 11px;
+    gap: 5px;
+  }
 }
 </style>
