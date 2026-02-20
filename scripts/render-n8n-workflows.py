@@ -202,7 +202,58 @@ def compose_locale_with_generated_prompts(
     *,
     bot_key: str,
 ) -> Dict[str, Any]:
-    merged = dict(locale)
+    def normalize_locale_value(value: Any) -> Any:
+        if isinstance(value, str):
+            # Bot configs sometimes contain literal "\\n" sequences. Telegram will display them as "\n"
+            # unless we normalize them to actual newlines before embedding into workflows.
+            return value.replace("\\r\\n", "\n").replace("\\n", "\n")
+        if isinstance(value, list):
+            return [normalize_locale_value(v) for v in value]
+        return value
+
+    merged = {k: normalize_locale_value(v) for k, v in dict(locale).items()}
+
+    base_language_code = normalize_language_code(prompt_context.get("base_language_code"))
+    hints_section_defaults: Dict[str, str]
+    if base_language_code == "de":
+        hints_section_defaults = {
+            "hints_section_question": "Frage:",
+            "hints_section_simple": "Einfache Variante:",
+            "hints_section_conversational": "Gesprächsvariante:",
+            "hints_section_advanced": "Fortgeschrittene Variante:",
+            "hints_section_phrases": "Nützliche Phrasen:",
+        }
+    elif base_language_code == "it":
+        hints_section_defaults = {
+            "hints_section_question": "Domanda:",
+            "hints_section_simple": "Versione semplice:",
+            "hints_section_conversational": "Versione colloquiale:",
+            "hints_section_advanced": "Versione avanzata:",
+            "hints_section_phrases": "Frasi utili:",
+        }
+    elif base_language_code == "uk":
+        hints_section_defaults = {
+            "hints_section_question": "Питання:",
+            "hints_section_simple": "Простий варіант:",
+            "hints_section_conversational": "Розмовний варіант:",
+            "hints_section_advanced": "Просунутий варіант:",
+            "hints_section_phrases": "Корисні фрази:",
+        }
+    else:
+        # Default to English (includes base_language_code == "en" and unknown codes).
+        hints_section_defaults = {
+            "hints_section_question": "Question:",
+            "hints_section_simple": "Simple version:",
+            "hints_section_conversational": "Conversational version:",
+            "hints_section_advanced": "Advanced version:",
+            "hints_section_phrases": "Useful phrases:",
+        }
+
+    for key, default_value in hints_section_defaults.items():
+        current = merged.get(key)
+        if not isinstance(current, str) or not current.strip():
+            merged[key] = default_value
+
     deprecated_present = [k for k in PROMPT_KEYS if k in merged]
     if deprecated_present:
         print(
