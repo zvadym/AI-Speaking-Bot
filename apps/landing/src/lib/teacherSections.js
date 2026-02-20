@@ -55,13 +55,18 @@ export function useTeacherSections(teachersRaw, localeRef, t) {
         const learningCodes = Array.from(
           new Set(rows.map((row) => normalizeLanguageCode(row?.learningLanguage)).filter(Boolean))
         );
-        const learningLabels = learningCodes
-          .map((learningCode) => languageLabelForCode(learningCode))
-          .filter(Boolean)
-          .sort((a, b) => a.localeCompare(b));
+        const learningLanguages = learningCodes
+          .map((learningCode) => ({
+            code: learningCode,
+            label: languageLabelForCode(learningCode)
+          }))
+          .filter((row) => row.code && row.label)
+          .sort((a, b) => a.label.localeCompare(b.label));
+        const learningLabels = learningLanguages.map((row) => row.label);
         return {
           code,
           label: languageLabelForCode(code),
+          learningLanguages,
           learningLabels,
           learningSummary: formatLanguageList(learningLabels),
           isPrimary: code === currentLocaleCode,
@@ -84,4 +89,3 @@ export function useTeacherSections(teachersRaw, localeRef, t) {
     sections
   };
 }
-

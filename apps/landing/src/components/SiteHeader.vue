@@ -3,6 +3,46 @@
     <div class="container header-inner">
       <RouterLink class="brand" :to="routeWithLocale('home')">AI Language School</RouterLink>
 
+      <div
+        ref="localePickerRef"
+        class="locale-picker header-locale"
+        :class="{ open: isLocaleMenuOpen }"
+        :aria-label="t('language.label')"
+      >
+        <button
+          class="locale-trigger"
+          type="button"
+          :aria-label="t('language.label')"
+          aria-haspopup="true"
+          :aria-expanded="isLocaleMenuOpen ? 'true' : 'false'"
+          @click="toggleLocaleMenu"
+        >
+          <span class="locale-trigger-main">
+            <span class="locale-trigger-flag" aria-hidden="true">{{ currentLocaleOption.flag }}</span>
+            <span class="locale-trigger-code">{{ currentLocaleOption.label }}</span>
+          </span>
+          <span class="locale-trigger-caret" aria-hidden="true">▾</span>
+        </button>
+
+        <div class="locale-menu">
+          <button
+            v-for="opt in localeOptions"
+            :key="opt.value"
+            class="locale-item"
+            type="button"
+            :aria-pressed="locale.value === opt.value"
+            @click="switchLocale(opt.value)"
+          >
+            <span class="locale-item-flag" aria-hidden="true">{{ opt.flag }}</span>
+            <span class="locale-item-meta">
+              <span class="locale-item-name">{{ opt.name }}</span>
+              <span class="locale-item-code">{{ opt.label }}</span>
+            </span>
+            <span class="locale-item-check" aria-hidden="true">{{ locale.value === opt.value ? '✓' : '' }}</span>
+          </button>
+        </div>
+      </div>
+
       <nav class="nav" aria-label="Primary">
         <div class="nav-rail">
           <div class="nav-links">
@@ -65,48 +105,6 @@
           </div>
 
           <div class="nav-divider" aria-hidden="true" />
-
-          <div class="nav-actions">
-            <div
-              ref="localePickerRef"
-              class="locale-picker"
-              :class="{ open: isLocaleMenuOpen }"
-              :aria-label="t('language.label')"
-            >
-              <button
-                class="locale-trigger"
-                type="button"
-                :aria-label="t('language.label')"
-                aria-haspopup="true"
-                :aria-expanded="isLocaleMenuOpen ? 'true' : 'false'"
-                @click="toggleLocaleMenu"
-              >
-                <span class="locale-trigger-main">
-                  <span class="locale-trigger-flag" aria-hidden="true">{{ currentLocaleOption.flag }}</span>
-                  <span class="locale-trigger-code">{{ currentLocaleOption.label }}</span>
-                </span>
-                <span class="locale-trigger-caret" aria-hidden="true">▾</span>
-              </button>
-
-              <div class="locale-menu">
-                <button
-                  v-for="opt in localeOptions"
-                  :key="opt.value"
-                  class="locale-item"
-                  type="button"
-                  :aria-pressed="locale.value === opt.value"
-                  @click="switchLocale(opt.value)"
-                >
-                  <span class="locale-item-flag" aria-hidden="true">{{ opt.flag }}</span>
-                  <span class="locale-item-meta">
-                    <span class="locale-item-name">{{ opt.name }}</span>
-                    <span class="locale-item-code">{{ opt.label }}</span>
-                  </span>
-                  <span class="locale-item-check" aria-hidden="true">{{ locale.value === opt.value ? '✓' : '' }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
 
         <button type="button" class="try-now" :aria-label="t('cta.tryNow')" @click="tryModalOpen = true">
@@ -368,14 +366,16 @@ onBeforeUnmount(() => {
 }
 
 .header-inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'brand nav locale';
   align-items: center;
-  justify-content: space-between;
   gap: 14px;
   padding: 16px 0;
 }
 
 .brand {
+  grid-area: brand;
   font-family: Outfit, Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   font-weight: 900;
   letter-spacing: -0.02em;
@@ -383,7 +383,13 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.header-locale {
+  grid-area: locale;
+  width: 132px;
+}
+
 .nav {
+  grid-area: nav;
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -452,13 +458,6 @@ onBeforeUnmount(() => {
   width: 1px;
   height: 24px;
   background: color-mix(in srgb, var(--fg) 18%, var(--border));
-}
-
-.nav-actions {
-  display: flex;
-  align-items: center;
-  flex: 0 0 132px;
-  min-width: 132px;
 }
 
 .try-now {
@@ -665,16 +664,6 @@ onBeforeUnmount(() => {
     padding-inline: clamp(22px, 3.4vw, 34px);
   }
 
-  .header-inner {
-    flex-wrap: wrap;
-    row-gap: 10px;
-  }
-
-  .nav {
-    width: 100%;
-    justify-content: space-between;
-  }
-
   .nav-rail {
     max-width: none;
     flex: 1 1 auto;
@@ -694,11 +683,6 @@ onBeforeUnmount(() => {
     display: none;
   }
 
-  .nav-actions {
-    flex-basis: 116px;
-    min-width: 116px;
-  }
-
   .nav {
     gap: 10px;
   }
@@ -711,6 +695,15 @@ onBeforeUnmount(() => {
 @media (max-width: 640px) {
   .header-inner {
     padding: 12px 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'brand locale'
+      'nav nav';
+    row-gap: 10px;
+  }
+
+  .header-locale {
+    width: 110px;
   }
 
   .nav {
@@ -723,9 +716,11 @@ onBeforeUnmount(() => {
     flex: 1 1 100%;
   }
 
-  .nav-actions {
-    flex-basis: 96px;
-    min-width: 96px;
+  .try-now {
+    flex: 1 1 100%;
+    justify-content: center;
+    padding: 12px 14px;
+    font-size: 14px;
   }
 
   .nav-link {
@@ -734,20 +729,15 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 520px) {
-  .try-now-text {
-    display: none;
-  }
-  .try-now {
-    padding: 10px;
-  }
-}
-
 @media (max-width: 420px) {
   .brand {
     max-width: 70vw;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .try-now-text {
+    white-space: normal;
   }
 
   .locale-trigger-code {

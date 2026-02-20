@@ -33,7 +33,6 @@
           <div v-if="sections.length" class="sections">
             <section v-for="section in sections" :key="section.code" class="teachers-section" :class="{ primary: section.isPrimary }">
               <header class="section-head">
-                <p class="section-eyebrow">{{ t('teachers.baseLanguageLabel') }}</p>
                 <h3 class="h3 section-title">{{ t('teachers.baseTeachersHeading', { language: section.label }) }}</h3>
                 <p class="muted section-sub">
                   {{
@@ -43,24 +42,28 @@
                     )
                   }}
                 </p>
-                <div v-if="section.learningLabels.length" class="section-language-pills">
-                  <span
-                    v-for="target in section.learningLabels"
-                    :key="`${section.code}-${target}`"
+                <div v-if="section.learningLanguages?.length" class="section-language-pills">
+                  <button
+                    v-for="target in section.learningLanguages"
+                    :key="`${section.code}-${target.code}`"
+                    type="button"
                     class="section-language-pill"
+                    :class="{ active: activeLearningCodeFor(section.code) === target.code }"
+                    :aria-pressed="activeLearningCodeFor(section.code) === target.code ? 'true' : 'false'"
+                    @click="toggleLearningTarget(section.code, target.code)"
                   >
-                    {{ target }}
-                  </span>
+                    {{ target.label }}
+                  </button>
                 </div>
               </header>
-              <div class="grid-2 list">
+              <TransitionGroup name="teacher-list" tag="div" class="grid-2 list">
                 <TeacherTelegramCard
-                  v-for="teacher in section.teachers"
+                  v-for="teacher in sortedTeachersFor(section)"
                   :key="teacher.teacherKey || teacher.slug"
                   :teacher="teacher"
                   @choose="close"
                 />
-              </div>
+              </TransitionGroup>
             </section>
           </div>
 
@@ -94,9 +97,50 @@ const titleId = 'try-teacher-title';
 const closeBtnRef = ref(null);
 const dialogRef = ref(null);
 const previousOverflow = ref('');
+const activeLearningBySection = ref({});
 
 function close() {
   emit('update:open', false);
+}
+
+function normalizeLanguageCode(input) {
+  const raw = (input || '').toString().trim().toLowerCase();
+  if (raw === 'ua' || raw === 'uk-ua' || raw === 'ua-ua') return 'uk';
+  if (!raw) return '';
+  return raw.split('-')[0];
+}
+
+function activeLearningCodeFor(sectionCode) {
+  return (activeLearningBySection.value?.[sectionCode] || '').toString();
+}
+
+function toggleLearningTarget(sectionCode, learningCode) {
+  const normalized = normalizeLanguageCode(learningCode);
+  const current = normalizeLanguageCode(activeLearningCodeFor(sectionCode));
+  if (normalized && normalized === current) {
+    const { [sectionCode]: _omitted, ...rest } = activeLearningBySection.value || {};
+    activeLearningBySection.value = rest;
+    return;
+  }
+  activeLearningBySection.value = {
+    ...(activeLearningBySection.value || {}),
+    [sectionCode]: normalized
+  };
+}
+
+function sortedTeachersFor(section) {
+  const selected = normalizeLanguageCode(activeLearningCodeFor(section.code));
+  if (!selected) return section.teachers;
+  const rows = Array.isArray(section.teachers) ? section.teachers : [];
+  return rows
+    .map((teacher, idx) => ({ teacher, idx }))
+    .sort((a, b) => {
+      const aMatches = normalizeLanguageCode(a.teacher?.learningLanguage) === selected;
+      const bMatches = normalizeLanguageCode(b.teacher?.learningLanguage) === selected;
+      if (aMatches !== bMatches) return aMatches ? -1 : 1;
+      return a.idx - b.idx;
+    })
+    .map((row) => row.teacher);
 }
 
 function onOverlayClick(event) {
@@ -127,6 +171,7 @@ watch(
       closeBtnRef.value?.focus?.();
       return;
     }
+    activeLearningBySection.value = {};
     unlockBodyScroll();
   },
   { immediate: true }
@@ -292,20 +337,6 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
-.section-eyebrow {
-  margin: 0;
-  width: fit-content;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
-  background: color-mix(in srgb, var(--surface) 76%, var(--bg));
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .section-title {
   margin: 0;
   font-size: clamp(20px, 2vw, 26px);
@@ -324,6 +355,7 @@ onBeforeUnmount(() => {
 }
 
 .section-language-pill {
+  appearance: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -334,11 +366,50 @@ onBeforeUnmount(() => {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
+  cursor: pointer;
+  user-select: none;
 }
+
+.section-language-pill:hover {
+  border-color: color-mix(in srgb, var(--fg) 22%, var(--border));
+}
+
+.section-language-pill:focus-visible {
+  outline: 2px solid color-mix(in srgb, #229ed9 55%, transparent);
+  outline-offset: 2px;
+}
+
+.section-language-pill.active {
+  border-color: color-mix(in srgb, #229ed9 45%, var(--border));
+  background:
+    radial-gradient(120% 140% at 10% 10%, color-mix(in srgb, #229ed9 14%, transparent), transparent 55%),
+    color-mix(in srgb, var(--surface) 74%, var(--bg));
+  color: color-mix(in srgb, #229ed9 85%, var(--fg));
+}
+
+.teacher-list-move {
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.teacher-list-enter-active,
+.teacher-list-leave-active {
+  transition: opacity 140ms ease;
+}
+
+.teacher-list-enter-from,
+.teacher-list-leave-to {
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .overlay {
     backdrop-filter: none;
   }
+
+  .teacher-list-move,
+  .teacher-list-enter-active,
+  .teacher-list-leave-active {
+    transition: none;
+  }
 }
 </style>
-
