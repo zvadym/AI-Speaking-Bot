@@ -34,7 +34,7 @@ import { computed } from 'vue';
 import TeacherAvatar from './TeacherAvatar.vue';
 import { getTeacherName } from '../data/teachers.js';
 import { useI18n } from '../i18n.js';
-import { getTeacherTelegramUrl } from '../lib/telegram.js';
+import { getLandingStartPayload, getTeacherTelegramUrl } from '../lib/telegram.js';
 
 const props = defineProps({
   teacher: {
@@ -46,9 +46,11 @@ const props = defineProps({
 const emit = defineEmits(['choose']);
 
 const { t, locale } = useI18n();
+const route = useRoute();
 
 const name = computed(() => getTeacherName(props.teacher, locale.value));
-const telegramUrl = computed(() => getTeacherTelegramUrl(props.teacher));
+const startPayload = computed(() => getLandingStartPayload(route.query));
+const telegramUrl = computed(() => getTeacherTelegramUrl(props.teacher, startPayload.value));
 const localizedTagline = computed(() => (props.teacher?.taglines?.[locale.value] || '').toString().trim());
 
 const teachesLine = computed(() => {
@@ -132,4 +134,3 @@ const ariaLabel = computed(() => {
   line-height: 1.5;
 }
 </style>
-
