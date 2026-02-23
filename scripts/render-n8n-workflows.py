@@ -30,6 +30,7 @@ PROMPT_KEYS = (
     "model_support_prompt",
     "model_hints_prompt",
     "model_summary_prompt",
+    "model_vocab_prompt",
 )
 
 PROMPT_TEMPLATE_FILES = {
@@ -37,6 +38,7 @@ PROMPT_TEMPLATE_FILES = {
     "model_support_prompt": "model_support_prompt.md",
     "model_hints_prompt": "model_hints_prompt.md",
     "model_summary_prompt": "model_summary_prompt.md",
+    "model_vocab_prompt": "model_vocab_prompt.md",
 }
 
 COMMON_DETECTED_LANGUAGE_CODES = ("en", "de", "it", "uk", "ru")
@@ -250,6 +252,40 @@ def compose_locale_with_generated_prompts(
         }
 
     for key, default_value in hints_section_defaults.items():
+        current = merged.get(key)
+        if not isinstance(current, str) or not current.strip():
+            merged[key] = default_value
+
+    if base_language_code == "de":
+        vocab_defaults = {
+            "btn_vocab": "Vokabeln 📚",
+            "callback_vocab_loading": "Sammle Wörter...",
+            "vocab_header": "📚 Vokabeln aus meiner Antwort:",
+            "vocab_empty": "Ich konnte keine nützlichen Vokabeln in dieser Antwort finden.",
+        }
+    elif base_language_code == "it":
+        vocab_defaults = {
+            "btn_vocab": "Vocabolario 📚",
+            "callback_vocab_loading": "Raccolgo parole...",
+            "vocab_header": "📚 Vocabolario dalla mia risposta:",
+            "vocab_empty": "Non ho trovato vocaboli utili in questa risposta.",
+        }
+    elif base_language_code == "uk":
+        vocab_defaults = {
+            "btn_vocab": "Словничок 📚",
+            "callback_vocab_loading": "Збираю слова...",
+            "vocab_header": "📚 Словничок з моєї відповіді:",
+            "vocab_empty": "Не знайшов корисних слів для словничка в цій відповіді.",
+        }
+    else:
+        vocab_defaults = {
+            "btn_vocab": "Vocab 📚",
+            "callback_vocab_loading": "Collecting words...",
+            "vocab_header": "📚 Vocab from my reply:",
+            "vocab_empty": "I couldn't find useful vocab in this reply.",
+        }
+
+    for key, default_value in vocab_defaults.items():
         current = merged.get(key)
         if not isinstance(current, str) or not current.strip():
             merged[key] = default_value

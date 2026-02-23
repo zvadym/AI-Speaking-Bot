@@ -9,6 +9,7 @@ Templates:
 - `model_support_prompt.md`
 - `model_hints_prompt.md`
 - `model_summary_prompt.md`
+- `model_vocab_prompt.md`
 
 They are loaded and rendered by `scripts/render-n8n-workflows.py` for each bot.
 
