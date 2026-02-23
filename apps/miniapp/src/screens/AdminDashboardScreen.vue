@@ -23,6 +23,9 @@
     </section>
 
     <section class="tabs" role="tablist" aria-label="Admin sections">
+      <button class="tab-btn" :class="{ active: activeTab === 'overview' }" type="button" role="tab" @click="activeTab = 'overview'">
+        Overview
+      </button>
       <button class="tab-btn" :class="{ active: activeTab === 'analytics' }" type="button" role="tab" @click="activeTab = 'analytics'">
         Analytics
       </button>
@@ -37,7 +40,190 @@
       </button>
     </section>
 
-    <template v-if="activeTab === 'analytics'">
+    <template v-if="activeTab === 'overview'">
+      <section class="landing-hero">
+        <div class="landing-hero-grid">
+          <div class="landing-copy">
+            <div class="landing-pill">
+              <span class="landing-pill-dot" aria-hidden="true"></span>
+              Real-time operations
+              <span class="landing-pill-sep" aria-hidden="true">·</span>
+              Analytics, users, messaging
+            </div>
+            <h2 class="landing-title">A modern admin cockpit for Language Bot</h2>
+            <p class="landing-sub">
+              Glass UI, fast filters, and charts with hover values — built for clarity.
+            </p>
+
+            <div class="landing-cta">
+              <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refreshAnalytics">
+                {{ loading ? 'Loading…' : 'Refresh analytics' }}
+              </button>
+              <button class="btn" type="button" @click="activeTab = 'analytics'">Open analytics</button>
+              <button class="btn" type="button" @click="activeTab = 'users'">Browse users</button>
+            </div>
+
+            <div class="trust">
+              <div class="trust-label">Trusted stack</div>
+              <div class="trust-badges" role="list" aria-label="Trust badges">
+                <span class="trust-badge" role="listitem">
+                  <svg viewBox="0 0 24 24" class="trust-ic" aria-hidden="true">
+                    <path
+                      d="M12 2.5c3 2.6 5.8 3 8.5 3.6v6.8c0 5.3-3.8 8.7-8.5 8.7S3.5 18.2 3.5 12.9V6.1C6.2 5.5 9 5.1 12 2.5Z"
+                      fill="currentColor"
+                      opacity="0.22"
+                    />
+                    <path
+                      d="M9.3 12.2l1.7 1.8 3.9-4.3"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Stripe Billing
+                </span>
+                <span class="trust-badge" role="listitem">
+                  <svg viewBox="0 0 24 24" class="trust-ic" aria-hidden="true">
+                    <path d="M7 4h10v16H7z" fill="currentColor" opacity="0.18" />
+                    <path d="M9 7h6M9 11h6M9 15h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                  Postgres
+                </span>
+                <span class="trust-badge" role="listitem">
+                  <svg viewBox="0 0 24 24" class="trust-ic" aria-hidden="true">
+                    <path
+                      d="M21.3 6.8c-1.5 6.8-6.5 12-13.7 14.4-.6.2-1.2-.3-1.1-.9l.7-4.3c-2.3-.9-3.8-2.5-3.6-4.4.3-2.3 3-3.9 6.2-3.8.5 0 1 .1 1.5.2l.3-2.2c.1-.6.8-1 1.4-.7 2.1 1 5.4 1.5 8.3.5.7-.2 1.3.4 1.2 1.2Z"
+                      fill="currentColor"
+                      opacity="0.22"
+                    />
+                    <path
+                      d="M10.7 12.3h2.6c.9 0 1.6-.7 1.6-1.6 0-.9-.7-1.6-1.6-1.6h-1.8"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  Telegram Mini App
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="landing-viz">
+            <div class="viz-card">
+              <div class="viz-head">
+                <div>
+                  <div class="viz-kicker">Real-time</div>
+                  <div class="viz-title">New users pulse</div>
+                </div>
+                <div class="viz-meta">
+                  <span class="viz-badge" :class="{ live: Boolean(lastUpdated) }">{{ lastUpdated ? 'Live' : 'Preview' }}</span>
+                  <span class="viz-stamp" v-if="lastUpdated">{{ lastUpdated }}</span>
+                </div>
+              </div>
+
+              <div class="spark">
+                <svg viewBox="0 0 320 140" width="320" height="140" role="img" aria-label="New users pulse">
+                  <defs>
+                    <linearGradient id="sparkFill" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0" stop-color="rgba(59, 130, 246, 0.42)" />
+                      <stop offset="1" stop-color="rgba(59, 130, 246, 0.06)" />
+                    </linearGradient>
+                    <linearGradient id="sparkLine" x1="0" x2="1" y1="0" y2="0">
+                      <stop offset="0" stop-color="rgba(30, 64, 175, 0.9)" />
+                      <stop offset="1" stop-color="rgba(245, 158, 11, 0.9)" />
+                    </linearGradient>
+                  </defs>
+                  <path :d="spark.areaPath" fill="url(#sparkFill)" />
+                  <path :d="spark.linePath" fill="none" stroke="url(#sparkLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                  <circle :cx="spark.lastPoint.x" :cy="spark.lastPoint.y" r="4.2" fill="rgba(245, 158, 11, 0.95)" />
+                </svg>
+                <div class="spark-axis">
+                  <span>{{ spark.leftLabel }}</span>
+                  <span class="spark-note" v-if="spark.isPreview">Demo</span>
+                  <span>{{ spark.rightLabel }}</span>
+                </div>
+              </div>
+
+              <div class="viz-foot">
+                <div class="viz-metric">
+                  <div class="viz-metric-label">Active users (range)</div>
+                  <div class="viz-metric-value">{{ fmt(totals.active_users_in_range) }}</div>
+                </div>
+                <div class="viz-metric">
+                  <div class="viz-metric-label">Pro (range)</div>
+                  <div class="viz-metric-value">{{ fmt(totals.pro_users_in_range) }}</div>
+                </div>
+                <div class="viz-metric">
+                  <div class="viz-metric-label">Users (range)</div>
+                  <div class="viz-metric-value">{{ fmt(totals.total_users_in_range) }}</div>
+                </div>
+              </div>
+
+              <p class="viz-hint" v-if="!password">
+                Enter the admin password to load live data and unlock analytics.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-section">
+        <header class="landing-section-head">
+          <h3>Feature highlights</h3>
+          <p>Designed for daily ops: fast scanning, zero guesswork.</p>
+        </header>
+        <div class="feature-grid">
+          <article class="feature" v-for="f in overviewFeatures" :key="f.title">
+            <div class="feature-ic" v-html="f.icon" aria-hidden="true"></div>
+            <div class="feature-title">{{ f.title }}</div>
+            <div class="feature-desc">{{ f.desc }}</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-section">
+        <header class="landing-section-head">
+          <h3>Pricing snapshot</h3>
+          <p>Two tiers, Stripe-managed subscriptions, clean entitlements.</p>
+        </header>
+        <div class="pricing-grid">
+          <article class="pricing">
+            <div class="pricing-tier">Free</div>
+            <div class="pricing-price">—</div>
+            <div class="pricing-sub">Great for trying the bot.</div>
+            <ul class="pricing-list">
+              <li>Daily voice limit</li>
+              <li>Core corrections & replies</li>
+              <li>Upgrade anytime</li>
+            </ul>
+            <button class="btn" type="button" @click="activeTab = 'users'">View free users</button>
+          </article>
+          <article class="pricing featured">
+            <div class="pricing-tier">
+              Pro
+              <span class="pricing-badge">Most used</span>
+            </div>
+            <div class="pricing-price">—</div>
+            <div class="pricing-sub">For consistent practice and growth.</div>
+            <ul class="pricing-list">
+              <li>Higher limits</li>
+              <li>Monthly / yearly billing</li>
+              <li>Self-serve billing portal</li>
+            </ul>
+            <button class="btn primary" type="button" @click="activeTab = 'analytics'">Track Pro growth</button>
+          </article>
+        </div>
+        <p class="landing-note">
+          Prices are defined in Stripe and surfaced in the user-facing subscription screen.
+        </p>
+      </section>
+    </template>
+
+    <template v-else-if="activeTab === 'analytics'">
       <section class="card">
         <div class="row">
           <label class="field">
@@ -742,7 +928,8 @@ function rangeForPreset(preset) {
 }
 
 const password = ref('');
-const activeTab = ref('analytics');
+const ADMIN_TABS = ['overview', 'analytics', 'users', 'messaging', 'feedback'];
+const activeTab = ref('overview');
 const { from: defaultFrom, to: defaultTo } = defaultRange();
 const fromDate = ref(defaultFrom);
 const toDate = ref(defaultTo);
@@ -817,6 +1004,103 @@ const usersSort = reactive({
 
 const usersPageStart = computed(() => (usersTotal.value ? usersOffset.value + 1 : 0));
 const usersPageEnd = computed(() => Math.min(usersOffset.value + usersRows.value.length, usersTotal.value));
+
+const overviewFeatures = [
+  {
+    title: 'Charts with hover values',
+    desc: 'See exact values on hover. Tap to pin a tooltip on mobile.',
+    icon: `
+      <svg viewBox="0 0 24 24" class="ic">
+        <path d="M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M6 15l4-4 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="10" cy="11" r="1.5" fill="currentColor" opacity="0.7"/>
+        <circle cx="13" cy="14" r="1.5" fill="currentColor" opacity="0.7"/>
+        <circle cx="18" cy="8" r="1.5" fill="currentColor" opacity="0.7"/>
+      </svg>
+    `
+  },
+  {
+    title: 'Fast filtering, inclusive ranges',
+    desc: 'UTC ranges are inclusive. Quick presets keep audits consistent.',
+    icon: `
+      <svg viewBox="0 0 24 24" class="ic">
+        <path d="M5 6h14M8 12h8M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M4 6l5 6v6l6-3v-3l5-6" fill="currentColor" opacity="0.14"/>
+      </svg>
+    `
+  },
+  {
+    title: 'Users + messaging in one place',
+    desc: 'Segment audiences, preview counts, and send broadcasts safely.',
+    icon: `
+      <svg viewBox="0 0 24 24" class="ic">
+        <path d="M7 11h10M7 15h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M6 3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H10l-4 3v-3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z" fill="currentColor" opacity="0.14"/>
+      </svg>
+    `
+  },
+  {
+    title: 'Secure by design',
+    desc: 'Admin endpoints require a password header. No caching for sensitive views.',
+    icon: `
+      <svg viewBox="0 0 24 24" class="ic">
+        <path d="M12 2.5c3 2.6 5.8 3 8.5 3.6v6.8c0 5.3-3.8 8.7-8.5 8.7S3.5 18.2 3.5 12.9V6.1C6.2 5.5 9 5.1 12 2.5Z" fill="currentColor" opacity="0.14"/>
+        <path d="M9.2 12.1l1.7 1.8 3.9-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `
+  }
+];
+
+const spark = computed(() => {
+  const w = 320;
+  const h = 140;
+  const padX = 14;
+  const padT = 18;
+  const padB = 28;
+  const baseY = h - padB;
+  const innerH = h - padT - padB;
+
+  const src = Array.isArray(newUsersSeries.value) ? newUsersSeries.value : [];
+  const liveRows = src.slice(-14);
+  const liveValues = liveRows.map((r) => Number(r?.count ?? 0)).filter((v) => Number.isFinite(v));
+  const hasLive = liveRows.length >= 2 && liveValues.some((v) => v > 0);
+
+  const previewValues = [4, 7, 5, 9, 8, 11, 7, 12, 10, 13, 9, 15, 12, 16];
+  const values = hasLive ? liveRows.map((r) => Math.max(0, Number(r?.count ?? 0) || 0)) : previewValues;
+  const leftLabel = hasLive ? String(liveRows[0]?.day ?? '') : 'Preview';
+  const rightLabel = hasLive ? String(liveRows[liveRows.length - 1]?.day ?? '') : 'Now';
+  const max = Math.max(1, ...values);
+  const n = values.length;
+  const step = (w - 2 * padX) / Math.max(1, n - 1);
+
+  const points = values.map((v, i) => {
+    const x = padX + i * step;
+    const t = Math.max(0, Math.min(1, v / max));
+    const y = padT + (1 - t) * innerH;
+    return { x, y };
+  });
+
+  const linePath = points.length
+    ? `M ${points.map((p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' L ')}`
+    : `M ${padX} ${baseY} L ${w - padX} ${baseY}`;
+
+  const areaPath = points.length
+    ? `M ${points[0].x.toFixed(2)} ${baseY.toFixed(2)} L ${points
+        .map((p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+        .join(' L ')} L ${points[points.length - 1].x.toFixed(2)} ${baseY.toFixed(2)} Z`
+    : `M ${padX} ${baseY} L ${w - padX} ${baseY} Z`;
+
+  const lastPoint = points[points.length - 1] || { x: w - padX, y: baseY };
+
+  return {
+    isPreview: !hasLive,
+    leftLabel,
+    rightLabel,
+    linePath,
+    areaPath,
+    lastPoint
+  };
+});
 
 function usersSortIndicator(key) {
   if (usersSort.key !== key) return '';
@@ -1461,7 +1745,14 @@ function usersPrevPage() {
 }
 
 onMounted(() => {
-  // No auto-fetch until password is provided.
+  try {
+    const saved = (window.localStorage.getItem('admin_dashboard_tab') || '').toString();
+    if (saved && ADMIN_TABS.includes(saved)) {
+      activeTab.value = saved;
+    }
+  } catch {
+    // ignore
+  }
 });
 
 watch(
@@ -1492,6 +1783,12 @@ watch(
 watch(
   () => activeTab.value,
   (tab) => {
+    try {
+      window.localStorage.setItem('admin_dashboard_tab', tab);
+    } catch {
+      // ignore
+    }
+
     if (tab === 'feedback' && password.value && feedbackRows.value.length === 0) {
       feedbackOffset.value = 0;
       refreshFeedback();
@@ -1529,6 +1826,20 @@ onBeforeUnmount(() => {
   padding: 44px 22px 76px;
   display: grid;
   gap: 18px;
+  position: relative;
+  isolation: isolate;
+}
+
+.shell::before {
+  content: '';
+  position: absolute;
+  inset: -160px -80px -120px;
+  z-index: -1;
+  background:
+    radial-gradient(420px 280px at 18% 6%, rgba(59, 130, 246, 0.18), transparent 60%),
+    radial-gradient(420px 320px at 85% 22%, rgba(245, 158, 11, 0.14), transparent 62%),
+    radial-gradient(520px 360px at 30% 82%, rgba(31, 107, 99, 0.14), transparent 65%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(248, 250, 252, 0.72));
 }
 
 .hero {
@@ -1562,11 +1873,444 @@ h1 {
 .card {
   border: 1px solid var(--stroke);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 18px 40px var(--shadow);
   padding: 14px;
   display: grid;
   gap: 12px;
+}
+
+.landing-hero {
+  border-radius: 26px;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.46));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 26px 70px rgba(20, 18, 16, 0.16);
+  padding: 18px;
+  overflow: hidden;
+  position: relative;
+}
+
+.landing-hero::before {
+  content: '';
+  position: absolute;
+  inset: -120px -120px auto;
+  height: 260px;
+  background:
+    radial-gradient(240px 160px at 30% 55%, rgba(59, 130, 246, 0.20), transparent 70%),
+    radial-gradient(260px 180px at 70% 40%, rgba(245, 158, 11, 0.16), transparent 72%);
+  pointer-events: none;
+}
+
+.landing-hero-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.landing-copy {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 8px 8px 8px 6px;
+}
+
+.landing-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(246, 241, 232, 0.55);
+  color: rgba(30, 26, 22, 0.78);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.landing-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.95);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14);
+}
+
+.landing-pill-sep {
+  opacity: 0.55;
+}
+
+.landing-title {
+  margin: 0;
+  font-size: clamp(22px, 2.6vw, 36px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.landing-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 70ch;
+}
+
+.landing-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.trust {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.trust-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.trust-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.64);
+  color: rgba(30, 26, 22, 0.78);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.trust-ic {
+  width: 16px;
+  height: 16px;
+}
+
+.landing-viz {
+  display: grid;
+  align-content: start;
+}
+
+.viz-card {
+  border-radius: 22px;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(246, 241, 232, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 20px 60px rgba(20, 18, 16, 0.14);
+}
+
+.viz-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.viz-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 10px;
+  color: rgba(30, 26, 22, 0.55);
+}
+
+.viz-title {
+  font-weight: 760;
+  letter-spacing: -0.01em;
+}
+
+.viz-meta {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.viz-badge {
+  border-radius: 999px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.62);
+  color: rgba(30, 26, 22, 0.72);
+  font-size: 11px;
+  padding: 4px 8px;
+  font-weight: 750;
+}
+
+.viz-badge.live {
+  border-color: rgba(31, 107, 99, 0.28);
+  background: rgba(31, 107, 99, 0.10);
+  color: rgba(31, 107, 99, 0.92);
+}
+
+.viz-stamp {
+  color: rgba(30, 26, 22, 0.55);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.spark {
+  border-radius: 16px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+  overflow: hidden;
+  padding: 10px 12px 8px;
+}
+
+.spark svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.spark-axis {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(30, 26, 22, 0.55);
+}
+
+.spark-note {
+  color: rgba(245, 158, 11, 0.92);
+  font-weight: 750;
+}
+
+.viz-foot {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.viz-metric {
+  border-radius: 16px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: rgba(255, 255, 255, 0.52);
+  padding: 10px 10px 9px;
+  display: grid;
+  gap: 4px;
+}
+
+.viz-metric-label {
+  font-size: 11px;
+  color: rgba(30, 26, 22, 0.55);
+}
+
+.viz-metric-value {
+  font-family: var(--font-display);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-size: 18px;
+}
+
+.viz-hint {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(30, 26, 22, 0.60);
+}
+
+.landing-section {
+  border-radius: 22px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 20px 60px rgba(20, 18, 16, 0.12);
+  padding: 16px 16px 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.landing-section-head {
+  display: grid;
+  gap: 6px;
+}
+
+.landing-section-head h3 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.landing-section-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.feature {
+  border-radius: 18px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(246, 241, 232, 0.36);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.feature:hover {
+  border-color: rgba(59, 130, 246, 0.26);
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 18px 44px rgba(20, 18, 16, 0.12);
+}
+
+.feature-ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.62);
+  display: grid;
+  place-items: center;
+  color: rgba(30, 64, 175, 0.9);
+}
+
+.feature-ic :deep(svg.ic) {
+  width: 22px;
+  height: 22px;
+}
+
+.feature-title {
+  font-weight: 760;
+  letter-spacing: -0.01em;
+}
+
+.feature-desc {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pricing {
+  border-radius: 18px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(246, 241, 232, 0.32);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.pricing.featured {
+  border-color: rgba(245, 158, 11, 0.32);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.66), rgba(246, 241, 232, 0.36));
+}
+
+.pricing-tier {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.pricing-badge {
+  border-radius: 999px;
+  padding: 4px 8px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.12);
+  color: rgba(199, 90, 36, 0.95);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pricing-price {
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.pricing-sub {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.pricing-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+  color: rgba(30, 26, 22, 0.78);
+  font-size: 12px;
+}
+
+.pricing-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pricing-list li::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.85);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+}
+
+.landing-note {
+  margin: 0;
+  color: rgba(30, 26, 22, 0.55);
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .landing-hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 540px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+  .viz-foot {
+    grid-template-columns: 1fr;
+  }
 }
 
 .tabs {
