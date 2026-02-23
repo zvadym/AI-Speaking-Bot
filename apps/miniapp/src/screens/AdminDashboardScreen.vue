@@ -1600,6 +1600,8 @@ onBeforeUnmount(() => {
   gap: 18px;
   position: relative;
   isolation: isolate;
+  align-self: flex-start;
+  align-content: start;
 }
 
 .shell::before {
@@ -1706,6 +1708,7 @@ h1 {
   background: rgba(255, 255, 255, 0.58);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  align-items: center;
 }
 
 .tab-btn {
