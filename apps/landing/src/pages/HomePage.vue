@@ -258,7 +258,7 @@ import { blogPosts } from '../data/blogPosts.js';
 import { pricingTiers } from '../data/pricing.js';
 import { teachers } from '../data/teachers.js';
 import { featuredTeacherKeys } from '../data/featuredTeachers.js';
-import { routeWithLocale, useI18n } from '../i18n.js';
+import { normalizeLocale, routeWithLocale, useI18n } from '../i18n.js';
 
 const { t, tm, locale } = useI18n();
 const tryTeacherModalOpen = useState('tryTeacherModalOpen', () => false);
@@ -294,7 +294,12 @@ const whyWorksCards = computed(() => {
 });
 
 const featuredTeachers = computed(() => {
-  const all = Array.isArray(teachers) ? teachers : [];
+  const uiLocale = normalizeLocale(locale.value) || 'en';
+  const all = (Array.isArray(teachers) ? teachers : []).filter((teacher) => {
+    const base = normalizeLocale(teacher?.baseLanguage) || '';
+    return base === uiLocale;
+  });
+
   const byKey = new Map(all.map((teacher) => [String(teacher?.teacherKey || '').toLowerCase(), teacher]));
   const seen = new Set();
   const result = [];

@@ -122,8 +122,8 @@ const { t, locale, setAppLocale } = useI18n();
 const route = useRoute();
 
 const NAV_ITEMS = [
-  { key: 'features', type: 'section', labelKey: 'nav.features', sectionId: 'features', primary: true },
   { key: 'teachers', type: 'route', labelKey: 'nav.teachers', routeName: 'teachers', primary: true },
+  { key: 'features', type: 'section', labelKey: 'nav.features', sectionId: 'features', primary: true },
   { key: 'how', type: 'section', labelKey: 'nav.how', sectionId: 'how', primary: true },
   { key: 'pricing', type: 'section', labelKey: 'nav.pricing', sectionId: 'pricing', primary: true },
   { key: 'blog', type: 'section', labelKey: 'nav.blog', sectionId: 'blog', primary: true },
