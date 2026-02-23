@@ -6,15 +6,21 @@
       <p class="sub">UTC charts. Date range is <strong>inclusive</strong> for both From and To dates.</p>
     </header>
 
-    <section class="card">
-      <div class="row">
-        <label class="field">
-          <span>Password</span>
+    <section class="card access">
+      <div class="access-row">
+        <label class="field grow">
+          <span>Admin password</span>
           <input v-model="password" type="password" autocomplete="current-password" placeholder="••••••••" />
         </label>
 
-        <div class="actions">
-          <button class="btn danger" type="button" :disabled="loading || feedbackLoading" @click="clearPassword">Clear</button>
+        <div class="access-actions">
+          <span class="status-pill" :class="{ ok: Boolean(password) }">
+            {{ password ? 'Password set' : 'Locked' }}
+          </span>
+          <span v-if="activeStamp" class="status-pill subtle">Updated: {{ activeStamp }}</span>
+          <button class="btn danger" type="button" :disabled="loading || feedbackLoading || usersLoading || previewLoading" @click="clearPassword">
+            Clear
+          </button>
         </div>
       </div>
       <p class="hint">
@@ -23,9 +29,6 @@
     </section>
 
     <section class="tabs" role="tablist" aria-label="Admin sections">
-      <button class="tab-btn" :class="{ active: activeTab === 'overview' }" type="button" role="tab" @click="activeTab = 'overview'">
-        Overview
-      </button>
       <button class="tab-btn" :class="{ active: activeTab === 'analytics' }" type="button" role="tab" @click="activeTab = 'analytics'">
         Analytics
       </button>
@@ -40,261 +43,91 @@
       </button>
     </section>
 
-    <template v-if="activeTab === 'overview'">
-      <section class="landing-hero">
-        <div class="landing-hero-grid">
-          <div class="landing-copy">
-            <div class="landing-pill">
-              <span class="landing-pill-dot" aria-hidden="true"></span>
-              Real-time operations
-              <span class="landing-pill-sep" aria-hidden="true">·</span>
-              Analytics, users, messaging
-            </div>
-            <h2 class="landing-title">A modern admin cockpit for Language Bot</h2>
-            <p class="landing-sub">
-              Glass UI, fast filters, and charts with hover values — built for clarity.
-            </p>
-
-            <div class="landing-cta">
-              <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refreshAnalytics">
-                {{ loading ? 'Loading…' : 'Refresh analytics' }}
-              </button>
-              <button class="btn" type="button" @click="activeTab = 'analytics'">Open analytics</button>
-              <button class="btn" type="button" @click="activeTab = 'users'">Browse users</button>
-            </div>
-
-            <div class="trust">
-              <div class="trust-label">Trusted stack</div>
-              <div class="trust-badges" role="list" aria-label="Trust badges">
-                <span class="trust-badge" role="listitem">
-                  <svg viewBox="0 0 24 24" class="trust-ic" aria-hidden="true">
-                    <path
-                      d="M12 2.5c3 2.6 5.8 3 8.5 3.6v6.8c0 5.3-3.8 8.7-8.5 8.7S3.5 18.2 3.5 12.9V6.1C6.2 5.5 9 5.1 12 2.5Z"
-                      fill="currentColor"
-                      opacity="0.22"
-                    />
-                    <path
-                      d="M9.3 12.2l1.7 1.8 3.9-4.3"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                  Stripe Billing
-                </span>
-                <span class="trust-badge" role="listitem">
-                  <svg viewBox="0 0 24 24" class="trust-ic" aria-hidden="true">
-                    <path d="M7 4h10v16H7z" fill="currentColor" opacity="0.18" />
-                    <path d="M9 7h6M9 11h6M9 15h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                  Postgres
-                </span>
-                <span class="trust-badge" role="listitem">
-                  <svg viewBox="0 0 24 24" class="trust-ic" aria-hidden="true">
-                    <path
-                      d="M21.3 6.8c-1.5 6.8-6.5 12-13.7 14.4-.6.2-1.2-.3-1.1-.9l.7-4.3c-2.3-.9-3.8-2.5-3.6-4.4.3-2.3 3-3.9 6.2-3.8.5 0 1 .1 1.5.2l.3-2.2c.1-.6.8-1 1.4-.7 2.1 1 5.4 1.5 8.3.5.7-.2 1.3.4 1.2 1.2Z"
-                      fill="currentColor"
-                      opacity="0.22"
-                    />
-                    <path
-                      d="M10.7 12.3h2.6c.9 0 1.6-.7 1.6-1.6 0-.9-.7-1.6-1.6-1.6h-1.8"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                  Telegram Mini App
-                </span>
-              </div>
-            </div>
+    <template v-if="activeTab === 'analytics'">
+      <section class="card panel">
+        <header class="panel-head">
+          <div>
+            <div class="panel-kicker">Analytics</div>
+            <h2 class="panel-title">Metrics</h2>
+            <p class="panel-sub">UTC charts. Date range is inclusive for both From and To dates.</p>
           </div>
-
-          <div class="landing-viz">
-            <div class="viz-card">
-              <div class="viz-head">
-                <div>
-                  <div class="viz-kicker">Real-time</div>
-                  <div class="viz-title">New users pulse</div>
-                </div>
-                <div class="viz-meta">
-                  <span class="viz-badge" :class="{ live: Boolean(lastUpdated) }">{{ lastUpdated ? 'Live' : 'Preview' }}</span>
-                  <span class="viz-stamp" v-if="lastUpdated">{{ lastUpdated }}</span>
-                </div>
-              </div>
-
-              <div class="spark">
-                <svg viewBox="0 0 320 140" width="320" height="140" role="img" aria-label="New users pulse">
-                  <defs>
-                    <linearGradient id="sparkFill" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0" stop-color="rgba(59, 130, 246, 0.42)" />
-                      <stop offset="1" stop-color="rgba(59, 130, 246, 0.06)" />
-                    </linearGradient>
-                    <linearGradient id="sparkLine" x1="0" x2="1" y1="0" y2="0">
-                      <stop offset="0" stop-color="rgba(30, 64, 175, 0.9)" />
-                      <stop offset="1" stop-color="rgba(245, 158, 11, 0.9)" />
-                    </linearGradient>
-                  </defs>
-                  <path :d="spark.areaPath" fill="url(#sparkFill)" />
-                  <path :d="spark.linePath" fill="none" stroke="url(#sparkLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                  <circle :cx="spark.lastPoint.x" :cy="spark.lastPoint.y" r="4.2" fill="rgba(245, 158, 11, 0.95)" />
-                </svg>
-                <div class="spark-axis">
-                  <span>{{ spark.leftLabel }}</span>
-                  <span class="spark-note" v-if="spark.isPreview">Demo</span>
-                  <span>{{ spark.rightLabel }}</span>
-                </div>
-              </div>
-
-              <div class="viz-foot">
-                <div class="viz-metric">
-                  <div class="viz-metric-label">Active users (range)</div>
-                  <div class="viz-metric-value">{{ fmt(totals.active_users_in_range) }}</div>
-                </div>
-                <div class="viz-metric">
-                  <div class="viz-metric-label">Pro (range)</div>
-                  <div class="viz-metric-value">{{ fmt(totals.pro_users_in_range) }}</div>
-                </div>
-                <div class="viz-metric">
-                  <div class="viz-metric-label">Users (range)</div>
-                  <div class="viz-metric-value">{{ fmt(totals.total_users_in_range) }}</div>
-                </div>
-              </div>
-
-              <p class="viz-hint" v-if="!password">
-                Enter the admin password to load live data and unlock analytics.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="landing-section">
-        <header class="landing-section-head">
-          <h3>Feature highlights</h3>
-          <p>Designed for daily ops: fast scanning, zero guesswork.</p>
-        </header>
-        <div class="feature-grid">
-          <article class="feature" v-for="f in overviewFeatures" :key="f.title">
-            <div class="feature-ic" v-html="f.icon" aria-hidden="true"></div>
-            <div class="feature-title">{{ f.title }}</div>
-            <div class="feature-desc">{{ f.desc }}</div>
-          </article>
-        </div>
-      </section>
-
-      <section class="landing-section">
-        <header class="landing-section-head">
-          <h3>Pricing snapshot</h3>
-          <p>Two tiers, Stripe-managed subscriptions, clean entitlements.</p>
-        </header>
-        <div class="pricing-grid">
-          <article class="pricing">
-            <div class="pricing-tier">Free</div>
-            <div class="pricing-price">—</div>
-            <div class="pricing-sub">Great for trying the bot.</div>
-            <ul class="pricing-list">
-              <li>Daily voice limit</li>
-              <li>Core corrections & replies</li>
-              <li>Upgrade anytime</li>
-            </ul>
-            <button class="btn" type="button" @click="activeTab = 'users'">View free users</button>
-          </article>
-          <article class="pricing featured">
-            <div class="pricing-tier">
-              Pro
-              <span class="pricing-badge">Most used</span>
-            </div>
-            <div class="pricing-price">—</div>
-            <div class="pricing-sub">For consistent practice and growth.</div>
-            <ul class="pricing-list">
-              <li>Higher limits</li>
-              <li>Monthly / yearly billing</li>
-              <li>Self-serve billing portal</li>
-            </ul>
-            <button class="btn primary" type="button" @click="activeTab = 'analytics'">Track Pro growth</button>
-          </article>
-        </div>
-        <p class="landing-note">
-          Prices are defined in Stripe and surfaced in the user-facing subscription screen.
-        </p>
-      </section>
-    </template>
-
-    <template v-else-if="activeTab === 'analytics'">
-      <section class="card">
-        <div class="row">
-          <label class="field">
-            <span>From (UTC)</span>
-            <input v-model="fromDate" type="date" />
-          </label>
-
-          <label class="field">
-            <span>To (UTC, inclusive)</span>
-            <input v-model="toDate" type="date" />
-          </label>
-
-          <label class="field">
-            <span>Quick range</span>
-            <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
-              <option value="last_30_days">Last 30 days</option>
-              <option value="last_week">Last week</option>
-              <option value="last_month">Last month</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="row">
-          <label class="field grow">
-            <span>Acquisition payload</span>
-            <input
-              v-model="payload"
-              type="text"
-              inputmode="text"
-              autocomplete="off"
-              placeholder="(optional)"
-              list="payloads"
-            />
-            <datalist id="payloads">
-              <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
-            </datalist>
-          </label>
-
-          <div class="actions">
+          <div class="panel-actions">
+            <button class="btn" type="button" :disabled="loading" @click="resetRange">Last 30d</button>
+            <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_week')">Last week</button>
+            <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_month')">Last month</button>
             <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refreshAnalytics">
               {{ loading ? 'Loading…' : 'Refresh' }}
             </button>
-            <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_week')">Last week</button>
-            <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_month')">Last month</button>
-            <button class="btn" type="button" :disabled="loading" @click="resetRange">Last 30d</button>
+          </div>
+        </header>
+
+        <div class="panel-body">
+          <div class="row">
+            <label class="field">
+              <span>From (UTC)</span>
+              <input v-model="fromDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>To (UTC, inclusive)</span>
+              <input v-model="toDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>Quick range</span>
+              <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
+                <option value="last_30_days">Last 30 days</option>
+                <option value="last_week">Last week</option>
+                <option value="last_month">Last month</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field grow">
+              <span>Acquisition payload</span>
+              <input
+                v-model="payload"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                placeholder="(optional)"
+                list="payloads"
+              />
+              <datalist id="payloads">
+                <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
+              </datalist>
+            </label>
+          </div>
+
+          <div v-if="!password" class="callout">
+            Enter password above to load analytics.
+          </div>
+          <div v-else-if="errorText" class="callout error">
+            {{ errorText }}
           </div>
         </div>
-
-        <p class="hint" v-if="!password">Enter password first to load analytics.</p>
-        <p class="error" v-else-if="errorText">{{ errorText }}</p>
       </section>
 
-      <section class="cards">
-        <div class="stat">
-          <div class="label">Users (range)</div>
-          <div class="value value-pair">
+      <section class="kpi-grid">
+        <article class="kpi">
+          <div class="kpi-label">Users (range)</div>
+          <div class="kpi-value">
             {{ fmt(totals.active_users_in_range) }}
-            <span class="value-secondary">/ {{ fmt(totals.total_users_in_range) }}</span>
+            <span class="kpi-value-sub">/ {{ fmt(totals.total_users_in_range) }}</span>
           </div>
-          <div class="meta">All-time: {{ fmt(totals.active_users_all_time) }} / {{ fmt(totals.total_users_all_time) }}</div>
-        </div>
-        <div class="stat">
-          <div class="label">Inactive users</div>
-          <div class="value">{{ fmt(totals.inactive_users_all_time) }}</div>
-          <div class="meta">Current users with failed Telegram delivery</div>
-        </div>
-        <div class="stat">
-          <div class="label">Pro (range)</div>
-          <div class="value">{{ fmt(totals.pro_users_in_range) }}</div>
-          <div class="meta">All-time: {{ fmt(totals.pro_users_all_time) }}</div>
-        </div>
+          <div class="kpi-meta">All-time: {{ fmt(totals.active_users_all_time) }} / {{ fmt(totals.total_users_all_time) }}</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-label">Inactive users</div>
+          <div class="kpi-value">{{ fmt(totals.inactive_users_all_time) }}</div>
+          <div class="kpi-meta">Permanent Telegram delivery failures</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-label">Pro (range)</div>
+          <div class="kpi-value">{{ fmt(totals.pro_users_in_range) }}</div>
+          <div class="kpi-meta">All-time: {{ fmt(totals.pro_users_all_time) }}</div>
+        </article>
       </section>
 
       <section class="card" v-if="botStats.length">
@@ -458,56 +291,69 @@
     </template>
 
     <template v-else-if="activeTab === 'users'">
-      <section class="card">
-        <div class="row">
-          <label class="field">
-            <span>From (UTC)</span>
-            <input v-model="fromDate" type="date" />
-          </label>
-
-          <label class="field">
-            <span>To (UTC, inclusive)</span>
-            <input v-model="toDate" type="date" />
-          </label>
-
-          <label class="field">
-            <span>Quick range</span>
-            <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
-              <option value="last_30_days">Last 30 days</option>
-              <option value="last_week">Last week</option>
-              <option value="last_month">Last month</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="row">
-          <label class="field grow">
-            <span>Acquisition payload</span>
-            <input
-              v-model="payload"
-              type="text"
-              inputmode="text"
-              autocomplete="off"
-              placeholder="(optional)"
-              list="payloads"
-            />
-            <datalist id="payloads">
-              <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
-            </datalist>
-          </label>
-
-          <div class="actions">
+      <section class="card panel">
+        <header class="panel-head">
+          <div>
+            <div class="panel-kicker">Users</div>
+            <h2 class="panel-title">Directory</h2>
+            <p class="panel-sub">Server-side sorting and pagination. Range filters are UTC.</p>
+          </div>
+          <div class="panel-actions">
+            <button class="btn" type="button" :disabled="usersLoading" @click="resetRange">Last 30d</button>
+            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_week')">Last week</button>
+            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_month')">Last month</button>
             <button class="btn primary" type="button" :disabled="!canFetch || usersLoading" @click="refreshUsersPage({ resetOffset: true })">
               {{ usersLoading ? 'Loading…' : 'Refresh users' }}
             </button>
-            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_week')">Last week</button>
-            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_month')">Last month</button>
-            <button class="btn" type="button" :disabled="usersLoading" @click="resetRange">Last 30d</button>
+          </div>
+        </header>
+
+        <div class="panel-body">
+          <div class="row">
+            <label class="field">
+              <span>From (UTC)</span>
+              <input v-model="fromDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>To (UTC, inclusive)</span>
+              <input v-model="toDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>Quick range</span>
+              <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
+                <option value="last_30_days">Last 30 days</option>
+                <option value="last_week">Last week</option>
+                <option value="last_month">Last month</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field grow">
+              <span>Acquisition payload</span>
+              <input
+                v-model="payload"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                placeholder="(optional)"
+                list="payloads"
+              />
+              <datalist id="payloads">
+                <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
+              </datalist>
+            </label>
+          </div>
+
+          <div v-if="!password" class="callout">
+            Enter password above to load users.
+          </div>
+          <div v-else-if="usersError" class="callout error">
+            {{ usersError }}
           </div>
         </div>
-
-        <p class="hint" v-if="!password">Enter password first to load users.</p>
-        <p class="error" v-else-if="usersError">{{ usersError }}</p>
       </section>
 
       <section class="card users-table-card">
@@ -614,253 +460,278 @@
       </section>
     </template>
 
-    <section class="card broadcast" v-else-if="activeTab === 'messaging'">
-      <div class="broadcast-head">
+    <section class="card panel" v-else-if="activeTab === 'messaging'">
+      <header class="panel-head">
         <div>
-          <div class="kicker">Broadcast</div>
-          <h2>Send message to filtered users</h2>
-          <p class="sub compact">Preview count updates from filters before sending.</p>
+          <div class="panel-kicker">Messaging</div>
+          <h2 class="panel-title">Broadcast</h2>
+          <p class="panel-sub">Segment users, preview recipients, then send a message.</p>
         </div>
-        <div class="broadcast-counter">
-          <div class="counter-label">Will send to</div>
-          <div class="counter-value">{{ fmt(broadcastPreview.count) }}</div>
-          <div class="counter-meta" v-if="previewLoading">Updating…</div>
-          <div class="counter-meta" v-else-if="previewError">Preview error</div>
-          <div class="counter-meta" v-else-if="previewUpdatedAt">Updated: {{ previewUpdatedAt }}</div>
-        </div>
-      </div>
-
-      <div class="row">
-        <label class="field grow">
-          <span>Username contains</span>
-          <input
-            v-model.trim="broadcast.username"
-            type="text"
-            autocomplete="off"
-            inputmode="text"
-            placeholder="(optional)"
-          />
-        </label>
-
-        <label class="field">
-          <span>Last activity</span>
-          <select v-model="broadcast.lastActivityMode">
-            <option value="any">Any</option>
-            <option value="active_within">Active within X days</option>
-            <option value="inactive_for">Inactive for X+ days</option>
-            <option value="never_active">Never active</option>
-          </select>
-        </label>
-
-        <label class="field" v-if="broadcast.lastActivityMode !== 'any' && broadcast.lastActivityMode !== 'never_active'">
-          <span>X days</span>
-          <input v-model.number="broadcast.lastActivityDays" type="number" min="1" max="3650" />
-        </label>
-      </div>
-
-      <div class="row">
-        <label class="field">
-          <span>Usage filter</span>
-          <select v-model="broadcast.usageMode">
-            <option value="any">Any</option>
-            <option value="reached">Limit reached</option>
-            <option value="percent_gte">Usage >= X%</option>
-          </select>
-        </label>
-
-        <label class="field" v-if="broadcast.usageMode === 'percent_gte'">
-          <span>X percent</span>
-          <input v-model.number="broadcast.usagePercent" type="number" min="0" max="100" />
-        </label>
-
-        <div class="field grow">
-          <span>Current plan</span>
-          <div class="plan-pills">
-            <label class="pill">
-              <input v-model="broadcast.planFree" type="checkbox" />
-              <span>Free</span>
-            </label>
-            <label class="pill">
-              <input v-model="broadcast.planPro" type="checkbox" />
-              <span>Pro</span>
-            </label>
+        <div class="panel-actions">
+          <div class="counter-chip" :class="{ warn: Boolean(previewError) }">
+            <div class="counter-chip-label">Will send to</div>
+            <div class="counter-chip-value">{{ fmt(broadcastPreview.count) }}</div>
+            <div class="counter-chip-meta" v-if="previewLoading">Updating…</div>
+            <div class="counter-chip-meta" v-else-if="previewUpdatedAt">Updated: {{ previewUpdatedAt }}</div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div class="row" v-if="botStats.length">
-        <div class="field grow">
-          <span>Bot</span>
-          <div class="plan-pills">
-            <label class="pill" :class="{ active: !hasSelectedBots }">
+      <div class="panel-body broadcast-layout">
+        <section class="broadcast-pane">
+          <div class="pane-title">Audience filters</div>
+
+          <div class="row">
+            <label class="field grow">
+              <span>Username contains</span>
               <input
-                type="checkbox"
-                :checked="!hasSelectedBots"
-                @change="broadcast.botKeys = []"
+                v-model.trim="broadcast.username"
+                type="text"
+                autocomplete="off"
+                inputmode="text"
+                placeholder="(optional)"
               />
-              <span>All bots</span>
             </label>
-            <label class="pill" v-for="bot in botStats" :key="bot.bot_key" :class="{ active: broadcast.botKeys.includes(bot.bot_key) }">
-              <input v-model="broadcast.botKeys" type="checkbox" :value="bot.bot_key" />
-              <span>{{ bot.bot_key }}</span>
+
+            <label class="field">
+              <span>Last activity</span>
+              <select v-model="broadcast.lastActivityMode">
+                <option value="any">Any</option>
+                <option value="active_within">Active within X days</option>
+                <option value="inactive_for">Inactive for X+ days</option>
+                <option value="never_active">Never active</option>
+              </select>
+            </label>
+
+            <label class="field" v-if="broadcast.lastActivityMode !== 'any' && broadcast.lastActivityMode !== 'never_active'">
+              <span>X days</span>
+              <input v-model.number="broadcast.lastActivityDays" type="number" min="1" max="3650" />
             </label>
           </div>
-        </div>
-      </div>
 
-      <div class="row">
-        <label class="field grow">
-          <span>Message text</span>
-          <textarea
-            v-model="broadcast.messageText"
-            rows="5"
-            maxlength="4096"
-            placeholder="Write the message that will be sent to each selected user..."
-          />
-          <small class="hint">HTML formatting is supported in broadcast messages.</small>
-        </label>
-      </div>
+          <div class="row">
+            <label class="field">
+              <span>Usage filter</span>
+              <select v-model="broadcast.usageMode">
+                <option value="any">Any</option>
+                <option value="reached">Limit reached</option>
+                <option value="percent_gte">Usage >= X%</option>
+              </select>
+            </label>
 
-      <div class="row">
-        <label class="field">
-          <span>Confirm send</span>
-          <input
-            v-model.trim="broadcastConfirm"
-            type="text"
-            autocomplete="off"
-            inputmode="text"
-            placeholder="Type SEND"
-          />
-        </label>
+            <label class="field" v-if="broadcast.usageMode === 'percent_gte'">
+              <span>X percent</span>
+              <input v-model.number="broadcast.usagePercent" type="number" min="0" max="100" />
+            </label>
 
-        <div class="actions">
-          <button class="btn" type="button" :disabled="!password || previewLoading" @click="refreshBroadcastPreview()">
-            {{ previewLoading ? 'Preview…' : 'Refresh preview' }}
-          </button>
-          <button class="btn primary" type="button" :disabled="!canSendBroadcast || sendingBroadcast" @click="sendBroadcast">
-            {{ sendingBroadcast ? 'Sending…' : `Send to ${fmt(broadcastPreview.count)}` }}
-          </button>
-        </div>
-      </div>
+            <div class="field grow">
+              <span>Current plan</span>
+              <div class="plan-pills">
+                <label class="pill">
+                  <input v-model="broadcast.planFree" type="checkbox" />
+                  <span>Free</span>
+                </label>
+                <label class="pill">
+                  <input v-model="broadcast.planPro" type="checkbox" />
+                  <span>Pro</span>
+                </label>
+              </div>
+            </div>
+          </div>
 
-      <p class="hint" v-if="!password">Enter admin password above to use broadcast.</p>
-      <p class="hint" v-else-if="!hasAnySelectedPlan">Pick at least one plan.</p>
-      <p class="error" v-else-if="previewError">{{ previewError }}</p>
-      <p class="error" v-else-if="sendError">{{ sendError }}</p>
-      <p class="hint" v-else-if="sendInfo">{{ sendInfo }}</p>
+          <div class="row" v-if="botStats.length">
+            <div class="field grow">
+              <span>Bot</span>
+              <div class="plan-pills">
+                <label class="pill" :class="{ active: !hasSelectedBots }">
+                  <input type="checkbox" :checked="!hasSelectedBots" @change="broadcast.botKeys = []" />
+                  <span>All bots</span>
+                </label>
+                <label class="pill" v-for="bot in botStats" :key="bot.bot_key" :class="{ active: broadcast.botKeys.includes(bot.bot_key) }">
+                  <input v-model="broadcast.botKeys" type="checkbox" :value="bot.bot_key" />
+                  <span>{{ bot.bot_key }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <div class="preview-sample" v-if="broadcastPreview.sample.length">
-        <div class="sample-title">Sample recipients</div>
-        <ul>
-          <li v-for="row in broadcastPreview.sample.slice(0, 8)" :key="`${row.chat_id}-${row.bot_key}`">
-            <code>{{ row.chat_id }}</code>
-            <span>{{ row.username ? `@${row.username}` : '(no username)' }}</span>
-            <span class="bot-badge">{{ row.bot_key }}</span>
-            <span>{{ displayTier(row.effective_tier) }}</span>
-            <span>{{ formatLastActivity(row.last_activity_at) }}</span>
-          </li>
-        </ul>
-      </div>
+        <section class="broadcast-pane">
+          <div class="pane-title">Message</div>
 
-      <div class="campaign-state" v-if="campaignState">
-        <div class="campaign-head">
-          <strong>Campaign #{{ campaignState.id }}</strong>
-          <span class="chip">{{ campaignState.status }}</span>
-        </div>
-        <div class="campaign-stats">
-          <span>Total: {{ fmt(campaignState.total_recipients) }}</span>
-          <span>Sent: {{ fmt(campaignState.sent_count) }}</span>
-          <span>Failed: {{ fmt(campaignState.failed_count) }}</span>
-          <span>Pending: {{ fmt(campaignState.pending_count) }}</span>
-        </div>
-        <p class="error" v-if="campaignState.error_text">{{ campaignState.error_text }}</p>
+          <div class="row">
+            <label class="field grow">
+              <span>Message text</span>
+              <textarea
+                v-model="broadcast.messageText"
+                rows="6"
+                maxlength="4096"
+                placeholder="Write the message that will be sent to each selected user…"
+              />
+              <small class="hint">HTML formatting is supported.</small>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field">
+              <span>Confirm send</span>
+              <input
+                v-model.trim="broadcastConfirm"
+                type="text"
+                autocomplete="off"
+                inputmode="text"
+                placeholder="Type SEND"
+              />
+            </label>
+
+            <div class="actions">
+              <button class="btn" type="button" :disabled="!password || previewLoading" @click="refreshBroadcastPreview()">
+                {{ previewLoading ? 'Preview…' : 'Refresh preview' }}
+              </button>
+              <button class="btn primary" type="button" :disabled="!canSendBroadcast || sendingBroadcast" @click="sendBroadcast">
+                {{ sendingBroadcast ? 'Sending…' : `Send to ${fmt(broadcastPreview.count)}` }}
+              </button>
+            </div>
+          </div>
+
+          <div v-if="!password" class="callout">Enter admin password above to use broadcast.</div>
+          <div v-else-if="!hasAnySelectedPlan" class="callout">Pick at least one plan.</div>
+          <div v-else-if="previewError" class="callout error">{{ previewError }}</div>
+          <div v-else-if="sendError" class="callout error">{{ sendError }}</div>
+          <div v-else-if="sendInfo" class="callout">{{ sendInfo }}</div>
+
+          <div class="sample-card" v-if="broadcastPreview.sample.length">
+            <div class="sample-title">Sample recipients</div>
+            <div class="sample-table-wrap">
+              <table class="sample-table">
+                <thead>
+                  <tr>
+                    <th>Chat</th>
+                    <th>Username</th>
+                    <th>Bot</th>
+                    <th>Tier</th>
+                    <th>Last activity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in broadcastPreview.sample.slice(0, 8)" :key="`${row.chat_id}-${row.bot_key}`">
+                    <td><code>{{ row.chat_id }}</code></td>
+                    <td>{{ row.username ? `@${row.username}` : '—' }}</td>
+                    <td><span class="bot-badge">{{ row.bot_key }}</span></td>
+                    <td>{{ displayTier(row.effective_tier) }}</td>
+                    <td>{{ formatLastActivity(row.last_activity_at) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="campaign-state" v-if="campaignState">
+            <div class="campaign-head">
+              <strong>Campaign #{{ campaignState.id }}</strong>
+              <span class="chip">{{ campaignState.status }}</span>
+            </div>
+            <div class="campaign-stats">
+              <span>Total: {{ fmt(campaignState.total_recipients) }}</span>
+              <span>Sent: {{ fmt(campaignState.sent_count) }}</span>
+              <span>Failed: {{ fmt(campaignState.failed_count) }}</span>
+              <span>Pending: {{ fmt(campaignState.pending_count) }}</span>
+            </div>
+            <p class="error" v-if="campaignState.error_text">{{ campaignState.error_text }}</p>
+          </div>
+        </section>
       </div>
     </section>
 
-    <section class="card feedback" v-else>
-      <div class="feedback-head">
+    <section class="card panel" v-else-if="activeTab === 'feedback'">
+      <header class="panel-head">
         <div>
-          <div class="kicker">Feedback inbox</div>
-          <h2>User feedback</h2>
-          <p class="sub compact">Text and voice feedback submitted with <code>/feedback</code>.</p>
+          <div class="panel-kicker">Feedback</div>
+          <h2 class="panel-title">Inbox</h2>
+          <p class="panel-sub">Text and voice feedback submitted with <code>/feedback</code>.</p>
         </div>
-        <div class="feedback-count">Total: {{ fmt(feedbackTotal) }}</div>
-      </div>
-
-      <div class="row">
-        <label class="field">
-          <span>From (UTC)</span>
-          <input v-model="feedbackFromDate" type="date" />
-        </label>
-        <label class="field">
-          <span>To (UTC, inclusive)</span>
-          <input v-model="feedbackToDate" type="date" />
-        </label>
-        <label class="field">
-          <span>Kind</span>
-          <select v-model="feedbackKind">
-            <option value="any">Any</option>
-            <option value="text">Text</option>
-            <option value="voice">Voice</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="row">
-        <label class="field grow">
-          <span>Search</span>
-          <input
-            v-model.trim="feedbackSearch"
-            type="text"
-            autocomplete="off"
-            inputmode="text"
-            placeholder="username, name, chat id, or text"
-          />
-        </label>
-        <div class="actions">
+        <div class="panel-actions">
+          <span class="status-pill subtle" v-if="feedbackUpdatedAt">Updated: {{ feedbackUpdatedAt }}</span>
+          <span class="status-pill">Total: {{ fmt(feedbackTotal) }}</span>
+          <button class="btn" type="button" :disabled="feedbackLoading" @click="resetFeedbackRange">Last 30d</button>
           <button class="btn primary" type="button" :disabled="!canFetchFeedback || feedbackLoading" @click="refreshFeedback({ resetOffset: true })">
             {{ feedbackLoading ? 'Loading…' : 'Refresh' }}
           </button>
-          <button class="btn" type="button" :disabled="feedbackLoading" @click="resetFeedbackRange">Last 30d</button>
+        </div>
+      </header>
+
+      <div class="panel-body">
+        <div class="row">
+          <label class="field">
+            <span>From (UTC)</span>
+            <input v-model="feedbackFromDate" type="date" />
+          </label>
+          <label class="field">
+            <span>To (UTC, inclusive)</span>
+            <input v-model="feedbackToDate" type="date" />
+          </label>
+          <label class="field">
+            <span>Kind</span>
+            <select v-model="feedbackKind">
+              <option value="any">Any</option>
+              <option value="text">Text</option>
+              <option value="voice">Voice</option>
+            </select>
+          </label>
+          <label class="field grow">
+            <span>Search</span>
+            <input
+              v-model.trim="feedbackSearch"
+              type="text"
+              autocomplete="off"
+              inputmode="text"
+              placeholder="username, name, chat id, or text"
+            />
+          </label>
+        </div>
+
+        <div v-if="!password" class="callout">Enter admin password above to load feedback.</div>
+        <div v-else-if="feedbackError" class="callout error">{{ feedbackError }}</div>
+
+        <div class="feedback-list" v-if="feedbackRows.length">
+          <article class="feedback-item" v-for="row in feedbackRows" :key="row.id">
+            <div class="feedback-item-head">
+              <div class="feedback-meta">
+                <span class="chip">{{ row.kind }}</span>
+                <code>#{{ row.id }}</code>
+                <code>{{ row.chat_id }}</code>
+                <span>{{ row.username ? `@${row.username}` : (row.first_name || 'unknown user') }}</span>
+              </div>
+              <time>{{ formatFeedbackTime(row.created_at) }}</time>
+            </div>
+            <pre class="feedback-text">{{ feedbackBody(row) }}</pre>
+            <p class="hint" v-if="row.kind === 'voice' && row.telegram_file_id">
+              Voice file id: <code>{{ row.telegram_file_id }}</code>
+            </p>
+          </article>
+        </div>
+
+        <p class="hint" v-else-if="password && !feedbackLoading">No feedback found for current filters.</p>
+
+        <div class="feedback-pager">
+          <button class="btn" type="button" :disabled="feedbackLoading || feedbackOffset <= 0" @click="feedbackPrevPage">
+            Previous
+          </button>
+          <button class="btn" type="button" :disabled="feedbackLoading || !feedbackHasNext" @click="feedbackNextPage">
+            Next
+          </button>
         </div>
       </div>
+    </section>
 
-      <p class="hint" v-if="!password">Enter admin password above to load feedback.</p>
-      <p class="error" v-else-if="feedbackError">{{ feedbackError }}</p>
-
-      <div class="feedback-list" v-if="feedbackRows.length">
-        <article class="feedback-item" v-for="row in feedbackRows" :key="row.id">
-          <div class="feedback-item-head">
-            <div class="feedback-meta">
-              <span class="chip">{{ row.kind }}</span>
-              <code>#{{ row.id }}</code>
-              <code>{{ row.chat_id }}</code>
-              <span>{{ row.username ? `@${row.username}` : (row.first_name || 'unknown user') }}</span>
-            </div>
-            <time>{{ formatFeedbackTime(row.created_at) }}</time>
-          </div>
-          <pre class="feedback-text">{{ feedbackBody(row) }}</pre>
-          <p class="hint" v-if="row.kind === 'voice' && row.telegram_file_id">
-            Voice file id: <code>{{ row.telegram_file_id }}</code>
-          </p>
-        </article>
-      </div>
-
-      <p class="hint" v-else-if="password && !feedbackLoading">No feedback found for current filters.</p>
-
-      <div class="feedback-pager">
-        <button class="btn" type="button" :disabled="feedbackLoading || feedbackOffset <= 0" @click="feedbackPrevPage">
-          Previous
-        </button>
-        <button class="btn" type="button" :disabled="feedbackLoading || !feedbackHasNext" @click="feedbackNextPage">
-          Next
-        </button>
-      </div>
+    <section class="card" v-else>
+      <p class="hint">Select a tab.</p>
     </section>
 
     <footer class="foot">
       <button class="link" type="button" @click="emit('navigate', '/', { replace: true })">← Back to app</button>
       <span v-if="activeTab === 'analytics' && lastUpdated" class="stamp">Updated: {{ lastUpdated }}</span>
+      <span v-else-if="activeTab === 'users' && usersUpdatedAt" class="stamp">Updated: {{ usersUpdatedAt }}</span>
       <span v-else-if="activeTab === 'feedback' && feedbackUpdatedAt" class="stamp">Updated: {{ feedbackUpdatedAt }}</span>
       <span v-else-if="activeTab === 'messaging' && previewUpdatedAt" class="stamp">Updated: {{ previewUpdatedAt }}</span>
     </footer>
@@ -928,8 +799,7 @@ function rangeForPreset(preset) {
 }
 
 const password = ref('');
-const ADMIN_TABS = ['overview', 'analytics', 'users', 'messaging', 'feedback'];
-const activeTab = ref('overview');
+const activeTab = ref('analytics');
 const { from: defaultFrom, to: defaultTo } = defaultRange();
 const fromDate = ref(defaultFrom);
 const toDate = ref(defaultTo);
@@ -997,6 +867,7 @@ const usersOffset = ref(0);
 const usersLimit = ref(50);
 const usersLoading = ref(false);
 const usersError = ref('');
+const usersUpdatedAt = ref('');
 const usersSort = reactive({
   key: 'created_at',
   dir: 'desc' // 'asc' | 'desc'
@@ -1005,101 +876,12 @@ const usersSort = reactive({
 const usersPageStart = computed(() => (usersTotal.value ? usersOffset.value + 1 : 0));
 const usersPageEnd = computed(() => Math.min(usersOffset.value + usersRows.value.length, usersTotal.value));
 
-const overviewFeatures = [
-  {
-    title: 'Charts with hover values',
-    desc: 'See exact values on hover. Tap to pin a tooltip on mobile.',
-    icon: `
-      <svg viewBox="0 0 24 24" class="ic">
-        <path d="M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M6 15l4-4 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="10" cy="11" r="1.5" fill="currentColor" opacity="0.7"/>
-        <circle cx="13" cy="14" r="1.5" fill="currentColor" opacity="0.7"/>
-        <circle cx="18" cy="8" r="1.5" fill="currentColor" opacity="0.7"/>
-      </svg>
-    `
-  },
-  {
-    title: 'Fast filtering, inclusive ranges',
-    desc: 'UTC ranges are inclusive. Quick presets keep audits consistent.',
-    icon: `
-      <svg viewBox="0 0 24 24" class="ic">
-        <path d="M5 6h14M8 12h8M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M4 6l5 6v6l6-3v-3l5-6" fill="currentColor" opacity="0.14"/>
-      </svg>
-    `
-  },
-  {
-    title: 'Users + messaging in one place',
-    desc: 'Segment audiences, preview counts, and send broadcasts safely.',
-    icon: `
-      <svg viewBox="0 0 24 24" class="ic">
-        <path d="M7 11h10M7 15h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M6 3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H10l-4 3v-3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z" fill="currentColor" opacity="0.14"/>
-      </svg>
-    `
-  },
-  {
-    title: 'Secure by design',
-    desc: 'Admin endpoints require a password header. No caching for sensitive views.',
-    icon: `
-      <svg viewBox="0 0 24 24" class="ic">
-        <path d="M12 2.5c3 2.6 5.8 3 8.5 3.6v6.8c0 5.3-3.8 8.7-8.5 8.7S3.5 18.2 3.5 12.9V6.1C6.2 5.5 9 5.1 12 2.5Z" fill="currentColor" opacity="0.14"/>
-        <path d="M9.2 12.1l1.7 1.8 3.9-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    `
-  }
-];
-
-const spark = computed(() => {
-  const w = 320;
-  const h = 140;
-  const padX = 14;
-  const padT = 18;
-  const padB = 28;
-  const baseY = h - padB;
-  const innerH = h - padT - padB;
-
-  const src = Array.isArray(newUsersSeries.value) ? newUsersSeries.value : [];
-  const liveRows = src.slice(-14);
-  const liveValues = liveRows.map((r) => Number(r?.count ?? 0)).filter((v) => Number.isFinite(v));
-  const hasLive = liveRows.length >= 2 && liveValues.some((v) => v > 0);
-
-  const previewValues = [4, 7, 5, 9, 8, 11, 7, 12, 10, 13, 9, 15, 12, 16];
-  const values = hasLive ? liveRows.map((r) => Math.max(0, Number(r?.count ?? 0) || 0)) : previewValues;
-  const leftLabel = hasLive ? String(liveRows[0]?.day ?? '') : 'Preview';
-  const rightLabel = hasLive ? String(liveRows[liveRows.length - 1]?.day ?? '') : 'Now';
-  const max = Math.max(1, ...values);
-  const n = values.length;
-  const step = (w - 2 * padX) / Math.max(1, n - 1);
-
-  const points = values.map((v, i) => {
-    const x = padX + i * step;
-    const t = Math.max(0, Math.min(1, v / max));
-    const y = padT + (1 - t) * innerH;
-    return { x, y };
-  });
-
-  const linePath = points.length
-    ? `M ${points.map((p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' L ')}`
-    : `M ${padX} ${baseY} L ${w - padX} ${baseY}`;
-
-  const areaPath = points.length
-    ? `M ${points[0].x.toFixed(2)} ${baseY.toFixed(2)} L ${points
-        .map((p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
-        .join(' L ')} L ${points[points.length - 1].x.toFixed(2)} ${baseY.toFixed(2)} Z`
-    : `M ${padX} ${baseY} L ${w - padX} ${baseY} Z`;
-
-  const lastPoint = points[points.length - 1] || { x: w - padX, y: baseY };
-
-  return {
-    isPreview: !hasLive,
-    leftLabel,
-    rightLabel,
-    linePath,
-    areaPath,
-    lastPoint
-  };
+const activeStamp = computed(() => {
+  if (activeTab.value === 'analytics') return lastUpdated.value || '';
+  if (activeTab.value === 'users') return usersUpdatedAt.value || '';
+  if (activeTab.value === 'messaging') return previewUpdatedAt.value || '';
+  if (activeTab.value === 'feedback') return feedbackUpdatedAt.value || '';
+  return '';
 });
 
 function usersSortIndicator(key) {
@@ -1635,6 +1417,7 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
     const data = usersRes.value;
     usersRows.value = Array.isArray(data?.items) ? data.items : [];
     usersTotal.value = Number.isFinite(Number(data?.total)) ? Number(data.total) : 0;
+    usersUpdatedAt.value = isoStampNow();
 
     if (payloadsRes.status === 'fulfilled') {
       payloadOptions.value = Array.isArray(payloadsRes.value?.payloads) ? payloadsRes.value.payloads : payloadOptions.value;
@@ -1643,6 +1426,7 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
     console.error(err);
     usersRows.value = [];
     usersTotal.value = 0;
+    usersUpdatedAt.value = '';
     const msg = err?.payload?.error || err?.message || 'request_failed';
     usersError.value = `Failed to load users: ${msg}`;
   } finally {
@@ -1730,6 +1514,7 @@ function clearPassword() {
   usersTotal.value = 0;
   usersOffset.value = 0;
   usersError.value = '';
+  usersUpdatedAt.value = '';
 }
 
 function usersNextPage() {
@@ -1745,14 +1530,7 @@ function usersPrevPage() {
 }
 
 onMounted(() => {
-  try {
-    const saved = (window.localStorage.getItem('admin_dashboard_tab') || '').toString();
-    if (saved && ADMIN_TABS.includes(saved)) {
-      activeTab.value = saved;
-    }
-  } catch {
-    // ignore
-  }
+  // No auto-fetch until password is provided.
 });
 
 watch(
@@ -1783,12 +1561,6 @@ watch(
 watch(
   () => activeTab.value,
   (tab) => {
-    try {
-      window.localStorage.setItem('admin_dashboard_tab', tab);
-    } catch {
-      // ignore
-    }
-
     if (tab === 'feedback' && password.value && feedbackRows.value.length === 0) {
       feedbackOffset.value = 0;
       refreshFeedback();
@@ -1882,456 +1654,134 @@ h1 {
   gap: 12px;
 }
 
-.landing-hero {
-  border-radius: 26px;
-  border: 1px solid rgba(30, 26, 22, 0.12);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.46));
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 26px 70px rgba(20, 18, 16, 0.16);
-  padding: 18px;
-  overflow: hidden;
-  position: relative;
-}
-
-.landing-hero::before {
-  content: '';
-  position: absolute;
-  inset: -120px -120px auto;
-  height: 260px;
-  background:
-    radial-gradient(240px 160px at 30% 55%, rgba(59, 130, 246, 0.20), transparent 70%),
-    radial-gradient(260px 180px at 70% 40%, rgba(245, 158, 11, 0.16), transparent 72%);
-  pointer-events: none;
-}
-
-.landing-hero-grid {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1.2fr 0.9fr;
-  gap: 14px;
-  align-items: stretch;
-}
-
-.landing-copy {
-  display: grid;
+.access-row {
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  align-content: start;
-  padding: 8px 8px 8px 6px;
+  align-items: end;
 }
 
-.landing-pill {
+.access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  width: fit-content;
-  padding: 7px 10px;
+  gap: 8px;
   border-radius: 999px;
   border: 1px solid rgba(30, 26, 22, 0.12);
   background: rgba(246, 241, 232, 0.55);
-  color: rgba(30, 26, 22, 0.78);
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.landing-pill-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(245, 158, 11, 0.95);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14);
-}
-
-.landing-pill-sep {
-  opacity: 0.55;
-}
-
-.landing-title {
-  margin: 0;
-  font-size: clamp(22px, 2.6vw, 36px);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-}
-
-.landing-sub {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.6;
-  max-width: 70ch;
-}
-
-.landing-cta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.trust {
-  display: grid;
-  gap: 8px;
-  padding-top: 4px;
-}
-
-.trust-label {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.trust-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.trust-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   padding: 7px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(30, 26, 22, 0.10);
-  background: rgba(255, 255, 255, 0.64);
-  color: rgba(30, 26, 22, 0.78);
   font-size: 12px;
-  font-weight: 650;
+  color: rgba(30, 26, 22, 0.78);
+  font-weight: 750;
   white-space: nowrap;
 }
 
-.trust-ic {
-  width: 16px;
-  height: 16px;
+.status-pill.ok {
+  border-color: rgba(31, 107, 99, 0.28);
+  background: rgba(31, 107, 99, 0.10);
+  color: rgba(31, 107, 99, 0.92);
 }
 
-.landing-viz {
-  display: grid;
-  align-content: start;
+.status-pill.subtle {
+  opacity: 0.85;
 }
 
-.viz-card {
-  border-radius: 22px;
-  border: 1px solid rgba(30, 26, 22, 0.12);
-  background: rgba(246, 241, 232, 0.42);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  padding: 14px;
-  display: grid;
+.tabs {
+  position: sticky;
+  top: 14px;
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.tab-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 999px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.tab-btn.active {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.22);
+}
+
+.panel {
   gap: 12px;
-  box-shadow: 0 20px 60px rgba(20, 18, 16, 0.14);
 }
 
-.viz-head {
+.panel-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.viz-kicker {
+.panel-kicker {
   text-transform: uppercase;
   letter-spacing: 0.22em;
   font-size: 10px;
   color: rgba(30, 26, 22, 0.55);
 }
 
-.viz-title {
-  font-weight: 760;
-  letter-spacing: -0.01em;
+.panel-title {
+  margin: 2px 0 0;
+  font-size: 22px;
+  line-height: 1.2;
 }
 
-.viz-meta {
-  display: grid;
-  justify-items: end;
-  gap: 6px;
-}
-
-.viz-badge {
-  border-radius: 999px;
-  border: 1px solid rgba(30, 26, 22, 0.10);
-  background: rgba(255, 255, 255, 0.62);
-  color: rgba(30, 26, 22, 0.72);
-  font-size: 11px;
-  padding: 4px 8px;
-  font-weight: 750;
-}
-
-.viz-badge.live {
-  border-color: rgba(31, 107, 99, 0.28);
-  background: rgba(31, 107, 99, 0.10);
-  color: rgba(31, 107, 99, 0.92);
-}
-
-.viz-stamp {
-  color: rgba(30, 26, 22, 0.55);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.spark {
-  border-radius: 16px;
-  border: 1px solid rgba(30, 26, 22, 0.08);
-  background: rgba(255, 255, 255, 0.62);
-  overflow: hidden;
-  padding: 10px 12px 8px;
-}
-
-.spark svg {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.spark-axis {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 4px;
-  font-size: 11px;
-  color: rgba(30, 26, 22, 0.55);
-}
-
-.spark-note {
-  color: rgba(245, 158, 11, 0.92);
-  font-weight: 750;
-}
-
-.viz-foot {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.viz-metric {
-  border-radius: 16px;
-  border: 1px solid rgba(30, 26, 22, 0.08);
-  background: rgba(255, 255, 255, 0.52);
-  padding: 10px 10px 9px;
-  display: grid;
-  gap: 4px;
-}
-
-.viz-metric-label {
-  font-size: 11px;
-  color: rgba(30, 26, 22, 0.55);
-}
-
-.viz-metric-value {
-  font-family: var(--font-display);
-  font-weight: 750;
-  letter-spacing: -0.02em;
-  font-size: 18px;
-}
-
-.viz-hint {
-  margin: 0;
-  font-size: 12px;
-  color: rgba(30, 26, 22, 0.60);
-}
-
-.landing-section {
-  border-radius: 22px;
-  border: 1px solid rgba(30, 26, 22, 0.10);
-  background: rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 20px 60px rgba(20, 18, 16, 0.12);
-  padding: 16px 16px 14px;
-  display: grid;
-  gap: 12px;
-}
-
-.landing-section-head {
-  display: grid;
-  gap: 6px;
-}
-
-.landing-section-head h3 {
-  margin: 0;
-  font-size: 18px;
-  letter-spacing: -0.01em;
-}
-
-.landing-section-head p {
-  margin: 0;
+.panel-sub {
+  margin: 6px 0 0;
   color: var(--muted);
   font-size: 13px;
-  line-height: 1.6;
-}
-
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.feature {
-  border-radius: 18px;
-  border: 1px solid rgba(30, 26, 22, 0.10);
-  background: rgba(246, 241, 232, 0.36);
-  padding: 12px;
-  display: grid;
-  gap: 8px;
-  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
-}
-
-.feature:hover {
-  border-color: rgba(59, 130, 246, 0.26);
-  background: rgba(255, 255, 255, 0.62);
-  box-shadow: 0 18px 44px rgba(20, 18, 16, 0.12);
-}
-
-.feature-ic {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  border: 1px solid rgba(30, 26, 22, 0.10);
-  background: rgba(255, 255, 255, 0.62);
-  display: grid;
-  place-items: center;
-  color: rgba(30, 64, 175, 0.9);
-}
-
-.feature-ic :deep(svg.ic) {
-  width: 22px;
-  height: 22px;
-}
-
-.feature-title {
-  font-weight: 760;
-  letter-spacing: -0.01em;
-}
-
-.feature-desc {
-  color: var(--muted);
-  font-size: 12px;
   line-height: 1.55;
 }
 
-.pricing-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.pricing {
-  border-radius: 18px;
-  border: 1px solid rgba(30, 26, 22, 0.10);
-  background: rgba(246, 241, 232, 0.32);
-  padding: 14px;
-  display: grid;
-  gap: 10px;
-}
-
-.pricing.featured {
-  border-color: rgba(245, 158, 11, 0.32);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.66), rgba(246, 241, 232, 0.36));
-}
-
-.pricing-tier {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
-
-.pricing-badge {
-  border-radius: 999px;
-  padding: 4px 8px;
-  border: 1px solid rgba(245, 158, 11, 0.28);
-  background: rgba(245, 158, 11, 0.12);
-  color: rgba(199, 90, 36, 0.95);
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.pricing-price {
-  font-family: var(--font-display);
-  font-size: 34px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.pricing-sub {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.pricing-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 7px;
-  color: rgba(30, 26, 22, 0.78);
-  font-size: 12px;
-}
-
-.pricing-list li {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.pricing-list li::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(59, 130, 246, 0.85);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
-}
-
-.landing-note {
-  margin: 0;
-  color: rgba(30, 26, 22, 0.55);
-  font-size: 12px;
-}
-
-@media (max-width: 980px) {
-  .landing-hero-grid {
-    grid-template-columns: 1fr;
-  }
-  .feature-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 540px) {
-  .feature-grid {
-    grid-template-columns: 1fr;
-  }
-  .pricing-grid {
-    grid-template-columns: 1fr;
-  }
-  .viz-foot {
-    grid-template-columns: 1fr;
-  }
-}
-
-.tabs {
+.panel-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
-.tab-btn {
-  border: 1px solid var(--stroke);
-  background: rgba(255, 255, 255, 0.62);
-  border-radius: 999px;
-  padding: 9px 14px;
-  cursor: pointer;
-  font-weight: 650;
-  letter-spacing: 0.01em;
+.panel-body {
+  display: grid;
+  gap: 12px;
 }
 
-.tab-btn.active {
-  background: rgba(31, 107, 99, 0.16);
-  border-color: rgba(31, 107, 99, 0.28);
+.callout {
+  border-radius: 16px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(246, 241, 232, 0.40);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: rgba(30, 26, 22, 0.78);
+}
+
+.callout.error {
+  border-color: rgba(174, 43, 40, 0.22);
+  background: rgba(174, 43, 40, 0.08);
+  color: rgba(174, 43, 40, 0.92);
 }
 
 .row {
@@ -2455,91 +1905,156 @@ h1 {
   font-size: 13px;
 }
 
-.cards {
+.kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
+}
+
+.kpi {
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 18px 40px rgba(20, 18, 16, 0.12);
+  padding: 14px 14px 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.kpi-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.kpi-value {
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.kpi-value-sub {
+  font-size: 19px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.kpi-meta {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 12px;
-}
-
-.broadcast {
-  display: grid;
-  gap: 14px;
-}
-
-.feedback {
-  display: grid;
-  gap: 14px;
-}
-
-.feedback-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-}
-
-.feedback h2 {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.2;
-}
-
-.feedback-count {
-  border: 1px solid rgba(31, 107, 99, 0.2);
-  background: rgba(31, 107, 99, 0.08);
-  border-radius: 16px;
-  padding: 8px 12px;
-  font-weight: 650;
-}
-
-.broadcast h2 {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.2;
-}
-
-.broadcast-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  align-items: start;
 }
 
 .compact {
   margin-top: 6px;
 }
 
-.broadcast-counter {
+.counter-chip {
   min-width: 180px;
-  border: 1px solid rgba(31, 107, 99, 0.2);
-  background: rgba(31, 107, 99, 0.08);
   border-radius: 16px;
+  border: 1px solid rgba(31, 107, 99, 0.22);
+  background: rgba(31, 107, 99, 0.08);
   padding: 10px 12px;
   display: grid;
   gap: 4px;
 }
 
-.counter-label {
+.counter-chip.warn {
+  border-color: rgba(174, 43, 40, 0.22);
+  background: rgba(174, 43, 40, 0.08);
+}
+
+.counter-chip-label {
   font-size: 12px;
   color: var(--muted);
 }
 
-.counter-value {
+.counter-chip-value {
   font-family: var(--font-display);
   font-size: 32px;
   line-height: 1;
 }
 
-.counter-meta {
+.counter-chip-meta {
   font-size: 11px;
   color: var(--muted);
+}
+
+.broadcast-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.broadcast-pane {
+  border-radius: 18px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.54);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.pane-title {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.sample-card {
+  border-top: 1px solid rgba(30, 26, 22, 0.10);
+  padding-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.sample-title {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sample-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.sample-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.sample-table th,
+.sample-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(30, 26, 22, 0.08);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sample-table th {
+  position: sticky;
+  top: 0;
+  background: rgba(246, 241, 232, 0.85);
+  color: rgba(30, 26, 22, 0.68);
+  font-weight: 750;
+}
+
+.sample-table tbody tr:nth-child(even) td {
+  background: rgba(246, 241, 232, 0.14);
+}
+
+.sample-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.70);
 }
 
 .plan-pills {
@@ -2579,34 +2094,6 @@ h1 {
   width: 14px;
   margin: 0;
   cursor: pointer;
-}
-
-.preview-sample {
-  border-top: 1px solid rgba(30, 26, 22, 0.1);
-  padding-top: 10px;
-  display: grid;
-  gap: 6px;
-}
-
-.sample-title {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.preview-sample ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.preview-sample li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  font-size: 12px;
 }
 
 .bot-badge {
@@ -2662,6 +2149,13 @@ h1 {
   padding: 10px 12px;
   display: grid;
   gap: 8px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.feedback-item:hover {
+  background: rgba(255, 255, 255, 0.74);
+  border-color: rgba(59, 130, 246, 0.22);
+  box-shadow: 0 18px 44px rgba(20, 18, 16, 0.12);
 }
 
 .feedback-item-head {
@@ -2757,9 +2251,20 @@ h1 {
 }
 
 .users-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   color: var(--muted);
   font-weight: 650;
   background: rgba(246, 241, 232, 0.6);
+}
+
+.users-table tbody tr:nth-child(even) td {
+  background: rgba(246, 241, 232, 0.16);
+}
+
+.users-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.66);
 }
 
 .users-table tbody tr:last-child td {
@@ -2767,59 +2272,19 @@ h1 {
 }
 
 @media (max-width: 820px) {
-  .cards {
+  .kpi-grid {
     grid-template-columns: 1fr;
   }
 
   .charts-grid {
     grid-template-columns: 1fr;
   }
+}
 
-  .broadcast-head {
-    flex-direction: column;
+@media (max-width: 980px) {
+  .broadcast-layout {
+    grid-template-columns: 1fr;
   }
-
-  .broadcast-counter {
-    width: 100%;
-  }
-}
-
-.stat {
-  border: 1px solid var(--stroke);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: 0 18px 40px var(--shadow);
-  padding: 14px 14px 12px;
-  display: grid;
-  gap: 6px;
-}
-
-.label {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.value {
-  font-family: var(--font-display);
-  font-size: 34px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.value-pair {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.value-secondary {
-  font-size: 19px;
-  color: var(--muted);
-}
-
-.meta {
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .foot {
@@ -2890,6 +2355,10 @@ h1 {
   font-size: 13px;
   color: rgba(30, 26, 22, 0.85);
   white-space: nowrap;
+}
+
+.bot-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.32);
 }
 
 .bot-table tbody tr:hover td {
