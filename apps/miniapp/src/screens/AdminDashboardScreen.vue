@@ -113,27 +113,62 @@
           <div class="kicker">Bot Statistics</div>
           <div class="sub">Per-bot user counts and activity metrics</div>
         </header>
-        <div class="bot-stats-grid">
-          <div class="bot-stat" v-for="bot in botStats" :key="bot.bot_key">
-            <div class="bot-stat-header">
-              <span class="bot-key-badge">{{ bot.bot_key }}</span>
-              <span class="bot-stat-total">{{ fmt(bot.total_users) }} users</span>
-            </div>
-            <div class="bot-stat-metrics">
-              <div class="metric">
-                <span class="metric-label">Active</span>
-                <span class="metric-value">{{ fmt(bot.active_users) }}</span>
-              </div>
-              <div class="metric">
-                <span class="metric-label">Last 7d</span>
-                <span class="metric-value">{{ fmt(bot.users_last_7_days) }}</span>
-              </div>
-              <div class="metric">
-                <span class="metric-label">Last 30d</span>
-                <span class="metric-value">{{ fmt(bot.users_last_30_days) }}</span>
-              </div>
-            </div>
-          </div>
+        <div class="bot-table-wrap">
+          <table class="bot-table">
+            <thead>
+              <tr>
+                <th>
+                  <button class="sort" type="button" @click="toggleBotSort('bot_key')">
+                    Bot
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('bot_key') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleBotSort('base_lang')">
+                    Base
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('base_lang') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleBotSort('target_lang')">
+                    Target
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('target_lang') }}</span>
+                  </button>
+                </th>
+                <th class="num">
+                  <button class="sort" type="button" @click="toggleBotSort('users_last_3_days')">
+                    Active (3d)
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('users_last_3_days') }}</span>
+                  </button>
+                </th>
+                <th class="num">
+                  <button class="sort" type="button" @click="toggleBotSort('users_last_7_days')">
+                    Last 7d
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('users_last_7_days') }}</span>
+                  </button>
+                </th>
+                <th class="num">
+                  <button class="sort" type="button" @click="toggleBotSort('users_last_30_days')">
+                    Last 30d
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('users_last_30_days') }}</span>
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="bot in sortedBotStats" :key="bot.bot_key">
+                <td class="bot">
+                  <div class="bot-key">{{ bot.bot_key }}</div>
+                  <div class="bot-meta">{{ fmt(bot.total_users) }} users</div>
+                </td>
+                <td>{{ bot.base_lang || '—' }}</td>
+                <td>{{ bot.target_lang || '—' }}</td>
+                <td class="num">{{ fmt(bot.users_last_3_days) }}</td>
+                <td class="num">{{ fmt(bot.users_last_7_days) }}</td>
+                <td class="num">{{ fmt(bot.users_last_30_days) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -639,6 +674,11 @@ const totals = ref({
 
 const botStats = ref([]);
 
+const botSort = reactive({
+  key: 'users_last_3_days',
+  dir: 'desc' // 'asc' | 'desc'
+});
+
 const newUsersSeries = ref([]);
 const newPaidSeries = ref([]);
 const actionEventsSeries = ref([]);
@@ -690,6 +730,79 @@ const broadcast = reactive({
 
 let previewTimer = null;
 let campaignPollTimer = null;
+
+function parseBotKeyLangs(botKey) {
+  const s = String(botKey || '').trim();
+  if (!s) return { base_lang: '', target_lang: '' };
+  const parts = s.split(/[-_]/g).filter(Boolean);
+  if (parts.length >= 2) return { base_lang: parts[0], target_lang: parts[1] };
+  return { base_lang: parts[0] || '', target_lang: '' };
+}
+
+function botSortIndicator(key) {
+  if (botSort.key !== key) return '';
+  return botSort.dir === 'asc' ? '↑' : '↓';
+}
+
+function toggleBotSort(key) {
+  if (botSort.key === key) {
+    botSort.dir = botSort.dir === 'asc' ? 'desc' : 'asc';
+    return;
+  }
+  botSort.key = key;
+  botSort.dir = key === 'bot_key' || key === 'base_lang' || key === 'target_lang' ? 'asc' : 'desc';
+}
+
+function safeNum(value) {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function cmp(a, b) {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
+const botStatsTable = computed(() =>
+  (Array.isArray(botStats.value) ? botStats.value : []).map((bot) => {
+    const langs = parseBotKeyLangs(bot?.bot_key);
+    return {
+      ...bot,
+      ...langs,
+      total_users: safeNum(bot?.total_users),
+      active_users: safeNum(bot?.active_users),
+      users_last_3_days: safeNum(bot?.users_last_3_days),
+      users_last_7_days: safeNum(bot?.users_last_7_days),
+      users_last_30_days: safeNum(bot?.users_last_30_days)
+    };
+  })
+);
+
+const sortedBotStats = computed(() => {
+  const rows = botStatsTable.value.slice();
+  const dir = botSort.dir === 'asc' ? 1 : -1;
+  const key = botSort.key;
+
+  rows.sort((ra, rb) => {
+    const a = ra?.[key];
+    const b = rb?.[key];
+
+    const isText = key === 'bot_key' || key === 'base_lang' || key === 'target_lang';
+    if (isText) {
+      const av = String(a || '');
+      const bv = String(b || '');
+      const primary = av.localeCompare(bv);
+      if (primary) return primary * dir;
+      return String(ra.bot_key || '').localeCompare(String(rb.bot_key || ''));
+    }
+
+    const primary = cmp(safeNum(a), safeNum(b));
+    if (primary) return primary * dir;
+    return String(ra.bot_key || '').localeCompare(String(rb.bot_key || ''));
+  });
+
+  return rows;
+});
 
 const canFetch = computed(() => {
   if (!password.value) return false;
@@ -1832,70 +1945,84 @@ h1 {
   gap: 6px;
 }
 
-.bot-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-}
-
-.bot-stat {
-  border: 1px solid rgba(30, 26, 22, 0.12);
+.bot-table-wrap {
+  margin-top: 10px;
+  overflow: auto;
   border-radius: 14px;
-  background: rgba(246, 241, 232, 0.4);
-  padding: 12px;
-  display: grid;
-  gap: 10px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: rgba(246, 241, 232, 0.35);
 }
 
-.bot-stat-header {
-  display: flex;
-  justify-content: space-between;
+.bot-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.bot-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(246, 241, 232, 0.9);
+  border-bottom: 1px solid rgba(30, 26, 22, 0.10);
+  padding: 10px 10px;
+  text-align: left;
+  font-size: 12px;
+  color: rgba(30, 26, 22, 0.78);
+  white-space: nowrap;
+}
+
+.bot-table th.num,
+.bot-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bot-table tbody td {
+  border-top: 1px solid rgba(30, 26, 22, 0.08);
+  padding: 10px 10px;
+  font-size: 13px;
+  color: rgba(30, 26, 22, 0.85);
+  white-space: nowrap;
+}
+
+.bot-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.sort {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+  font-weight: 700;
 }
 
-.bot-key-badge {
+.sort-ind {
+  display: inline-block;
+  min-width: 10px;
+  opacity: 0.65;
+}
+
+.bot {
+  display: grid;
+  gap: 2px;
+}
+
+.bot-key {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: 0.02em;
+  font-weight: 760;
+  letter-spacing: 0.01em;
   color: var(--ink);
 }
 
-.bot-stat-total {
-  font-size: 13px;
+.bot-meta {
+  font-size: 12px;
   color: var(--muted);
-  font-weight: 650;
-}
-
-.bot-stat-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.metric {
-  display: grid;
-  gap: 3px;
-}
-
-.metric-label {
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.metric-value {
-  font-family: var(--font-display);
-  font-size: 20px;
-  line-height: 1;
-  letter-spacing: -0.01em;
-}
-
-@media (max-width: 820px) {
-  .bot-stats-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

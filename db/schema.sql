@@ -231,7 +231,8 @@ CREATE VIEW public.bot_stats AS
     count(DISTINCT chat_id) FILTER (WHERE (created_at >= (now() - '7 days'::interval))) AS new_users_7_days,
     count(DISTINCT chat_id) FILTER (WHERE (created_at >= (now() - '30 days'::interval))) AS new_users_30_days,
     min(first_seen_at) AS first_user_at,
-    max(last_seen_at) AS last_activity_at
+    max(last_seen_at) AS last_activity_at,
+    count(DISTINCT chat_id) FILTER (WHERE (last_seen_at >= (now() - '3 days'::interval))) AS users_last_3_days
    FROM public.user_bots ub
   GROUP BY bot_key;
 
@@ -1172,4 +1173,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260212120000'),
     ('20260213113000'),
     ('20260213173000'),
-    ('20260219120000');
+    ('20260219120000'),
+    ('20260223130000');
