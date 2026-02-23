@@ -10,7 +10,8 @@
           </p>
 
           <div class="hero-actions reveal-up" style="--revealDelay: 140ms;">
-            <RouterLink class="btn primary" :to="routeWithLocale('teachers')">{{ t('cta.start') }}</RouterLink>
+            <button type="button" class="btn primary" @click="openTryModal">{{ t('cta.tryNow') }}</button>
+            <RouterLink class="btn" :to="routeWithLocale('teachers')">{{ t('cta.start') }}</RouterLink>
           </div>
 
           <div class="shot card reveal-up" style="--revealDelay: 220ms;">
@@ -44,6 +45,26 @@
       </div>
     </section>
 
+    <section class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container reveal-up">
+          <div class="section-head stacked">
+            <div>
+              <h2 class="h2">{{ t('home.featuredTeachersTitle') }}</h2>
+              <p class="muted">{{ t('home.featuredTeachersSubhead') }}</p>
+            </div>
+            <RouterLink class="btn ghost" :to="routeWithLocale('teachers')">{{ t('home.featuredTeachersCta') }}</RouterLink>
+          </div>
+
+          <div v-if="featuredTeachers.length" class="grid-3 reveal-up" style="--revealDelay: 120ms;">
+            <TeacherCard v-for="teacher in featuredTeachers" :key="teacher.teacherKey || teacher.slug" :teacher="teacher" />
+          </div>
+        </div>
+        <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
+      </div>
+    </section>
+
     <section id="how" class="snap-section section">
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner">
@@ -65,6 +86,28 @@
               <div class="h3">{{ t('home.steps.threeTitle') }}</div>
               <div class="muted">{{ t('home.steps.threeDesc') }}</div>
             </div>
+          </div>
+        </div>
+        <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
+      </div>
+    </section>
+
+    <section class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container reveal-up">
+          <div class="section-head stacked">
+            <div>
+              <h2 class="h2">{{ t('home.whyWorksTitle') }}</h2>
+              <p class="muted">{{ t('home.whyWorksSubhead') }}</p>
+            </div>
+          </div>
+
+          <div class="grid-3 reveal-up why-grid" style="--revealDelay: 120ms;">
+            <article v-for="item in whyWorksCards" :key="item.id" class="card why-card">
+              <h3 class="h3">{{ item.title }}</h3>
+              <p class="muted why-desc">{{ item.desc }}</p>
+            </article>
           </div>
         </div>
         <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
@@ -112,8 +155,8 @@
                 {{ t('pricing.annualNote', { total: formatPrice(tier.price), perMonth: formatPrice(tier.monthlyEquivalent), save: tier.savingsPercent }) }}
               </p>
 
-              <RouterLink v-if="tier.plan === 'free'" class="btn" :to="routeWithLocale('teachers')">{{ t('pricing.ctaTry') }}</RouterLink>
-              <RouterLink v-else class="btn primary" :to="routeWithLocale('teachers')">{{ t('pricing.ctaChooseTeacher') }}</RouterLink>
+              <button v-if="tier.plan === 'free'" class="btn" type="button" @click="openTryModal">{{ t('pricing.ctaTry') }}</button>
+              <button v-else class="btn primary" type="button" @click="openTryModal">{{ t('pricing.ctaChooseTeacher') }}</button>
             </div>
           </div>
         </div>
@@ -209,12 +252,16 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import ChatConversationDemo from '../components/ChatConversationDemo.vue';
+import TeacherCard from '../components/TeacherCard.vue';
 import HomeFooterMini from '../components/HomeFooterMini.vue';
 import { blogPosts } from '../data/blogPosts.js';
 import { pricingTiers } from '../data/pricing.js';
+import { teachers } from '../data/teachers.js';
+import { featuredTeacherKeys } from '../data/featuredTeachers.js';
 import { routeWithLocale, useI18n } from '../i18n.js';
 
 const { t, tm, locale } = useI18n();
+const tryTeacherModalOpen = useState('tryTeacherModalOpen', () => false);
 
 const posts = computed(() => blogPosts.slice(0, 3));
 const featureCards = computed(() => {
@@ -236,6 +283,46 @@ const faqItems = computed(() => {
     }))
     .filter((item) => item.q && item.a);
 });
+
+const whyWorksCards = computed(() => {
+  const ids = ['noScheduling', 'telegram', 'reusableCorrections'];
+  return ids.map((id) => ({
+    id,
+    title: t(`home.whyWorksItems.${id}.title`),
+    desc: t(`home.whyWorksItems.${id}.desc`)
+  }));
+});
+
+const featuredTeachers = computed(() => {
+  const all = Array.isArray(teachers) ? teachers : [];
+  const byKey = new Map(all.map((teacher) => [String(teacher?.teacherKey || '').toLowerCase(), teacher]));
+  const seen = new Set();
+  const result = [];
+
+  for (const rawKey of Array.isArray(featuredTeacherKeys) ? featuredTeacherKeys : []) {
+    const key = String(rawKey || '').trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    const match = byKey.get(key);
+    if (!match) continue;
+    seen.add(key);
+    result.push(match);
+    if (result.length >= 3) return result;
+  }
+
+  for (const teacher of all) {
+    const key = String(teacher?.teacherKey || '').toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(teacher);
+    if (result.length >= 3) break;
+  }
+
+  return result;
+});
+
+function openTryModal() {
+  tryTeacherModalOpen.value = true;
+}
 
 function getLocalized(map) {
   const l = locale.value;
@@ -352,6 +439,20 @@ function billingIntervalLabel(intervalRaw) {
 
 .feature-grid {
   margin-top: 18px;
+}
+
+.why-grid {
+  margin-top: 18px;
+}
+
+.why-card {
+  display: grid;
+  gap: 10px;
+}
+
+.why-desc {
+  margin: 0;
+  line-height: 1.7;
 }
 
 .feature-card {

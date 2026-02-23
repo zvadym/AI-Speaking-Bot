@@ -2,16 +2,19 @@
   "nav": {
     "home": "Home",
     "features": "Funzionalità",
+    "how": "Come funziona",
     "teachers": "Insegnanti",
     "pricing": "Prezzi",
+    "faq": "FAQ",
     "blog": "Blog",
+    "menu": "Menu",
     "about": "Chi siamo",
     "contact": "Contatti"
   },
   "cta": {
     "start": "Vedi insegnanti",
     "try": "TRY",
-    "tryNow": "Prova ora",
+    "tryNow": "Prova su Telegram",
     "openTelegram": "Apri su Telegram",
     "close": "Chiudi",
     "viewProfile": "Profilo",
@@ -56,6 +59,9 @@
     },
     "teachersTitle": "Insegnanti",
     "teachersDesc": "Ogni insegnante ha il proprio stile, le lingue e un focus diverso.",
+    "featuredTeachersTitle": "Conosci gli insegnanti",
+    "featuredTeachersSubhead": "Scegli uno stile adatto ai tuoi obiettivi e inizia a praticare su Telegram.",
+    "featuredTeachersCta": "Vedi tutti gli insegnanti",
     "featuresTitle": "Funzionalità",
     "featuresSubhead": "Strumenti voice-first per mantenere la conversazione sempre attiva.",
     "featureCards": {
@@ -88,6 +94,22 @@
       "twoDesc": "Parla in modo naturale su Telegram. Il bot trascrive la voce, usa il contesto e prepara una risposta mirata.",
       "threeTitle": "Ricevi correzioni subito applicabili",
       "threeDesc": "Ottieni una versione migliore della frase, spiegazioni chiare delle regole, supporto traduzione e suggerimenti per la prossima risposta."
+    },
+    "whyWorksTitle": "Perché funziona",
+    "whyWorksSubhead": "Piccole ripetizioni frequenti battono i piani perfetti. Pratica in una chat familiare e crea ritmo.",
+    "whyWorksItems": {
+      "noScheduling": {
+        "title": "Senza orari",
+        "desc": "La pratica asincrona ti permette di allenarti quando hai davvero tempo."
+      },
+      "telegram": {
+        "title": "Pratica su Telegram",
+        "desc": "Un flusso semplice riduce l’attrito e ti aiuta a essere costante."
+      },
+      "reusableCorrections": {
+        "title": "Correzioni riutilizzabili",
+        "desc": "Ottieni una versione più naturale e ripetila subito."
+      }
     }
   },
   "pricing": {
@@ -97,8 +119,8 @@
     "perYear": "anno",
     "freePrice": "Gratis",
     "annualNote": "{total}/anno ({perMonth}/mese). Risparmi {save}%.",
-    "ctaTry": "Prova gratis",
-    "ctaChooseTeacher": "Vedi insegnanti",
+    "ctaTry": "Prova su Telegram",
+    "ctaChooseTeacher": "Prova su Telegram",
     "tiers": {
       "free": {
         "name": "Free",

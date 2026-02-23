@@ -2,16 +2,19 @@
   "nav": {
     "home": "Startseite",
     "features": "Funktionen",
+    "how": "So funktioniert es",
     "teachers": "Lehrkräfte",
     "pricing": "Preise",
+    "faq": "FAQ",
     "blog": "Blog",
+    "menu": "Menü",
     "about": "Über uns",
     "contact": "Kontakt"
   },
   "cta": {
     "start": "Lehrkräfte ansehen",
     "try": "TRY",
-    "tryNow": "Jetzt testen",
+    "tryNow": "In Telegram testen",
     "openTelegram": "In Telegram öffnen",
     "close": "Schließen",
     "viewProfile": "Profil ansehen",
@@ -56,6 +59,9 @@
     },
     "teachersTitle": "Lehrkräfte",
     "teachersDesc": "Jede Lehrkraft hat einen eigenen Stil, Sprachen und Fokus.",
+    "featuredTeachersTitle": "Lehrkräfte entdecken",
+    "featuredTeachersSubhead": "Wähle einen Stil, der zu deinen Zielen passt, und starte in Telegram.",
+    "featuredTeachersCta": "Alle Lehrkräfte ansehen",
     "featuresTitle": "Funktionen",
     "featuresSubhead": "Voice-first Tools, die dein Gespräch im Fluss halten.",
     "featureCards": {
@@ -88,6 +94,22 @@
       "twoDesc": "Sprich natürlich in Telegram. Der Bot transkribiert Sprache, versteht den Kontext und erstellt eine gezielte Antwort.",
       "threeTitle": "Korrekturen erhalten, die du sofort nutzen kannst",
       "threeDesc": "Erhalte eine bessere Version, klare regelbasierte Hinweise, Übersetzungshilfe und Impulse für deine nächste Antwort."
+    },
+    "whyWorksTitle": "Warum das funktioniert",
+    "whyWorksSubhead": "Kleine, regelmäßige Wiederholungen schlagen perfekte Pläne. Übe im vertrauten Chat und bleib dran.",
+    "whyWorksItems": {
+      "noScheduling": {
+        "title": "Ohne Termine",
+        "desc": "Asynchron üben heißt: du trainierst, wenn du wirklich Zeit hast."
+      },
+      "telegram": {
+        "title": "Üben in Telegram",
+        "desc": "Der Chat-Flow senkt die Hürde – so übst du konsequenter."
+      },
+      "reusableCorrections": {
+        "title": "Korrekturen zum Wiederholen",
+        "desc": "Du bekommst eine natürlichere Version, die du sofort nachsprechen kannst."
+      }
     }
   },
   "pricing": {
@@ -97,8 +119,8 @@
     "perYear": "Jahr",
     "freePrice": "Kostenlos",
     "annualNote": "{total}/Jahr ({perMonth}/Monat). Spare {save}%.",
-    "ctaTry": "Kostenlos testen",
-    "ctaChooseTeacher": "Lehrkräfte ansehen",
+    "ctaTry": "In Telegram testen",
+    "ctaChooseTeacher": "In Telegram testen",
     "tiers": {
       "free": {
         "name": "Free",

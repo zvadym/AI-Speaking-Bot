@@ -100,8 +100,14 @@
       <div class="hint-block">
         <div class="hint-label">{{ t('home.chatDemo.questionLabel') }}</div>
         <div class="hint-body">
-          <div>❓ {{ scenarioTarget.followUp.question }}</div>
-          <div>📝 {{ scenarioBase.followUp.question }}</div>
+          <div class="hint-line">
+            <span class="hint-flag" aria-hidden="true">{{ targetLocaleFlag }}</span>
+            <span>{{ scenarioTarget.followUp.question }}</span>
+          </div>
+          <div class="hint-line">
+            <span class="hint-flag" aria-hidden="true">{{ baseLocaleFlag }}</span>
+            <span>{{ scenarioBase.followUp.question }}</span>
+          </div>
         </div>
       </div>
 
@@ -186,10 +192,12 @@ const resolvedScenario = computed(() =>
     scenarios: props.scenarios
   })
 );
+const targetLocaleCode = computed(() => normalizeLocale(resolvedScenario.value?.targetLocale) || 'en');
 const scenarioTarget = computed(() => resolvedScenario.value.targetContent);
 const scenarioBase = computed(() => resolvedScenario.value.baseContent);
 const scenarioAudio = computed(() => resolvedScenario.value.audio);
 const baseLocaleFlag = computed(() => LOCALE_FLAG_MAP[baseLocaleCode.value] || '🏳️');
+const targetLocaleFlag = computed(() => LOCALE_FLAG_MAP[targetLocaleCode.value] || '🏳️');
 
 function stripLeadingDecorators(value) {
   return String(value || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
@@ -496,6 +504,19 @@ onBeforeUnmount(() => clearDemoTimers());
   display: grid;
   gap: 4px;
   line-height: 1.45;
+}
+
+.hint-line {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.hint-flag {
+  font-size: 16px;
+  line-height: 1;
+  transform: translateY(1px);
 }
 
 .hint-body code {

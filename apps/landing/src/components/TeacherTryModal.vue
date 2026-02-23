@@ -76,10 +76,11 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import TeacherTelegramCard from './TeacherTelegramCard.vue';
 import { teachers } from '../data/teachers.js';
 import { useI18n } from '../i18n.js';
+import { useFocusTrap } from '../lib/useFocusTrap.js';
 import { useTeacherLearningTargetSort } from '../lib/teacherLearningTargetSort.js';
 import { useTeacherSections } from '../lib/teacherSections.js';
 
@@ -124,14 +125,18 @@ function unlockBodyScroll() {
 
 const openState = computed(() => !!props.open);
 
+useFocusTrap({
+  active: openState,
+  containerRef: dialogRef,
+  initialFocusRef: closeBtnRef
+});
+
 watch(
   openState,
   async (isOpen) => {
     if (!import.meta.client) return;
     if (isOpen) {
       lockBodyScroll();
-      await nextTick();
-      closeBtnRef.value?.focus?.();
       return;
     }
     reset();
@@ -140,24 +145,8 @@ watch(
   { immediate: true }
 );
 
-function onGlobalKeydown(event) {
-  if (!openState.value) return;
-  if (event.key === 'Escape') close();
-}
-
-watch(
-  openState,
-  (isOpen) => {
-    if (!import.meta.client) return;
-    if (isOpen) window.addEventListener('keydown', onGlobalKeydown);
-    else window.removeEventListener('keydown', onGlobalKeydown);
-  },
-  { immediate: true }
-);
-
 onBeforeUnmount(() => {
   if (!import.meta.client) return;
-  window.removeEventListener('keydown', onGlobalKeydown);
   unlockBodyScroll();
 });
 </script>

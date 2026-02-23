@@ -2,16 +2,19 @@
   "nav": {
     "home": "Home",
     "features": "Features",
+    "how": "How it works",
     "teachers": "Teachers",
     "pricing": "Pricing",
+    "faq": "FAQ",
     "blog": "Blog",
+    "menu": "Menu",
     "about": "About",
     "contact": "Contact"
   },
   "cta": {
     "start": "Browse teachers",
     "try": "TRY",
-    "tryNow": "Try now",
+    "tryNow": "Try in Telegram",
     "openTelegram": "Open in Telegram",
     "close": "Close",
     "viewProfile": "View profile",
@@ -56,6 +59,9 @@
     },
     "teachersTitle": "Teachers",
     "teachersDesc": "Every teacher has their own style, languages, and focus.",
+    "featuredTeachersTitle": "Meet the teachers",
+    "featuredTeachersSubhead": "Choose a teacher style that matches your goals and start practicing in Telegram.",
+    "featuredTeachersCta": "See all teachers",
     "featuresTitle": "Features",
     "featuresSubhead": "Voice-first tools that keep the conversation moving.",
     "featureCards": {
@@ -88,6 +94,22 @@
       "twoDesc": "Speak naturally in Telegram. The bot transcribes voice, reads context, and prepares a targeted response.",
       "threeTitle": "Get corrections you can use right away",
       "threeDesc": "Receive a better version, clear rule-based feedback, translation support, and follow-up hints for your next reply."
+    },
+    "whyWorksTitle": "Why this works",
+    "whyWorksSubhead": "Small, frequent reps beat perfect plans. Practice in a familiar chat and build momentum.",
+    "whyWorksItems": {
+      "noScheduling": {
+        "title": "No scheduling",
+        "desc": "Asynchronous practice means you can train when you actually have time."
+      },
+      "telegram": {
+        "title": "Practice in Telegram",
+        "desc": "A simple chat flow lowers friction, so you practice more consistently."
+      },
+      "reusableCorrections": {
+        "title": "Corrections you can reuse",
+        "desc": "Get a cleaner, more natural version you can repeat immediately."
+      }
     }
   },
   "pricing": {
@@ -97,8 +119,8 @@
     "perYear": "year",
     "freePrice": "Free",
     "annualNote": "{total}/year ({perMonth}/month). Save {save}%.",
-    "ctaTry": "Try free",
-    "ctaChooseTeacher": "Browse teachers",
+    "ctaTry": "Try in Telegram",
+    "ctaChooseTeacher": "Try in Telegram",
     "tiers": {
       "free": {
         "name": "Free",
