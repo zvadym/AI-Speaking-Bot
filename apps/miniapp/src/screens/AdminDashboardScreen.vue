@@ -561,14 +561,64 @@
 
           <div class="row">
             <label class="field grow">
-              <span>Message text</span>
+              <span>Message type</span>
+              <select v-model="broadcast.messageKind">
+                <option value="text">Text</option>
+                <option value="photo">Image (photo)</option>
+                <option value="video">Video</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row" v-if="broadcast.messageKind !== 'text'">
+            <label class="field grow">
+              <span>Media (upload to Telegram)</span>
+              <input :accept="broadcastMediaAccept" type="file" @change="onBroadcastMediaPicked" />
+              <small class="hint">Uploads once per selected bot and stores Telegram <code>file_id</code>s for the campaign.</small>
+            </label>
+            <div class="actions">
+              <button
+                class="btn"
+                type="button"
+                :disabled="!canUploadBroadcastMedia || mediaUploading"
+                @click="uploadBroadcastMedia"
+              >
+                {{ mediaUploading ? 'Uploading…' : `Upload for ${fmt(broadcastUploadBots.length || 0)} bots` }}
+              </button>
+              <button class="btn danger" type="button" :disabled="mediaUploading" @click="clearBroadcastMedia">
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div class="row" v-if="broadcast.messageKind !== 'text'">
+            <label class="field grow">
+              <span>Media URL (fallback)</span>
+              <input
+                v-model.trim="broadcast.mediaUrl"
+                type="url"
+                autocomplete="off"
+                inputmode="url"
+                placeholder="https://… (must be publicly accessible)"
+              />
+              <small class="hint">Optional fallback if you don’t want to upload.</small>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field grow">
+              <span>{{ broadcast.messageKind === 'text' ? 'Message text' : 'Caption (optional)' }}</span>
               <textarea
                 v-model="broadcast.messageText"
                 rows="6"
-                maxlength="4096"
-                placeholder="Write the message that will be sent to each selected user…"
+                :maxlength="broadcast.messageKind === 'text' ? 4096 : 1024"
+                :placeholder="broadcast.messageKind === 'text'
+                  ? 'Write the message that will be sent to each selected user…'
+                  : 'Optional caption for the media message…'"
               />
-              <small class="hint">HTML formatting is supported.</small>
+              <small class="hint">
+                Plain text only (Telegram HTML/Markdown is not enabled here).
+              </small>
             </label>
           </div>
 
@@ -596,6 +646,15 @@
 
           <div v-if="!password" class="callout">Enter admin password above to use broadcast.</div>
           <div v-else-if="!hasAnySelectedPlan" class="callout">Pick at least one plan.</div>
+          <div v-else-if="broadcast.messageKind === 'text' && !broadcast.messageText.trim()" class="callout">Write a message to send.</div>
+          <div
+            v-else-if="broadcast.messageKind !== 'text' && !hasBroadcastMedia"
+            class="callout"
+          >
+            Upload media (or provide a media URL).
+          </div>
+          <div v-else-if="mediaUploadError" class="callout error">{{ mediaUploadError }}</div>
+          <div v-else-if="mediaUploadInfo" class="callout">{{ mediaUploadInfo }}</div>
           <div v-else-if="previewError" class="callout error">{{ previewError }}</div>
           <div v-else-if="sendError" class="callout error">{{ sendError }}</div>
           <div v-else-if="sendInfo" class="callout">{{ sendInfo }}</div>
@@ -923,9 +982,107 @@ const broadcast = reactive({
   lastActivityDays: 14,
   usageMode: 'any',
   usagePercent: 80,
+  messageKind: 'text',
+  mediaUrl: '',
+  mediaFileIds: {},
   messageText: '',
   botKeys: []
 });
+
+const broadcastMediaFile = ref(null);
+const mediaUploading = ref(false);
+const mediaUploadError = ref('');
+const mediaUploadInfo = ref('');
+
+const broadcastMediaAccept = computed(() => (broadcast.messageKind === 'photo' ? 'image/*' : 'video/*'));
+
+const broadcastUploadBots = computed(() => {
+  if (broadcast.botKeys.length > 0) {
+    return Array.from(
+      new Set(
+        broadcast.botKeys
+          .map((v) => (v ?? '').toString().trim().toLowerCase())
+          .filter((v) => v.length > 0 && v.length <= 32)
+      )
+    );
+  }
+  if (botStats.value.length > 0) {
+    return Array.from(
+      new Set(
+        botStats.value
+          .map((b) => (b?.bot_key ?? '').toString().trim().toLowerCase())
+          .filter((v) => v.length > 0 && v.length <= 32)
+      )
+    );
+  }
+  return [];
+});
+
+const hasBroadcastMedia = computed(() => {
+  const mediaUrl = broadcast.mediaUrl.trim();
+  const ids = broadcast.mediaFileIds && typeof broadcast.mediaFileIds === 'object' ? broadcast.mediaFileIds : {};
+  const hasFileIds = Object.keys(ids).length > 0;
+  return Boolean(mediaUrl || hasFileIds);
+});
+
+const canUploadBroadcastMedia = computed(() => {
+  if (!password.value) return false;
+  if (broadcast.messageKind === 'text') return false;
+  if (!broadcastMediaFile.value) return false;
+  if (broadcastUploadBots.value.length === 0) return false;
+  return true;
+});
+
+function clearBroadcastMedia() {
+  broadcastMediaFile.value = null;
+  broadcast.mediaUrl = '';
+  broadcast.mediaFileIds = {};
+  mediaUploadError.value = '';
+  mediaUploadInfo.value = '';
+}
+
+function onBroadcastMediaPicked(event) {
+  const input = event?.target;
+  const file = input?.files?.[0] || null;
+  broadcastMediaFile.value = file;
+  mediaUploadError.value = '';
+  mediaUploadInfo.value = '';
+  broadcast.mediaFileIds = {};
+}
+
+async function uploadBroadcastMedia() {
+  if (!canUploadBroadcastMedia.value) return;
+  if (!broadcastMediaFile.value) return;
+
+  mediaUploading.value = true;
+  mediaUploadError.value = '';
+  mediaUploadInfo.value = '';
+
+  try {
+    const headers = adminHeaders();
+    const form = new FormData();
+    form.append('messageKind', broadcast.messageKind);
+    form.append('bots', JSON.stringify(broadcastUploadBots.value));
+    form.append('file', broadcastMediaFile.value);
+
+    const data = await apiJson(props.apiBase, '/admin/broadcasts/upload-media', {
+      method: 'POST',
+      headers,
+      body: form
+    });
+
+    const ids = data?.mediaFileIds && typeof data.mediaFileIds === 'object' ? data.mediaFileIds : {};
+    broadcast.mediaFileIds = ids;
+    broadcast.mediaUrl = '';
+    mediaUploadInfo.value = `Uploaded and stored media for ${fmt(Object.keys(ids).length)} bot(s).`;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    mediaUploadError.value = `Upload failed: ${msg}`;
+  } finally {
+    mediaUploading.value = false;
+  }
+}
 
 let previewTimer = null;
 let campaignPollTimer = null;
@@ -1020,6 +1177,17 @@ const usersHasNext = computed(() => usersOffset.value + usersRows.value.length <
 
 function adminHeaders() {
   return { 'X-Admin-Password': password.value };
+}
+
+async function refreshBotStats() {
+  if (!password.value) return;
+  try {
+    const headers = adminHeaders();
+    const botStatsData = await apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers });
+    botStats.value = Array.isArray(botStatsData?.bots) ? botStatsData.bots : [];
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 function clampInt(value, min, max, fallback) {
@@ -1198,10 +1366,19 @@ function broadcastFiltersPayload() {
 
 const canSendBroadcast = computed(() => {
   const message = broadcast.messageText.trim();
+  const mediaUrl = broadcast.mediaUrl.trim();
+  const mediaFileIds = broadcast.mediaFileIds && typeof broadcast.mediaFileIds === 'object' ? broadcast.mediaFileIds : {};
+  const hasFileIds = Object.keys(mediaFileIds).length > 0;
   if (!password.value) return false;
   if (!hasAnySelectedPlan.value) return false;
-  if (!message) return false;
-  if (message.length > 4096) return false;
+  if (broadcast.messageKind === 'text') {
+    if (!message) return false;
+    if (message.length > 4096) return false;
+  } else {
+    if (!mediaUrl && !hasFileIds) return false;
+    if (mediaUrl && mediaUrl.length > 2048) return false;
+    if (message.length > 1024) return false;
+  }
   if (broadcastPreview.count <= 0) return false;
   if (broadcastConfirm.value.toUpperCase() !== 'SEND') return false;
   return true;
@@ -1291,8 +1468,14 @@ async function sendBroadcast() {
 
   try {
     const headers = adminHeaders();
+    const mediaFileIds =
+      broadcast.messageKind === 'text' ? null : (broadcast.mediaFileIds && typeof broadcast.mediaFileIds === 'object' ? broadcast.mediaFileIds : null);
+    const hasMediaFileIds = Boolean(mediaFileIds && Object.keys(mediaFileIds).length > 0);
     const payloadBody = {
       filters: broadcastFiltersPayload(),
+      messageKind: broadcast.messageKind,
+      mediaUrl: broadcast.messageKind === 'text' || hasMediaFileIds ? '' : broadcast.mediaUrl.trim(),
+      mediaFileIds,
       messageText: broadcast.messageText.trim()
     };
     const data = await apiJson(props.apiBase, '/admin/broadcasts/send', {
@@ -1500,6 +1683,7 @@ function clearPassword() {
   previewError.value = '';
   sendError.value = '';
   sendInfo.value = '';
+  clearBroadcastMedia();
   broadcastPreview.count = 0;
   broadcastPreview.sample = [];
   previewUpdatedAt.value = '';
@@ -1559,8 +1743,25 @@ watch(
 );
 
 watch(
+  () => broadcast.messageKind,
+  (kind) => {
+    if (kind === 'text') {
+      clearBroadcastMedia();
+      broadcast.messageText = broadcast.messageText;
+      return;
+    }
+    mediaUploadError.value = '';
+    mediaUploadInfo.value = '';
+    broadcast.mediaFileIds = {};
+  }
+);
+
+watch(
   () => activeTab.value,
   (tab) => {
+    if (tab === 'messaging' && password.value && botStats.value.length === 0) {
+      refreshBotStats();
+    }
     if (tab === 'feedback' && password.value && feedbackRows.value.length === 0) {
       feedbackOffset.value = 0;
       refreshFeedback();

@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import multer from 'multer';
 import { env } from './env.js';
 import { pool } from './db.js';
 import { verifyInitData } from './telegram.js';
@@ -577,7 +578,48 @@ const BROADCAST_ALLOWED_TIERS = new Set(['free', 'plus', 'pro']);
 const BROADCAST_LAST_ACTIVITY_MODES = new Set(['active_within', 'inactive_for', 'never_active']);
 const BROADCAST_USAGE_MODES = new Set(['reached', 'percent_gte']);
 const BROADCAST_MESSAGE_MAX_LEN = 4096;
+const BROADCAST_MESSAGE_KINDS = new Set(['text', 'photo', 'video']);
+const BROADCAST_CAPTION_MAX_LEN = 1024;
+const BROADCAST_MEDIA_URL_MAX_LEN = 2048;
+const BROADCAST_MEDIA_FILE_ID_MAX_LEN = 512;
+const BROADCAST_MEDIA_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
 const broadcastInFlight = new Set();
+
+function normalizeBroadcastMediaFileIds(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const out = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const botKey = normalizeBotKey(key);
+    if (!botKey) continue;
+    const fileIdRaw = (value ?? '').toString().trim();
+    if (!fileIdRaw) continue;
+    out[botKey] = fileIdRaw.slice(0, BROADCAST_MEDIA_FILE_ID_MAX_LEN);
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+function parseBotKeysField(raw) {
+  if (Array.isArray(raw)) {
+    const normalized = raw.map((v) => normalizeBotKey(v)).filter(Boolean);
+    return Array.from(new Set(normalized));
+  }
+  const text = (raw ?? '').toString().trim();
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) {
+      const normalized = parsed.map((v) => normalizeBotKey(v)).filter(Boolean);
+      return Array.from(new Set(normalized));
+    }
+  } catch {
+    // ignore
+  }
+  const normalized = text
+    .split(',')
+    .map((v) => normalizeBotKey(v))
+    .filter(Boolean);
+  return Array.from(new Set(normalized));
+}
 
 function clampInteger(value, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER, fallback = 0 } = {}) {
   const num = Number(value);
@@ -965,6 +1007,151 @@ async function sendTelegramTextMessage(chatId, text, { botKey = null } = {}) {
   return payload.result || null;
 }
 
+async function sendTelegramPhotoMessage(chatId, photo, caption, { botKey = null } = {}) {
+  const token = resolveTelegramBotToken(botKey);
+  if (!token) {
+    const err = new Error('missing_telegram_bot_token');
+    err.code = 'missing_telegram_bot_token';
+    throw err;
+  }
+
+  const body = {
+    chat_id: Number(chatId),
+    photo: (photo ?? '').toString()
+  };
+  const safeCaption = (caption ?? '').toString().trim();
+  if (safeCaption) body.caption = safeCaption;
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok || !payload?.ok) {
+    const description = payload?.description || `telegram_http_${response.status}`;
+    const err = new Error(description);
+    err.telegramStatus = response.status;
+    err.telegramDescription = payload?.description || null;
+    throw err;
+  }
+
+  return payload.result || null;
+}
+
+async function sendTelegramVideoMessage(chatId, video, caption, { botKey = null } = {}) {
+  const token = resolveTelegramBotToken(botKey);
+  if (!token) {
+    const err = new Error('missing_telegram_bot_token');
+    err.code = 'missing_telegram_bot_token';
+    throw err;
+  }
+
+  const body = {
+    chat_id: Number(chatId),
+    video: (video ?? '').toString(),
+    supports_streaming: true
+  };
+  const safeCaption = (caption ?? '').toString().trim();
+  if (safeCaption) body.caption = safeCaption;
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendVideo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok || !payload?.ok) {
+    const description = payload?.description || `telegram_http_${response.status}`;
+    const err = new Error(description);
+    err.telegramStatus = response.status;
+    err.telegramDescription = payload?.description || null;
+    throw err;
+  }
+
+  return payload.result || null;
+}
+
+async function uploadTelegramMediaToChat({ chatId, messageKind, buffer, filename, mimeType, botKey = null }) {
+  const token = resolveTelegramBotToken(botKey);
+  if (!token) {
+    const err = new Error('missing_telegram_bot_token');
+    err.code = 'missing_telegram_bot_token';
+    throw err;
+  }
+
+  const kind = (messageKind ?? '').toString().trim().toLowerCase();
+  const method = kind === 'photo' ? 'sendPhoto' : kind === 'video' ? 'sendVideo' : '';
+  const field = kind === 'photo' ? 'photo' : kind === 'video' ? 'video' : '';
+  if (!method || !field) {
+    const err = new Error('bad_message_kind');
+    err.code = 'bad_message_kind';
+    throw err;
+  }
+
+  const form = new FormData();
+  form.append('chat_id', String(chatId));
+  form.append('disable_notification', 'true');
+  if (kind === 'video') form.append('supports_streaming', 'true');
+
+  const safeName = (filename ?? '').toString().trim() || (kind === 'photo' ? 'broadcast.jpg' : 'broadcast.mp4');
+  const blobType = (mimeType ?? '').toString().trim() || 'application/octet-stream';
+  const blob = new Blob([buffer], { type: blobType });
+  form.append(field, blob, safeName);
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+    method: 'POST',
+    body: form
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok || !payload?.ok) {
+    const description = payload?.description || `telegram_http_${response.status}`;
+    const err = new Error(description);
+    err.telegramStatus = response.status;
+    err.telegramDescription = payload?.description || null;
+    throw err;
+  }
+
+  const result = payload.result || null;
+  let fileId = null;
+  if (kind === 'photo') {
+    const sizes = Array.isArray(result?.photo) ? result.photo : [];
+    const largest = sizes.length ? sizes[sizes.length - 1] : null;
+    fileId = (largest?.file_id ?? '').toString().trim() || null;
+  } else if (kind === 'video') {
+    fileId = (result?.video?.file_id ?? '').toString().trim() || null;
+  }
+
+  if (!fileId) {
+    const err = new Error('telegram_missing_file_id');
+    err.code = 'telegram_missing_file_id';
+    throw err;
+  }
+
+  return { messageId: result?.message_id ?? null, fileId };
+}
+
 async function refreshBroadcastCampaignStats(campaignId, { status = null, errorText = null, setFinishedAt = false } = {}) {
   await pool.query(
     `WITH stats AS (
@@ -1031,13 +1218,20 @@ async function processBroadcastCampaign(campaignId) {
           status = 'queued'
           OR (status = 'sending' AND updated_at < NOW() - interval '5 minutes')
         )
-      RETURNING id, message_text`,
+      RETURNING id, message_text, message_kind, media_url, media_file_id, media_file_ids`,
     [id]
   );
   if (!lockRows[0]) return false;
 
-  const messageText = lockRows[0].message_text;
-  const telegramSafeMessageText = escapeTelegramHtml(messageText);
+  const messageText = (lockRows[0].message_text ?? '').toString();
+  const messageKind = (lockRows[0].message_kind ?? 'text').toString().trim().toLowerCase();
+  const mediaUrl = lockRows[0].media_url ? lockRows[0].media_url.toString() : null;
+  const mediaFileId = lockRows[0].media_file_id ? lockRows[0].media_file_id.toString() : null;
+  const mediaFileIdsByBot = normalizeBroadcastMediaFileIds(lockRows[0].media_file_ids);
+  const telegramSafeText = escapeTelegramHtml(messageText);
+  if (!BROADCAST_MESSAGE_KINDS.has(messageKind)) {
+    throw new Error('bad_message_kind');
+  }
 
   try {
     while (true) {
@@ -1061,9 +1255,24 @@ async function processBroadcastCampaign(campaignId) {
         let inactiveReason = null;
         const recipientBotKey = normalizeBotKey(row.bot_key);
         const botKey = recipientBotKey || normalizeBotKey(env.defaultBotKey) || 'uk-de';
+        const mediaInput = (mediaFileIdsByBot?.[botKey] || mediaFileId || mediaUrl || null);
+        if (messageKind !== 'text' && !mediaInput) {
+          throw new Error('missing_media');
+        }
 
         try {
-          const telegramResult = await sendTelegramTextMessage(row.chat_id, telegramSafeMessageText, { botKey });
+          let telegramResult = null;
+          if (messageKind === 'text') {
+            telegramResult = await sendTelegramTextMessage(row.chat_id, telegramSafeText, { botKey });
+          } else if (messageKind === 'photo') {
+            telegramResult = await sendTelegramPhotoMessage(row.chat_id, mediaInput, telegramSafeText, { botKey });
+          } else if (messageKind === 'video') {
+            telegramResult = await sendTelegramVideoMessage(row.chat_id, mediaInput, telegramSafeText, { botKey });
+          } else {
+            const err = new Error('bad_message_kind');
+            err.code = 'bad_message_kind';
+            throw err;
+          }
           const messageId = Number(telegramResult?.message_id ?? 0);
           telegramMessageId = Number.isFinite(messageId) && messageId > 0 ? messageId : null;
         } catch (err) {
@@ -1875,18 +2084,98 @@ app.post('/admin/broadcasts/preview', requireAdmin, async (req, res) => {
   });
 });
 
+const broadcastMediaUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: BROADCAST_MEDIA_UPLOAD_MAX_BYTES }
+});
+
+app.post('/admin/broadcasts/upload-media', requireAdmin, broadcastMediaUpload.single('file'), async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  if (!env.broadcastMediaChatId) {
+    return res.status(400).json({ error: 'media_chat_id_not_configured' });
+  }
+
+  const messageKindRaw = (req.body?.messageKind ?? req.body?.message_kind ?? '').toString().trim().toLowerCase();
+  const messageKind = messageKindRaw === 'photo' || messageKindRaw === 'video' ? messageKindRaw : null;
+  if (!messageKind) {
+    return res.status(400).json({ error: 'bad_message_kind' });
+  }
+
+  const file = req.file || null;
+  if (!file?.buffer || !file?.size) {
+    return res.status(400).json({ error: 'missing_file' });
+  }
+
+  const bots = parseBotKeysField(req.body?.bots ?? req.body?.botKeys ?? req.body?.bot_keys);
+  const targetBots = bots.length ? bots : [normalizeBotKey(env.defaultBotKey) || 'uk-de'];
+
+  const mediaFileIds = {};
+  for (const botKey of targetBots) {
+    try {
+      const uploaded = await uploadTelegramMediaToChat({
+        chatId: env.broadcastMediaChatId,
+        messageKind,
+        buffer: file.buffer,
+        filename: file.originalname,
+        mimeType: file.mimetype,
+        botKey
+      });
+      mediaFileIds[botKey] = uploaded.fileId;
+    } catch (err) {
+      const msg = sanitizeErrorText(err?.message || String(err)) || 'upload_failed';
+      return res.status(502).json({ error: 'telegram_upload_failed', bot_key: botKey, detail: msg });
+    }
+  }
+
+  return res.json({ ok: true, messageKind, mediaFileIds });
+});
+
 app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
   const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});
+  const messageKindRaw = (req.body?.messageKind ?? req.body?.message_kind ?? 'text').toString().trim().toLowerCase();
+  const messageKind = BROADCAST_MESSAGE_KINDS.has(messageKindRaw) ? messageKindRaw : null;
+  if (!messageKind) {
+    return res.status(400).json({ error: 'bad_message_kind' });
+  }
+
+  const mediaUrlRaw = (req.body?.mediaUrl ?? req.body?.media_url ?? '').toString().trim();
+  if (mediaUrlRaw.length > BROADCAST_MEDIA_URL_MAX_LEN) {
+    return res.status(400).json({ error: 'media_url_too_long', max_length: BROADCAST_MEDIA_URL_MAX_LEN });
+  }
+  const mediaUrl = mediaUrlRaw;
+  const mediaFileIdRaw = (req.body?.mediaFileId ?? req.body?.media_file_id ?? '').toString().trim();
+  if (mediaFileIdRaw.length > BROADCAST_MEDIA_FILE_ID_MAX_LEN) {
+    return res.status(400).json({ error: 'media_file_id_too_long', max_length: BROADCAST_MEDIA_FILE_ID_MAX_LEN });
+  }
+  const mediaFileId = mediaFileIdRaw;
+  const mediaFileIds = normalizeBroadcastMediaFileIds(req.body?.mediaFileIds ?? req.body?.media_file_ids);
+
   const messageRaw = (req.body?.messageText ?? req.body?.message ?? '').toString();
   const messageText = messageRaw.trim();
-  if (!messageText) {
-    return res.status(400).json({ error: 'empty_message' });
-  }
-  if (messageText.length > BROADCAST_MESSAGE_MAX_LEN) {
-    return res.status(400).json({
-      error: 'message_too_long',
-      max_length: BROADCAST_MESSAGE_MAX_LEN
-    });
+
+  if (messageKind === 'text') {
+    if (!messageText) {
+      return res.status(400).json({ error: 'empty_message' });
+    }
+    if (messageText.length > BROADCAST_MESSAGE_MAX_LEN) {
+      return res.status(400).json({
+        error: 'message_too_long',
+        max_length: BROADCAST_MESSAGE_MAX_LEN
+      });
+    }
+    if (mediaUrl || mediaFileId || mediaFileIds) {
+      return res.status(400).json({ error: 'unexpected_media' });
+    }
+  } else {
+    if (!mediaUrl && !mediaFileId && !mediaFileIds) {
+      return res.status(400).json({ error: 'missing_media' });
+    }
+    if (messageText.length > BROADCAST_CAPTION_MAX_LEN) {
+      return res.status(400).json({
+        error: 'caption_too_long',
+        max_length: BROADCAST_CAPTION_MAX_LEN
+      });
+    }
   }
 
   const recipients = await listBroadcastRecipients(filters, env.broadcastMaxRecipients + 1);
@@ -1917,14 +2206,27 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
          status,
          filters,
          message_text,
+         message_kind,
+         media_url,
+         media_file_id,
+         media_file_ids,
          total_recipients,
          sent_count,
          failed_count,
          created_by
        )
-       VALUES ('queued', $1::jsonb, $2::text, $3::int, 0, 0, $4::text)
+       VALUES ('queued', $1::jsonb, $2::text, $3::text, $4::text, $5::text, $6::jsonb, $7::int, 0, 0, $8::text)
        RETURNING id`,
-      [JSON.stringify(filters), messageText, chatIds.length, createdBy]
+      [
+        JSON.stringify(filters),
+        messageText,
+        messageKind,
+        mediaUrl || null,
+        mediaFileId || null,
+        mediaFileIds ? JSON.stringify(mediaFileIds) : null,
+        chatIds.length,
+        createdBy
+      ]
     );
     campaignId = campaignRows[0]?.id || null;
     if (!campaignId) throw new Error('campaign_create_failed');
@@ -1976,6 +2278,10 @@ app.get('/admin/broadcasts/:id', requireAdmin, async (req, res) => {
        c.id,
        c.status,
        c.message_text,
+       c.message_kind,
+       c.media_url,
+       c.media_file_id,
+       c.media_file_ids,
        c.filters,
        c.total_recipients,
        c.sent_count,
