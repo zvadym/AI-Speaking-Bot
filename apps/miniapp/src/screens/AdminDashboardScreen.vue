@@ -141,6 +141,7 @@
         <AdminChart
           title="New users by day"
           kind="bar"
+          x-labels="all"
           :data="newUsersSeries"
           :series="[{ key: 'count', label: 'New users', color: 'rgba(199, 90, 36, 0.86)' }]"
         />
@@ -149,6 +150,7 @@
           title="New paid users by day (first time)"
           subtitle="Pro activations by day"
           kind="bar"
+          x-labels="all"
           :data="newPaidSeries"
           :series="[
             { key: 'pro', label: 'Pro', color: 'rgba(199, 90, 36, 0.88)' }
@@ -159,6 +161,7 @@
           title="Action events by day"
           subtitle="Tracked product actions (stacked)"
           kind="bar"
+          x-labels="all"
           :data="actionEventsSeries"
           :series="actionSeriesConfig"
         />
@@ -167,6 +170,7 @@
           title="Action funnel totals"
           subtitle="Total events in selected range"
           kind="bar"
+          x-labels="all"
           :data="actionTotalsSeries"
           :series="[{ key: 'count', label: 'Events', color: 'rgba(87, 60, 127, 0.86)' }]"
         />
@@ -175,6 +179,7 @@
           title="Active users by day"
           subtitle="Active = at least one voice usage event that day"
           kind="bar"
+          x-labels="all"
           :data="activeUsersSeries"
           :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
         />
@@ -183,6 +188,7 @@
           title="Active users by day by bot"
           subtitle="Active users split by bot (stacked)"
           kind="bar"
+          x-labels="all"
           :data="activeUsersByBotSeries"
           :series="activeUsersByBotSeriesConfig"
         />
@@ -191,6 +197,7 @@
           title="Inactive users by day"
           subtitle="Users marked inactive from permanent Telegram delivery failures"
           kind="bar"
+          x-labels="all"
           :data="inactiveUsersSeries"
           :series="[{ key: 'count', label: 'Inactive users', color: 'rgba(174, 43, 40, 0.86)' }]"
         />
@@ -198,6 +205,7 @@
         <AdminChart
           title="Voice usage seconds by day"
           kind="line"
+          x-labels="all"
           :data="usageSecondsSeries"
           :series="[
             { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)' },
@@ -209,6 +217,7 @@
           title="Active users by hour"
           subtitle="UTC hour-of-day distribution for selected range"
           kind="bar"
+          x-labels="all"
           :data="activeUsersByHourSeries"
           :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
         />
@@ -217,6 +226,7 @@
           title="Active users by hour today"
           subtitle="UTC, today only"
           kind="bar"
+          x-labels="all"
           :data="activeUsersByHourTodaySeries"
           :series="[{ key: 'count', label: 'Active users', color: 'rgba(199, 90, 36, 0.86)' }]"
         />
