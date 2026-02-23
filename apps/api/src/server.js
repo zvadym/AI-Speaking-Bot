@@ -1771,8 +1771,35 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
-  const limit = clampInteger(req.query.limit, { min: 1, max: 500, fallback: 100 });
+  const limit = clampInteger(req.query.limit, { min: 1, max: 500, fallback: 50 });
   const offset = clampInteger(req.query.offset, { min: 0, max: 100000, fallback: 0 });
+
+  const sortKeyRaw = (req.query.sort_key ?? 'created_at').toString().trim().toLowerCase();
+  const sortDirRaw = (req.query.sort_dir ?? 'desc').toString().trim().toLowerCase();
+  const sortDir = sortDirRaw === 'asc' ? 'ASC' : 'DESC';
+  const sortKeyAllow = new Set([
+    'created_at',
+    'chat_id',
+    'username',
+    'first_name',
+    'bot_key',
+    'effective_tier',
+    'is_active',
+    'last_seen_at'
+  ]);
+  const sortKey = sortKeyAllow.has(sortKeyRaw) ? sortKeyRaw : 'created_at';
+
+  const orderByMap = {
+    created_at: `u.created_at`,
+    chat_id: `u.chat_id`,
+    username: `LOWER(u.username)`,
+    first_name: `LOWER(u.first_name)`,
+    bot_key: `ub.bot_key`,
+    effective_tier: `effective_tier`,
+    is_active: `COALESCE(u.is_active, true)`,
+    last_seen_at: `last_seen_at`
+  };
+  const orderExpr = orderByMap[sortKey] || orderByMap.created_at;
 
   const params = [range.from.toISOString(), range.to.toISOString(), range.payload, limit, offset];
   const [totalRes, rowsRes] = await Promise.all([
@@ -1816,7 +1843,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
        WHERE u.created_at >= $1::timestamptz
          AND u.created_at < $2::timestamptz
          AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)
-       ORDER BY u.created_at DESC, u.chat_id DESC
+       ORDER BY ${orderExpr} ${sortDir} NULLS LAST, u.chat_id DESC
        LIMIT $4::int
        OFFSET $5::int`,
       params
@@ -1828,6 +1855,8 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
     from: range.from.toISOString(),
     to: range.to.toISOString(),
     payload: range.payload,
+    sort_key: sortKey,
+    sort_dir: sortDirRaw === 'asc' ? 'asc' : 'desc',
     limit,
     offset,
     total: totalRes.rows[0]?.total || 0,

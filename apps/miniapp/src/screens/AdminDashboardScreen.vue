@@ -26,6 +26,9 @@
       <button class="tab-btn" :class="{ active: activeTab === 'analytics' }" type="button" role="tab" @click="activeTab = 'analytics'">
         Analytics
       </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'users' }" type="button" role="tab" @click="activeTab = 'users'">
+        Users
+      </button>
       <button class="tab-btn" :class="{ active: activeTab === 'messaging' }" type="button" role="tab" @click="activeTab = 'messaging'">
         Messaging
       </button>
@@ -74,7 +77,7 @@
           </label>
 
           <div class="actions">
-            <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refresh">
+            <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refreshAnalytics">
               {{ loading ? 'Loading…' : 'Refresh' }}
             </button>
             <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_week')">Last week</button>
@@ -266,34 +269,136 @@
           :series="[{ key: 'count', label: 'Active users', color: 'rgba(199, 90, 36, 0.86)' }]"
         />
       </section>
+    </template>
+
+    <template v-else-if="activeTab === 'users'">
+      <section class="card">
+        <div class="row">
+          <label class="field">
+            <span>From (UTC)</span>
+            <input v-model="fromDate" type="date" />
+          </label>
+
+          <label class="field">
+            <span>To (UTC, inclusive)</span>
+            <input v-model="toDate" type="date" />
+          </label>
+
+          <label class="field">
+            <span>Quick range</span>
+            <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
+              <option value="last_30_days">Last 30 days</option>
+              <option value="last_week">Last week</option>
+              <option value="last_month">Last month</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="field grow">
+            <span>Acquisition payload</span>
+            <input
+              v-model="payload"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              placeholder="(optional)"
+              list="payloads"
+            />
+            <datalist id="payloads">
+              <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
+            </datalist>
+          </label>
+
+          <div class="actions">
+            <button class="btn primary" type="button" :disabled="!canFetch || usersLoading" @click="refreshUsersPage({ resetOffset: true })">
+              {{ usersLoading ? 'Loading…' : 'Refresh users' }}
+            </button>
+            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_week')">Last week</button>
+            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_month')">Last month</button>
+            <button class="btn" type="button" :disabled="usersLoading" @click="resetRange">Last 30d</button>
+          </div>
+        </div>
+
+        <p class="hint" v-if="!password">Enter password first to load users.</p>
+        <p class="error" v-else-if="usersError">{{ usersError }}</p>
+      </section>
 
       <section class="card users-table-card">
         <div class="users-head">
           <div>
             <div class="kicker">Users</div>
-            <h2>Users by created_at DESC</h2>
+            <h2>Users</h2>
           </div>
           <div class="users-meta">
-            <span>Total: {{ fmt(usersTotal) }}</span>
-            <span>Offset: {{ fmt(usersOffset) }}</span>
+            <span v-if="usersTotal">Showing {{ fmt(usersPageStart) }}–{{ fmt(usersPageEnd) }} of {{ fmt(usersTotal) }}</span>
+            <span v-else>Total: 0</span>
+            <label class="users-limit">
+              <span>Rows</span>
+              <select v-model.number="usersLimit" :disabled="usersLoading" @change="usersApplyLimit">
+                <option :value="25">25</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
+                <option :value="200">200</option>
+              </select>
+            </label>
           </div>
         </div>
 
-        <p class="error" v-if="usersError">{{ usersError }}</p>
-        <p class="hint" v-else-if="usersLoading">Loading users…</p>
+        <p class="hint" v-if="usersLoading && !usersRows.length">Loading users…</p>
 
         <div class="users-table-wrap" v-if="usersRows.length">
           <table class="users-table">
             <thead>
               <tr>
-                <th>Created</th>
-                <th>Chat ID</th>
-                <th>Username</th>
-                <th>Name</th>
-                <th>Bot</th>
-                <th>Tier</th>
-                <th>Active</th>
-                <th>Last seen</th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('created_at')">
+                    Created
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('created_at') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('chat_id')">
+                    Chat ID
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('chat_id') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('username')">
+                    Username
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('username') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('first_name')">
+                    Name
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('first_name') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('bot_key')">
+                    Bot
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('bot_key') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('effective_tier')">
+                    Tier
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('effective_tier') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('is_active')">
+                    Active
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('is_active') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('last_seen_at')">
+                    Last seen
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('last_seen_at') }}</span>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -702,9 +807,37 @@ const actionSeriesConfig = [
 const usersRows = ref([]);
 const usersTotal = ref(0);
 const usersOffset = ref(0);
-const usersLimit = 50;
+const usersLimit = ref(50);
 const usersLoading = ref(false);
 const usersError = ref('');
+const usersSort = reactive({
+  key: 'created_at',
+  dir: 'desc' // 'asc' | 'desc'
+});
+
+const usersPageStart = computed(() => (usersTotal.value ? usersOffset.value + 1 : 0));
+const usersPageEnd = computed(() => Math.min(usersOffset.value + usersRows.value.length, usersTotal.value));
+
+function usersSortIndicator(key) {
+  if (usersSort.key !== key) return '';
+  return usersSort.dir === 'asc' ? '↑' : '↓';
+}
+
+function toggleUsersSort(key) {
+  if (usersSort.key === key) {
+    usersSort.dir = usersSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    usersSort.key = key;
+    usersSort.dir = key === 'created_at' || key === 'last_seen_at' ? 'desc' : 'asc';
+  }
+  usersOffset.value = 0;
+  refreshUsersPage({ resetOffset: true });
+}
+
+function usersApplyLimit() {
+  usersOffset.value = 0;
+  refreshUsersPage({ resetOffset: true });
+}
 const previewLoading = ref(false);
 const previewError = ref('');
 const sendError = ref('');
@@ -1120,9 +1253,8 @@ async function sendBroadcast() {
   }
 }
 
-async function refresh() {
+async function refreshAnalytics() {
   if (!canFetch.value) return;
-  usersOffset.value = 0;
   loading.value = true;
   errorText.value = '';
   try {
@@ -1141,8 +1273,7 @@ async function refresh() {
       usageSeconds,
       byHour,
       byHourToday,
-      payloads,
-      users
+      payloads
     ] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers }),
@@ -1156,8 +1287,7 @@ async function refresh() {
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload }, headers }),
-      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/users', { query: { ...q, limit: usersLimit, offset: usersOffset.value }, headers })
+      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
     ]);
 
     totals.value = summary?.totals || totals.value;
@@ -1177,9 +1307,7 @@ async function refresh() {
     activeUsersByHourSeries.value = Array.isArray(byHour?.series) ? byHour.series : [];
     activeUsersByHourTodaySeries.value = Array.isArray(byHourToday?.series) ? byHourToday.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
-    usersRows.value = Array.isArray(users?.items) ? users.items : [];
-    usersTotal.value = Number.isFinite(Number(users?.total)) ? Number(users.total) : 0;
-    usersError.value = '';
+    // Users list is loaded in the Users tab (separate request).
     
     // Transform bot-specific data
     const byBotRawRows = Array.isArray(activeUsersByBot?.series) ? activeUsersByBot.series : [];
@@ -1205,12 +1333,28 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
   try {
     const headers = adminHeaders();
     const q = query();
-    const data = await apiJson(props.apiBase, '/admin/users', {
-      query: { ...q, limit: usersLimit, offset: usersOffset.value },
-      headers
-    });
+    const [usersRes, payloadsRes] = await Promise.allSettled([
+      apiJson(props.apiBase, '/admin/users', {
+        query: {
+          ...q,
+          limit: usersLimit.value,
+          offset: usersOffset.value,
+          sort_key: usersSort.key,
+          sort_dir: usersSort.dir
+        },
+        headers
+      }),
+      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
+    ]);
+
+    if (usersRes.status !== 'fulfilled') throw usersRes.reason;
+    const data = usersRes.value;
     usersRows.value = Array.isArray(data?.items) ? data.items : [];
     usersTotal.value = Number.isFinite(Number(data?.total)) ? Number(data.total) : 0;
+
+    if (payloadsRes.status === 'fulfilled') {
+      payloadOptions.value = Array.isArray(payloadsRes.value?.payloads) ? payloadsRes.value.payloads : payloadOptions.value;
+    }
   } catch (err) {
     console.error(err);
     usersRows.value = [];
@@ -1306,13 +1450,13 @@ function clearPassword() {
 
 function usersNextPage() {
   if (!usersHasNext.value || usersLoading.value) return;
-  usersOffset.value += usersLimit;
+  usersOffset.value += usersLimit.value;
   refreshUsersPage();
 }
 
 function usersPrevPage() {
   if (usersLoading.value) return;
-  usersOffset.value = Math.max(0, usersOffset.value - usersLimit);
+  usersOffset.value = Math.max(0, usersOffset.value - usersLimit.value);
   refreshUsersPage();
 }
 
@@ -1351,6 +1495,9 @@ watch(
     if (tab === 'feedback' && password.value && feedbackRows.value.length === 0) {
       feedbackOffset.value = 0;
       refreshFeedback();
+    }
+    if (tab === 'users' && password.value && usersRows.value.length === 0) {
+      refreshUsersPage({ resetOffset: true });
     }
   }
 );
@@ -1827,6 +1974,21 @@ h1 {
   font-size: 12px;
   color: var(--muted);
   flex-wrap: wrap;
+}
+
+.users-limit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.users-limit select {
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 10px;
+  padding: 4px 8px;
+  font: inherit;
+  color: var(--ink);
 }
 
 .users-table-wrap {
