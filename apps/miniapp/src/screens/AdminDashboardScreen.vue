@@ -1717,6 +1717,11 @@ h1 {
   font-weight: 650;
   letter-spacing: 0.01em;
   transition: background 160ms ease, border-color 160ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 120px;
+  white-space: nowrap;
 }
 
 .tab-btn.active {
@@ -1866,6 +1871,11 @@ h1 {
   letter-spacing: 0.01em;
   box-shadow: 0 12px 26px rgba(30, 26, 22, 0.14);
   transition: transform 120ms ease, box-shadow 120ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 112px;
+  white-space: nowrap;
 }
 
 .btn:active {
@@ -2278,6 +2288,14 @@ h1 {
 
   .charts-grid {
     grid-template-columns: 1fr;
+  }
+
+  .tab-btn {
+    min-inline-size: 0;
+  }
+
+  .btn {
+    min-inline-size: 0;
   }
 }
 
