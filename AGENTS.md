@@ -23,7 +23,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Mini-app:
   - `scripts/dev-miniapp.sh` (loads `deploy/.env.miniapp` if present).
   - Or `cd apps/miniapp && npm install && npm run dev`.
-- There are no automated tests configured yet.
+- End-to-end smoke checks are available via `scripts/e2e.sh` (boots Postgres + n8n + API, runs migrations, imports workflows, and validates key API/webhook flows).
 
 ## Env & Secrets
 - API required env vars (see `apps/api/src/env.js`):

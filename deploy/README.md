@@ -8,6 +8,31 @@ This repo deploys three services:
 
 It also uses Caddy as the edge proxy.
 
+## GitHub Actions CI/CD
+
+This repo now includes:
+
+- `/.github/workflows/ci.yml`:
+  - API dependency install + syntax checks.
+  - Mini-app dependency install + production build.
+  - DB schema sync check (`./scripts/db-schema.sh check`).
+  - Full Docker-based E2E smoke run (`./scripts/e2e.sh`).
+- `/.github/workflows/deploy.yml`:
+  - Auto-deploy to production on `main` only after `CI` succeeds.
+  - Manual deploy via `workflow_dispatch` (with optional `skip_n8n` input).
+
+### Infrastructure requirements
+
+- CI tests: no external VPS required. GitHub-hosted Ubuntu runners run the checks and Docker E2E stack.
+- CD deployment: yes, you need a target runtime (VPS/VM/server) if you keep the current Docker Compose deploy model.
+
+### Required GitHub Secrets for CD
+
+- `DEPLOY_SSH_PRIVATE_KEY`: private key for SSH access from GitHub Actions.
+- `DEPLOY_USER`: SSH user on the deploy server.
+- `DEPLOY_HOST`: deploy server host/IP (without user).
+- `DEPLOY_DIR` (optional): repo path on server (defaults to `/opt/ai-speaking-bot`).
+
 ## 1) First Install
 
 ### 1.1 Server prerequisites

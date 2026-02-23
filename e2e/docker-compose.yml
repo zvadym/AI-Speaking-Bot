@@ -1,0 +1,39 @@
+name: languagebot-e2e
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: languagebot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "54329:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d languagebot"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  n8n:
+    image: n8nio/n8n:2.7.3
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      N8N_SECURE_COOKIE: "false"
+      N8N_ENCRYPTION_KEY: e2e-encryption-key-please-change
+    volumes:
+      - ../deploy/workflows:/workflows
+      - n8n_data:/home/node/.n8n
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz >/dev/null"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  n8n_data:

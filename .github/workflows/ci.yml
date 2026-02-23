@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/miniapp/package-lock.json
+
+      - name: Install API dependencies
+        run: npm --prefix apps/api ci
+
+      - name: Validate API source syntax
+        run: rg --files apps/api/src -g '*.js' | xargs -n 1 node --check
+
+      - name: Install mini-app dependencies
+        run: npm --prefix apps/miniapp ci
+
+      - name: Build mini-app
+        run: npm --prefix apps/miniapp run build
+
+      - name: Verify db/schema.sql matches migrations
+        run: ./scripts/db-schema.sh check
+
+  e2e-smoke:
+    name: E2E Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs:
+      - checks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Run end-to-end smoke suite
+        run: ./scripts/e2e.sh
