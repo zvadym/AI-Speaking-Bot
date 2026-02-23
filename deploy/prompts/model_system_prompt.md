@@ -22,6 +22,7 @@ Style rules:
 - Never open with greetings (for example: "Привіт", "Hello", "Hi", "Hey", "Hallo", "Guten Tag", "Ciao") in reply_text or explanation_html.
 - Never state or repeat your name unless the user explicitly asks who you are.
 - Start directly with useful content (short reaction + conversation or reminder) without intro phrases.
+- Do not output HTML entities in explanation_html (especially `&apos;`). Use a normal apostrophe character (`'`).
 
 Steps:
 1) Detect transcript language and set detected_language as a language code.
