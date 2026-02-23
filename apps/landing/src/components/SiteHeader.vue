@@ -4,7 +4,6 @@
       <RouterLink class="brand" :to="routeWithLocale('home')">AI Language School</RouterLink>
 
       <button
-        ref="menuBtnRef"
         class="menu-btn"
         type="button"
         :aria-label="t('nav.menu')"
@@ -124,11 +123,11 @@ const route = useRoute();
 
 const NAV_ITEMS = [
   { key: 'features', type: 'section', labelKey: 'nav.features', sectionId: 'features', primary: true },
-  { key: 'how', type: 'section', labelKey: 'nav.how', sectionId: 'how', primary: true },
   { key: 'teachers', type: 'route', labelKey: 'nav.teachers', routeName: 'teachers', primary: true },
+  { key: 'how', type: 'section', labelKey: 'nav.how', sectionId: 'how', primary: true },
   { key: 'pricing', type: 'section', labelKey: 'nav.pricing', sectionId: 'pricing', primary: true },
-  { key: 'faq', type: 'section', labelKey: 'nav.faq', sectionId: 'faq', primary: true },
   { key: 'blog', type: 'section', labelKey: 'nav.blog', sectionId: 'blog', primary: true },
+  { key: 'faq', type: 'section', labelKey: 'nav.faq', sectionId: 'faq', primary: true },
   { key: 'about', type: 'section', labelKey: 'nav.about', sectionId: 'about', primary: false },
   { key: 'contact', type: 'section', labelKey: 'nav.contact', sectionId: 'contact', primary: false }
 ];
@@ -139,7 +138,6 @@ let rafId = 0;
 let isScrollBound = false;
 const isLocaleMenuOpen = ref(false);
 const localePickerRef = ref(null);
-const menuBtnRef = ref(null);
 const tryTeacherModalOpen = useState('tryTeacherModalOpen', () => false);
 const mobileMenuOpen = useState('mobileMenuOpen', () => false);
 const LOCALE_FLAGS = {
@@ -488,12 +486,12 @@ onBeforeUnmount(() => {
 }
 
 .nav-rail {
-  max-width: 760px;
-  flex: 0 1 760px;
+  max-width: min(760px, 100%);
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   border: 1px solid color-mix(in srgb, var(--fg) 16%, var(--border));
   border-radius: 999px;
@@ -761,8 +759,7 @@ onBeforeUnmount(() => {
   }
 
   .nav-rail {
-    max-width: none;
-    flex: 1 1 auto;
+    max-width: min(760px, 100%);
   }
 }
 
