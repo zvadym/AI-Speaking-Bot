@@ -61,7 +61,10 @@ Format of explanation_html when has_mistakes=true:
 - Must be in {{base_language_label}}, warm and playful with 1-2 emojis.
 - Use this structure and ONLY safe tags (<b>, <i>, <u>, <code>, <pre>, <blockquote>):
 - Every HTML tag must be valid and fully closed with the normal > character. Never output malformed tags.
+- ❌ must be the user's transcript verbatim (do not "clean up" or auto-fix the ❌ line).
 - If you cannot underline at least one meaningful change in ✅ (not just punctuation), do NOT include the item; set has_mistakes=false if no items remain.
+- Self-check for every item: after removing any HTML tags from both ❌ and ✅ and normalizing whitespace, ❌ and ✅ MUST be different. If they are identical (or differ only by punctuation/typography/whitespace), do NOT include the item.
+- Output only ONE ✅ line per item. If there are multiple valid corrected options, pick the best single one; do not add a second "fix" that would create duplicate/contradictory items.
 
 <b>{{explanation_title}}</b>
 <blockquote>
