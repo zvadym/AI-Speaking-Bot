@@ -143,9 +143,11 @@
               </div>
             </template>
             <template v-else>
-              <span class="currency">{{ currencySymbol(plan.currency) }}</span>
-              <span class="amount">{{ formatAmountFromCents(plan.amount_cents) }}</span>
-              <span class="period">{{ periodLabel(plan.billing_interval) }}</span>
+              <div class="price-main">
+                <span class="currency">{{ currencySymbol(plan.currency) }}</span>
+                <span class="amount">{{ formatAmountFromCents(plan.amount_cents) }}</span>
+                <span class="period">{{ periodLabel(plan.billing_interval) }}</span>
+              </div>
             </template>
           </div>
         </header>
@@ -857,7 +859,7 @@ onMounted(async () => {
 }
 
 .billing-toggle-btn.active {
-  background: rgba(30, 26, 22, 0.9);
+  background: rgba(31, 107, 99, 0.92);
   color: rgba(255, 255, 255, 0.94);
 }
 
@@ -875,8 +877,8 @@ onMounted(async () => {
 }
 
 .billing-toggle-btn.active .billing-save {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.22);
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -921,6 +923,8 @@ onMounted(async () => {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .price-meta,
