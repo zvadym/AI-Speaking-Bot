@@ -141,7 +141,13 @@
     "perMonth": "mes",
     "perYear": "año",
     "freePrice": "Gratis",
-    "annualNote": "{total}/año ({perMonth}/mes). Ahorra {save}%.",
+    "annualNote": "{total}/año ({perMonth}/mes).",
+    "billingSwitch": {
+      "label": "Facturación",
+      "monthly": "Mensual",
+      "annually": "Anual",
+      "save": "Ahorra {save}%"
+    },
     "ctaTry": "Probar en Telegram",
     "ctaChooseTeacher": "Probar en Telegram",
     "tiers": {

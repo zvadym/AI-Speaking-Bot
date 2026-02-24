@@ -10,10 +10,12 @@ Teacher thumbnails are generated into `apps/landing/public/teachers/thumbnail/*.
 Optional:
 
 - `NUXT_PUBLIC_SITE_URL` — canonical site origin for SEO links and sitemap URLs (defaults to `https://ai-language-school.online`).
+- `NUXT_PUBLIC_API_BASE` — API base URL used for public pricing data (defaults to `https://learn-language-api.notarobot.dev`).
 
 Temporary backwards-compatible fallbacks are supported:
 
 - `VITE_SITE_URL`
+- `VITE_API_BASE`
 
 ## Local dev
 

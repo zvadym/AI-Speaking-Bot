@@ -118,21 +118,48 @@
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner">
         <div class="container">
-          <div class="section-head stacked reveal-up">
+          <div class="section-head stacked reveal-up pricing-head">
             <div>
               <h2 class="h2">{{ t('pricing.title') }}</h2>
               <p class="muted">{{ t('pricing.subhead') }}</p>
             </div>
+            <div
+              v-if="showBillingSwitch"
+              class="billing-switch"
+              role="radiogroup"
+              :aria-label="t('pricing.billingSwitch.label')"
+            >
+              <button
+                class="billing-option"
+                type="button"
+                role="radio"
+                :aria-checked="billingInterval === 'month'"
+                :class="{ active: billingInterval === 'month' }"
+                @click="setBillingInterval('month')"
+              >
+                {{ t('pricing.billingSwitch.monthly') }}
+              </button>
+              <button
+                class="billing-option"
+                type="button"
+                role="radio"
+                :aria-checked="billingInterval === 'year'"
+                :class="{ active: billingInterval === 'year' }"
+                @click="setBillingInterval('year')"
+              >
+                {{ t('pricing.billingSwitch.annually') }}
+                <span v-if="annualSavingsPercent" class="save-badge">
+                  {{ t('pricing.billingSwitch.save', { save: annualSavingsPercent }) }}
+                </span>
+              </button>
+            </div>
           </div>
 
-          <div class="grid-3 pricing-grid reveal-up" style="--revealDelay: 120ms;">
-            <div v-for="tier in pricingTiers" :key="tier.id" class="card tier" :class="{ featured: tier.highlight }">
+          <div class="grid-2 pricing-grid reveal-up" style="--revealDelay: 120ms;">
+            <div v-for="tier in visiblePricingTiers" :key="tier.id" class="card tier" :class="{ featured: tier.highlight }">
               <div class="tier-top">
                 <div class="tier-headline">
                   <div class="h3">{{ t(`pricing.tiers.${tier.plan}.name`) }}</div>
-                  <span v-if="tier.plan === 'pro'" class="billing-chip">
-                    {{ billingIntervalLabel(tier.billingInterval) }}
-                  </span>
                 </div>
                 <div class="muted tier-desc">{{ t(`pricing.tiers.${tier.plan}.desc`) }}</div>
               </div>
@@ -140,8 +167,15 @@
               <div class="price">
                 <span v-if="tier.plan === 'free'" class="amount">{{ t('pricing.freePrice') }}</span>
                 <template v-else>
-                  <span class="amount">{{ formatPrice(tier.price) }}</span>
-                  <span class="muted cadence">/ {{ billingIntervalLabel(tier.billingInterval) }}</span>
+                  <div v-if="tier.billingInterval === 'year' && proMonthlyTier" class="price-meta">
+                    <s class="muted was">{{ formatPrice(proMonthlyTier.price) || '—' }}/{{ t('pricing.perMonth') }}</s>
+                  </div>
+                  <div class="price-main">
+                    <span class="amount">{{
+                      formatPrice(tier.billingInterval === 'year' ? tier.monthlyEquivalent : tier.price) || '—'
+                    }}</span>
+                    <span class="muted cadence">/ {{ t('pricing.perMonth') }}</span>
+                  </div>
                 </template>
               </div>
 
@@ -151,8 +185,8 @@
                 </li>
               </ul>
 
-              <p v-if="tier.billingInterval === 'year'" class="muted annual-note">
-                {{ t('pricing.annualNote', { total: formatPrice(tier.price), perMonth: formatPrice(tier.monthlyEquivalent), save: tier.savingsPercent }) }}
+              <p v-if="tier.billingInterval === 'year' && tier.monthlyEquivalent != null" class="muted annual-note">
+                {{ t('pricing.annualNote', { total: formatPrice(tier.price) || '—', perMonth: formatPrice(tier.monthlyEquivalent) || '—' }) }}
               </p>
 
               <button v-if="tier.plan === 'free'" class="btn" type="button" @click="openTryModal">{{ t('pricing.ctaTry') }}</button>
@@ -249,19 +283,24 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, watch, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import ChatConversationDemo from '../components/ChatConversationDemo.vue';
 import TeacherCard from '../components/TeacherCard.vue';
 import HomeFooterMini from '../components/HomeFooterMini.vue';
 import { blogPosts } from '../data/blogPosts.js';
-import { pricingTiers } from '../data/pricing.js';
 import { teachers } from '../data/teachers.js';
 import { featuredTeacherKeys } from '../data/featuredTeachers.js';
 import { normalizeLocale, routeWithLocale, useI18n } from '../i18n.js';
 
 const { t, tm, locale } = useI18n();
 const tryTeacherModalOpen = useState('tryTeacherModalOpen', () => false);
+const billingInterval = useState('pricingBillingInterval', () => 'year');
+const runtimeConfig = useRuntimeConfig();
+const apiBase = computed(() => (runtimeConfig.public.apiBase || '').toString().trim().replace(/\/+$/, ''));
+const pricingCurrency = ref('EUR');
+const pricingPlans = ref([]);
+const pricingLoading = ref(false);
 
 const posts = computed(() => blogPosts.slice(0, 3));
 const featureCards = computed(() => {
@@ -351,7 +390,7 @@ function formatPrice(value) {
   try {
     return new Intl.NumberFormat(locale.value, {
       style: 'currency',
-      currency: 'EUR',
+      currency: pricingCurrency.value || 'EUR',
       minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
       maximumFractionDigits: 2
     }).format(amount);
@@ -360,9 +399,152 @@ function formatPrice(value) {
   }
 }
 
-function billingIntervalLabel(intervalRaw) {
-  return intervalRaw === 'year' ? t('pricing.perYear') : t('pricing.perMonth');
+function normalizeBillingInterval(raw, fallback = null) {
+  const value = (raw ?? '').toString().trim().toLowerCase();
+  if (value === 'month' || value === 'year') return value;
+  return fallback;
 }
+
+const proMonthlyPlan = computed(() => pricingPlans.value.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'month') || null);
+const proAnnualPlan = computed(() => pricingPlans.value.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'year') || null);
+const showBillingSwitch = computed(() => Boolean(proMonthlyPlan.value && proAnnualPlan.value));
+const annualSavingsPercent = computed(() => {
+  const monthCents = Number(proMonthlyPlan.value?.amount_cents);
+  const yearCents = Number(proAnnualPlan.value?.amount_cents);
+  if (!Number.isFinite(monthCents) || !Number.isFinite(yearCents)) return null;
+  const base = monthCents * 12;
+  if (base <= 0) return null;
+  const pct = Math.round((1 - yearCents / base) * 100);
+  return pct > 0 ? pct : null;
+});
+
+const freeTier = computed(() => ({
+  id: 'free',
+  plan: 'free',
+  price: 0,
+  billingInterval: 'month',
+  highlight: false
+}));
+
+const proMonthlyTier = computed(() => {
+  const cents = Number(proMonthlyPlan.value?.amount_cents);
+  if (!Number.isFinite(cents)) return null;
+  return {
+    id: 'pro-month',
+    plan: 'pro',
+    price: cents / 100,
+    billingInterval: 'month',
+    highlight: false
+  };
+});
+
+const proAnnualTier = computed(() => {
+  const cents = Number(proAnnualPlan.value?.amount_cents);
+  if (!Number.isFinite(cents)) return null;
+  const monthlyEquivalent = cents / 12 / 100;
+  return {
+    id: 'pro-year',
+    plan: 'pro',
+    price: cents / 100,
+    billingInterval: 'year',
+    highlight: true,
+    monthlyEquivalent,
+    savingsPercent: annualSavingsPercent.value
+  };
+});
+
+const proTier = computed(() => {
+  if (billingInterval.value === 'year') return proAnnualTier.value || proMonthlyTier.value;
+  return proMonthlyTier.value || proAnnualTier.value;
+});
+
+const fallbackProTier = computed(() => ({
+  id: 'pro',
+  plan: 'pro',
+  price: null,
+  billingInterval: billingInterval.value === 'year' ? 'year' : 'month',
+  highlight: billingInterval.value === 'year',
+  monthlyEquivalent: null,
+  savingsPercent: annualSavingsPercent.value
+}));
+
+const visiblePricingTiers = computed(() => {
+  const tiers = [freeTier.value];
+  tiers.push(proTier.value || fallbackProTier.value);
+  return tiers;
+});
+
+function syncBillingIntervalWithAvailability() {
+  const desired = normalizeBillingInterval(billingInterval.value, 'year');
+  const available = new Set();
+  if (proMonthlyTier.value) available.add('month');
+  if (proAnnualTier.value) available.add('year');
+  if (available.size === 0) {
+    billingInterval.value = desired;
+    return;
+  }
+  if (available.has(desired)) {
+    billingInterval.value = desired;
+    return;
+  }
+  billingInterval.value = available.has('year') ? 'year' : 'month';
+}
+
+async function loadPublicPlans() {
+  const base = apiBase.value;
+  if (!base) return;
+
+  pricingLoading.value = true;
+  try {
+    const url = new URL(`${base}/public/plans`);
+    url.searchParams.set('include_all_intervals', 'true');
+    url.searchParams.set('currency', pricingCurrency.value || 'EUR');
+    const resp = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+    if (!resp.ok) return;
+    const data = await resp.json().catch(() => ({}));
+    const currency = (data?.currency || pricingCurrency.value || 'EUR').toString().toUpperCase();
+    const plans = Array.isArray(data?.plans) ? data.plans : [];
+    pricingCurrency.value = currency;
+    pricingPlans.value = plans
+      .map((row) => ({
+        tier: (row?.tier || '').toString().toLowerCase(),
+        currency: (row?.currency || currency).toString().toUpperCase(),
+        amount_cents: Number(row?.amount_cents),
+        billing_interval: normalizeBillingInterval(row?.billing_interval, null)
+      }))
+      .filter((row) => row.tier && row.currency && Number.isFinite(row.amount_cents) && row.billing_interval);
+  } finally {
+    pricingLoading.value = false;
+    syncBillingIntervalWithAvailability();
+  }
+}
+
+function setBillingInterval(intervalRaw) {
+  const interval = normalizeBillingInterval(intervalRaw, null);
+  if (!interval) return;
+  if (interval === 'year' && !proAnnualTier.value) return;
+  if (interval === 'month' && !proMonthlyTier.value) return;
+  billingInterval.value = interval;
+}
+
+onMounted(() => {
+  try {
+    const saved = window.localStorage.getItem('pricing.billingInterval');
+    if (saved === 'month' || saved === 'year') billingInterval.value = saved;
+  } catch {
+    // ignore
+  }
+  loadPublicPlans();
+});
+
+watch(billingInterval, (next) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem('pricing.billingInterval', next);
+  } catch {
+    // ignore
+  }
+});
 </script>
 
 <style scoped>
@@ -436,6 +618,65 @@ function billingIntervalLabel(intervalRaw) {
 
 .stacked {
   align-items: start;
+}
+
+.pricing-head {
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.billing-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 72%, var(--bg));
+}
+
+.billing-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: transparent;
+  color: color-mix(in srgb, var(--fg) 82%, var(--muted));
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+.billing-option:hover {
+  color: var(--fg);
+}
+
+.billing-option.active {
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--shadow) 22%, transparent);
+}
+
+.billing-option:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--fg) 50%, transparent);
+  outline-offset: 3px;
+}
+
+.save-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: color-mix(in srgb, #22c55e 16%, transparent);
+  border: 1px solid color-mix(in srgb, #22c55e 32%, transparent);
+  color: color-mix(in srgb, #16a34a 70%, var(--fg));
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
 }
 
 .steps {
@@ -517,28 +758,32 @@ function billingIntervalLabel(intervalRaw) {
   flex-wrap: wrap;
 }
 
-.billing-chip {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  background: color-mix(in srgb, var(--surface) 72%, var(--bg));
-}
-
 .tier-desc {
   margin-top: 6px;
   line-height: 1.6;
 }
 
 .price {
+  display: grid;
+  gap: 6px;
+}
+
+.price-main {
   display: flex;
   align-items: baseline;
   gap: 8px;
+}
+
+.price-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.was {
+  text-decoration-thickness: 2px;
+  text-decoration-color: color-mix(in srgb, var(--muted) 72%, transparent);
 }
 
 .amount {

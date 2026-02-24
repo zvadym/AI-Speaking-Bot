@@ -141,7 +141,13 @@
     "perMonth": "Monat",
     "perYear": "Jahr",
     "freePrice": "Kostenlos",
-    "annualNote": "{total}/Jahr ({perMonth}/Monat). Spare {save}%.",
+    "annualNote": "{total}/Jahr ({perMonth}/Monat).",
+    "billingSwitch": {
+      "label": "Abrechnung",
+      "monthly": "Monatlich",
+      "annually": "Jährlich",
+      "save": "Spare {save}%"
+    },
     "ctaTry": "In Telegram testen",
     "ctaChooseTeacher": "In Telegram testen",
     "tiers": {

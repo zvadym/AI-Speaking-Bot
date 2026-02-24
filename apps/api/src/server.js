@@ -2507,6 +2507,46 @@ app.get('/plans', requireAuth, async (req, res) => {
   });
 });
 
+app.get('/public/plans', async (req, res) => {
+  const currency = (req.query.currency || 'EUR').toString().toUpperCase();
+  const includeAllIntervals = parseQueryBoolean(
+    req.query.include_all_intervals ?? req.query.includeAllIntervals
+  );
+
+  const { rows: plans } = await pool.query(
+    `SELECT p.tier, p.user_audio_seconds_per_week, p.tts_seconds_per_week,
+            (p.user_audio_seconds_per_week + p.tts_seconds_per_week)::int AS voice_seconds_per_week,
+            pp.currency, pp.amount_cents, pp.billing_interval
+       FROM plans p
+       LEFT JOIN plan_prices pp
+         ON p.tier = pp.tier
+        AND pp.currency = $1
+        AND pp.active = true
+        AND ($2::boolean = true OR pp.billing_interval = 'month')
+      WHERE p.tier IN ('pro')
+      ORDER BY p.tier,
+               CASE
+                 WHEN pp.billing_interval = 'month' THEN 0
+                 WHEN pp.billing_interval = 'year' THEN 1
+                 ELSE 2
+               END`,
+    [currency, includeAllIntervals]
+  );
+
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  return res.json({
+    currency,
+    plans: (plans || [])
+      .filter((row) => row?.currency && row?.amount_cents != null && row?.billing_interval)
+      .map((row) => ({
+        tier: row.tier,
+        currency: row.currency,
+        amount_cents: row.amount_cents,
+        billing_interval: row.billing_interval
+      }))
+  });
+});
+
 app.get('/me', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null);

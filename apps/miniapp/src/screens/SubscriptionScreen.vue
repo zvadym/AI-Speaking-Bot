@@ -97,6 +97,12 @@
           @click="selectBillingInterval(interval)"
         >
           {{ billingIntervalLabel(interval) }}
+          <span
+            v-if="interval === BILLING_INTERVAL_YEAR && billingSavingsPercent"
+            class="billing-save"
+          >
+            {{ $t('subscription.billingIntervals.save', { save: billingSavingsPercent }) }}
+          </span>
         </button>
       </div>
 
@@ -110,9 +116,37 @@
         <header>
           <span class="plan-tier">{{ planLabel(plan.tier) }}</span>
           <div class="plan-price">
-            <span class="currency">{{ currencySymbol(plan.currency) }}</span>
-            <span class="amount">{{ formatPrice(plan.amount_cents) }}</span>
-            <span class="period">{{ periodLabel(plan.billing_interval) }}</span>
+            <template v-if="plan.billing_interval === BILLING_INTERVAL_YEAR && monthlyProPlan">
+              <div class="price-meta">
+                <s class="was">
+                  {{ formatMoney(plan.currency, monthlyProPlan.amount_cents) }} {{ $t('subscription.period.perMonth') }}
+                </s>
+              </div>
+              <div class="price-main">
+                <span class="currency">{{ currencySymbol(plan.currency) }}</span>
+                <span class="amount">
+                  {{
+                    formatAmountFromCents(monthlyEquivalentCents(plan.amount_cents) ?? plan.amount_cents, {
+                      maximumFractionDigits: 2
+                    })
+                  }}
+                </span>
+                <span class="period">{{ $t('subscription.period.perMonth') }}</span>
+              </div>
+              <div class="price-sub">
+                {{
+                  $t('subscription.notes.billedAnnually', {
+                    total: formatMoney(plan.currency, plan.amount_cents),
+                    period: $t('subscription.period.perYear')
+                  })
+                }}
+              </div>
+            </template>
+            <template v-else>
+              <span class="currency">{{ currencySymbol(plan.currency) }}</span>
+              <span class="amount">{{ formatAmountFromCents(plan.amount_cents) }}</span>
+              <span class="period">{{ periodLabel(plan.billing_interval) }}</span>
+            </template>
           </div>
         </header>
 
@@ -140,7 +174,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, computed, ref } from 'vue';
+import { onMounted, reactive, computed, ref, watch } from 'vue';
 import { useI18n } from '../i18n.js';
 import { tgOpenLink } from '../lib/tg.js';
 import { track } from '../lib/metrics.js';
@@ -178,7 +212,7 @@ const useEmbeddedCheckout = computed(() => embeddedCheckoutEnabled && stripePubl
 const BILLING_INTERVAL_MONTH = 'month';
 const BILLING_INTERVAL_YEAR = 'year';
 const BILLING_INTERVALS = new Set([BILLING_INTERVAL_MONTH, BILLING_INTERVAL_YEAR]);
-const selectedBillingInterval = ref(BILLING_INTERVAL_MONTH);
+const selectedBillingInterval = ref(BILLING_INTERVAL_YEAR);
 
 function normalizeBillingInterval(raw, fallback = null) {
   const value = (raw ?? '').toString().trim().toLowerCase();
@@ -192,6 +226,26 @@ function billingIntervalSortValue(interval) {
   if (interval === BILLING_INTERVAL_YEAR) return 1;
   return 2;
 }
+
+function readSavedBillingInterval() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem('subscription.billingInterval');
+    return normalizeBillingInterval(raw);
+  } catch {
+    return null;
+  }
+}
+
+watch(selectedBillingInterval, (next) => {
+  if (typeof window === 'undefined') return;
+  if (!next) return;
+  try {
+    window.localStorage.setItem('subscription.billingInterval', next);
+  } catch {
+    // ignore
+  }
+});
 
 function buildCheckoutPath(tier, currency, billingInterval) {
   const params = new URLSearchParams();
@@ -306,9 +360,29 @@ function currencySymbol(currency) {
   return currency || '€';
 }
 
-function formatPrice(cents) {
-  if (!cents) return t('common.dash');
-  return (cents / 100).toFixed(0);
+function formatAmountFromCents(cents, { maximumFractionDigits = 0 } = {}) {
+  const value = Number(cents);
+  if (!Number.isFinite(value)) return t('common.dash');
+  const amount = value / 100;
+  const decimals = Number.isFinite(maximumFractionDigits) ? maximumFractionDigits : 0;
+  try {
+    return new Intl.NumberFormat(locale.value, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: decimals
+    }).format(amount);
+  } catch {
+    return amount.toFixed(decimals);
+  }
+}
+
+function formatMoney(currency, cents, opts) {
+  return `${currencySymbol(currency)}${formatAmountFromCents(cents, opts)}`;
+}
+
+function monthlyEquivalentCents(yearlyCents) {
+  const value = Number(yearlyCents);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return value / 12;
 }
 
 function usagePercent(used, limit) {
@@ -337,6 +411,18 @@ const proPlans = computed(() =>
     }))
 );
 
+const monthlyProPlan = computed(() => proPlans.value.find((plan) => plan.billing_interval === BILLING_INTERVAL_MONTH) || null);
+const annualProPlan = computed(() => proPlans.value.find((plan) => plan.billing_interval === BILLING_INTERVAL_YEAR) || null);
+const billingSavingsPercent = computed(() => {
+  const month = monthlyProPlan.value?.amount_cents ?? null;
+  const year = annualProPlan.value?.amount_cents ?? null;
+  if (!Number.isFinite(Number(month)) || !Number.isFinite(Number(year))) return null;
+  const base = Number(month) * 12;
+  if (base <= 0) return null;
+  const pct = Math.round((1 - Number(year) / base) * 100);
+  return pct > 0 ? pct : null;
+});
+
 const availableBillingIntervals = computed(() => {
   const intervals = Array.from(new Set(
     proPlans.value.map((plan) => plan.billing_interval).filter(Boolean)
@@ -361,9 +447,11 @@ function syncSelectedBillingInterval() {
     return;
   }
   if (intervals.includes(selectedBillingInterval.value)) return;
-  selectedBillingInterval.value = intervals.includes(BILLING_INTERVAL_MONTH)
-    ? BILLING_INTERVAL_MONTH
-    : intervals[0];
+  selectedBillingInterval.value = intervals.includes(BILLING_INTERVAL_YEAR)
+    ? BILLING_INTERVAL_YEAR
+    : intervals.includes(BILLING_INTERVAL_MONTH)
+        ? BILLING_INTERVAL_MONTH
+        : intervals[0];
 }
 
 const visiblePlans = computed(() => {
@@ -394,6 +482,7 @@ function selectBillingInterval(intervalRaw) {
   if (!interval) return;
   if (!availableBillingIntervals.value.includes(interval)) return;
   selectedBillingInterval.value = interval;
+  track('ui_click', { id: 'subscription_billing_interval', billing_interval: interval });
 }
 
 function planActionKey(plan) {
@@ -548,6 +637,8 @@ async function resume() {
 }
 
 onMounted(async () => {
+  const savedInterval = readSavedBillingInterval();
+  if (savedInterval) selectedBillingInterval.value = savedInterval;
   trackPurchaseSuccessOnce();
   addDebugLog('subscription_screen_mounted', {
     path: window.location.pathname,
@@ -760,11 +851,33 @@ onMounted(async () => {
   font-size: 13px;
   cursor: pointer;
   transition: background 140ms ease, color 140ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .billing-toggle-btn.active {
   background: rgba(30, 26, 22, 0.9);
   color: rgba(255, 255, 255, 0.94);
+}
+
+.billing-save {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: rgba(31, 107, 99, 0.14);
+  border: 1px solid rgba(31, 107, 99, 0.24);
+  color: rgba(31, 107, 99, 0.95);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.billing-toggle-btn.active .billing-save {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .billing-toggle-btn:disabled {
@@ -799,10 +912,30 @@ onMounted(async () => {
 }
 
 .plan-price {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.price-main {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  margin-top: 10px;
+}
+
+.price-meta,
+.price-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.price-meta {
+  margin-bottom: -2px;
+}
+
+.was {
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(30, 26, 22, 0.22);
 }
 
 .currency {

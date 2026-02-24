@@ -180,14 +180,16 @@
     },
     "billingIntervals": {
       "monthly": "Monatlich",
-      "annual": "Jährlich"
+      "annual": "Jährlich",
+      "save": "Spare {save}%"
     },
     "actions": {
       "openingCheckout": "Checkout wird geöffnet…",
       "subscribe": "Abonnieren"
     },
     "notes": {
-      "alreadyTopTier": "Du bist bereits im höchsten Tarif."
+      "alreadyTopTier": "Du bist bereits im höchsten Tarif.",
+      "billedAnnually": "Jährliche Abrechnung: {total} {period}"
     },
     "statusMessage": {
       "checkoutCompleted": "Checkout abgeschlossen. Wir aktivieren deinen Plan jetzt.",

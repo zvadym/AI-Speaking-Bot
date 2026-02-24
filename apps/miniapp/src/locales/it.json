@@ -180,14 +180,16 @@
     },
     "billingIntervals": {
       "monthly": "Mensile",
-      "annual": "Annuale"
+      "annual": "Annuale",
+      "save": "Risparmi {save}%"
     },
     "actions": {
       "openingCheckout": "Apertura checkout…",
       "subscribe": "Abbonati"
     },
     "notes": {
-      "alreadyTopTier": "Sei già nel piano più alto."
+      "alreadyTopTier": "Sei già nel piano più alto.",
+      "billedAnnually": "Fatturazione annuale: {total} {period}"
     },
     "statusMessage": {
       "checkoutCompleted": "Checkout completato. Stiamo attivando il tuo piano ora.",

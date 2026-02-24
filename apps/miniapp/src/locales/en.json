@@ -180,14 +180,16 @@
     },
     "billingIntervals": {
       "monthly": "Monthly",
-      "annual": "Annual"
+      "annual": "Annual",
+      "save": "Save {save}%"
     },
     "actions": {
       "openingCheckout": "Opening Checkout…",
       "subscribe": "Subscribe"
     },
     "notes": {
-      "alreadyTopTier": "You're already on the top tier."
+      "alreadyTopTier": "You're already on the top tier.",
+      "billedAnnually": "Billed annually: {total} {period}"
     },
     "statusMessage": {
       "checkoutCompleted": "Checkout completed. We are activating your plan now.",

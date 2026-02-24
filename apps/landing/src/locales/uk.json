@@ -141,7 +141,13 @@
     "perMonth": "місяць",
     "perYear": "рік",
     "freePrice": "Безкоштовно",
-    "annualNote": "{total}/рік ({perMonth}/місяць). Економія {save}%.",
+    "annualNote": "{total}/рік ({perMonth}/місяць).",
+    "billingSwitch": {
+      "label": "Оплата",
+      "monthly": "Щомісяця",
+      "annually": "Щороку",
+      "save": "Економія {save}%"
+    },
     "ctaTry": "Спробувати в Telegram",
     "ctaChooseTeacher": "Спробувати в Telegram",
     "tiers": {

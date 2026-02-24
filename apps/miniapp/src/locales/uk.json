@@ -180,14 +180,16 @@
     },
     "billingIntervals": {
       "monthly": "Щомісяця",
-      "annual": "Щороку"
+      "annual": "Щороку",
+      "save": "Економія {save}%"
     },
     "actions": {
       "openingCheckout": "Відкриваємо оплату…",
       "subscribe": "Підписатися"
     },
     "notes": {
-      "alreadyTopTier": "Ти вже на найвищому рівні."
+      "alreadyTopTier": "Ти вже на найвищому рівні.",
+      "billedAnnually": "Щорічна оплата: {total} {period}"
     },
     "statusMessage": {
       "checkoutCompleted": "Оплату завершено. Активуємо твій план.",
