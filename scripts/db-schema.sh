@@ -14,6 +14,7 @@ MODE="${1:-help}"
 NETWORK_NAME=""
 POSTGRES_CONTAINER=""
 TMP_SCHEMA=""
+TMP_SCHEMA_DIR=""
 
 usage() {
   cat <<'EOF'
@@ -29,6 +30,9 @@ EOF
 cleanup() {
   if [[ -n "$TMP_SCHEMA" && -f "$TMP_SCHEMA" ]]; then
     rm -f "$TMP_SCHEMA"
+  fi
+  if [[ -n "$TMP_SCHEMA_DIR" && -d "$TMP_SCHEMA_DIR" ]]; then
+    rm -rf "$TMP_SCHEMA_DIR"
   fi
 
   if [[ -n "$POSTGRES_CONTAINER" ]]; then
@@ -108,11 +112,11 @@ generate_schema_to_file() {
 }
 
 update_schema() {
-  # Force /tmp so the dockerized dbmate dump can write to the bind-mount on CI.
-  # Some CI environments set TMPDIR to a non-world-writable directory.
-  TMP_SCHEMA="$(mktemp "/tmp/db-schema.XXXXXX")"
-  # mktemp creates 0600; dbmate runs in a container and may not share UID, so make it writable.
-  chmod 666 "$TMP_SCHEMA"
+  # Create a world-writable temp directory so the dockerized dbmate dump can write to the bind-mount on CI,
+  # regardless of which UID the image runs as.
+  TMP_SCHEMA_DIR="$(mktemp -d "/tmp/db-schema.XXXXXX")"
+  chmod 777 "$TMP_SCHEMA_DIR"
+  TMP_SCHEMA="$TMP_SCHEMA_DIR/schema.sql"
   generate_schema_to_file "$TMP_SCHEMA"
 
   if [[ -f "$SCHEMA_PATH" ]] && cmp -s "$SCHEMA_PATH" "$TMP_SCHEMA"; then
@@ -132,11 +136,11 @@ check_schema() {
     exit 1
   fi
 
-  # Force /tmp so the dockerized dbmate dump can write to the bind-mount on CI.
-  # Some CI environments set TMPDIR to a non-world-writable directory.
-  TMP_SCHEMA="$(mktemp "/tmp/db-schema.XXXXXX")"
-  # mktemp creates 0600; dbmate runs in a container and may not share UID, so make it writable.
-  chmod 666 "$TMP_SCHEMA"
+  # Create a world-writable temp directory so the dockerized dbmate dump can write to the bind-mount on CI,
+  # regardless of which UID the image runs as.
+  TMP_SCHEMA_DIR="$(mktemp -d "/tmp/db-schema.XXXXXX")"
+  chmod 777 "$TMP_SCHEMA_DIR"
+  TMP_SCHEMA="$TMP_SCHEMA_DIR/schema.sql"
   generate_schema_to_file "$TMP_SCHEMA"
 
   if ! diff -u "$SCHEMA_PATH" "$TMP_SCHEMA"; then
