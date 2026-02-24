@@ -1,161 +1,179 @@
 <template>
-  <div class="chat">
-    <div class="bubble you audio-bubble">
-      <div class="muted mini">{{ t('home.chatDemo.you') }}</div>
-      <div class="voice-card user-voice">
-        <button class="voice-play" type="button" :aria-label="t('home.chatDemo.userAudio')">
-          <span class="voice-play-icon" aria-hidden="true">▶</span>
-        </button>
-        <div class="voice-body">
-          <div class="voice-title">{{ t('home.chatDemo.userAudio') }}</div>
-          <div class="voice-wave" aria-hidden="true">
-            <span
-              v-for="(barHeight, idx) in waveformBars"
-              :key="`user-wave-${idx}`"
-              class="voice-wave-bar"
-              :style="{ '--bar-height': `${barHeight}px` }"
-            />
+  <div ref="scrollWindowEl" class="chat-window" @wheel="handleWheel">
+    <div class="chat">
+      <div v-for="message in messages" :key="message.id" :class="bubbleClass(message)">
+        <template v-if="message.kind === 'voice'">
+          <div class="muted mini">{{ t(message.labelKey) }}</div>
+          <div class="voice-card" :class="message.voiceRole === 'user' ? 'user-voice' : 'bot-voice'">
+            <button
+              class="voice-play"
+              type="button"
+              :aria-label="t(message.voiceRole === 'user' ? 'home.chatDemo.userAudio' : 'home.chatDemo.botAudio')"
+            >
+              <span class="voice-play-icon" aria-hidden="true">▶</span>
+            </button>
+            <div class="voice-body">
+              <div class="voice-title">{{ t(message.voiceRole === 'user' ? 'home.chatDemo.userAudio' : 'home.chatDemo.botAudio') }}</div>
+              <div class="voice-wave" aria-hidden="true">
+                <span
+                  v-for="(barHeight, idx) in waveformBars"
+                  :key="`${message.id}-wave-${idx}`"
+                  class="voice-wave-bar"
+                  :style="{ '--bar-height': `${barHeight}px` }"
+                />
+              </div>
+              <div class="voice-meta">
+                <span>{{ resolveAudioMeta(message.voiceRole).duration }}</span>
+                <span class="voice-dot" aria-hidden="true">•</span>
+                <span>{{ resolveAudioMeta(message.voiceRole).sentAt }}</span>
+                <span v-if="message.voiceRole === 'user'" class="voice-check" aria-hidden="true">✓✓</span>
+              </div>
+            </div>
           </div>
-          <div class="voice-meta">
-            <span>{{ scenarioAudio.user.duration }}</span>
-            <span class="voice-dot" aria-hidden="true">•</span>
-            <span>{{ scenarioAudio.user.sentAt }}</span>
-            <span class="voice-check" aria-hidden="true">✓✓</span>
+        </template>
+
+        <template v-else-if="message.kind === 'status'">
+          <div class="muted mini">{{ t('home.chatDemo.bot') }}</div>
+          <div class="chat-status">
+            <span class="chat-status-text">{{ t(message.i18nKey) }}</span>
+            <span v-if="message.dots" class="chat-dots" aria-hidden="true">...</span>
+          </div>
+        </template>
+
+        <template v-else-if="message.kind === 'text'">
+          <div class="muted mini">{{ t(message.headerKey) }}</div>
+          <div>{{ resolveText(message.text) }}</div>
+
+          <div
+            v-if="Array.isArray(message.actions) && message.actions.length"
+            :class="['chat-inline-actions', message.from === 'user' ? 'inline-right' : '']"
+          >
+            <button
+              v-for="action in message.actions"
+              :key="`${message.id}-${action.id}`"
+              class="chat-inline-btn"
+              type="button"
+              :disabled="isActionDisabled(action.id)"
+              @click="triggerAction(action.id)"
+            >
+              {{ actionLabel(action.id) }}
+            </button>
+          </div>
+
+          <div v-if="messageTranslationVisible(message)" class="chat-translation">
+            <div class="chat-translation-title">{{ translationHeaderLabel }}</div>
+            <div>{{ resolveText(messageTranslationRef(message)) }}</div>
+          </div>
+        </template>
+
+        <template v-else-if="message.kind === 'explanation'">
+          <div class="muted mini">{{ explanationTitle(message.titleKey) }}</div>
+
+          <div v-if="hasExplanationExample" class="explanation-example">
+            <div class="explanation-line">
+              <span class="explanation-icon" aria-hidden="true">❌</span>
+              <span>{{ explanationExampleValue.wrong }}</span>
+            </div>
+            <div class="explanation-line">
+              <span class="explanation-icon" aria-hidden="true">✅</span>
+              <span>{{ explanationExampleValue.right }}</span>
+            </div>
+
+            <div class="explanation-rule">
+              <span class="explanation-icon" aria-hidden="true">🧠</span>
+              <span>
+                <span class="explanation-rule-label">[{{ explanationExampleValue.ruleLabel }}]</span>
+                <span> {{ explanationExampleValue.ruleText }}</span>
+              </span>
+            </div>
+          </div>
+
+          <div v-else class="explanation-body">
+            <div
+              v-for="(block, idx) in explanationBlocks(message.blocksKey)"
+              :key="`${message.id}-block-${idx}`"
+              class="explanation-block"
+            >
+              <div class="explanation-label">{{ block.title }}</div>
+              <div class="explanation-text">{{ block.body }}</div>
+            </div>
+          </div>
+        </template>
+
+        <template v-else-if="message.kind === 'hints'">
+          <div class="muted mini">{{ t('home.chatDemo.followUpTitle') }}</div>
+          <div class="hint-intro">{{ t('home.chatDemo.hintsIntro') }}</div>
+
+        <div class="hint-block">
+          <div class="hint-label">{{ t('home.chatDemo.questionLabel') }}</div>
+          <div class="hint-body">
+            <div class="hint-line">
+              <span class="hint-flag" aria-hidden="true">{{ targetLocaleFlag }}</span>
+              <span>{{ scenarioTarget.followUp.question }}</span>
+            </div>
+            <div class="hint-line">
+              <span class="hint-flag" aria-hidden="true">{{ baseLocaleFlag }}</span>
+              <span>{{ scenarioBase.followUp.question }}</span>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="bubble you transcript-bubble">
-      <div class="muted mini">{{ t('home.chatDemo.transcriptLabel') }}</div>
-      <div>{{ scenarioTarget.userTranscript }}</div>
-      <div class="chat-inline-actions inline-right">
-        <button
-          class="chat-inline-btn"
-          type="button"
-          :disabled="showUserTranscriptTranslation || isTranslatingUserTranscript"
-          @click="handleTranslateUserTranscript"
-        >
-          {{ isTranslatingUserTranscript ? t('home.chatDemo.translateLoading') : translateActionLabel }}
-        </button>
-      </div>
-      <div v-if="showUserTranscriptTranslation" class="chat-translation">
-        <div class="chat-translation-title">{{ translationHeaderLabel }}</div>
-        <div>{{ scenarioBase.userTranscript }}</div>
-      </div>
-    </div>
-
-    <div class="bubble bot audio-bubble">
-      <div class="muted mini">{{ t('home.chatDemo.bot') }}</div>
-      <div class="voice-card bot-voice">
-        <button class="voice-play" type="button" :aria-label="t('home.chatDemo.botAudio')">
-          <span class="voice-play-icon" aria-hidden="true">▶</span>
-        </button>
-        <div class="voice-body">
-          <div class="voice-title">{{ t('home.chatDemo.botAudio') }}</div>
-          <div class="voice-wave" aria-hidden="true">
-            <span
-              v-for="(barHeight, idx) in waveformBars"
-              :key="`bot-wave-${idx}`"
-              class="voice-wave-bar"
-              :style="{ '--bar-height': `${barHeight}px` }"
-            />
-          </div>
-          <div class="voice-meta">
-            <span>{{ scenarioAudio.bot.duration }}</span>
-            <span class="voice-dot" aria-hidden="true">•</span>
-            <span>{{ scenarioAudio.bot.sentAt }}</span>
+        <div class="hint-block">
+          <div class="hint-label">{{ t('home.chatDemo.simpleLabel') }}</div>
+          <div class="hint-body">
+            <code>{{ scenarioTarget.followUp.simple }}</code>
+            <div>{{ scenarioBase.followUp.simple }}</div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="bubble bot">
-      <div class="muted mini">{{ t('home.chatDemo.botTranscriptLabel') }}</div>
-      <div>{{ scenarioTarget.botTranscript }}</div>
-      <div v-if="showReplyTranslation" class="chat-translation">
-        <div class="chat-translation-title">{{ translationHeaderLabel }}</div>
-        <div>{{ scenarioBase.botTranscript }}</div>
-      </div>
-    </div>
-
-    <div class="chat-inline-actions">
-      <button
-        class="chat-inline-btn"
-        type="button"
-        :disabled="showReplyTranslation || isTranslatingReply"
-        @click="handleTranslateReply"
-      >
-        {{ isTranslatingReply ? t('home.chatDemo.translateLoading') : translateActionLabel }}
-      </button>
-      <button class="chat-inline-btn" type="button" :disabled="showFollowUp || isLoadingHints" @click="handleFollowUp">
-        {{ isLoadingHints ? t('home.chatDemo.followUpLoading') : t('home.chatDemo.followUpAction') }}
-      </button>
-    </div>
-
-    <div v-if="showFollowUp" class="bubble bot follow-up">
-      <div class="muted mini">{{ t('home.chatDemo.followUpTitle') }}</div>
-      <div class="hint-intro">{{ t('home.chatDemo.hintsIntro') }}</div>
-
-      <div class="hint-block">
-        <div class="hint-label">{{ t('home.chatDemo.questionLabel') }}</div>
-        <div class="hint-body">
-          <div class="hint-line">
-            <span class="hint-flag" aria-hidden="true">{{ targetLocaleFlag }}</span>
-            <span>{{ scenarioTarget.followUp.question }}</span>
-          </div>
-          <div class="hint-line">
-            <span class="hint-flag" aria-hidden="true">{{ baseLocaleFlag }}</span>
-            <span>{{ scenarioBase.followUp.question }}</span>
+        <div class="hint-block">
+          <div class="hint-label">{{ t('home.chatDemo.conversationalLabel') }}</div>
+          <div class="hint-body">
+            <code>{{ scenarioTarget.followUp.conversational }}</code>
+            <div>{{ scenarioBase.followUp.conversational }}</div>
           </div>
         </div>
-      </div>
 
-      <div class="hint-block">
-        <div class="hint-label">{{ t('home.chatDemo.simpleLabel') }}</div>
-        <div class="hint-body">
-          <code>{{ scenarioTarget.followUp.simple }}</code>
-          <div>{{ scenarioBase.followUp.simple }}</div>
+        <div class="hint-block">
+          <div class="hint-label">{{ t('home.chatDemo.advancedLabel') }}</div>
+          <div class="hint-body">
+            <code>{{ scenarioTarget.followUp.advanced }}</code>
+            <div>{{ scenarioBase.followUp.advanced }}</div>
+          </div>
         </div>
-      </div>
 
-      <div class="hint-block">
-        <div class="hint-label">{{ t('home.chatDemo.conversationalLabel') }}</div>
-        <div class="hint-body">
-          <code>{{ scenarioTarget.followUp.conversational }}</code>
-          <div>{{ scenarioBase.followUp.conversational }}</div>
+        <div class="hint-block">
+          <div class="hint-label">{{ t('home.chatDemo.phrasesLabel') }}</div>
+          <div class="hint-body phrase-list">
+            <div><code>{{ scenarioTarget.followUp.phrases[0] }}</code> - {{ scenarioBase.followUp.phrases[0] }}</div>
+            <div><code>{{ scenarioTarget.followUp.phrases[1] }}</code> - {{ scenarioBase.followUp.phrases[1] }}</div>
+            <div><code>{{ scenarioTarget.followUp.phrases[2] }}</code> - {{ scenarioBase.followUp.phrases[2] }}</div>
+          </div>
         </div>
-      </div>
-
-      <div class="hint-block">
-        <div class="hint-label">{{ t('home.chatDemo.advancedLabel') }}</div>
-        <div class="hint-body">
-          <code>{{ scenarioTarget.followUp.advanced }}</code>
-          <div>{{ scenarioBase.followUp.advanced }}</div>
-        </div>
-      </div>
-
-      <div class="hint-block">
-        <div class="hint-label">{{ t('home.chatDemo.phrasesLabel') }}</div>
-        <div class="hint-body phrase-list">
-          <div><code>{{ scenarioTarget.followUp.phrases[0] }}</code> - {{ scenarioBase.followUp.phrases[0] }}</div>
-          <div><code>{{ scenarioTarget.followUp.phrases[1] }}</code> - {{ scenarioBase.followUp.phrases[1] }}</div>
-          <div><code>{{ scenarioTarget.followUp.phrases[2] }}</code> - {{ scenarioBase.followUp.phrases[2] }}</div>
-        </div>
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { normalizeLocale, useI18n } from '../i18n.js';
 import { resolveScenario } from '../data/chatDemoScenarios.js';
+import { resolveConversation } from '../data/chatDemoConversations.js';
 
 const props = defineProps({
   scenarioId: {
     type: String,
     default: 'jobInterview'
+  },
+  conversationId: {
+    type: String,
+    default: 'voiceWorkflow'
+  },
+  autoplay: {
+    type: Boolean,
+    default: true
   },
   baseLocale: {
     type: String,
@@ -168,10 +186,14 @@ const props = defineProps({
   scenarios: {
     type: Object,
     default: () => ({})
+  },
+  conversations: {
+    type: Object,
+    default: () => ({})
   }
 });
 
-const { t, locale } = useI18n();
+const { t, tm, locale } = useI18n();
 
 const waveformBars = [8, 10, 14, 18, 16, 12, 10, 9, 13, 17, 15, 11, 9, 12, 16, 14, 10, 8];
 const LOCALE_FLAG_MAP = {
@@ -206,86 +228,409 @@ function stripLeadingDecorators(value) {
 const translateActionLabel = computed(() => `${baseLocaleFlag.value} ${stripLeadingDecorators(t('home.chatDemo.translateAction'))}`);
 const translationHeaderLabel = computed(() => `${baseLocaleFlag.value} ${stripLeadingDecorators(t('home.chatDemo.translationHeader'))}`);
 
-const showUserTranscriptTranslation = ref(false);
-const showReplyTranslation = ref(false);
-const showFollowUp = ref(false);
-const isTranslatingUserTranscript = ref(false);
-const isTranslatingReply = ref(false);
-const isLoadingHints = ref(false);
-let userTranscriptTranslateTimer = null;
-let replyTranslateTimer = null;
-let hintsTimer = null;
+const conversation = computed(() =>
+  resolveConversation({
+    conversationId: props.conversationId,
+    conversations: props.conversations
+  })
+);
 
-function clearDemoTimers() {
-  if (userTranscriptTranslateTimer) {
-    clearTimeout(userTranscriptTranslateTimer);
-    userTranscriptTranslateTimer = null;
+const isMounted = ref(false);
+const scrollWindowEl = ref(null);
+const messages = ref([]);
+const actionState = ref({
+  translateTranscript: { loading: false, done: false },
+  translateReply: { loading: false, done: false },
+  followUpHints: { loading: false, done: false }
+});
+
+const activeTimeouts = new Set();
+let activeRunId = 0;
+let scrollRafId = 0;
+
+function scheduleScrollToBottom(behavior = 'smooth') {
+  if (!import.meta.client) return;
+  if (!isMounted.value) return;
+
+  if (scrollRafId) cancelAnimationFrame(scrollRafId);
+  scrollRafId = requestAnimationFrame(async () => {
+    scrollRafId = 0;
+    await nextTick();
+    const el = scrollWindowEl.value;
+    if (!el) return;
+    const top = Math.max(0, el.scrollHeight - el.clientHeight);
+    el.scrollTo({ top, behavior });
+  });
+}
+
+function handleWheel(event) {
+  const el = scrollWindowEl.value;
+  if (!el) return;
+
+  const deltaY = event.deltaY || 0;
+  if (deltaY === 0) return;
+
+  const epsilon = 1;
+  const atTop = el.scrollTop <= epsilon;
+  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - epsilon;
+
+  if ((deltaY < 0 && atTop) || (deltaY > 0 && atBottom)) {
+    event.preventDefault();
+    event.stopPropagation();
   }
-  if (replyTranslateTimer) {
-    clearTimeout(replyTranslateTimer);
-    replyTranslateTimer = null;
-  }
-  if (hintsTimer) {
-    clearTimeout(hintsTimer);
-    hintsTimer = null;
-  }
+}
+
+function setDemoTimeout(fn, ms) {
+  const id = setTimeout(() => {
+    activeTimeouts.delete(id);
+    fn();
+  }, ms);
+  activeTimeouts.add(id);
+  return id;
+}
+
+function clearDemoTimeouts() {
+  for (const id of activeTimeouts) clearTimeout(id);
+  activeTimeouts.clear();
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setDemoTimeout(resolve, ms));
 }
 
 function resetDemoState() {
-  clearDemoTimers();
-  showUserTranscriptTranslation.value = false;
-  showReplyTranslation.value = false;
-  showFollowUp.value = false;
-  isTranslatingUserTranscript.value = false;
-  isTranslatingReply.value = false;
-  isLoadingHints.value = false;
+  activeRunId += 1;
+  clearDemoTimeouts();
+  messages.value = [];
+  actionState.value = {
+    translateTranscript: { loading: false, done: false },
+    translateReply: { loading: false, done: false },
+    followUpHints: { loading: false, done: false }
+  };
 }
 
-function handleTranslateUserTranscript() {
-  if (showUserTranscriptTranslation.value || isTranslatingUserTranscript.value) return;
-  isTranslatingUserTranscript.value = true;
-  userTranscriptTranslateTimer = setTimeout(() => {
-    isTranslatingUserTranscript.value = false;
-    showUserTranscriptTranslation.value = true;
-    userTranscriptTranslateTimer = null;
-  }, 520);
+function upsertMessage(nextMessage) {
+  const idx = messages.value.findIndex((msg) => msg.id === nextMessage.id);
+  if (idx >= 0) messages.value.splice(idx, 1, nextMessage);
+  else messages.value.push(nextMessage);
+  scheduleScrollToBottom();
 }
 
-function handleTranslateReply() {
-  if (showReplyTranslation.value || isTranslatingReply.value) return;
-  isTranslatingReply.value = true;
-  replyTranslateTimer = setTimeout(() => {
-    isTranslatingReply.value = false;
-    showReplyTranslation.value = true;
-    replyTranslateTimer = null;
-  }, 560);
+function removeMessageById(id) {
+  const idx = messages.value.findIndex((msg) => msg.id === id);
+  if (idx >= 0) messages.value.splice(idx, 1);
+  scheduleScrollToBottom();
 }
 
-function handleFollowUp() {
-  if (showFollowUp.value || isLoadingHints.value) return;
-  isLoadingHints.value = true;
-  hintsTimer = setTimeout(() => {
-    isLoadingHints.value = false;
-    showFollowUp.value = true;
-    hintsTimer = null;
-  }, 650);
+function ensureHintsMessage() {
+  if (messages.value.some((msg) => msg.kind === 'hints')) return;
+  messages.value.push({ id: 'hints', kind: 'hints', from: 'bot' });
+  scheduleScrollToBottom();
+}
+
+function resolveAudioMeta(voiceRole) {
+  if (voiceRole === 'bot') return scenarioAudio.value.bot;
+  return scenarioAudio.value.user;
+}
+
+function resolveText(refDef) {
+  const refObj = refDef && typeof refDef === 'object' ? refDef : {};
+  if (refObj.source !== 'scenario') return '';
+  const which = refObj.which === 'base' ? 'base' : 'target';
+  const path = (refObj.path || '').toString().trim();
+  if (!path) return '';
+
+  const source = which === 'base' ? scenarioBase.value : scenarioTarget.value;
+  return (source?.[path] || '').toString();
+}
+
+function explanationBlocks(blocksKey) {
+  const raw = tm(blocksKey);
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((block) => ({
+      title: (block?.title || '').toString().trim(),
+      body: (block?.body || '').toString().trim()
+    }))
+    .filter((block) => block.title && block.body);
+}
+
+function explanationTitle(key) {
+  const titleKey = (key || '').toString().trim() || 'home.chatDemo.explanationTitle';
+  const raw = tm(titleKey, baseLocaleCode.value);
+  if (typeof raw === 'string') return raw;
+  return t(titleKey);
+}
+
+const explanationExampleValue = computed(() => {
+  const raw = tm('home.chatDemo.explanationExample', baseLocaleCode.value);
+  const value = raw && typeof raw === 'object' ? raw : {};
+  return {
+    wrong: (value?.wrong || '').toString().trim(),
+    right: (value?.right || '').toString().trim(),
+    ruleLabel: (value?.ruleLabel || '').toString().trim(),
+    ruleText: (value?.ruleText || '').toString().trim()
+  };
+});
+
+const hasExplanationExample = computed(() =>
+  Boolean(
+    explanationExampleValue.value.wrong
+    && explanationExampleValue.value.right
+    && explanationExampleValue.value.ruleLabel
+    && explanationExampleValue.value.ruleText
+  )
+);
+
+function bubbleClass(message) {
+  const from = message?.from === 'user' ? 'user' : 'bot';
+  const kind = message?.kind || '';
+  const headerKey = (message?.headerKey || '').toString();
+
+  return {
+    bubble: true,
+    you: from === 'user',
+    bot: from === 'bot',
+    'audio-bubble': kind === 'voice',
+    'transcript-bubble': kind === 'text' && headerKey === 'home.chatDemo.transcriptLabel',
+    'status-bubble': kind === 'status',
+    'explanation-bubble': kind === 'explanation',
+    'follow-up': kind === 'hints'
+  };
+}
+
+function buildMessageFromStep(step) {
+  const kind = (step.kind || '').toString();
+  const from = step.from === 'user' ? 'user' : 'bot';
+
+  if (kind === 'voice') {
+    const source = (step.source || '').toString();
+    const voiceRole = step.voiceRole === 'bot' ? 'bot' : step.voiceRole === 'user' ? 'user' : source.endsWith('.bot') ? 'bot' : 'user';
+    return {
+      id: step.id,
+      kind: 'voice',
+      from,
+      voiceRole,
+      labelKey: voiceRole === 'user' ? 'home.chatDemo.you' : 'home.chatDemo.bot'
+    };
+  }
+
+  if (kind === 'status') {
+    return {
+      id: step.id,
+      kind: 'status',
+      from,
+      i18nKey: (step.i18nKey || '').toString() || 'home.chatDemo.statusPreparing',
+      dots: Boolean(step.dots)
+    };
+  }
+
+  if (kind === 'text') {
+    return {
+      id: step.id,
+      kind: 'text',
+      from,
+      headerKey: (step.headerKey || '').toString() || 'home.chatDemo.transcriptLabel',
+      text: step.text || null,
+      actions: Array.isArray(step.actions) ? step.actions.map((action) => ({ id: action?.id })) : []
+    };
+  }
+
+  if (kind === 'explanation') {
+    return {
+      id: step.id,
+      kind: 'explanation',
+      from,
+      titleKey: (step.titleKey || '').toString() || 'home.chatDemo.explanationTitle',
+      blocksKey: (step.blocksKey || '').toString() || 'home.chatDemo.explanationBlocks'
+    };
+  }
+
+  if (kind === 'hints') {
+    return {
+      id: step.id,
+      kind: 'hints',
+      from
+    };
+  }
+
+  return null;
+}
+
+function isActionDisabled(actionId) {
+  const state = actionState.value[actionId];
+  if (!state) return true;
+  return Boolean(state.loading || state.done);
+}
+
+function actionLabel(actionId) {
+  const state = actionState.value[actionId];
+  const loading = Boolean(state?.loading);
+
+  if (actionId === 'translateTranscript' || actionId === 'translateReply') {
+    return loading ? t('home.chatDemo.translateLoading') : translateActionLabel.value;
+  }
+
+  if (actionId === 'followUpHints') {
+    return loading ? t('home.chatDemo.followUpLoading') : t('home.chatDemo.followUpAction');
+  }
+
+  return actionId;
+}
+
+function triggerAction(actionId) {
+  const state = actionState.value[actionId];
+  if (!state || state.loading || state.done) return;
+
+  if (actionId === 'translateTranscript') {
+    state.loading = true;
+    setDemoTimeout(() => {
+      state.loading = false;
+      state.done = true;
+      scheduleScrollToBottom();
+    }, 2200);
+    return;
+  }
+
+  if (actionId === 'translateReply') {
+    state.loading = true;
+    setDemoTimeout(() => {
+      state.loading = false;
+      state.done = true;
+      scheduleScrollToBottom();
+    }, 2200);
+    return;
+  }
+
+  if (actionId === 'followUpHints') {
+    state.loading = true;
+    setDemoTimeout(() => {
+      state.loading = false;
+      state.done = true;
+      ensureHintsMessage();
+      scheduleScrollToBottom();
+    }, 2600);
+  }
+}
+
+function messageTranslationRef(message) {
+  const actions = Array.isArray(message?.actions) ? message.actions : [];
+  const actionIds = new Set(actions.map((action) => action?.id));
+
+  let actionId = '';
+  if (actionIds.has('translateTranscript')) actionId = 'translateTranscript';
+  else if (actionIds.has('translateReply')) actionId = 'translateReply';
+  else return null;
+
+  const state = actionState.value[actionId];
+  if (!state?.done) return null;
+
+  const src = message?.text && typeof message.text === 'object' ? message.text : null;
+  if (!src || src.source !== 'scenario' || src.which !== 'target') return null;
+  if (!src.path) return null;
+
+  return { source: 'scenario', which: 'base', path: src.path };
+}
+
+function messageTranslationVisible(message) {
+  return Boolean(messageTranslationRef(message));
+}
+
+function seedAutoplayStart(steps) {
+  for (const step of steps) {
+    if (step.op === 'wait' || step.op === 'invoke') return;
+    if (step.op === 'add') {
+      const msg = buildMessageFromStep(step);
+      if (msg) upsertMessage(msg);
+      continue;
+    }
+    if (step.op === 'remove') removeMessageById(step.id);
+  }
+}
+
+function seedStaticConversation(steps) {
+  for (const step of steps) {
+    if (step.op === 'add') {
+      const msg = buildMessageFromStep(step);
+      if (msg) upsertMessage(msg);
+      continue;
+    }
+    if (step.op === 'remove') removeMessageById(step.id);
+  }
+}
+
+async function playConversation(steps, runId) {
+  for (const step of steps) {
+    if (runId !== activeRunId) return;
+
+    if (step.op === 'add') {
+      const msg = buildMessageFromStep(step);
+      if (msg) upsertMessage(msg);
+      continue;
+    }
+
+    if (step.op === 'remove') {
+      removeMessageById(step.id);
+      continue;
+    }
+
+    if (step.op === 'wait') {
+      const ms = Number(step.ms);
+      await delay(Number.isFinite(ms) ? ms : 0);
+      continue;
+    }
+
+    if (step.op === 'invoke') {
+      triggerAction(step.actionId);
+    }
+  }
+}
+
+function restartDemo() {
+  resetDemoState();
+  const steps = conversation.value.steps;
+
+  if (props.autoplay) seedAutoplayStart(steps);
+  else seedStaticConversation(steps);
+
+  if (!isMounted.value || !props.autoplay) return;
+  playConversation(steps, activeRunId);
 }
 
 watch(
-  () => `${props.scenarioId}|${baseLocaleCode.value}|${resolvedScenario.value.targetLocale}`,
-  () => resetDemoState()
+  () => `${props.scenarioId}|${baseLocaleCode.value}|${targetLocaleCode.value}|${props.conversationId}|${props.autoplay}`,
+  () => restartDemo()
 );
 
 watch(
-  () => [props.targetByBaseLocale, props.scenarios],
-  () => resetDemoState(),
+  () => [props.targetByBaseLocale, props.scenarios, props.conversations],
+  () => restartDemo(),
   { deep: true }
 );
 
-onBeforeUnmount(() => clearDemoTimers());
+onMounted(() => {
+  isMounted.value = true;
+  restartDemo();
+  scheduleScrollToBottom('auto');
+});
+
+onBeforeUnmount(() => {
+  clearDemoTimeouts();
+  if (scrollRafId) cancelAnimationFrame(scrollRafId);
+});
 </script>
 
 <style scoped>
+.chat-window {
+  width: 100%;
+  --chat-window-height: min(560px, 72vh);
+  max-height: var(--chat-window-height);
+  min-height: var(--chat-window-height);
+  overflow-y: auto;
+  overscroll-behavior: none;
+  padding-right: 6px;
+}
+
 .chat {
   width: min(680px, 100%);
   display: grid;
@@ -422,7 +767,8 @@ onBeforeUnmount(() => clearDemoTimers());
 }
 
 .transcript-bubble,
-.follow-up {
+.follow-up,
+.explanation-bubble {
   max-width: 92%;
 }
 
@@ -440,11 +786,11 @@ onBeforeUnmount(() => clearDemoTimers());
 }
 
 .chat-inline-actions {
-  justify-self: start;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   align-items: flex-start;
+  margin-top: 10px;
 }
 
 .chat-inline-btn {
@@ -467,8 +813,103 @@ onBeforeUnmount(() => clearDemoTimers());
 }
 
 .inline-right {
-  justify-self: end;
-  margin-top: 10px;
+  justify-content: flex-end;
+}
+
+.status-bubble {
+  max-width: 64%;
+}
+
+.chat-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+}
+
+.chat-status-text {
+  color: color-mix(in srgb, var(--fg) 92%, var(--muted));
+}
+
+.chat-dots {
+  display: inline-block;
+  width: 1.2em;
+  overflow: hidden;
+  line-height: 1;
+  transform: translateY(1px);
+  animation: chatDots 1.2s steps(4, end) infinite;
+  opacity: 0.9;
+}
+
+@keyframes chatDots {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 1.2em;
+  }
+}
+
+.explanation-bubble {
+  width: min(620px, 100%);
+  display: grid;
+  gap: 10px;
+  background: color-mix(in srgb, var(--surface) 65%, var(--bg));
+}
+
+.explanation-example {
+  display: grid;
+  gap: 6px;
+}
+
+.explanation-line,
+.explanation-rule {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.explanation-icon {
+  font-size: 16px;
+  line-height: 1;
+  transform: translateY(1px);
+}
+
+.explanation-rule {
+  line-height: 1.55;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--fg) 14%, var(--border));
+}
+
+.explanation-rule-label {
+  font-weight: 900;
+}
+
+.explanation-body {
+  display: grid;
+  gap: 10px;
+}
+
+.explanation-block {
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--bg) 75%, var(--surface));
+}
+
+.explanation-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  color: color-mix(in srgb, var(--fg) 78%, var(--muted));
+}
+
+.explanation-text {
+  line-height: 1.55;
 }
 
 .follow-up {

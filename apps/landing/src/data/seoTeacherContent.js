@@ -41,29 +41,6 @@ const LANGUAGE_FORMS = {
   }
 };
 
-const DIALOGUE_PHRASES = {
-  en: {
-    atm: 'I need to withdraw cash, and I am not sure about the fee.',
-    doctor: 'I have had a sore throat for two days and a mild fever.',
-    rent: 'I would like to rent this flat from next month, if it is still available.'
-  },
-  de: {
-    atm: 'Ich muss Bargeld abheben und bin mir bei der Gebühr nicht sicher.',
-    doctor: 'Ich habe seit zwei Tagen Halsschmerzen und leichtes Fieber.',
-    rent: 'Ich möchte diese Wohnung ab nächstem Monat mieten, falls sie noch frei ist.'
-  },
-  it: {
-    atm: 'Devo prelevare contanti e non sono sicuro della commissione.',
-    doctor: 'Ho mal di gola da due giorni e una leggera febbre.',
-    rent: 'Vorrei affittare questo appartamento dal mese prossimo, se è ancora disponibile.'
-  },
-  uk: {
-    atm: 'Мені потрібно зняти готівку, але я не впевнений щодо комісії.',
-    doctor: 'У мене вже два дні болить горло і є невелика температура.',
-    rent: 'Я хотів би орендувати цю квартиру з наступного місяця, якщо вона ще доступна.'
-  }
-};
-
 function fallbackLanguageForm(locale, code) {
   const normalizedCode = normalizeLanguageCodeForSlugs(code) || 'en';
   const map = LANGUAGE_FORMS[locale] || LANGUAGE_FORMS.en;
@@ -75,12 +52,6 @@ function getLanguageForm(localeInput, languageCodeInput) {
   const locale = normalizeLocale(localeInput) || 'en';
   const code = normalizeLanguageCodeForSlugs(languageCodeInput) || 'en';
   return fallbackLanguageForm(locale, code);
-}
-
-function getDialoguePhrase(languageCodeInput, scenario) {
-  const code = normalizeLanguageCodeForSlugs(languageCodeInput) || 'en';
-  const map = DIALOGUE_PHRASES[code] || DIALOGUE_PHRASES.en;
-  return map[scenario] || DIALOGUE_PHRASES.en[scenario] || '';
 }
 
 function buildEnglishContent(teacher, languageForm) {
@@ -133,28 +104,8 @@ function buildEnglishContent(teacher, languageForm) {
         description: `Learn high-frequency phrases for airports, hotels, restaurants, and emergency situations so you can react quickly under pressure.`
       }
     ],
-    dialoguesTitle: 'Dialogue examples',
-    dialoguesIntro: `These are the conversation types learners ask for most often. Each scenario teaches practical wording plus confidence under time pressure.`,
-    dialogueExamples: [
-      {
-        scenario: 'ATM and banking',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'atm'),
-        teacherLine: `Great start. Let’s make it smoother and add one precise question for the bank employee.`,
-        note: 'Focus: polite requests, fee clarification, and quick follow-up questions.'
-      },
-      {
-        scenario: 'Doctor appointment',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'doctor'),
-        teacherLine: 'Excellent. Now we add symptom duration, severity, and one direct request for next steps.',
-        note: 'Focus: symptom timeline, clear medical vocabulary, and concise structure.'
-      },
-      {
-        scenario: 'Apartment rent',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'rent'),
-        teacherLine: `Nice. Let’s make it negotiation-ready with payment timing, contract terms, and one clarity question.`,
-        note: 'Focus: negotiation language, contract wording, and practical confirmation phrases.'
-      }
-    ],
+    dialoguesTitle: 'Dialogue example',
+    dialoguesIntro: `A short real-life chat sample. See how a voice message turns into a clearer reply, a rule-based explanation, and next-message options.`,
     deepDiveTitle: `Build real ${targetLanguage} fluency with daily Telegram practice`,
     deepDiveParagraphs: [
       `Most learners do not struggle because they “lack vocabulary.” They struggle because they cannot retrieve the right phrase fast enough in real moments. This page solves that by training response speed, sentence structure, and conversational rhythm in one workflow. You practice exactly where conversation pressure appears: short, unscripted replies in chat.`,
@@ -262,28 +213,8 @@ function buildUkrainianContent(teacher, languageForm) {
         description: 'Підготуй фрази для аеропорту, готелю, транспорту, ресторанів і несподіваних ситуацій, щоб спокійно реагувати на місці.'
       }
     ],
-    dialoguesTitle: 'Приклади діалогів',
-    dialoguesIntro: 'Найчастіші сценарії, які учні просять відпрацювати: банк/ATM, лікар і оренда житла. Саме ці теми дають швидкий практичний ефект.',
-    dialogueExamples: [
-      {
-        scenario: 'ATM / банк',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'atm'),
-        teacherLine: 'Добре. Додаємо ввічливий запит і коротке уточнення, щоб ти звучав упевнено та конкретно.',
-        note: 'Фокус: ввічливі запити, уточнення комісії, зрозуміле завершення розмови.'
-      },
-      {
-        scenario: 'Лікар',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'doctor'),
-        teacherLine: 'Супер старт. Тепер структуруємо симптоми, тривалість і чітке питання про наступний крок.',
-        note: 'Фокус: симптоми, часові маркери, точні формулювання без зайвих пауз.'
-      },
-      {
-        scenario: 'Оренда квартири',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'rent'),
-        teacherLine: 'Чудово. Додаємо мову переговорів: умови, дата в’їзду, оплата і перевірка деталей договору.',
-        note: 'Фокус: переговорні фрази, контрактна лексика, контроль уточнень.'
-      }
-    ],
+    dialoguesTitle: 'Приклад діалогу',
+    dialoguesIntro: 'Короткий приклад реального діалогу. Голосове → краща відповідь → пояснення правила → варіанти для наступної репліки.',
     deepDiveTitle: `Як реально прокачати розмовну ${targetGenitive} через Telegram`,
     deepDiveParagraphs: [
       `Більшість людей застрягають не через “мало слів”, а через повільне формулювання думки в реальному діалозі. Ти ніби знаєш тему, але в момент відповіді губишся. Саме тому формат коротких голосових у Telegram працює краще за епізодичні довгі уроки: він тренує швидкість реакції, структуру відповіді та сміливість говорити тут і зараз.`,
@@ -390,28 +321,8 @@ function buildGermanContent(teacher, languageForm) {
         description: 'Lerne hochfrequente Formulierungen für Flughafen, Hotel, Restaurant und spontane Alltagssituationen.'
       }
     ],
-    dialoguesTitle: 'Dialogbeispiele',
-    dialoguesIntro: 'Typische Situationen, die Lernende am häufigsten trainieren: Bank/ATM, Arztbesuch und Wohnungsanmietung.',
-    dialogueExamples: [
-      {
-        scenario: 'ATM / Bank',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'atm'),
-        teacherLine: 'Guter Start. Wir machen den Satz natürlicher und ergänzen eine präzise Rückfrage.',
-        note: 'Fokus: höfliche Bitten, Gebühren klären, klar nachfragen.'
-      },
-      {
-        scenario: 'Arzttermin',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'doctor'),
-        teacherLine: 'Sehr gut. Jetzt ergänzen wir Dauer, Intensität und eine direkte Frage zum nächsten Schritt.',
-        note: 'Fokus: Symptome strukturieren, Zeitangaben, klare medizinische Formulierungen.'
-      },
-      {
-        scenario: 'Wohnung mieten',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'rent'),
-        teacherLine: 'Stark. Wir machen daraus eine verhandlungssichere Version mit Zahlungs- und Vertragsdetails.',
-        note: 'Fokus: Verhandlungssprache, Vertragsbegriffe, konkrete Bestätigungen.'
-      }
-    ],
+    dialoguesTitle: 'Dialogbeispiel',
+    dialoguesIntro: 'Ein kurzes, realistisches Chat-Beispiel. Sprachnachricht → bessere Antwort → Regel-Erklärung → Optionen für die nächste Nachricht.',
     deepDiveTitle: `Wie du mit Telegram wirklich flüssiger in ${targetLanguage} sprichst`,
     deepDiveParagraphs: [
       `Die meisten Lernenden scheitern nicht an fehlenden Regeln, sondern am Abrufen der richtigen Formulierung unter Zeitdruck. Genau hier setzt dieses Format an: kurze, echte Sprechversuche, sofortige Korrektur und direktes Wiederholen im selben Kontext.`,
@@ -518,28 +429,8 @@ function buildItalianContent(teacher, languageForm) {
         description: 'Impara frasi ad alta frequenza per aeroporto, hotel, trasporti e richieste urgenti in contesti reali.'
       }
     ],
-    dialoguesTitle: 'Esempi di dialogo',
-    dialoguesIntro: 'Scenari concreti che danno impatto rapido: ATM/banca, medico e affitto. Qui il lessico pratico fa la differenza.',
-    dialogueExamples: [
-      {
-        scenario: 'ATM / banca',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'atm'),
-        teacherLine: 'Ottimo inizio. Rendiamolo più naturale con una richiesta educata e una domanda di chiarimento.',
-        note: 'Focus: richieste cortesi, commissioni, conferma rapida.'
-      },
-      {
-        scenario: 'Visita medica',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'doctor'),
-        teacherLine: 'Perfetto. Ora aggiungiamo durata, intensità e una domanda diretta sul prossimo passo.',
-        note: 'Focus: sintomi, tempo, precisione lessicale.'
-      },
-      {
-        scenario: 'Affitto appartamento',
-        learnerLine: getDialoguePhrase(teacher.learningLanguage, 'rent'),
-        teacherLine: 'Molto bene. Passiamo a una versione da trattativa con termini chiari su condizioni e pagamento.',
-        note: 'Focus: negoziazione, termini contrattuali, verifiche finali.'
-      }
-    ],
+    dialoguesTitle: 'Esempio di dialogo',
+    dialoguesIntro: 'Un esempio breve e realistico. Messaggio vocale → risposta più naturale → spiegazione della regola → opzioni per il prossimo messaggio.',
     deepDiveTitle: `Come migliorare davvero il parlato in ${targetLanguage} con Telegram`,
     deepDiveParagraphs: [
       `Molti studenti non si bloccano perché non conoscono le regole, ma perché non riescono a recuperare velocemente la frase giusta quando serve. Per questo la pratica breve e frequente funziona meglio delle sessioni lunghe e sporadiche. Alleni risposta rapida, struttura della frase e fiducia nello stesso momento.`,
@@ -608,6 +499,8 @@ function buildSpanishContent(teacher, languageForm) {
     h1: `Práctica de conversación en ${targetLanguage} por Telegram con ${teacherName}`,
     heroLead: `Practica conversaciones reales en ${targetLanguage} dentro de Telegram. Envías un audio corto y ${teacherName} te responde con una versión corregida y más natural que puedes reutilizar al instante.`,
     heroOutcome: `Ganas fluidez útil para la vida real: respuestas más rápidas, pronunciación más clara y menos bloqueos en trabajo, entrevistas, viajes y gestiones diarias.`,
+    dialoguesTitle: 'Ejemplo de diálogo',
+    dialoguesIntro: 'Un ejemplo breve y realista. Mensaje de voz → respuesta más natural → explicación de la regla → opciones para tu siguiente mensaje.',
     otherTeachersTitle: 'Elige otro profesor'
   };
 }
@@ -624,6 +517,8 @@ function buildPortugueseContent(teacher, languageForm) {
     h1: `Prática de conversação em ${targetLanguage} no Telegram com ${teacherName}`,
     heroLead: `Pratique conversas reais em ${targetLanguage} direto no Telegram. Você envia um áudio curto e ${teacherName} responde com uma versão corrigida e mais natural para reutilizar na hora.`,
     heroOutcome: `Você ganha fluência prática para o dia a dia: respostas mais rápidas, pronúncia mais clara e menos travas em trabalho, entrevistas, viagens e rotina.`,
+    dialoguesTitle: 'Exemplo de diálogo',
+    dialoguesIntro: 'Um exemplo curto e realista. Mensagem de voz → resposta mais natural → explicação da regra → opções para a próxima mensagem.',
     otherTeachersTitle: 'Escolha outro professor'
   };
 }

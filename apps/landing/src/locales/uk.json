@@ -44,11 +44,34 @@
       "transcriptLabel": "Транскрипт",
       "botAudio": "Голосова відповідь",
       "botTranscriptLabel": "Транскрипт викладача",
+      "statusListening": "Прийняв — уважно слухаю",
+      "statusPreparing": "Готую відповідь",
       "translateAction": "Перекласти",
       "translateLoading": "Перекладаю…",
       "translationHeader": "Переклад від мене:",
       "followUpAction": "Що сказати далі?",
       "followUpLoading": "Підбираю варіанти...",
+      "explanationTitle": "Пояснення",
+      "explanationExample": {
+        "wrong": "Hallo Lesja, wie geht's es dir?",
+        "right": "Hallo Lesja, wie geht’s dir?",
+        "ruleLabel": "Rule: word order",
+        "ruleText": "У німецькій у питанні з «wie geht’s …» ми не ставимо додаткове es. Тут «geht’s» уже містить скорочене geht es, тому правильно просто geht’s dir. 🙂"
+      },
+      "explanationBlocks": [
+        {
+          "title": "Природна відповідь",
+          "body": "Тримай відповідь короткою, додай 1 конкретну деталь і заверши питанням — так діалог рухається далі."
+        },
+        {
+          "title": "Добір слів",
+          "body": "Краще працюють прості дієслова й конкретні цифри: “покращив(ла)”, “зменшив(ла)”, “на 12%”."
+        },
+        {
+          "title": "Наступний крок",
+          "body": "Якщо не знаєш, що сказати, обери найпростіший варіант нижче й надішли його як наступне повідомлення."
+        }
+      ],
       "followUpTitle": "Підказки для відповіді",
       "hintsIntro": "Ось кілька варіантів для твоєї наступної репліки:",
       "questionLabel": "Питання",

@@ -44,11 +44,34 @@
       "transcriptLabel": "Transcrição",
       "botAudio": "Resposta em voz",
       "botTranscriptLabel": "Transcrição do professor",
+      "statusListening": "Perfeito — ouvindo",
+      "statusPreparing": "Preparando resposta",
       "translateAction": "Traduzir",
       "translateLoading": "Traduzindo…",
       "translationHeader": "Minha tradução:",
       "followUpAction": "O que dizer depois?",
       "followUpLoading": "Preparando opções...",
+      "explanationTitle": "Explicação",
+      "explanationExample": {
+        "wrong": "Oi Lesja, como vai você?",
+        "right": "Oi Lesja, tudo bem?",
+        "ruleLabel": "Regra: naturalidade",
+        "ruleText": "Prefira perguntas curtas e comuns no dia a dia. Isso soa mais natural e fácil de responder."
+      },
+      "explanationBlocks": [
+        {
+          "title": "Resposta natural",
+          "body": "Mantenha curto, dê um detalhe concreto e termine com uma pergunta para manter a conversa fluindo."
+        },
+        {
+          "title": "Escolha de palavras",
+          "body": "Use verbos simples e números específicos: “melhorei”, “reduzi”, “em 12%”."
+        },
+        {
+          "title": "Próximo passo",
+          "body": "Se você não souber o que dizer, escolha a versão mais simples abaixo e envie como sua próxima mensagem."
+        }
+      ],
       "followUpTitle": "Dicas de resposta",
       "hintsIntro": "Aqui estão algumas opções para sua próxima resposta:",
       "questionLabel": "Pergunta",

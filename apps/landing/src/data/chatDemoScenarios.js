@@ -160,8 +160,8 @@ function sanitizeTextBlock(value) {
 
 /**
  * Usage contract:
- * - Available built-in scenarios: `jobInterview`, `doctorVisit`.
- * - Example: resolveScenario({ scenarioId: 'doctorVisit', baseLocale: 'de' })
+ * - Available built-in scenarios: `jobInterview`.
+ * - Example: resolveScenario({ scenarioId: 'jobInterview', baseLocale: 'de' })
  * - Override mapping per page: resolveScenario({ targetByBaseLocale: { de: 'es' } })
  * - Inject/override scenarios: resolveScenario({ scenarios: { customScenario: {...} } })
  */

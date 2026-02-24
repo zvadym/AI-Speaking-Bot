@@ -44,11 +44,34 @@
       "transcriptLabel": "Trascrizione",
       "botAudio": "Risposta vocale",
       "botTranscriptLabel": "Trascrizione insegnante",
+      "statusListening": "Perfetto — ascolto",
+      "statusPreparing": "Preparo la risposta",
       "translateAction": "Traduci",
       "translateLoading": "Traduco…",
       "translationHeader": "La mia traduzione:",
       "followUpAction": "Cosa dire dopo?",
       "followUpLoading": "Sto preparando le opzioni...",
+      "explanationTitle": "Spiegazione",
+      "explanationExample": {
+        "wrong": "Ciao Lesja, come stai tu?",
+        "right": "Ciao Lesja, come stai?",
+        "ruleLabel": "Regola: naturalezza",
+        "ruleText": "Evita parole in più se non cambiano il significato. “Come stai?” suona più naturale e scorrevole."
+      },
+      "explanationBlocks": [
+        {
+          "title": "Risposta naturale",
+          "body": "Tienila breve, aggiungi un dettaglio concreto e chiudi con una domanda per far andare avanti la conversazione."
+        },
+        {
+          "title": "Scelta delle parole",
+          "body": "Usa verbi semplici e numeri specifici: “ho migliorato”, “ho ridotto”, “del 12%”."
+        },
+        {
+          "title": "Prossimo passo",
+          "body": "Se non sai cosa dire, scegli la versione più semplice qui sotto e inviala come prossimo messaggio."
+        }
+      ],
       "followUpTitle": "Suggerimenti di risposta",
       "hintsIntro": "Ecco alcune opzioni per la tua prossima risposta:",
       "questionLabel": "Domanda",

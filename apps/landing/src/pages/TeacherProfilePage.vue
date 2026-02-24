@@ -77,11 +77,6 @@
               :base-locale="teacherChatBaseLocale"
               :target-by-base-locale="teacherChatTargetByBaseLocale"
             />
-            <ChatConversationDemo
-              scenario-id="doctorVisit"
-              :base-locale="teacherChatBaseLocale"
-              :target-by-base-locale="teacherChatTargetByBaseLocale"
-            />
           </div>
         </section>
 
@@ -330,25 +325,11 @@ useHead(() => {
 
 .step-item,
 .focus-item,
-.dialogue-item,
 .faq-item {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 16px;
   background: color-mix(in srgb, var(--surface) 55%, var(--bg));
-}
-
-.dialogue-line {
-  margin: 10px 0 0;
-  line-height: 1.6;
-}
-
-.label {
-  font-weight: 700;
-}
-
-.dialogue-note {
-  margin-top: 10px;
 }
 
 .deep-dive {
@@ -386,21 +367,7 @@ useHead(() => {
   }
 
   .dialogues-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 24px;
-    row-gap: 12px;
-  }
-
-  .dialogues-grid::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    width: 1px;
-    transform: translateX(-0.5px);
-    background: color-mix(in srgb, var(--fg) 16%, var(--border));
-    pointer-events: none;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

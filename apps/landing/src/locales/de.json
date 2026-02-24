@@ -44,11 +44,34 @@
       "transcriptLabel": "Transkript",
       "botAudio": "Sprachantwort",
       "botTranscriptLabel": "Transkript der Lehrkraft",
+      "statusListening": "Alles klar — ich höre zu",
+      "statusPreparing": "Ich formuliere eine Antwort",
       "translateAction": "Übersetzen",
       "translateLoading": "Übersetze…",
       "translationHeader": "Meine Übersetzung:",
       "followUpAction": "Was als Nächstes sagen?",
       "followUpLoading": "Vorschläge werden erstellt...",
+      "explanationTitle": "Erklärung",
+      "explanationExample": {
+        "wrong": "Hallo Lesja, wie geht's es dir?",
+        "right": "Hallo Lesja, wie geht’s dir?",
+        "ruleLabel": "Regel: Wortstellung",
+        "ruleText": "Bei „wie geht’s …“ brauchst du kein zusätzliches „es“. In „geht’s“ steckt schon „geht es“, daher korrekt: „wie geht’s dir“."
+      },
+      "explanationBlocks": [
+        {
+          "title": "Natürliche Antwort",
+          "body": "Halte es kurz, nenne ein konkretes Detail und ende mit einer Frage, damit das Gespräch weiterläuft."
+        },
+        {
+          "title": "Wortwahl",
+          "body": "Nutze einfache Verben und konkrete Zahlen: „verbessert“, „reduziert“, „um 12 %“."
+        },
+        {
+          "title": "Nächster Schritt",
+          "body": "Wenn du unsicher bist, nimm die einfachste Variante unten und sende sie als nächste Nachricht."
+        }
+      ],
       "followUpTitle": "Antwort-Hilfen",
       "hintsIntro": "Hier sind ein paar Optionen für deine nächste Antwort:",
       "questionLabel": "Frage",

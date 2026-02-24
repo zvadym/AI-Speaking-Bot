@@ -44,11 +44,34 @@
       "transcriptLabel": "Transcripción",
       "botAudio": "Respuesta de voz",
       "botTranscriptLabel": "Transcripción del profesor",
+      "statusListening": "Perfecto — escuchando",
+      "statusPreparing": "Preparando la respuesta",
       "translateAction": "Traducir",
       "translateLoading": "Traduciendo…",
       "translationHeader": "Mi traducción:",
       "followUpAction": "¿Qué decir después?",
       "followUpLoading": "Buscando opciones...",
+      "explanationTitle": "Explicación",
+      "explanationExample": {
+        "wrong": "Hola Lesja, ¿cómo estás tú?",
+        "right": "Hola Lesja, ¿cómo estás?",
+        "ruleLabel": "Regla: naturalidad",
+        "ruleText": "Evita palabras extra si no aportan significado. “¿Cómo estás?” suena más natural en la mayoría de contextos."
+      },
+      "explanationBlocks": [
+        {
+          "title": "Respuesta natural",
+          "body": "Mantén la respuesta breve, añade un detalle concreto y termina con una pregunta para que la conversación siga."
+        },
+        {
+          "title": "Elección de palabras",
+          "body": "Usa verbos simples y números específicos: “mejoré”, “reduje”, “en un 12%”."
+        },
+        {
+          "title": "Siguiente paso",
+          "body": "Si no sabes qué decir, elige la variante más simple de abajo y envíala como tu próximo mensaje."
+        }
+      ],
       "followUpTitle": "Sugerencias de respuesta",
       "hintsIntro": "Aquí tienes algunas opciones para tu próxima respuesta:",
       "questionLabel": "Pregunta",

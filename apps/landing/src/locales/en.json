@@ -44,11 +44,34 @@
       "transcriptLabel": "Transcript",
       "botAudio": "Voice reply",
       "botTranscriptLabel": "Teacher transcript",
+      "statusListening": "Got it — listening",
+      "statusPreparing": "Preparing reply",
       "translateAction": "Translate",
       "translateLoading": "Translating…",
       "translationHeader": "My translation:",
       "followUpAction": "What to say next?",
       "followUpLoading": "Preparing options...",
+      "explanationTitle": "Explanation",
+      "explanationExample": {
+        "wrong": "Hello Lesja, how are you?",
+        "right": "Hello Lesja, how are you doing?",
+        "ruleLabel": "Rule: word choice",
+        "ruleText": "Use “doing” when you ask how someone is feeling right now. Keep it simple and natural."
+      },
+      "explanationBlocks": [
+        {
+          "title": "Natural reply",
+          "body": "Keep it short, give one concrete detail, and end with a question to keep the chat moving."
+        },
+        {
+          "title": "Word choice",
+          "body": "Use simple verbs and specific numbers: “improved”, “reduced”, “by 12%”."
+        },
+        {
+          "title": "Next step",
+          "body": "If you’re not sure what to say, pick the simplest variant below and send it as your next message."
+        }
+      ],
       "followUpTitle": "Follow-up hints",
       "hintsIntro": "Here are a few options for your next reply:",
       "questionLabel": "Question",
