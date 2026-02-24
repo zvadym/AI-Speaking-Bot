@@ -2,7 +2,7 @@
 // Do not edit manually.
 
 export const pricing = {
-  "generated_at": "2026-02-24T12:24:59.296Z",
+  "generated_at": "2026-02-24T12:45:01.717Z",
   "source": "placeholder",
   "currency": "EUR",
   "pro": {
