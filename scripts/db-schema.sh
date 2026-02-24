@@ -111,6 +111,8 @@ update_schema() {
   # Force /tmp so the dockerized dbmate dump can write to the bind-mount on CI.
   # Some CI environments set TMPDIR to a non-world-writable directory.
   TMP_SCHEMA="$(mktemp "/tmp/db-schema.XXXXXX")"
+  # mktemp creates 0600; dbmate runs in a container and may not share UID, so make it writable.
+  chmod 666 "$TMP_SCHEMA"
   generate_schema_to_file "$TMP_SCHEMA"
 
   if [[ -f "$SCHEMA_PATH" ]] && cmp -s "$SCHEMA_PATH" "$TMP_SCHEMA"; then
@@ -133,6 +135,8 @@ check_schema() {
   # Force /tmp so the dockerized dbmate dump can write to the bind-mount on CI.
   # Some CI environments set TMPDIR to a non-world-writable directory.
   TMP_SCHEMA="$(mktemp "/tmp/db-schema.XXXXXX")"
+  # mktemp creates 0600; dbmate runs in a container and may not share UID, so make it writable.
+  chmod 666 "$TMP_SCHEMA"
   generate_schema_to_file "$TMP_SCHEMA"
 
   if ! diff -u "$SCHEMA_PATH" "$TMP_SCHEMA"; then
