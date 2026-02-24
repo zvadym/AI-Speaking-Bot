@@ -9,10 +9,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, watchEffect } from 'vue';
 import SiteHeader from '~/components/SiteHeader.vue';
 import SiteFooter from '~/components/SiteFooter.vue';
 import { stripLocalePrefix, useI18n } from '~/i18n.js';
+import { persistLandingStartPayloadFromQuery } from '~/lib/telegram.js';
 
 const route = useRoute();
 const { locale } = useI18n();
@@ -20,6 +21,10 @@ const { locale } = useI18n();
 const isHome = computed(() => {
   const suffix = stripLocalePrefix(route.path || '/');
   return suffix === '/';
+});
+
+watchEffect(() => {
+  persistLandingStartPayloadFromQuery(route.query);
 });
 
 useHead(() => ({

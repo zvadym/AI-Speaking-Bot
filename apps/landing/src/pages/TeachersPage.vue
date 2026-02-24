@@ -15,10 +15,36 @@
         >
           <header class="section-head">
             <h2 class="h3 section-title">{{ t('teachers.baseTeachersHeading', { language: section.label }) }}</h2>
+            <p class="muted section-sub">
+              {{
+                t(
+                  section.learningSummary ? 'teachers.baseTeachersSubhead' : 'teachers.baseTeachersSubheadFallback',
+                  { language: section.label, targets: section.learningSummary }
+                )
+              }}
+            </p>
+            <div v-if="section.learningLanguages?.length" class="section-language-pills">
+              <button
+                v-for="target in section.learningLanguages"
+                :key="`${section.code}-${target.code}`"
+                type="button"
+                class="section-language-pill"
+                :class="{ active: activeLearningCodeFor(section.code) === target.code }"
+                :aria-pressed="activeLearningCodeFor(section.code) === target.code ? 'true' : 'false'"
+                @click="toggleLearningTarget(section.code, target.code)"
+              >
+                {{ target.label }}
+              </button>
+            </div>
           </header>
-          <div class="grid-2 list">
-            <TeacherCard v-for="teacher in section.teachers" :key="teacher.teacherKey || teacher.slug" :teacher="teacher" />
-          </div>
+          <TransitionGroup name="teacher-list" tag="div" class="grid-2 list">
+            <TeacherCard
+              v-for="teacher in sortedTeachersFor(section)"
+              :key="teacher.teacherKey || teacher.slug"
+              :teacher="teacher"
+              :highlighted="isTeacherHighlighted(section, teacher)"
+            />
+          </TransitionGroup>
         </section>
       </div>
 
@@ -30,66 +56,16 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import TeacherCard from '../components/TeacherCard.vue';
 import { teachers } from '../data/teachers.js';
 import { useI18n } from '../i18n.js';
+import { useTeacherLearningTargetSort } from '../lib/teacherLearningTargetSort.js';
+import { useTeacherSections } from '../lib/teacherSections.js';
 
 const { t, locale } = useI18n();
 
-function normalizeLanguageCode(input) {
-  const raw = (input || '').toString().trim().toLowerCase();
-  if (raw === 'ua' || raw === 'uk-ua' || raw === 'ua-ua') return 'uk';
-  if (!raw) return '';
-  return raw.split('-')[0];
-}
-
-function languageLabelForCode(codeRaw) {
-  const code = normalizeLanguageCode(codeRaw);
-  if (!code) return '';
-  const key = `languageName.${code}`;
-  const label = t(key);
-  if (label !== key) return label;
-  return code.toUpperCase();
-}
-
-const normalizedTeachers = computed(() =>
-  (Array.isArray(teachers) ? teachers : [])
-    .map((teacher) => {
-      const baseCodeFromTeacher = normalizeLanguageCode(teacher?.baseLanguage);
-      const botKey = (teacher?.botKey || '').toString().trim().toLowerCase();
-      const [baseCodeFromBotKey] = botKey.split('-');
-      const baseCode = baseCodeFromTeacher || normalizeLanguageCode(baseCodeFromBotKey) || 'en';
-      return { ...teacher, baseCode };
-    })
-);
-
-const sections = computed(() => {
-  const currentLocaleCode = normalizeLanguageCode(locale.value);
-  const grouped = new Map();
-  for (const teacher of normalizedTeachers.value) {
-    if (!grouped.has(teacher.baseCode)) grouped.set(teacher.baseCode, []);
-    grouped.get(teacher.baseCode).push(teacher);
-  }
-
-  return Array.from(grouped.entries())
-    .map(([code, rows]) => ({
-      code,
-      label: languageLabelForCode(code),
-      isPrimary: code === currentLocaleCode,
-      teachers: rows.slice().sort((a, b) => {
-        const aName = (a?.displayName?.[locale.value] || a?.displayName?.en || a?.slug || '').toString();
-        const bName = (b?.displayName?.[locale.value] || b?.displayName?.en || b?.slug || '').toString();
-        const byName = aName.localeCompare(bName);
-        if (byName !== 0) return byName;
-        return (a.slug || '').toString().localeCompare((b.slug || '').toString());
-      })
-    }))
-    .sort((a, b) => {
-      if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
-      return a.label.localeCompare(b.label);
-    });
-});
+const { sections } = useTeacherSections(teachers, locale, t);
+const { activeLearningCodeFor, toggleLearningTarget, sortedTeachersFor, isTeacherHighlighted } = useTeacherLearningTargetSort();
 </script>
 
 <style scoped>
@@ -146,15 +122,70 @@ const sections = computed(() => {
 }
 
 .section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  gap: 10px;
 }
 
 .section-title {
   margin: 0;
-  font-size: clamp(20px, 2.2vw, 28px);
+  font-size: clamp(21px, 2.2vw, 29px);
+}
+
+.section-sub {
+  margin: 0;
+  max-width: 64ch;
+  line-height: 1.55;
+}
+
+.section-language-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.section-language-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
+  background: color-mix(in srgb, var(--surface) 66%, var(--bg));
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  user-select: none;
+  appearance: none;
+}
+
+.section-language-pill:hover {
+  border-color: color-mix(in srgb, var(--fg) 20%, var(--border));
+}
+
+.section-language-pill:focus-visible {
+  outline: 2px solid color-mix(in srgb, #229ed9 55%, transparent);
+  outline-offset: 2px;
+}
+
+.section-language-pill.active {
+  border-color: color-mix(in srgb, #229ed9 45%, var(--border));
+  background:
+    radial-gradient(120% 140% at 10% 10%, color-mix(in srgb, #229ed9 12%, transparent), transparent 55%),
+    color-mix(in srgb, var(--surface) 66%, var(--bg));
+  color: color-mix(in srgb, #229ed9 85%, var(--fg));
+}
+
+.teacher-list-move {
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.teacher-list-enter-active,
+.teacher-list-leave-active {
+  transition: opacity 140ms ease;
+}
+
+.teacher-list-enter-from,
+.teacher-list-leave-to {
+  opacity: 0;
 }
 
 .list {
@@ -182,6 +213,14 @@ const sections = computed(() => {
 
   .sub {
     font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teacher-list-move,
+  .teacher-list-enter-active,
+  .teacher-list-leave-active {
+    transition: none;
   }
 }
 </style>

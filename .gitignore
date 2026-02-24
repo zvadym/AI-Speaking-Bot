@@ -19,3 +19,5 @@ deploy/workflows/.rendered
 deploy/workflows/.prod-export
 deploy/workflows/to_convert
 .vercel
+.codex
+.cursor

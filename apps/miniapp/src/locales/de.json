@@ -15,11 +15,13 @@
     "uk": "Ukrainisch",
     "en": "Englisch",
     "de": "Deutsch",
+    "es": "Spanisch",
     "it": "Italienisch"
   },
   "practiceLanguages": {
     "en": "Englisch",
     "de": "Deutsch",
+    "es": "Spanisch",
     "it": "Italienisch"
   },
   "plans": {
@@ -167,6 +169,7 @@
       "yourPlan": "Dein Plan",
       "practiceTime": "Übungszeit",
       "voiceReplies": "Sprachantworten",
+      "voiceTotal": "Gesamte Sprachnutzung",
       "managePayments": "Zahlungen verwalten",
       "turnOffAutoRenew": "Automatische Verlängerung deaktivieren",
       "resumeAutoRenew": "Automatische Verlängerung fortsetzen"

@@ -100,8 +100,14 @@
       <div class="hint-block">
         <div class="hint-label">{{ t('home.chatDemo.questionLabel') }}</div>
         <div class="hint-body">
-          <div>❓ {{ scenarioTarget.followUp.question }}</div>
-          <div>📝 {{ scenarioBase.followUp.question }}</div>
+          <div class="hint-line">
+            <span class="hint-flag" aria-hidden="true">{{ targetLocaleFlag }}</span>
+            <span>{{ scenarioTarget.followUp.question }}</span>
+          </div>
+          <div class="hint-line">
+            <span class="hint-flag" aria-hidden="true">{{ baseLocaleFlag }}</span>
+            <span>{{ scenarioBase.followUp.question }}</span>
+          </div>
         </div>
       </div>
 
@@ -186,10 +192,12 @@ const resolvedScenario = computed(() =>
     scenarios: props.scenarios
   })
 );
+const targetLocaleCode = computed(() => normalizeLocale(resolvedScenario.value?.targetLocale) || 'en');
 const scenarioTarget = computed(() => resolvedScenario.value.targetContent);
 const scenarioBase = computed(() => resolvedScenario.value.baseContent);
 const scenarioAudio = computed(() => resolvedScenario.value.audio);
 const baseLocaleFlag = computed(() => LOCALE_FLAG_MAP[baseLocaleCode.value] || '🏳️');
+const targetLocaleFlag = computed(() => LOCALE_FLAG_MAP[targetLocaleCode.value] || '🏳️');
 
 function stripLeadingDecorators(value) {
   return String(value || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
@@ -314,14 +322,18 @@ onBeforeUnmount(() => clearDemoTimers());
 }
 
 .audio-bubble {
-  min-width: min(320px, 78%);
+  width: min(420px, 100%);
+  max-width: 92%;
+  min-width: 0;
 }
 
 .voice-card {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 280px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   border-radius: 26px;
   padding: 8px 10px;
 }
@@ -360,6 +372,7 @@ onBeforeUnmount(() => clearDemoTimers());
   display: grid;
   gap: 4px;
   width: 100%;
+  min-width: 0;
 }
 
 .voice-title {
@@ -375,6 +388,7 @@ onBeforeUnmount(() => clearDemoTimers());
   display: flex;
   align-items: flex-end;
   gap: 2px;
+  overflow: hidden;
 }
 
 .voice-wave-bar {
@@ -385,12 +399,14 @@ onBeforeUnmount(() => clearDemoTimers());
 }
 
 .voice-meta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
   font-weight: 800;
   opacity: 0.94;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .voice-check {
@@ -403,6 +419,11 @@ onBeforeUnmount(() => clearDemoTimers());
 
 .transcript-bubble {
   max-width: min(620px, 100%);
+}
+
+.transcript-bubble,
+.follow-up {
+  max-width: 92%;
 }
 
 .chat-translation {
@@ -485,6 +506,19 @@ onBeforeUnmount(() => clearDemoTimers());
   line-height: 1.45;
 }
 
+.hint-line {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.hint-flag {
+  font-size: 16px;
+  line-height: 1;
+  transform: translateY(1px);
+}
+
 .hint-body code {
   background: color-mix(in srgb, var(--surface) 55%, var(--bg));
   border: 1px solid color-mix(in srgb, var(--fg) 14%, var(--border));
@@ -495,5 +529,35 @@ onBeforeUnmount(() => clearDemoTimers());
 
 .phrase-list {
   gap: 6px;
+}
+
+@media (max-width: 420px) {
+  .bubble {
+    padding: 10px 12px;
+  }
+
+  .voice-card {
+    border-radius: 22px;
+    padding: 7px 9px;
+    gap: 8px;
+  }
+
+  .voice-play {
+    width: 40px;
+    height: 40px;
+  }
+
+  .voice-wave {
+    height: 16px;
+  }
+
+  .voice-wave-bar {
+    width: 2px;
+  }
+
+  .voice-meta {
+    font-size: 11px;
+    gap: 5px;
+  }
 }
 </style>

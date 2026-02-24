@@ -244,6 +244,11 @@ function trackAppOpenOnce() {
   if (didTrackOpen) return;
   didTrackOpen = true;
   const tg = getTelegramWebApp();
+  track('start', {
+    source: 'miniapp',
+    platform: (tg?.platform || '').toString(),
+    version: (tg?.version || '').toString()
+  });
   track('app_open', {
     platform: (tg?.platform || '').toString(),
     version: (tg?.version || '').toString()

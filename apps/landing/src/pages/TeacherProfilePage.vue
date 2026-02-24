@@ -128,7 +128,7 @@ import ChatConversationDemo from '../components/ChatConversationDemo.vue';
 import TeacherAvatar from '../components/TeacherAvatar.vue';
 import TeacherCard from '../components/TeacherCard.vue';
 import { teachers, getTeacherName } from '../data/teachers.js';
-import { getTeacherTelegramUrl } from '../lib/telegram.js';
+import { getLandingStartPayload, getTeacherTelegramUrl } from '../lib/telegram.js';
 import { normalizeLocale, routeWithLocale, supportedLocales, useI18n } from '../i18n.js';
 import { getTeacherSeoContent } from '../data/seoTeacherContent.js';
 
@@ -140,6 +140,7 @@ const props = defineProps({
 });
 
 const { t, locale } = useI18n();
+const route = useRoute();
 
 const content = computed(() => {
   if (!props.teacher) return null;
@@ -156,7 +157,8 @@ const teachesLine = computed(() => {
   return parts.join(' • ');
 });
 
-const telegramUrl = computed(() => getTeacherTelegramUrl(props.teacher));
+const startPayload = computed(() => getLandingStartPayload(route.query));
+const telegramUrl = computed(() => getTeacherTelegramUrl(props.teacher, startPayload.value));
 const otherTeachers = computed(() => (Array.isArray(teachers) ? teachers : []));
 const teacherChatBaseLocale = computed(() => normalizeLocale(props.teacher?.baseLanguage) || 'en');
 const teacherChatTargetLocale = computed(() => normalizeLocale(props.teacher?.learningLanguage) || 'en');

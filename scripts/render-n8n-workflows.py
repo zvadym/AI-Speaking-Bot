@@ -30,6 +30,7 @@ PROMPT_KEYS = (
     "model_support_prompt",
     "model_hints_prompt",
     "model_summary_prompt",
+    "model_vocab_prompt",
 )
 
 PROMPT_TEMPLATE_FILES = {
@@ -37,6 +38,7 @@ PROMPT_TEMPLATE_FILES = {
     "model_support_prompt": "model_support_prompt.md",
     "model_hints_prompt": "model_hints_prompt.md",
     "model_summary_prompt": "model_summary_prompt.md",
+    "model_vocab_prompt": "model_vocab_prompt.md",
 }
 
 COMMON_DETECTED_LANGUAGE_CODES = ("en", "de", "it", "uk", "ru")
@@ -76,6 +78,15 @@ LANGUAGE_LABELS = {
     "hi": "Hindi",
     "th": "Thai",
     "vi": "Vietnamese",
+}
+
+EXPLANATION_TITLES = {
+    # User-facing title used in explanation_html blocks.
+    "en": "Explanation",
+    "de": "Erklärung",
+    "it": "Spiegazione",
+    "uk": "Пояснення",
+    "ru": "Пояснение",
 }
 
 
@@ -177,7 +188,7 @@ def build_prompt_context(
         "base_language_label": get_language_label(base_language_code),
         "target_language_label": get_language_label(target_language_code),
         # Instruction fields - AI understands English, will respond in base_language
-        "explanation_title": "Explanation",
+        "explanation_title": EXPLANATION_TITLES.get(base_language_code, "Explanation"),
         "article_gender_example": (
             "we need the article ... and we use ..., because the noun has ... gender"
         ),
@@ -193,7 +204,92 @@ def compose_locale_with_generated_prompts(
     *,
     bot_key: str,
 ) -> Dict[str, Any]:
-    merged = dict(locale)
+    def normalize_locale_value(value: Any) -> Any:
+        if isinstance(value, str):
+            # Bot configs sometimes contain literal "\\n" sequences. Telegram will display them as "\n"
+            # unless we normalize them to actual newlines before embedding into workflows.
+            return value.replace("\\r\\n", "\n").replace("\\n", "\n")
+        if isinstance(value, list):
+            return [normalize_locale_value(v) for v in value]
+        return value
+
+    merged = {k: normalize_locale_value(v) for k, v in dict(locale).items()}
+
+    base_language_code = normalize_language_code(prompt_context.get("base_language_code"))
+    hints_section_defaults: Dict[str, str]
+    if base_language_code == "de":
+        hints_section_defaults = {
+            "hints_section_question": "Frage:",
+            "hints_section_simple": "Einfache Variante:",
+            "hints_section_conversational": "Gesprächsvariante:",
+            "hints_section_advanced": "Fortgeschrittene Variante:",
+            "hints_section_phrases": "Nützliche Phrasen:",
+        }
+    elif base_language_code == "it":
+        hints_section_defaults = {
+            "hints_section_question": "Domanda:",
+            "hints_section_simple": "Versione semplice:",
+            "hints_section_conversational": "Versione colloquiale:",
+            "hints_section_advanced": "Versione avanzata:",
+            "hints_section_phrases": "Frasi utili:",
+        }
+    elif base_language_code == "uk":
+        hints_section_defaults = {
+            "hints_section_question": "Питання:",
+            "hints_section_simple": "Простий варіант:",
+            "hints_section_conversational": "Розмовний варіант:",
+            "hints_section_advanced": "Просунутий варіант:",
+            "hints_section_phrases": "Корисні фрази:",
+        }
+    else:
+        # Default to English (includes base_language_code == "en" and unknown codes).
+        hints_section_defaults = {
+            "hints_section_question": "Question:",
+            "hints_section_simple": "Simple version:",
+            "hints_section_conversational": "Conversational version:",
+            "hints_section_advanced": "Advanced version:",
+            "hints_section_phrases": "Useful phrases:",
+        }
+
+    for key, default_value in hints_section_defaults.items():
+        current = merged.get(key)
+        if not isinstance(current, str) or not current.strip():
+            merged[key] = default_value
+
+    if base_language_code == "de":
+        vocab_defaults = {
+            "btn_vocab": "Vokabeln 📚",
+            "callback_vocab_loading": "Sammle Wörter...",
+            "vocab_header": "📚 Vokabeln aus meiner Antwort:",
+            "vocab_empty": "Ich konnte keine nützlichen Vokabeln in dieser Antwort finden.",
+        }
+    elif base_language_code == "it":
+        vocab_defaults = {
+            "btn_vocab": "Vocabolario 📚",
+            "callback_vocab_loading": "Raccolgo parole...",
+            "vocab_header": "📚 Vocabolario dalla mia risposta:",
+            "vocab_empty": "Non ho trovato vocaboli utili in questa risposta.",
+        }
+    elif base_language_code == "uk":
+        vocab_defaults = {
+            "btn_vocab": "Словничок 📚",
+            "callback_vocab_loading": "Збираю слова...",
+            "vocab_header": "📚 Словничок з моєї відповіді:",
+            "vocab_empty": "Не знайшов корисних слів для словничка в цій відповіді.",
+        }
+    else:
+        vocab_defaults = {
+            "btn_vocab": "Vocab 📚",
+            "callback_vocab_loading": "Collecting words...",
+            "vocab_header": "📚 Vocab from my reply:",
+            "vocab_empty": "I couldn't find useful vocab in this reply.",
+        }
+
+    for key, default_value in vocab_defaults.items():
+        current = merged.get(key)
+        if not isinstance(current, str) or not current.strip():
+            merged[key] = default_value
+
     deprecated_present = [k for k in PROMPT_KEYS if k in merged]
     if deprecated_present:
         print(

@@ -49,7 +49,7 @@
     "callback_hints_loading": "Sto preparando le opzioni...",
     "hints_intro": "Ecco alcune frasi che puoi dire dopo:",
     "hints_empty": "Non ho ancora preparato suggerimenti per questo messaggio. Prova con la prossima risposta.",
-    "choose_level_text": "Qual è il tuo livello? Scegli 👇",
+    "choose_level_text": "Scegli il tuo livello 👇",
     "choose_voice_mode_text": "Come preferisci ricevere le mie risposte, voce o testo? 🎧💬",
     "voice_mode_text": "💬 Testo",
     "voice_mode_voice": "🎧 Voce",
@@ -93,7 +93,17 @@
     "msg_feedback_prompt": "Grazie! Scrivimi il tuo feedback in testo oppure invia un messaggio vocale 🎙️",
     "msg_feedback_thanks": "Grazie! Ho ricevuto il tuo feedback 💛",
     "msg_feedback_needs_text_or_voice": "Per favore invia il feedback in testo o con un messaggio vocale 🎙️",
-    "hi_message_text": "={{ (() => { const lang = $('Settings').item.json.learning_language === 'de' ? 'tedesco' : 'inglese'; return `Ciao! Questa è AI Language School 🙂\\n\\nIo sono Greta, la tua tutor. Qui pratichiamo ${lang}.\\n\\n🎧 Invia vocali di 1–2 frasi: ti rispondo e ti correggo con delicatezza.\\n💾 Ricordo il tuo livello per proporti esercizi adatti.\\n🎯 Puoi cambiare livello con /level\\n🎧 Puoi attivare o disattivare le risposte vocali con /voice\\n`; })() }}"
+    "hi_message_text": "Ciao! Sono Greta, la tua tutor di AI Language School 🙂\nQui pratichiamo il tedesco: mandami un vocale di 1–2 frasi 🎙️ e ti correggo con delicatezza.\n🌐 https://ai-language-school.online/it",
+    "level_label_beginner": "Principiante (A1-A2)",
+    "level_label_conversational": "Intermedio (B1-B2)",
+    "level_label_advanced": "Avanzato (C1+)",
+    "starter_prompt_text": "Scegli un tema per iniziare 👇 Ti faccio la prima domanda.",
+    "starter_btn_intro": "Presentati",
+    "starter_btn_day": "La tua giornata",
+    "starter_btn_weekend": "Piani weekend",
+    "starter_question_intro": "Kannst du dich in 2-3 Sätzen vorstellen?",
+    "starter_question_day": "Wie war dein Tag heute? Erzähl 1-2 Dinge.",
+    "starter_question_weekend": "Was sind deine Pläne fürs Wochenende?"
   },
   "telegram_presentation": {
     "name": "Greta 🇮🇹→🇩🇪 tutor di tedesco",

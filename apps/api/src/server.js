@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import multer from 'multer';
 import { env } from './env.js';
 import { pool } from './db.js';
 import { verifyInitData } from './telegram.js';
@@ -67,6 +68,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PURCHASE_ALLOWED_TIERS = new Set(['pro']);
 const PURCHASE_ALLOWED_BILLING_INTERVALS = new Set(['month', 'year']);
 const QUERY_TRUE_VALUES = new Set(['true', '1', 'yes']);
+const ACTION_EVENT_TYPES = [
+  'start',
+  'profile_set_level',
+  'first_voice_sent',
+  'first_answer_delivered',
+  'paywall_shown',
+  'purchase_success',
+  'day1_return'
+];
 
 function normalizeBillingInterval(raw, fallback = 'month') {
   const value = (raw ?? '').toString().trim().toLowerCase();
@@ -497,11 +507,119 @@ function parseAdminRange(req) {
   return { ok: true, from, to, payload };
 }
 
+function safeActionProperties(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  try {
+    return JSON.parse(JSON.stringify(raw));
+  } catch {
+    return {};
+  }
+}
+
+async function recordActionEvent({
+  chatId,
+  botKey = null,
+  actionType,
+  source = 'api',
+  idempotencyKey = null,
+  properties = {},
+  occurredAt = null
+}) {
+  if (!ACTION_EVENT_TYPES.includes(actionType)) return;
+  const normalizedChatId = Number(chatId);
+  if (!Number.isFinite(normalizedChatId)) return;
+
+  await pool.query(
+    `INSERT INTO action_events (
+       chat_id,
+       bot_key,
+       action_type,
+       source,
+       idempotency_key,
+       properties,
+       occurred_at
+     )
+     VALUES (
+       $1,
+       $2,
+       $3,
+       $4,
+       $5,
+       $6::jsonb,
+       COALESCE($7::timestamptz, NOW())
+     )
+     ON CONFLICT (idempotency_key) DO NOTHING`,
+    [
+      normalizedChatId,
+      normalizeBotKey(botKey),
+      actionType,
+      (source || 'api').toString().slice(0, 64),
+      idempotencyKey ? idempotencyKey.toString().slice(0, 200) : null,
+      JSON.stringify(safeActionProperties(properties)),
+      occurredAt
+    ]
+  );
+}
+
+async function recordActionEventSafe(payload) {
+  try {
+    await recordActionEvent(payload);
+  } catch (err) {
+    console.warn('action_events insert failed', {
+      actionType: payload?.actionType || null,
+      chatId: payload?.chatId || null,
+      botKey: payload?.botKey || null,
+      err: err?.message || String(err)
+    });
+  }
+}
+
 const BROADCAST_ALLOWED_TIERS = new Set(['free', 'plus', 'pro']);
 const BROADCAST_LAST_ACTIVITY_MODES = new Set(['active_within', 'inactive_for', 'never_active']);
 const BROADCAST_USAGE_MODES = new Set(['reached', 'percent_gte']);
 const BROADCAST_MESSAGE_MAX_LEN = 4096;
+const BROADCAST_MESSAGE_KINDS = new Set(['text', 'photo', 'video']);
+const BROADCAST_CAPTION_MAX_LEN = 1024;
+const BROADCAST_MEDIA_URL_MAX_LEN = 2048;
+const BROADCAST_MEDIA_FILE_ID_MAX_LEN = 512;
+const BROADCAST_MEDIA_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
 const broadcastInFlight = new Set();
+
+function normalizeBroadcastMediaFileIds(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const out = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const botKey = normalizeBotKey(key);
+    if (!botKey) continue;
+    const fileIdRaw = (value ?? '').toString().trim();
+    if (!fileIdRaw) continue;
+    out[botKey] = fileIdRaw.slice(0, BROADCAST_MEDIA_FILE_ID_MAX_LEN);
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+function parseBotKeysField(raw) {
+  if (Array.isArray(raw)) {
+    const normalized = raw.map((v) => normalizeBotKey(v)).filter(Boolean);
+    return Array.from(new Set(normalized));
+  }
+  const text = (raw ?? '').toString().trim();
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) {
+      const normalized = parsed.map((v) => normalizeBotKey(v)).filter(Boolean);
+      return Array.from(new Set(normalized));
+    }
+  } catch {
+    // ignore
+  }
+  const normalized = text
+    .split(',')
+    .map((v) => normalizeBotKey(v))
+    .filter(Boolean);
+  return Array.from(new Set(normalized));
+}
 
 function clampInteger(value, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER, fallback = 0 } = {}) {
   const num = Number(value);
@@ -644,24 +762,21 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         a.last_activity_at,
         COALESCE(w.used_user, 0)::int AS used_user,
         COALESCE(w.used_tts, 0)::int AS used_tts,
+        (COALESCE(w.used_user, 0) + COALESCE(w.used_tts, 0))::int AS used_total,
         COALESCE(p.user_audio_seconds_per_week, 0)::int AS limit_user,
         COALESCE(p.tts_seconds_per_week, 0)::int AS limit_tts,
-        GREATEST(
-          CASE
-            WHEN COALESCE(p.user_audio_seconds_per_week, 0) > 0
-              THEN (COALESCE(w.used_user, 0)::numeric * 100.0) / p.user_audio_seconds_per_week
-            ELSE 0
-          END,
-          CASE
-            WHEN COALESCE(p.tts_seconds_per_week, 0) > 0
-              THEN (COALESCE(w.used_tts, 0)::numeric * 100.0) / p.tts_seconds_per_week
-            ELSE 0
-          END
-        )::numeric AS usage_percent,
+        (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0))::int AS limit_total,
+        CASE
+          WHEN (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0)) > 0
+            THEN ((COALESCE(w.used_user, 0) + COALESCE(w.used_tts, 0))::numeric * 100.0)
+              / (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0))
+          ELSE 0
+        END::numeric AS usage_percent,
         (
-          (COALESCE(p.user_audio_seconds_per_week, 0) > 0 AND COALESCE(w.used_user, 0) >= p.user_audio_seconds_per_week)
-          OR
-          (COALESCE(p.tts_seconds_per_week, 0) > 0 AND COALESCE(w.used_tts, 0) >= p.tts_seconds_per_week)
+          (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0)) > 0
+          AND
+          (COALESCE(w.used_user, 0) + COALESCE(w.used_tts, 0))
+            >= (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0))
         ) AS limit_reached
       FROM effective_users e
       LEFT JOIN last_activity a ON a.chat_id = e.chat_id
@@ -680,8 +795,10 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         e.last_activity_at,
         e.used_user,
         e.used_tts,
+        e.used_total,
         e.limit_user,
         e.limit_tts,
+        e.limit_total,
         e.usage_percent,
         e.limit_reached
       FROM enriched e
@@ -890,6 +1007,151 @@ async function sendTelegramTextMessage(chatId, text, { botKey = null } = {}) {
   return payload.result || null;
 }
 
+async function sendTelegramPhotoMessage(chatId, photo, caption, { botKey = null } = {}) {
+  const token = resolveTelegramBotToken(botKey);
+  if (!token) {
+    const err = new Error('missing_telegram_bot_token');
+    err.code = 'missing_telegram_bot_token';
+    throw err;
+  }
+
+  const body = {
+    chat_id: Number(chatId),
+    photo: (photo ?? '').toString()
+  };
+  const safeCaption = (caption ?? '').toString().trim();
+  if (safeCaption) body.caption = safeCaption;
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok || !payload?.ok) {
+    const description = payload?.description || `telegram_http_${response.status}`;
+    const err = new Error(description);
+    err.telegramStatus = response.status;
+    err.telegramDescription = payload?.description || null;
+    throw err;
+  }
+
+  return payload.result || null;
+}
+
+async function sendTelegramVideoMessage(chatId, video, caption, { botKey = null } = {}) {
+  const token = resolveTelegramBotToken(botKey);
+  if (!token) {
+    const err = new Error('missing_telegram_bot_token');
+    err.code = 'missing_telegram_bot_token';
+    throw err;
+  }
+
+  const body = {
+    chat_id: Number(chatId),
+    video: (video ?? '').toString(),
+    supports_streaming: true
+  };
+  const safeCaption = (caption ?? '').toString().trim();
+  if (safeCaption) body.caption = safeCaption;
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendVideo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok || !payload?.ok) {
+    const description = payload?.description || `telegram_http_${response.status}`;
+    const err = new Error(description);
+    err.telegramStatus = response.status;
+    err.telegramDescription = payload?.description || null;
+    throw err;
+  }
+
+  return payload.result || null;
+}
+
+async function uploadTelegramMediaToChat({ chatId, messageKind, buffer, filename, mimeType, botKey = null }) {
+  const token = resolveTelegramBotToken(botKey);
+  if (!token) {
+    const err = new Error('missing_telegram_bot_token');
+    err.code = 'missing_telegram_bot_token';
+    throw err;
+  }
+
+  const kind = (messageKind ?? '').toString().trim().toLowerCase();
+  const method = kind === 'photo' ? 'sendPhoto' : kind === 'video' ? 'sendVideo' : '';
+  const field = kind === 'photo' ? 'photo' : kind === 'video' ? 'video' : '';
+  if (!method || !field) {
+    const err = new Error('bad_message_kind');
+    err.code = 'bad_message_kind';
+    throw err;
+  }
+
+  const form = new FormData();
+  form.append('chat_id', String(chatId));
+  form.append('disable_notification', 'true');
+  if (kind === 'video') form.append('supports_streaming', 'true');
+
+  const safeName = (filename ?? '').toString().trim() || (kind === 'photo' ? 'broadcast.jpg' : 'broadcast.mp4');
+  const blobType = (mimeType ?? '').toString().trim() || 'application/octet-stream';
+  const blob = new Blob([buffer], { type: blobType });
+  form.append(field, blob, safeName);
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+    method: 'POST',
+    body: form
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok || !payload?.ok) {
+    const description = payload?.description || `telegram_http_${response.status}`;
+    const err = new Error(description);
+    err.telegramStatus = response.status;
+    err.telegramDescription = payload?.description || null;
+    throw err;
+  }
+
+  const result = payload.result || null;
+  let fileId = null;
+  if (kind === 'photo') {
+    const sizes = Array.isArray(result?.photo) ? result.photo : [];
+    const largest = sizes.length ? sizes[sizes.length - 1] : null;
+    fileId = (largest?.file_id ?? '').toString().trim() || null;
+  } else if (kind === 'video') {
+    fileId = (result?.video?.file_id ?? '').toString().trim() || null;
+  }
+
+  if (!fileId) {
+    const err = new Error('telegram_missing_file_id');
+    err.code = 'telegram_missing_file_id';
+    throw err;
+  }
+
+  return { messageId: result?.message_id ?? null, fileId };
+}
+
 async function refreshBroadcastCampaignStats(campaignId, { status = null, errorText = null, setFinishedAt = false } = {}) {
   await pool.query(
     `WITH stats AS (
@@ -956,13 +1218,20 @@ async function processBroadcastCampaign(campaignId) {
           status = 'queued'
           OR (status = 'sending' AND updated_at < NOW() - interval '5 minutes')
         )
-      RETURNING id, message_text`,
+      RETURNING id, message_text, message_kind, media_url, media_file_id, media_file_ids`,
     [id]
   );
   if (!lockRows[0]) return false;
 
-  const messageText = lockRows[0].message_text;
-  const telegramSafeMessageText = escapeTelegramHtml(messageText);
+  const messageText = (lockRows[0].message_text ?? '').toString();
+  const messageKind = (lockRows[0].message_kind ?? 'text').toString().trim().toLowerCase();
+  const mediaUrl = lockRows[0].media_url ? lockRows[0].media_url.toString() : null;
+  const mediaFileId = lockRows[0].media_file_id ? lockRows[0].media_file_id.toString() : null;
+  const mediaFileIdsByBot = normalizeBroadcastMediaFileIds(lockRows[0].media_file_ids);
+  const telegramSafeText = escapeTelegramHtml(messageText);
+  if (!BROADCAST_MESSAGE_KINDS.has(messageKind)) {
+    throw new Error('bad_message_kind');
+  }
 
   try {
     while (true) {
@@ -986,32 +1255,26 @@ async function processBroadcastCampaign(campaignId) {
         let inactiveReason = null;
         const recipientBotKey = normalizeBotKey(row.bot_key);
         const botKey = recipientBotKey || normalizeBotKey(env.defaultBotKey) || 'uk-de';
+        const mediaInput = (mediaFileIdsByBot?.[botKey] || mediaFileId || mediaUrl || null);
+        if (messageKind !== 'text' && !mediaInput) {
+          throw new Error('missing_media');
+        }
 
         try {
-          // Send via n8n webhook instead of direct Telegram API
-          const url = webhookUrlForBot(env.broadcastWebhookUrl, 'send-message', botKey);
-          
-          if (!url) {
-            throw new Error('BROADCAST_WEBHOOK_URL not configured');
+          let telegramResult = null;
+          if (messageKind === 'text') {
+            telegramResult = await sendTelegramTextMessage(row.chat_id, telegramSafeText, { botKey });
+          } else if (messageKind === 'photo') {
+            telegramResult = await sendTelegramPhotoMessage(row.chat_id, mediaInput, telegramSafeText, { botKey });
+          } else if (messageKind === 'video') {
+            telegramResult = await sendTelegramVideoMessage(row.chat_id, mediaInput, telegramSafeText, { botKey });
+          } else {
+            const err = new Error('bad_message_kind');
+            err.code = 'bad_message_kind';
+            throw err;
           }
-
-          const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: row.chat_id,
-              message_text: telegramSafeMessageText,
-              bot_key: botKey
-            })
-          });
-
-          if (!resp.ok) {
-            const body = await resp.text().catch(() => '');
-            throw new Error(`Webhook returned ${resp.status}: ${body}`);
-          }
-
-          // n8n webhook doesn't return message_id, so we leave it null
-          // If needed, we can update n8n workflow to return it in the response
+          const messageId = Number(telegramResult?.message_id ?? 0);
+          telegramMessageId = Number.isFinite(messageId) && messageId > 0 ? messageId : null;
         } catch (err) {
           status = 'failed';
           lastError = sanitizeErrorText(err?.message || String(err));
@@ -1085,10 +1348,12 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
      SELECT
        COUNT(*)::int AS total_users_all_time,
        SUM((is_active)::int)::int AS active_users_all_time,
+       SUM((NOT is_active)::int)::int AS inactive_users_all_time,
        SUM((effective_tier = 'plus')::int)::int AS plus_users_all_time,
        SUM((effective_tier = 'pro')::int)::int AS pro_users_all_time,
        COUNT(*) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS total_users_in_range,
        SUM((is_active)::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS active_users_in_range,
+       SUM((NOT is_active)::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS inactive_users_in_range,
        SUM((effective_tier = 'plus')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS plus_users_in_range,
        SUM((effective_tier = 'pro')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS pro_users_in_range
      FROM filtered`,
@@ -1103,10 +1368,12 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
     totals: rows[0] || {
       total_users_all_time: 0,
       active_users_all_time: 0,
+      inactive_users_all_time: 0,
       plus_users_all_time: 0,
       pro_users_all_time: 0,
       total_users_in_range: 0,
       active_users_in_range: 0,
+      inactive_users_in_range: 0,
       plus_users_in_range: 0,
       pro_users_in_range: 0
     }
@@ -1533,6 +1800,107 @@ app.get('/admin/metrics/acquisition-payloads', requireAdmin, async (req, res) =>
   });
 });
 
+app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     counts AS (
+       SELECT
+         date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+         e.action_type,
+         COUNT(*)::int AS count
+       FROM action_events e
+       JOIN filtered_users u ON u.chat_id = e.chat_id
+       WHERE e.occurred_at >= (SELECT from_ts FROM params)
+         AND e.occurred_at < (SELECT to_ts FROM params)
+         AND e.action_type = ANY($4::text[])
+       GROUP BY 1, 2
+     )
+     SELECT
+       d.day_utc::text AS day,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'start'), 0)::int AS start,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'profile_set_level'), 0)::int AS profile_set_level,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_voice_sent'), 0)::int AS first_voice_sent,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_answer_delivered'), 0)::int AS first_answer_delivered,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'paywall_shown'), 0)::int AS paywall_shown,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'purchase_success'), 0)::int AS purchase_success,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'day1_return'), 0)::int AS day1_return
+     FROM days d
+     LEFT JOIN counts c USING (day_utc)
+     GROUP BY d.day_utc
+     ORDER BY d.day_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload, ACTION_EVENT_TYPES]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/action-totals', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     action_types AS (
+       SELECT unnest($4::text[]) AS action_type
+     ),
+     counts AS (
+       SELECT
+         e.action_type,
+         COUNT(*)::int AS count
+       FROM action_events e
+       JOIN filtered_users u ON u.chat_id = e.chat_id
+       WHERE e.occurred_at >= $1::timestamptz
+         AND e.occurred_at < $2::timestamptz
+         AND e.action_type = ANY($4::text[])
+       GROUP BY e.action_type
+     )
+     SELECT
+       a.action_type AS action,
+       COALESCE(c.count, 0)::int AS count
+     FROM action_types a
+     LEFT JOIN counts c ON c.action_type = a.action_type
+     ORDER BY array_position($4::text[], a.action_type) ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload, ACTION_EVENT_TYPES]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
 app.get('/admin/feedbacks', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
@@ -1612,8 +1980,35 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
-  const limit = clampInteger(req.query.limit, { min: 1, max: 500, fallback: 100 });
+  const limit = clampInteger(req.query.limit, { min: 1, max: 500, fallback: 50 });
   const offset = clampInteger(req.query.offset, { min: 0, max: 100000, fallback: 0 });
+
+  const sortKeyRaw = (req.query.sort_key ?? 'created_at').toString().trim().toLowerCase();
+  const sortDirRaw = (req.query.sort_dir ?? 'desc').toString().trim().toLowerCase();
+  const sortDir = sortDirRaw === 'asc' ? 'ASC' : 'DESC';
+  const sortKeyAllow = new Set([
+    'created_at',
+    'chat_id',
+    'username',
+    'first_name',
+    'bot_key',
+    'effective_tier',
+    'is_active',
+    'last_seen_at'
+  ]);
+  const sortKey = sortKeyAllow.has(sortKeyRaw) ? sortKeyRaw : 'created_at';
+
+  const orderByMap = {
+    created_at: `u.created_at`,
+    chat_id: `u.chat_id`,
+    username: `LOWER(u.username)`,
+    first_name: `LOWER(u.first_name)`,
+    bot_key: `ub.bot_key`,
+    effective_tier: `effective_tier`,
+    is_active: `COALESCE(u.is_active, true)`,
+    last_seen_at: `last_seen_at`
+  };
+  const orderExpr = orderByMap[sortKey] || orderByMap.created_at;
 
   const params = [range.from.toISOString(), range.to.toISOString(), range.payload, limit, offset];
   const [totalRes, rowsRes] = await Promise.all([
@@ -1657,7 +2052,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
        WHERE u.created_at >= $1::timestamptz
          AND u.created_at < $2::timestamptz
          AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)
-       ORDER BY u.created_at DESC, u.chat_id DESC
+       ORDER BY ${orderExpr} ${sortDir} NULLS LAST, u.chat_id DESC
        LIMIT $4::int
        OFFSET $5::int`,
       params
@@ -1669,6 +2064,8 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
     from: range.from.toISOString(),
     to: range.to.toISOString(),
     payload: range.payload,
+    sort_key: sortKey,
+    sort_dir: sortDirRaw === 'asc' ? 'asc' : 'desc',
     limit,
     offset,
     total: totalRes.rows[0]?.total || 0,
@@ -1687,18 +2084,98 @@ app.post('/admin/broadcasts/preview', requireAdmin, async (req, res) => {
   });
 });
 
+const broadcastMediaUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: BROADCAST_MEDIA_UPLOAD_MAX_BYTES }
+});
+
+app.post('/admin/broadcasts/upload-media', requireAdmin, broadcastMediaUpload.single('file'), async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  if (!env.broadcastMediaChatId) {
+    return res.status(400).json({ error: 'media_chat_id_not_configured' });
+  }
+
+  const messageKindRaw = (req.body?.messageKind ?? req.body?.message_kind ?? '').toString().trim().toLowerCase();
+  const messageKind = messageKindRaw === 'photo' || messageKindRaw === 'video' ? messageKindRaw : null;
+  if (!messageKind) {
+    return res.status(400).json({ error: 'bad_message_kind' });
+  }
+
+  const file = req.file || null;
+  if (!file?.buffer || !file?.size) {
+    return res.status(400).json({ error: 'missing_file' });
+  }
+
+  const bots = parseBotKeysField(req.body?.bots ?? req.body?.botKeys ?? req.body?.bot_keys);
+  const targetBots = bots.length ? bots : [normalizeBotKey(env.defaultBotKey) || 'uk-de'];
+
+  const mediaFileIds = {};
+  for (const botKey of targetBots) {
+    try {
+      const uploaded = await uploadTelegramMediaToChat({
+        chatId: env.broadcastMediaChatId,
+        messageKind,
+        buffer: file.buffer,
+        filename: file.originalname,
+        mimeType: file.mimetype,
+        botKey
+      });
+      mediaFileIds[botKey] = uploaded.fileId;
+    } catch (err) {
+      const msg = sanitizeErrorText(err?.message || String(err)) || 'upload_failed';
+      return res.status(502).json({ error: 'telegram_upload_failed', bot_key: botKey, detail: msg });
+    }
+  }
+
+  return res.json({ ok: true, messageKind, mediaFileIds });
+});
+
 app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
   const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});
+  const messageKindRaw = (req.body?.messageKind ?? req.body?.message_kind ?? 'text').toString().trim().toLowerCase();
+  const messageKind = BROADCAST_MESSAGE_KINDS.has(messageKindRaw) ? messageKindRaw : null;
+  if (!messageKind) {
+    return res.status(400).json({ error: 'bad_message_kind' });
+  }
+
+  const mediaUrlRaw = (req.body?.mediaUrl ?? req.body?.media_url ?? '').toString().trim();
+  if (mediaUrlRaw.length > BROADCAST_MEDIA_URL_MAX_LEN) {
+    return res.status(400).json({ error: 'media_url_too_long', max_length: BROADCAST_MEDIA_URL_MAX_LEN });
+  }
+  const mediaUrl = mediaUrlRaw;
+  const mediaFileIdRaw = (req.body?.mediaFileId ?? req.body?.media_file_id ?? '').toString().trim();
+  if (mediaFileIdRaw.length > BROADCAST_MEDIA_FILE_ID_MAX_LEN) {
+    return res.status(400).json({ error: 'media_file_id_too_long', max_length: BROADCAST_MEDIA_FILE_ID_MAX_LEN });
+  }
+  const mediaFileId = mediaFileIdRaw;
+  const mediaFileIds = normalizeBroadcastMediaFileIds(req.body?.mediaFileIds ?? req.body?.media_file_ids);
+
   const messageRaw = (req.body?.messageText ?? req.body?.message ?? '').toString();
   const messageText = messageRaw.trim();
-  if (!messageText) {
-    return res.status(400).json({ error: 'empty_message' });
-  }
-  if (messageText.length > BROADCAST_MESSAGE_MAX_LEN) {
-    return res.status(400).json({
-      error: 'message_too_long',
-      max_length: BROADCAST_MESSAGE_MAX_LEN
-    });
+
+  if (messageKind === 'text') {
+    if (!messageText) {
+      return res.status(400).json({ error: 'empty_message' });
+    }
+    if (messageText.length > BROADCAST_MESSAGE_MAX_LEN) {
+      return res.status(400).json({
+        error: 'message_too_long',
+        max_length: BROADCAST_MESSAGE_MAX_LEN
+      });
+    }
+    if (mediaUrl || mediaFileId || mediaFileIds) {
+      return res.status(400).json({ error: 'unexpected_media' });
+    }
+  } else {
+    if (!mediaUrl && !mediaFileId && !mediaFileIds) {
+      return res.status(400).json({ error: 'missing_media' });
+    }
+    if (messageText.length > BROADCAST_CAPTION_MAX_LEN) {
+      return res.status(400).json({
+        error: 'caption_too_long',
+        max_length: BROADCAST_CAPTION_MAX_LEN
+      });
+    }
   }
 
   const recipients = await listBroadcastRecipients(filters, env.broadcastMaxRecipients + 1);
@@ -1729,14 +2206,27 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
          status,
          filters,
          message_text,
+         message_kind,
+         media_url,
+         media_file_id,
+         media_file_ids,
          total_recipients,
          sent_count,
          failed_count,
          created_by
        )
-       VALUES ('queued', $1::jsonb, $2::text, $3::int, 0, 0, $4::text)
+       VALUES ('queued', $1::jsonb, $2::text, $3::text, $4::text, $5::text, $6::jsonb, $7::int, 0, 0, $8::text)
        RETURNING id`,
-      [JSON.stringify(filters), messageText, chatIds.length, createdBy]
+      [
+        JSON.stringify(filters),
+        messageText,
+        messageKind,
+        mediaUrl || null,
+        mediaFileId || null,
+        mediaFileIds ? JSON.stringify(mediaFileIds) : null,
+        chatIds.length,
+        createdBy
+      ]
     );
     campaignId = campaignRows[0]?.id || null;
     if (!campaignId) throw new Error('campaign_create_failed');
@@ -1788,6 +2278,10 @@ app.get('/admin/broadcasts/:id', requireAdmin, async (req, res) => {
        c.id,
        c.status,
        c.message_text,
+       c.message_kind,
+       c.media_url,
+       c.media_file_id,
+       c.media_file_ids,
        c.filters,
        c.total_recipients,
        c.sent_count,
@@ -1915,6 +2409,7 @@ app.get('/plans', requireAuth, async (req, res) => {
 
   const { rows: plans } = await pool.query(
     `SELECT p.tier, p.user_audio_seconds_per_week, p.tts_seconds_per_week,
+            (p.user_audio_seconds_per_week + p.tts_seconds_per_week)::int AS voice_seconds_per_week,
             pp.currency, pp.amount_cents, pp.billing_interval, pp.stripe_price_id
        FROM plans p
        LEFT JOIN plan_prices pp
@@ -1969,7 +2464,8 @@ app.get('/plans', requireAuth, async (req, res) => {
          SELECT
            tier,
            user_audio_seconds_per_week AS limit_user,
-           tts_seconds_per_week AS limit_tts
+           tts_seconds_per_week AS limit_tts,
+           (user_audio_seconds_per_week + tts_seconds_per_week)::int AS limit_total
          FROM plans
          WHERE tier = (SELECT effective_tier FROM effective)
          LIMIT 1
@@ -1991,10 +2487,13 @@ app.get('/plans', requireAuth, async (req, res) => {
          (SELECT pending_plan_effective_at FROM effective) AS pending_plan_effective_at,
          (SELECT limit_user FROM p) AS limit_user,
          (SELECT limit_tts FROM p) AS limit_tts,
+         (SELECT limit_total FROM p) AS limit_total,
          COALESCE((SELECT used_user FROM w), 0) AS used_user,
          COALESCE((SELECT used_tts FROM w), 0) AS used_tts,
+         COALESCE((SELECT used_user FROM w), 0) + COALESCE((SELECT used_tts FROM w), 0) AS used_total,
          GREATEST((SELECT limit_user FROM p) - COALESCE((SELECT used_user FROM w), 0), 0) AS remaining_user,
-         GREATEST((SELECT limit_tts FROM p) - COALESCE((SELECT used_tts FROM w), 0), 0) AS remaining_tts`,
+         GREATEST((SELECT limit_tts FROM p) - COALESCE((SELECT used_tts FROM w), 0), 0) AS remaining_tts,
+         GREATEST((SELECT limit_total FROM p) - (COALESCE((SELECT used_user FROM w), 0) + COALESCE((SELECT used_tts FROM w), 0)), 0) AS remaining_total`,
       [chatId]
     );
     usage = usageRows[0] || null;
@@ -2115,6 +2614,15 @@ app.post('/me/level', requireAuth, async (req, res) => {
   if (!rowCount) return res.status(404).json({ error: 'user_not_found' });
   const user = await getMeUserRow(chatId, currentBotKey);
   if (!user) return res.status(404).json({ error: 'user_not_found' });
+
+  await recordActionEventSafe({
+    chatId,
+    botKey: currentBotKey,
+    actionType: 'profile_set_level',
+    source: 'api',
+    properties: { level: raw, via: 'miniapp' }
+  });
+
   return res.json({ user });
 });
 
@@ -2850,15 +3358,50 @@ async function handleStripeEvent(event) {
     const session = obj;
     if (!session.customer || !session.subscription) return;
 
-    await pool.query(
-      `UPDATE users
-          SET stripe_customer_id = $1,
-              stripe_subscription_id = $2,
-              stripe_subscription_status = $3,
-              updated_at = NOW()
-        WHERE chat_id = $4`,
-      [session.customer, session.subscription, session.status, Number(session.client_reference_id)]
-    );
+    const sessionChatId = Number(session.client_reference_id);
+    if (Number.isFinite(sessionChatId)) {
+      await pool.query(
+        `UPDATE users
+            SET stripe_customer_id = $1,
+                stripe_subscription_id = $2,
+                stripe_subscription_status = $3,
+                updated_at = NOW()
+          WHERE chat_id = $4`,
+        [session.customer, session.subscription, session.status, sessionChatId]
+      );
+    } else {
+      console.warn('Stripe checkout.session.completed missing numeric client_reference_id', {
+        eventId: event.id,
+        client_reference_id: session.client_reference_id ?? null
+      });
+    }
+
+    const trackedChatId = Number.isFinite(sessionChatId)
+      ? sessionChatId
+      : (Number.isFinite(Number(paymentChatId)) ? Number(paymentChatId) : null);
+
+    if (trackedChatId) {
+      const trackedBotKey = await resolveUserBotKey(trackedChatId);
+      const occurredAt = typeof event?.created === 'number' ? new Date(event.created * 1000) : null;
+      await recordActionEventSafe({
+        chatId: trackedChatId,
+        botKey: trackedBotKey,
+        actionType: 'purchase_success',
+        source: 'stripe_webhook',
+        idempotencyKey: `purchase_success:${event.id}`,
+        occurredAt,
+        properties: {
+          stripe_event_id: event.id,
+          stripe_checkout_session_id: session.id || null,
+          stripe_customer_id: session.customer || null,
+          stripe_subscription_id: session.subscription || null,
+          amount_total: session.amount_total ?? null,
+          currency: session.currency || null,
+          tier: session.metadata?.tier || null,
+          billing_interval: session.metadata?.billing_interval || null
+        }
+      });
+    }
   }
 
   if (type.startsWith('customer.subscription.')) {

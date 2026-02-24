@@ -27,14 +27,15 @@ export async function apiJson(apiBase, path, { token, method = 'GET', body, quer
     });
   }
 
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
   const resp = await fetch(url.toString(), {
     method,
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
       ...(headers && typeof headers === 'object' ? headers : {})
     },
-    ...(body ? { body: JSON.stringify(body) } : {})
+    ...(body ? { body: isFormData ? body : JSON.stringify(body) } : {})
   });
 
   if (!resp.ok) {

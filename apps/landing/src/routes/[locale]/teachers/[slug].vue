@@ -12,7 +12,6 @@ import {
   getTeacherCanonicalPathSuffix,
   resolveTeacherRouteBySlug
 } from '~/data/teacherSlugs.js';
-import { getTeacherTelegramUrl } from '~/lib/telegram.js';
 import { getTeacherSeoContent } from '~/data/seoTeacherContent.js';
 import { isSupportedLocale, normalizeLocale, useI18n } from '~/i18n.js';
 import { useLocalizedSeo } from '~/seo.js';
@@ -98,7 +97,7 @@ const structuredData = computed(() => {
   const personSchemas = teachers.map((row) => {
     const url = toAbsoluteUrl(getTeacherCanonicalPath(row));
     const image = row.avatarImage ? toAbsoluteUrl(row.avatarImage) : '';
-    const telegramUrl = getTeacherTelegramUrl(row);
+    const telegramUrl = (row.telegramUrl || '').toString().trim();
     return {
       '@context': 'https://schema.org',
       '@type': 'Person',

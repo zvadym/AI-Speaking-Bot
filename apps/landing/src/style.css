@@ -62,6 +62,7 @@ a:hover {
   color: var(--fg);
   font-weight: 600;
   box-shadow: var(--shadow);
+  cursor: pointer;
 }
 
 .btn:hover {

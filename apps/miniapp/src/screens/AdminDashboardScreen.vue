@@ -6,15 +6,21 @@
       <p class="sub">UTC charts. Date range is <strong>inclusive</strong> for both From and To dates.</p>
     </header>
 
-    <section class="card">
-      <div class="row">
-        <label class="field">
-          <span>Password</span>
+    <section class="card access">
+      <div class="access-row">
+        <label class="field grow">
+          <span>Admin password</span>
           <input v-model="password" type="password" autocomplete="current-password" placeholder="••••••••" />
         </label>
 
-        <div class="actions">
-          <button class="btn danger" type="button" :disabled="loading || feedbackLoading" @click="clearPassword">Clear</button>
+        <div class="access-actions">
+          <span class="status-pill" :class="{ ok: Boolean(password) }">
+            {{ password ? 'Password set' : 'Locked' }}
+          </span>
+          <span v-if="activeStamp" class="status-pill subtle">Updated: {{ activeStamp }}</span>
+          <button class="btn danger" type="button" :disabled="loading || feedbackLoading || usersLoading || previewLoading" @click="clearPassword">
+            Clear
+          </button>
         </div>
       </div>
       <p class="hint">
@@ -26,6 +32,9 @@
       <button class="tab-btn" :class="{ active: activeTab === 'analytics' }" type="button" role="tab" @click="activeTab = 'analytics'">
         Analytics
       </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'users' }" type="button" role="tab" @click="activeTab = 'users'">
+        Users
+      </button>
       <button class="tab-btn" :class="{ active: activeTab === 'messaging' }" type="button" role="tab" @click="activeTab = 'messaging'">
         Messaging
       </button>
@@ -35,72 +44,90 @@
     </section>
 
     <template v-if="activeTab === 'analytics'">
-      <section class="card">
-        <div class="row">
-          <label class="field">
-            <span>From (UTC)</span>
-            <input v-model="fromDate" type="date" />
-          </label>
-
-          <label class="field">
-            <span>To (UTC, inclusive)</span>
-            <input v-model="toDate" type="date" />
-          </label>
-
-          <label class="field">
-            <span>Quick range</span>
-            <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
-              <option value="last_30_days">Last 30 days</option>
-              <option value="last_week">Last week</option>
-              <option value="last_month">Last month</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="row">
-          <label class="field grow">
-            <span>Acquisition payload</span>
-            <input
-              v-model="payload"
-              type="text"
-              inputmode="text"
-              autocomplete="off"
-              placeholder="(optional)"
-              list="payloads"
-            />
-            <datalist id="payloads">
-              <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
-            </datalist>
-          </label>
-
-          <div class="actions">
-            <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refresh">
-              {{ loading ? 'Loading…' : 'Refresh' }}
-            </button>
+      <section class="card panel">
+        <header class="panel-head">
+          <div>
+            <div class="panel-kicker">Analytics</div>
+            <h2 class="panel-title">Metrics</h2>
+            <p class="panel-sub">UTC charts. Date range is inclusive for both From and To dates.</p>
+          </div>
+          <div class="panel-actions">
+            <button class="btn" type="button" :disabled="loading" @click="resetRange">Last 30d</button>
             <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_week')">Last week</button>
             <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_month')">Last month</button>
-            <button class="btn" type="button" :disabled="loading" @click="resetRange">Last 30d</button>
+            <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refreshAnalytics">
+              {{ loading ? 'Loading…' : 'Refresh' }}
+            </button>
+          </div>
+        </header>
+
+        <div class="panel-body">
+          <div class="row">
+            <label class="field">
+              <span>From (UTC)</span>
+              <input v-model="fromDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>To (UTC, inclusive)</span>
+              <input v-model="toDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>Quick range</span>
+              <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
+                <option value="last_30_days">Last 30 days</option>
+                <option value="last_week">Last week</option>
+                <option value="last_month">Last month</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field grow">
+              <span>Acquisition payload</span>
+              <input
+                v-model="payload"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                placeholder="(optional)"
+                list="payloads"
+              />
+              <datalist id="payloads">
+                <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
+              </datalist>
+            </label>
+          </div>
+
+          <div v-if="!password" class="callout">
+            Enter password above to load analytics.
+          </div>
+          <div v-else-if="errorText" class="callout error">
+            {{ errorText }}
           </div>
         </div>
-
-        <p class="hint" v-if="!password">Enter password first to load analytics.</p>
-        <p class="error" v-else-if="errorText">{{ errorText }}</p>
       </section>
 
-      <section class="cards">
-        <div class="stat">
-          <div class="label">Users (range)</div>
-          <div class="value value-pair">
+      <section class="kpi-grid">
+        <article class="kpi">
+          <div class="kpi-label">Users (range)</div>
+          <div class="kpi-value">
             {{ fmt(totals.active_users_in_range) }}
-            <span class="value-secondary">/ {{ fmt(totals.total_users_in_range) }}</span>
+            <span class="kpi-value-sub">/ {{ fmt(totals.total_users_in_range) }}</span>
           </div>
-          <div class="meta">All-time: {{ fmt(totals.active_users_all_time) }} / {{ fmt(totals.total_users_all_time) }}</div>
-        </div>
-        <div class="stat">
-          <div class="label">Pro (range)</div>
-          <div class="value">{{ fmt(totals.pro_users_in_range) }}</div>
-          <div class="meta">All-time: {{ fmt(totals.pro_users_all_time) }}</div>
-        </div>
+          <div class="kpi-meta">All-time: {{ fmt(totals.active_users_all_time) }} / {{ fmt(totals.total_users_all_time) }}</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-label">Inactive users</div>
+          <div class="kpi-value">{{ fmt(totals.inactive_users_all_time) }}</div>
+          <div class="kpi-meta">Permanent Telegram delivery failures</div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-label">Pro (range)</div>
+          <div class="kpi-value">{{ fmt(totals.pro_users_in_range) }}</div>
+          <div class="kpi-meta">All-time: {{ fmt(totals.pro_users_all_time) }}</div>
+        </article>
       </section>
 
       <section class="card" v-if="botStats.length">
@@ -108,27 +135,62 @@
           <div class="kicker">Bot Statistics</div>
           <div class="sub">Per-bot user counts and activity metrics</div>
         </header>
-        <div class="bot-stats-grid">
-          <div class="bot-stat" v-for="bot in botStats" :key="bot.bot_key">
-            <div class="bot-stat-header">
-              <span class="bot-key-badge">{{ bot.bot_key }}</span>
-              <span class="bot-stat-total">{{ fmt(bot.total_users) }} users</span>
-            </div>
-            <div class="bot-stat-metrics">
-              <div class="metric">
-                <span class="metric-label">Active</span>
-                <span class="metric-value">{{ fmt(bot.active_users) }}</span>
-              </div>
-              <div class="metric">
-                <span class="metric-label">Last 7d</span>
-                <span class="metric-value">{{ fmt(bot.users_last_7_days) }}</span>
-              </div>
-              <div class="metric">
-                <span class="metric-label">Last 30d</span>
-                <span class="metric-value">{{ fmt(bot.users_last_30_days) }}</span>
-              </div>
-            </div>
-          </div>
+        <div class="bot-table-wrap">
+          <table class="bot-table">
+            <thead>
+              <tr>
+                <th>
+                  <button class="sort" type="button" @click="toggleBotSort('bot_key')">
+                    Bot
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('bot_key') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleBotSort('base_lang')">
+                    Base
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('base_lang') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleBotSort('target_lang')">
+                    Target
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('target_lang') }}</span>
+                  </button>
+                </th>
+                <th class="num">
+                  <button class="sort" type="button" @click="toggleBotSort('users_last_3_days')">
+                    Active (3d)
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('users_last_3_days') }}</span>
+                  </button>
+                </th>
+                <th class="num">
+                  <button class="sort" type="button" @click="toggleBotSort('users_last_7_days')">
+                    Last 7d
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('users_last_7_days') }}</span>
+                  </button>
+                </th>
+                <th class="num">
+                  <button class="sort" type="button" @click="toggleBotSort('users_last_30_days')">
+                    Last 30d
+                    <span class="sort-ind" aria-hidden="true">{{ botSortIndicator('users_last_30_days') }}</span>
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="bot in sortedBotStats" :key="bot.bot_key">
+                <td class="bot">
+                  <div class="bot-key">{{ bot.bot_key }}</div>
+                  <div class="bot-meta">{{ fmt(bot.total_users) }} users</div>
+                </td>
+                <td>{{ bot.base_lang || '—' }}</td>
+                <td>{{ bot.target_lang || '—' }}</td>
+                <td class="num">{{ fmt(bot.users_last_3_days) }}</td>
+                <td class="num">{{ fmt(bot.users_last_7_days) }}</td>
+                <td class="num">{{ fmt(bot.users_last_30_days) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -136,6 +198,7 @@
         <AdminChart
           title="New users by day"
           kind="bar"
+          x-labels="all"
           :data="newUsersSeries"
           :series="[{ key: 'count', label: 'New users', color: 'rgba(199, 90, 36, 0.86)' }]"
         />
@@ -144,6 +207,7 @@
           title="New paid users by day (first time)"
           subtitle="Pro activations by day"
           kind="bar"
+          x-labels="all"
           :data="newPaidSeries"
           :series="[
             { key: 'pro', label: 'Pro', color: 'rgba(199, 90, 36, 0.88)' }
@@ -151,9 +215,28 @@
         />
 
         <AdminChart
+          title="Action events by day"
+          subtitle="Tracked product actions (stacked)"
+          kind="bar"
+          x-labels="all"
+          :data="actionEventsSeries"
+          :series="actionSeriesConfig"
+        />
+
+        <AdminChart
+          title="Action funnel totals"
+          subtitle="Total events in selected range"
+          kind="bar"
+          x-labels="all"
+          :data="actionTotalsSeries"
+          :series="[{ key: 'count', label: 'Events', color: 'rgba(87, 60, 127, 0.86)' }]"
+        />
+
+        <AdminChart
           title="Active users by day"
           subtitle="Active = at least one voice usage event that day"
           kind="bar"
+          x-labels="all"
           :data="activeUsersSeries"
           :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
         />
@@ -162,6 +245,7 @@
           title="Active users by day by bot"
           subtitle="Active users split by bot (stacked)"
           kind="bar"
+          x-labels="all"
           :data="activeUsersByBotSeries"
           :series="activeUsersByBotSeriesConfig"
         />
@@ -170,6 +254,7 @@
           title="Inactive users by day"
           subtitle="Users marked inactive from permanent Telegram delivery failures"
           kind="bar"
+          x-labels="all"
           :data="inactiveUsersSeries"
           :series="[{ key: 'count', label: 'Inactive users', color: 'rgba(174, 43, 40, 0.86)' }]"
         />
@@ -177,6 +262,7 @@
         <AdminChart
           title="Voice usage seconds by day"
           kind="line"
+          x-labels="all"
           :data="usageSecondsSeries"
           :series="[
             { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)' },
@@ -188,6 +274,7 @@
           title="Active users by hour"
           subtitle="UTC hour-of-day distribution for selected range"
           kind="bar"
+          x-labels="all"
           :data="activeUsersByHourSeries"
           :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
         />
@@ -196,38 +283,154 @@
           title="Active users by hour today"
           subtitle="UTC, today only"
           kind="bar"
+          x-labels="all"
           :data="activeUsersByHourTodaySeries"
           :series="[{ key: 'count', label: 'Active users', color: 'rgba(199, 90, 36, 0.86)' }]"
         />
+      </section>
+    </template>
+
+    <template v-else-if="activeTab === 'users'">
+      <section class="card panel">
+        <header class="panel-head">
+          <div>
+            <div class="panel-kicker">Users</div>
+            <h2 class="panel-title">Directory</h2>
+            <p class="panel-sub">Server-side sorting and pagination. Range filters are UTC.</p>
+          </div>
+          <div class="panel-actions">
+            <button class="btn" type="button" :disabled="usersLoading" @click="resetRange">Last 30d</button>
+            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_week')">Last week</button>
+            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_month')">Last month</button>
+            <button class="btn primary" type="button" :disabled="!canFetch || usersLoading" @click="refreshUsersPage({ resetOffset: true })">
+              {{ usersLoading ? 'Loading…' : 'Refresh users' }}
+            </button>
+          </div>
+        </header>
+
+        <div class="panel-body">
+          <div class="row">
+            <label class="field">
+              <span>From (UTC)</span>
+              <input v-model="fromDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>To (UTC, inclusive)</span>
+              <input v-model="toDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>Quick range</span>
+              <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
+                <option value="last_30_days">Last 30 days</option>
+                <option value="last_week">Last week</option>
+                <option value="last_month">Last month</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field grow">
+              <span>Acquisition payload</span>
+              <input
+                v-model="payload"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                placeholder="(optional)"
+                list="payloads"
+              />
+              <datalist id="payloads">
+                <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
+              </datalist>
+            </label>
+          </div>
+
+          <div v-if="!password" class="callout">
+            Enter password above to load users.
+          </div>
+          <div v-else-if="usersError" class="callout error">
+            {{ usersError }}
+          </div>
+        </div>
       </section>
 
       <section class="card users-table-card">
         <div class="users-head">
           <div>
             <div class="kicker">Users</div>
-            <h2>Users by created_at DESC</h2>
+            <h2>Users</h2>
           </div>
           <div class="users-meta">
-            <span>Total: {{ fmt(usersTotal) }}</span>
-            <span>Offset: {{ fmt(usersOffset) }}</span>
+            <span v-if="usersTotal">Showing {{ fmt(usersPageStart) }}–{{ fmt(usersPageEnd) }} of {{ fmt(usersTotal) }}</span>
+            <span v-else>Total: 0</span>
+            <label class="users-limit">
+              <span>Rows</span>
+              <select v-model.number="usersLimit" :disabled="usersLoading" @change="usersApplyLimit">
+                <option :value="25">25</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
+                <option :value="200">200</option>
+              </select>
+            </label>
           </div>
         </div>
 
-        <p class="error" v-if="usersError">{{ usersError }}</p>
-        <p class="hint" v-else-if="usersLoading">Loading users…</p>
+        <p class="hint" v-if="usersLoading && !usersRows.length">Loading users…</p>
 
         <div class="users-table-wrap" v-if="usersRows.length">
           <table class="users-table">
             <thead>
               <tr>
-                <th>Created</th>
-                <th>Chat ID</th>
-                <th>Username</th>
-                <th>Name</th>
-                <th>Bot</th>
-                <th>Tier</th>
-                <th>Active</th>
-                <th>Last seen</th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('created_at')">
+                    Created
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('created_at') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('chat_id')">
+                    Chat ID
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('chat_id') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('username')">
+                    Username
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('username') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('first_name')">
+                    Name
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('first_name') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('bot_key')">
+                    Bot
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('bot_key') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('effective_tier')">
+                    Tier
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('effective_tier') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('is_active')">
+                    Active
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('is_active') }}</span>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('last_seen_at')">
+                    Last seen
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('last_seen_at') }}</span>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -257,253 +460,337 @@
       </section>
     </template>
 
-    <section class="card broadcast" v-else-if="activeTab === 'messaging'">
-      <div class="broadcast-head">
+    <section class="card panel" v-else-if="activeTab === 'messaging'">
+      <header class="panel-head">
         <div>
-          <div class="kicker">Broadcast</div>
-          <h2>Send message to filtered users</h2>
-          <p class="sub compact">Preview count updates from filters before sending.</p>
+          <div class="panel-kicker">Messaging</div>
+          <h2 class="panel-title">Broadcast</h2>
+          <p class="panel-sub">Segment users, preview recipients, then send a message.</p>
         </div>
-        <div class="broadcast-counter">
-          <div class="counter-label">Will send to</div>
-          <div class="counter-value">{{ fmt(broadcastPreview.count) }}</div>
-          <div class="counter-meta" v-if="previewLoading">Updating…</div>
-          <div class="counter-meta" v-else-if="previewError">Preview error</div>
-          <div class="counter-meta" v-else-if="previewUpdatedAt">Updated: {{ previewUpdatedAt }}</div>
-        </div>
-      </div>
-
-      <div class="row">
-        <label class="field grow">
-          <span>Username contains</span>
-          <input
-            v-model.trim="broadcast.username"
-            type="text"
-            autocomplete="off"
-            inputmode="text"
-            placeholder="(optional)"
-          />
-        </label>
-
-        <label class="field">
-          <span>Last activity</span>
-          <select v-model="broadcast.lastActivityMode">
-            <option value="any">Any</option>
-            <option value="active_within">Active within X days</option>
-            <option value="inactive_for">Inactive for X+ days</option>
-            <option value="never_active">Never active</option>
-          </select>
-        </label>
-
-        <label class="field" v-if="broadcast.lastActivityMode !== 'any' && broadcast.lastActivityMode !== 'never_active'">
-          <span>X days</span>
-          <input v-model.number="broadcast.lastActivityDays" type="number" min="1" max="3650" />
-        </label>
-      </div>
-
-      <div class="row">
-        <label class="field">
-          <span>Usage filter</span>
-          <select v-model="broadcast.usageMode">
-            <option value="any">Any</option>
-            <option value="reached">Limit reached</option>
-            <option value="percent_gte">Usage >= X%</option>
-          </select>
-        </label>
-
-        <label class="field" v-if="broadcast.usageMode === 'percent_gte'">
-          <span>X percent</span>
-          <input v-model.number="broadcast.usagePercent" type="number" min="0" max="100" />
-        </label>
-
-        <div class="field grow">
-          <span>Current plan</span>
-          <div class="plan-pills">
-            <label class="pill">
-              <input v-model="broadcast.planFree" type="checkbox" />
-              <span>Free</span>
-            </label>
-            <label class="pill">
-              <input v-model="broadcast.planPro" type="checkbox" />
-              <span>Pro</span>
-            </label>
+        <div class="panel-actions">
+          <div class="counter-chip" :class="{ warn: Boolean(previewError) }">
+            <div class="counter-chip-label">Will send to</div>
+            <div class="counter-chip-value">{{ fmt(broadcastPreview.count) }}</div>
+            <div class="counter-chip-meta" v-if="previewLoading">Updating…</div>
+            <div class="counter-chip-meta" v-else-if="previewUpdatedAt">Updated: {{ previewUpdatedAt }}</div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div class="row" v-if="botStats.length">
-        <div class="field grow">
-          <span>Bot</span>
-          <div class="plan-pills">
-            <label class="pill" :class="{ active: !hasSelectedBots }">
+      <div class="panel-body broadcast-layout">
+        <section class="broadcast-pane">
+          <div class="pane-title">Audience filters</div>
+
+          <div class="row">
+            <label class="field grow">
+              <span>Username contains</span>
               <input
-                type="checkbox"
-                :checked="!hasSelectedBots"
-                @change="broadcast.botKeys = []"
+                v-model.trim="broadcast.username"
+                type="text"
+                autocomplete="off"
+                inputmode="text"
+                placeholder="(optional)"
               />
-              <span>All bots</span>
             </label>
-            <label class="pill" v-for="bot in botStats" :key="bot.bot_key" :class="{ active: broadcast.botKeys.includes(bot.bot_key) }">
-              <input v-model="broadcast.botKeys" type="checkbox" :value="bot.bot_key" />
-              <span>{{ bot.bot_key }}</span>
+
+            <label class="field">
+              <span>Last activity</span>
+              <select v-model="broadcast.lastActivityMode">
+                <option value="any">Any</option>
+                <option value="active_within">Active within X days</option>
+                <option value="inactive_for">Inactive for X+ days</option>
+                <option value="never_active">Never active</option>
+              </select>
+            </label>
+
+            <label class="field" v-if="broadcast.lastActivityMode !== 'any' && broadcast.lastActivityMode !== 'never_active'">
+              <span>X days</span>
+              <input v-model.number="broadcast.lastActivityDays" type="number" min="1" max="3650" />
             </label>
           </div>
-        </div>
-      </div>
 
-      <div class="row">
-        <label class="field grow">
-          <span>Message text</span>
-          <textarea
-            v-model="broadcast.messageText"
-            rows="5"
-            maxlength="4096"
-            placeholder="Write the message that will be sent to each selected user..."
-          />
-          <small class="hint">HTML formatting is supported in broadcast messages.</small>
-        </label>
-      </div>
+          <div class="row">
+            <label class="field">
+              <span>Usage filter</span>
+              <select v-model="broadcast.usageMode">
+                <option value="any">Any</option>
+                <option value="reached">Limit reached</option>
+                <option value="percent_gte">Usage >= X%</option>
+              </select>
+            </label>
 
-      <div class="row">
-        <label class="field">
-          <span>Confirm send</span>
-          <input
-            v-model.trim="broadcastConfirm"
-            type="text"
-            autocomplete="off"
-            inputmode="text"
-            placeholder="Type SEND"
-          />
-        </label>
+            <label class="field" v-if="broadcast.usageMode === 'percent_gte'">
+              <span>X percent</span>
+              <input v-model.number="broadcast.usagePercent" type="number" min="0" max="100" />
+            </label>
 
-        <div class="actions">
-          <button class="btn" type="button" :disabled="!password || previewLoading" @click="refreshBroadcastPreview()">
-            {{ previewLoading ? 'Preview…' : 'Refresh preview' }}
-          </button>
-          <button class="btn primary" type="button" :disabled="!canSendBroadcast || sendingBroadcast" @click="sendBroadcast">
-            {{ sendingBroadcast ? 'Sending…' : `Send to ${fmt(broadcastPreview.count)}` }}
-          </button>
-        </div>
-      </div>
+            <div class="field grow">
+              <span>Current plan</span>
+              <div class="plan-pills">
+                <label class="pill">
+                  <input v-model="broadcast.planFree" type="checkbox" />
+                  <span>Free</span>
+                </label>
+                <label class="pill">
+                  <input v-model="broadcast.planPro" type="checkbox" />
+                  <span>Pro</span>
+                </label>
+              </div>
+            </div>
+          </div>
 
-      <p class="hint" v-if="!password">Enter admin password above to use broadcast.</p>
-      <p class="hint" v-else-if="!hasAnySelectedPlan">Pick at least one plan.</p>
-      <p class="error" v-else-if="previewError">{{ previewError }}</p>
-      <p class="error" v-else-if="sendError">{{ sendError }}</p>
-      <p class="hint" v-else-if="sendInfo">{{ sendInfo }}</p>
+          <div class="row" v-if="botStats.length">
+            <div class="field grow">
+              <span>Bot</span>
+              <div class="plan-pills">
+                <label class="pill" :class="{ active: !hasSelectedBots }">
+                  <input type="checkbox" :checked="!hasSelectedBots" @change="broadcast.botKeys = []" />
+                  <span>All bots</span>
+                </label>
+                <label class="pill" v-for="bot in botStats" :key="bot.bot_key" :class="{ active: broadcast.botKeys.includes(bot.bot_key) }">
+                  <input v-model="broadcast.botKeys" type="checkbox" :value="bot.bot_key" />
+                  <span>{{ bot.bot_key }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <div class="preview-sample" v-if="broadcastPreview.sample.length">
-        <div class="sample-title">Sample recipients</div>
-        <ul>
-          <li v-for="row in broadcastPreview.sample.slice(0, 8)" :key="`${row.chat_id}-${row.bot_key}`">
-            <code>{{ row.chat_id }}</code>
-            <span>{{ row.username ? `@${row.username}` : '(no username)' }}</span>
-            <span class="bot-badge">{{ row.bot_key }}</span>
-            <span>{{ displayTier(row.effective_tier) }}</span>
-            <span>{{ formatLastActivity(row.last_activity_at) }}</span>
-          </li>
-        </ul>
-      </div>
+        <section class="broadcast-pane">
+          <div class="pane-title">Message</div>
 
-      <div class="campaign-state" v-if="campaignState">
-        <div class="campaign-head">
-          <strong>Campaign #{{ campaignState.id }}</strong>
-          <span class="chip">{{ campaignState.status }}</span>
-        </div>
-        <div class="campaign-stats">
-          <span>Total: {{ fmt(campaignState.total_recipients) }}</span>
-          <span>Sent: {{ fmt(campaignState.sent_count) }}</span>
-          <span>Failed: {{ fmt(campaignState.failed_count) }}</span>
-          <span>Pending: {{ fmt(campaignState.pending_count) }}</span>
-        </div>
-        <p class="error" v-if="campaignState.error_text">{{ campaignState.error_text }}</p>
+          <div class="row">
+            <label class="field grow">
+              <span>Message type</span>
+              <select v-model="broadcast.messageKind">
+                <option value="text">Text</option>
+                <option value="photo">Image (photo)</option>
+                <option value="video">Video</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row" v-if="broadcast.messageKind !== 'text'">
+            <label class="field grow">
+              <span>Media (upload to Telegram)</span>
+              <input :accept="broadcastMediaAccept" type="file" @change="onBroadcastMediaPicked" />
+              <small class="hint">Uploads once per selected bot and stores Telegram <code>file_id</code>s for the campaign.</small>
+            </label>
+            <div class="actions">
+              <button
+                class="btn"
+                type="button"
+                :disabled="!canUploadBroadcastMedia || mediaUploading"
+                @click="uploadBroadcastMedia"
+              >
+                {{ mediaUploading ? 'Uploading…' : `Upload for ${fmt(broadcastUploadBots.length || 0)} bots` }}
+              </button>
+              <button class="btn danger" type="button" :disabled="mediaUploading" @click="clearBroadcastMedia">
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div class="row" v-if="broadcast.messageKind !== 'text'">
+            <label class="field grow">
+              <span>Media URL (fallback)</span>
+              <input
+                v-model.trim="broadcast.mediaUrl"
+                type="url"
+                autocomplete="off"
+                inputmode="url"
+                placeholder="https://… (must be publicly accessible)"
+              />
+              <small class="hint">Optional fallback if you don’t want to upload.</small>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field grow">
+              <span>{{ broadcast.messageKind === 'text' ? 'Message text' : 'Caption (optional)' }}</span>
+              <textarea
+                v-model="broadcast.messageText"
+                rows="6"
+                :maxlength="broadcast.messageKind === 'text' ? 4096 : 1024"
+                :placeholder="broadcast.messageKind === 'text'
+                  ? 'Write the message that will be sent to each selected user…'
+                  : 'Optional caption for the media message…'"
+              />
+              <small class="hint">
+                Plain text only (Telegram HTML/Markdown is not enabled here).
+              </small>
+            </label>
+          </div>
+
+          <div class="row">
+            <label class="field">
+              <span>Confirm send</span>
+              <input
+                v-model.trim="broadcastConfirm"
+                type="text"
+                autocomplete="off"
+                inputmode="text"
+                placeholder="Type SEND"
+              />
+            </label>
+
+            <div class="actions">
+              <button class="btn" type="button" :disabled="!password || previewLoading" @click="refreshBroadcastPreview()">
+                {{ previewLoading ? 'Preview…' : 'Refresh preview' }}
+              </button>
+              <button class="btn primary" type="button" :disabled="!canSendBroadcast || sendingBroadcast" @click="sendBroadcast">
+                {{ sendingBroadcast ? 'Sending…' : `Send to ${fmt(broadcastPreview.count)}` }}
+              </button>
+            </div>
+          </div>
+
+          <div v-if="!password" class="callout">Enter admin password above to use broadcast.</div>
+          <div v-else-if="!hasAnySelectedPlan" class="callout">Pick at least one plan.</div>
+          <div v-else-if="broadcast.messageKind === 'text' && !broadcast.messageText.trim()" class="callout">Write a message to send.</div>
+          <div
+            v-else-if="broadcast.messageKind !== 'text' && !hasBroadcastMedia"
+            class="callout"
+          >
+            Upload media (or provide a media URL).
+          </div>
+          <div v-else-if="mediaUploadError" class="callout error">{{ mediaUploadError }}</div>
+          <div v-else-if="mediaUploadInfo" class="callout">{{ mediaUploadInfo }}</div>
+          <div v-else-if="previewError" class="callout error">{{ previewError }}</div>
+          <div v-else-if="sendError" class="callout error">{{ sendError }}</div>
+          <div v-else-if="sendInfo" class="callout">{{ sendInfo }}</div>
+
+          <div class="sample-card" v-if="broadcastPreview.sample.length">
+            <div class="sample-title">Sample recipients</div>
+            <div class="sample-table-wrap">
+              <table class="sample-table">
+                <thead>
+                  <tr>
+                    <th>Chat</th>
+                    <th>Username</th>
+                    <th>Bot</th>
+                    <th>Tier</th>
+                    <th>Last activity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in broadcastPreview.sample.slice(0, 8)" :key="`${row.chat_id}-${row.bot_key}`">
+                    <td><code>{{ row.chat_id }}</code></td>
+                    <td>{{ row.username ? `@${row.username}` : '—' }}</td>
+                    <td><span class="bot-badge">{{ row.bot_key }}</span></td>
+                    <td>{{ displayTier(row.effective_tier) }}</td>
+                    <td>{{ formatLastActivity(row.last_activity_at) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="campaign-state" v-if="campaignState">
+            <div class="campaign-head">
+              <strong>Campaign #{{ campaignState.id }}</strong>
+              <span class="chip">{{ campaignState.status }}</span>
+            </div>
+            <div class="campaign-stats">
+              <span>Total: {{ fmt(campaignState.total_recipients) }}</span>
+              <span>Sent: {{ fmt(campaignState.sent_count) }}</span>
+              <span>Failed: {{ fmt(campaignState.failed_count) }}</span>
+              <span>Pending: {{ fmt(campaignState.pending_count) }}</span>
+            </div>
+            <p class="error" v-if="campaignState.error_text">{{ campaignState.error_text }}</p>
+          </div>
+        </section>
       </div>
     </section>
 
-    <section class="card feedback" v-else>
-      <div class="feedback-head">
+    <section class="card panel" v-else-if="activeTab === 'feedback'">
+      <header class="panel-head">
         <div>
-          <div class="kicker">Feedback inbox</div>
-          <h2>User feedback</h2>
-          <p class="sub compact">Text and voice feedback submitted with <code>/feedback</code>.</p>
+          <div class="panel-kicker">Feedback</div>
+          <h2 class="panel-title">Inbox</h2>
+          <p class="panel-sub">Text and voice feedback submitted with <code>/feedback</code>.</p>
         </div>
-        <div class="feedback-count">Total: {{ fmt(feedbackTotal) }}</div>
-      </div>
-
-      <div class="row">
-        <label class="field">
-          <span>From (UTC)</span>
-          <input v-model="feedbackFromDate" type="date" />
-        </label>
-        <label class="field">
-          <span>To (UTC, inclusive)</span>
-          <input v-model="feedbackToDate" type="date" />
-        </label>
-        <label class="field">
-          <span>Kind</span>
-          <select v-model="feedbackKind">
-            <option value="any">Any</option>
-            <option value="text">Text</option>
-            <option value="voice">Voice</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="row">
-        <label class="field grow">
-          <span>Search</span>
-          <input
-            v-model.trim="feedbackSearch"
-            type="text"
-            autocomplete="off"
-            inputmode="text"
-            placeholder="username, name, chat id, or text"
-          />
-        </label>
-        <div class="actions">
+        <div class="panel-actions">
+          <span class="status-pill subtle" v-if="feedbackUpdatedAt">Updated: {{ feedbackUpdatedAt }}</span>
+          <span class="status-pill">Total: {{ fmt(feedbackTotal) }}</span>
+          <button class="btn" type="button" :disabled="feedbackLoading" @click="resetFeedbackRange">Last 30d</button>
           <button class="btn primary" type="button" :disabled="!canFetchFeedback || feedbackLoading" @click="refreshFeedback({ resetOffset: true })">
             {{ feedbackLoading ? 'Loading…' : 'Refresh' }}
           </button>
-          <button class="btn" type="button" :disabled="feedbackLoading" @click="resetFeedbackRange">Last 30d</button>
+        </div>
+      </header>
+
+      <div class="panel-body">
+        <div class="row">
+          <label class="field">
+            <span>From (UTC)</span>
+            <input v-model="feedbackFromDate" type="date" />
+          </label>
+          <label class="field">
+            <span>To (UTC, inclusive)</span>
+            <input v-model="feedbackToDate" type="date" />
+          </label>
+          <label class="field">
+            <span>Kind</span>
+            <select v-model="feedbackKind">
+              <option value="any">Any</option>
+              <option value="text">Text</option>
+              <option value="voice">Voice</option>
+            </select>
+          </label>
+          <label class="field grow">
+            <span>Search</span>
+            <input
+              v-model.trim="feedbackSearch"
+              type="text"
+              autocomplete="off"
+              inputmode="text"
+              placeholder="username, name, chat id, or text"
+            />
+          </label>
+        </div>
+
+        <div v-if="!password" class="callout">Enter admin password above to load feedback.</div>
+        <div v-else-if="feedbackError" class="callout error">{{ feedbackError }}</div>
+
+        <div class="feedback-list" v-if="feedbackRows.length">
+          <article class="feedback-item" v-for="row in feedbackRows" :key="row.id">
+            <div class="feedback-item-head">
+              <div class="feedback-meta">
+                <span class="chip">{{ row.kind }}</span>
+                <code>#{{ row.id }}</code>
+                <code>{{ row.chat_id }}</code>
+                <span>{{ row.username ? `@${row.username}` : (row.first_name || 'unknown user') }}</span>
+              </div>
+              <time>{{ formatFeedbackTime(row.created_at) }}</time>
+            </div>
+            <pre class="feedback-text">{{ feedbackBody(row) }}</pre>
+            <p class="hint" v-if="row.kind === 'voice' && row.telegram_file_id">
+              Voice file id: <code>{{ row.telegram_file_id }}</code>
+            </p>
+          </article>
+        </div>
+
+        <p class="hint" v-else-if="password && !feedbackLoading">No feedback found for current filters.</p>
+
+        <div class="feedback-pager">
+          <button class="btn" type="button" :disabled="feedbackLoading || feedbackOffset <= 0" @click="feedbackPrevPage">
+            Previous
+          </button>
+          <button class="btn" type="button" :disabled="feedbackLoading || !feedbackHasNext" @click="feedbackNextPage">
+            Next
+          </button>
         </div>
       </div>
+    </section>
 
-      <p class="hint" v-if="!password">Enter admin password above to load feedback.</p>
-      <p class="error" v-else-if="feedbackError">{{ feedbackError }}</p>
-
-      <div class="feedback-list" v-if="feedbackRows.length">
-        <article class="feedback-item" v-for="row in feedbackRows" :key="row.id">
-          <div class="feedback-item-head">
-            <div class="feedback-meta">
-              <span class="chip">{{ row.kind }}</span>
-              <code>#{{ row.id }}</code>
-              <code>{{ row.chat_id }}</code>
-              <span>{{ row.username ? `@${row.username}` : (row.first_name || 'unknown user') }}</span>
-            </div>
-            <time>{{ formatFeedbackTime(row.created_at) }}</time>
-          </div>
-          <pre class="feedback-text">{{ feedbackBody(row) }}</pre>
-          <p class="hint" v-if="row.kind === 'voice' && row.telegram_file_id">
-            Voice file id: <code>{{ row.telegram_file_id }}</code>
-          </p>
-        </article>
-      </div>
-
-      <p class="hint" v-else-if="password && !feedbackLoading">No feedback found for current filters.</p>
-
-      <div class="feedback-pager">
-        <button class="btn" type="button" :disabled="feedbackLoading || feedbackOffset <= 0" @click="feedbackPrevPage">
-          Previous
-        </button>
-        <button class="btn" type="button" :disabled="feedbackLoading || !feedbackHasNext" @click="feedbackNextPage">
-          Next
-        </button>
-      </div>
+    <section class="card" v-else>
+      <p class="hint">Select a tab.</p>
     </section>
 
     <footer class="foot">
       <button class="link" type="button" @click="emit('navigate', '/', { replace: true })">← Back to app</button>
       <span v-if="activeTab === 'analytics' && lastUpdated" class="stamp">Updated: {{ lastUpdated }}</span>
+      <span v-else-if="activeTab === 'users' && usersUpdatedAt" class="stamp">Updated: {{ usersUpdatedAt }}</span>
       <span v-else-if="activeTab === 'feedback' && feedbackUpdatedAt" class="stamp">Updated: {{ feedbackUpdatedAt }}</span>
       <span v-else-if="activeTab === 'messaging' && previewUpdatedAt" class="stamp">Updated: {{ previewUpdatedAt }}</span>
     </footer>
@@ -598,16 +885,25 @@ const previewUpdatedAt = ref('');
 const totals = ref({
   total_users_all_time: 0,
   active_users_all_time: 0,
+  inactive_users_all_time: 0,
   pro_users_all_time: 0,
   total_users_in_range: 0,
   active_users_in_range: 0,
+  inactive_users_in_range: 0,
   pro_users_in_range: 0
 });
 
 const botStats = ref([]);
 
+const botSort = reactive({
+  key: 'users_last_3_days',
+  dir: 'desc' // 'asc' | 'desc'
+});
+
 const newUsersSeries = ref([]);
 const newPaidSeries = ref([]);
+const actionEventsSeries = ref([]);
+const actionTotalsSeries = ref([]);
 const activeUsersSeries = ref([]);
 const activeUsersByBotSeries = ref([]);
 const activeUsersByBotSeriesConfig = ref([]);
@@ -615,12 +911,58 @@ const inactiveUsersSeries = ref([]);
 const usageSecondsSeries = ref([]);
 const activeUsersByHourSeries = ref([]);
 const activeUsersByHourTodaySeries = ref([]);
+const actionSeriesConfig = [
+  { key: 'start', label: 'start', color: 'rgba(31, 107, 99, 0.88)' },
+  { key: 'profile_set_level', label: 'profile_set_level', color: 'rgba(199, 90, 36, 0.88)' },
+  { key: 'first_voice_sent', label: 'first_voice_sent', color: 'rgba(46, 88, 142, 0.88)' },
+  { key: 'first_answer_delivered', label: 'first_answer_delivered', color: 'rgba(103, 78, 167, 0.88)' },
+  { key: 'paywall_shown', label: 'paywall_shown', color: 'rgba(174, 43, 40, 0.86)' },
+  { key: 'purchase_success', label: 'purchase_success', color: 'rgba(117, 156, 56, 0.88)' },
+  { key: 'day1_return', label: 'day1_return', color: 'rgba(33, 124, 146, 0.88)' }
+];
 const usersRows = ref([]);
 const usersTotal = ref(0);
 const usersOffset = ref(0);
-const usersLimit = 50;
+const usersLimit = ref(50);
 const usersLoading = ref(false);
 const usersError = ref('');
+const usersUpdatedAt = ref('');
+const usersSort = reactive({
+  key: 'created_at',
+  dir: 'desc' // 'asc' | 'desc'
+});
+
+const usersPageStart = computed(() => (usersTotal.value ? usersOffset.value + 1 : 0));
+const usersPageEnd = computed(() => Math.min(usersOffset.value + usersRows.value.length, usersTotal.value));
+
+const activeStamp = computed(() => {
+  if (activeTab.value === 'analytics') return lastUpdated.value || '';
+  if (activeTab.value === 'users') return usersUpdatedAt.value || '';
+  if (activeTab.value === 'messaging') return previewUpdatedAt.value || '';
+  if (activeTab.value === 'feedback') return feedbackUpdatedAt.value || '';
+  return '';
+});
+
+function usersSortIndicator(key) {
+  if (usersSort.key !== key) return '';
+  return usersSort.dir === 'asc' ? '↑' : '↓';
+}
+
+function toggleUsersSort(key) {
+  if (usersSort.key === key) {
+    usersSort.dir = usersSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    usersSort.key = key;
+    usersSort.dir = key === 'created_at' || key === 'last_seen_at' ? 'desc' : 'asc';
+  }
+  usersOffset.value = 0;
+  refreshUsersPage({ resetOffset: true });
+}
+
+function usersApplyLimit() {
+  usersOffset.value = 0;
+  refreshUsersPage({ resetOffset: true });
+}
 const previewLoading = ref(false);
 const previewError = ref('');
 const sendError = ref('');
@@ -640,12 +982,183 @@ const broadcast = reactive({
   lastActivityDays: 14,
   usageMode: 'any',
   usagePercent: 80,
+  messageKind: 'text',
+  mediaUrl: '',
+  mediaFileIds: {},
   messageText: '',
   botKeys: []
 });
 
+const broadcastMediaFile = ref(null);
+const mediaUploading = ref(false);
+const mediaUploadError = ref('');
+const mediaUploadInfo = ref('');
+
+const broadcastMediaAccept = computed(() => (broadcast.messageKind === 'photo' ? 'image/*' : 'video/*'));
+
+const broadcastUploadBots = computed(() => {
+  if (broadcast.botKeys.length > 0) {
+    return Array.from(
+      new Set(
+        broadcast.botKeys
+          .map((v) => (v ?? '').toString().trim().toLowerCase())
+          .filter((v) => v.length > 0 && v.length <= 32)
+      )
+    );
+  }
+  if (botStats.value.length > 0) {
+    return Array.from(
+      new Set(
+        botStats.value
+          .map((b) => (b?.bot_key ?? '').toString().trim().toLowerCase())
+          .filter((v) => v.length > 0 && v.length <= 32)
+      )
+    );
+  }
+  return [];
+});
+
+const hasBroadcastMedia = computed(() => {
+  const mediaUrl = broadcast.mediaUrl.trim();
+  const ids = broadcast.mediaFileIds && typeof broadcast.mediaFileIds === 'object' ? broadcast.mediaFileIds : {};
+  const hasFileIds = Object.keys(ids).length > 0;
+  return Boolean(mediaUrl || hasFileIds);
+});
+
+const canUploadBroadcastMedia = computed(() => {
+  if (!password.value) return false;
+  if (broadcast.messageKind === 'text') return false;
+  if (!broadcastMediaFile.value) return false;
+  if (broadcastUploadBots.value.length === 0) return false;
+  return true;
+});
+
+function clearBroadcastMedia() {
+  broadcastMediaFile.value = null;
+  broadcast.mediaUrl = '';
+  broadcast.mediaFileIds = {};
+  mediaUploadError.value = '';
+  mediaUploadInfo.value = '';
+}
+
+function onBroadcastMediaPicked(event) {
+  const input = event?.target;
+  const file = input?.files?.[0] || null;
+  broadcastMediaFile.value = file;
+  mediaUploadError.value = '';
+  mediaUploadInfo.value = '';
+  broadcast.mediaFileIds = {};
+}
+
+async function uploadBroadcastMedia() {
+  if (!canUploadBroadcastMedia.value) return;
+  if (!broadcastMediaFile.value) return;
+
+  mediaUploading.value = true;
+  mediaUploadError.value = '';
+  mediaUploadInfo.value = '';
+
+  try {
+    const headers = adminHeaders();
+    const form = new FormData();
+    form.append('messageKind', broadcast.messageKind);
+    form.append('bots', JSON.stringify(broadcastUploadBots.value));
+    form.append('file', broadcastMediaFile.value);
+
+    const data = await apiJson(props.apiBase, '/admin/broadcasts/upload-media', {
+      method: 'POST',
+      headers,
+      body: form
+    });
+
+    const ids = data?.mediaFileIds && typeof data.mediaFileIds === 'object' ? data.mediaFileIds : {};
+    broadcast.mediaFileIds = ids;
+    broadcast.mediaUrl = '';
+    mediaUploadInfo.value = `Uploaded and stored media for ${fmt(Object.keys(ids).length)} bot(s).`;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    mediaUploadError.value = `Upload failed: ${msg}`;
+  } finally {
+    mediaUploading.value = false;
+  }
+}
+
 let previewTimer = null;
 let campaignPollTimer = null;
+
+function parseBotKeyLangs(botKey) {
+  const s = String(botKey || '').trim();
+  if (!s) return { base_lang: '', target_lang: '' };
+  const parts = s.split(/[-_]/g).filter(Boolean);
+  if (parts.length >= 2) return { base_lang: parts[0], target_lang: parts[1] };
+  return { base_lang: parts[0] || '', target_lang: '' };
+}
+
+function botSortIndicator(key) {
+  if (botSort.key !== key) return '';
+  return botSort.dir === 'asc' ? '↑' : '↓';
+}
+
+function toggleBotSort(key) {
+  if (botSort.key === key) {
+    botSort.dir = botSort.dir === 'asc' ? 'desc' : 'asc';
+    return;
+  }
+  botSort.key = key;
+  botSort.dir = key === 'bot_key' || key === 'base_lang' || key === 'target_lang' ? 'asc' : 'desc';
+}
+
+function safeNum(value) {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function cmp(a, b) {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
+const botStatsTable = computed(() =>
+  (Array.isArray(botStats.value) ? botStats.value : []).map((bot) => {
+    const langs = parseBotKeyLangs(bot?.bot_key);
+    return {
+      ...bot,
+      ...langs,
+      total_users: safeNum(bot?.total_users),
+      active_users: safeNum(bot?.active_users),
+      users_last_3_days: safeNum(bot?.users_last_3_days),
+      users_last_7_days: safeNum(bot?.users_last_7_days),
+      users_last_30_days: safeNum(bot?.users_last_30_days)
+    };
+  })
+);
+
+const sortedBotStats = computed(() => {
+  const rows = botStatsTable.value.slice();
+  const dir = botSort.dir === 'asc' ? 1 : -1;
+  const key = botSort.key;
+
+  rows.sort((ra, rb) => {
+    const a = ra?.[key];
+    const b = rb?.[key];
+
+    const isText = key === 'bot_key' || key === 'base_lang' || key === 'target_lang';
+    if (isText) {
+      const av = String(a || '');
+      const bv = String(b || '');
+      const primary = av.localeCompare(bv);
+      if (primary) return primary * dir;
+      return String(ra.bot_key || '').localeCompare(String(rb.bot_key || ''));
+    }
+
+    const primary = cmp(safeNum(a), safeNum(b));
+    if (primary) return primary * dir;
+    return String(ra.bot_key || '').localeCompare(String(rb.bot_key || ''));
+  });
+
+  return rows;
+});
 
 const canFetch = computed(() => {
   if (!password.value) return false;
@@ -664,6 +1177,17 @@ const usersHasNext = computed(() => usersOffset.value + usersRows.value.length <
 
 function adminHeaders() {
   return { 'X-Admin-Password': password.value };
+}
+
+async function refreshBotStats() {
+  if (!password.value) return;
+  try {
+    const headers = adminHeaders();
+    const botStatsData = await apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers });
+    botStats.value = Array.isArray(botStatsData?.bots) ? botStatsData.bots : [];
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 function clampInt(value, min, max, fallback) {
@@ -782,6 +1306,13 @@ function displayTier(rawTier) {
   return 'pro';
 }
 
+function actionLabel(rawAction) {
+  return (rawAction || '')
+    .toString()
+    .trim()
+    .replaceAll('_', ' ');
+}
+
 function feedbackBody(row) {
   const text = row?.kind === 'voice' ? (row?.transcript || '') : (row?.feedback_text || '');
   const cleaned = String(text || '').trim();
@@ -835,10 +1366,19 @@ function broadcastFiltersPayload() {
 
 const canSendBroadcast = computed(() => {
   const message = broadcast.messageText.trim();
+  const mediaUrl = broadcast.mediaUrl.trim();
+  const mediaFileIds = broadcast.mediaFileIds && typeof broadcast.mediaFileIds === 'object' ? broadcast.mediaFileIds : {};
+  const hasFileIds = Object.keys(mediaFileIds).length > 0;
   if (!password.value) return false;
   if (!hasAnySelectedPlan.value) return false;
-  if (!message) return false;
-  if (message.length > 4096) return false;
+  if (broadcast.messageKind === 'text') {
+    if (!message) return false;
+    if (message.length > 4096) return false;
+  } else {
+    if (!mediaUrl && !hasFileIds) return false;
+    if (mediaUrl && mediaUrl.length > 2048) return false;
+    if (message.length > 1024) return false;
+  }
   if (broadcastPreview.count <= 0) return false;
   if (broadcastConfirm.value.toUpperCase() !== 'SEND') return false;
   return true;
@@ -928,8 +1468,14 @@ async function sendBroadcast() {
 
   try {
     const headers = adminHeaders();
+    const mediaFileIds =
+      broadcast.messageKind === 'text' ? null : (broadcast.mediaFileIds && typeof broadcast.mediaFileIds === 'object' ? broadcast.mediaFileIds : null);
+    const hasMediaFileIds = Boolean(mediaFileIds && Object.keys(mediaFileIds).length > 0);
     const payloadBody = {
       filters: broadcastFiltersPayload(),
+      messageKind: broadcast.messageKind,
+      mediaUrl: broadcast.messageKind === 'text' || hasMediaFileIds ? '' : broadcast.mediaUrl.trim(),
+      mediaFileIds,
       messageText: broadcast.messageText.trim()
     };
     const data = await apiJson(props.apiBase, '/admin/broadcasts/send', {
@@ -956,42 +1502,61 @@ async function sendBroadcast() {
   }
 }
 
-async function refresh() {
+async function refreshAnalytics() {
   if (!canFetch.value) return;
-  usersOffset.value = 0;
   loading.value = true;
   errorText.value = '';
   try {
     const q = query();
     const headers = adminHeaders();
-    const [summary, botStatsData, newUsers, newPaid, activeUsers, activeUsersByBot, inactiveUsers, usageSeconds, byHour, byHourToday, payloads, users] = await Promise.all([
+    const [
+      summary,
+      botStatsData,
+      newUsers,
+      newPaid,
+      actionEvents,
+      actionTotals,
+      activeUsers,
+      activeUsersByBot,
+      inactiveUsers,
+      usageSeconds,
+      byHour,
+      byHourToday,
+      payloads
+    ] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers }),
       apiJson(props.apiBase, '/admin/metrics/new-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/new-paid-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/actions-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload }, headers }),
-      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/users', { query: { ...q, limit: usersLimit, offset: usersOffset.value }, headers })
+      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
     ]);
 
     totals.value = summary?.totals || totals.value;
     botStats.value = Array.isArray(botStatsData?.bots) ? botStatsData.bots : [];
     newUsersSeries.value = Array.isArray(newUsers?.series) ? newUsers.series : [];
     newPaidSeries.value = Array.isArray(newPaid?.series) ? newPaid.series : [];
+    actionEventsSeries.value = Array.isArray(actionEvents?.series) ? actionEvents.series : [];
+    actionTotalsSeries.value = Array.isArray(actionTotals?.series)
+      ? actionTotals.series.map((row) => ({
+          day: actionLabel(row?.action),
+          count: Number(row?.count || 0)
+        }))
+      : [];
     activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
     activeUsersByHourSeries.value = Array.isArray(byHour?.series) ? byHour.series : [];
     activeUsersByHourTodaySeries.value = Array.isArray(byHourToday?.series) ? byHourToday.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
-    usersRows.value = Array.isArray(users?.items) ? users.items : [];
-    usersTotal.value = Number.isFinite(Number(users?.total)) ? Number(users.total) : 0;
-    usersError.value = '';
+    // Users list is loaded in the Users tab (separate request).
     
     // Transform bot-specific data
     const byBotRawRows = Array.isArray(activeUsersByBot?.series) ? activeUsersByBot.series : [];
@@ -1017,16 +1582,34 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
   try {
     const headers = adminHeaders();
     const q = query();
-    const data = await apiJson(props.apiBase, '/admin/users', {
-      query: { ...q, limit: usersLimit, offset: usersOffset.value },
-      headers
-    });
+    const [usersRes, payloadsRes] = await Promise.allSettled([
+      apiJson(props.apiBase, '/admin/users', {
+        query: {
+          ...q,
+          limit: usersLimit.value,
+          offset: usersOffset.value,
+          sort_key: usersSort.key,
+          sort_dir: usersSort.dir
+        },
+        headers
+      }),
+      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
+    ]);
+
+    if (usersRes.status !== 'fulfilled') throw usersRes.reason;
+    const data = usersRes.value;
     usersRows.value = Array.isArray(data?.items) ? data.items : [];
     usersTotal.value = Number.isFinite(Number(data?.total)) ? Number(data.total) : 0;
+    usersUpdatedAt.value = isoStampNow();
+
+    if (payloadsRes.status === 'fulfilled') {
+      payloadOptions.value = Array.isArray(payloadsRes.value?.payloads) ? payloadsRes.value.payloads : payloadOptions.value;
+    }
   } catch (err) {
     console.error(err);
     usersRows.value = [];
     usersTotal.value = 0;
+    usersUpdatedAt.value = '';
     const msg = err?.payload?.error || err?.message || 'request_failed';
     usersError.value = `Failed to load users: ${msg}`;
   } finally {
@@ -1100,6 +1683,7 @@ function clearPassword() {
   previewError.value = '';
   sendError.value = '';
   sendInfo.value = '';
+  clearBroadcastMedia();
   broadcastPreview.count = 0;
   broadcastPreview.sample = [];
   previewUpdatedAt.value = '';
@@ -1114,17 +1698,18 @@ function clearPassword() {
   usersTotal.value = 0;
   usersOffset.value = 0;
   usersError.value = '';
+  usersUpdatedAt.value = '';
 }
 
 function usersNextPage() {
   if (!usersHasNext.value || usersLoading.value) return;
-  usersOffset.value += usersLimit;
+  usersOffset.value += usersLimit.value;
   refreshUsersPage();
 }
 
 function usersPrevPage() {
   if (usersLoading.value) return;
-  usersOffset.value = Math.max(0, usersOffset.value - usersLimit);
+  usersOffset.value = Math.max(0, usersOffset.value - usersLimit.value);
   refreshUsersPage();
 }
 
@@ -1158,11 +1743,31 @@ watch(
 );
 
 watch(
+  () => broadcast.messageKind,
+  (kind) => {
+    if (kind === 'text') {
+      clearBroadcastMedia();
+      broadcast.messageText = broadcast.messageText;
+      return;
+    }
+    mediaUploadError.value = '';
+    mediaUploadInfo.value = '';
+    broadcast.mediaFileIds = {};
+  }
+);
+
+watch(
   () => activeTab.value,
   (tab) => {
+    if (tab === 'messaging' && password.value && botStats.value.length === 0) {
+      refreshBotStats();
+    }
     if (tab === 'feedback' && password.value && feedbackRows.value.length === 0) {
       feedbackOffset.value = 0;
       refreshFeedback();
+    }
+    if (tab === 'users' && password.value && usersRows.value.length === 0) {
+      refreshUsersPage({ resetOffset: true });
     }
   }
 );
@@ -1194,6 +1799,22 @@ onBeforeUnmount(() => {
   padding: 44px 22px 76px;
   display: grid;
   gap: 18px;
+  position: relative;
+  isolation: isolate;
+  align-self: flex-start;
+  align-content: start;
+}
+
+.shell::before {
+  content: '';
+  position: absolute;
+  inset: -160px -80px -120px;
+  z-index: -1;
+  background:
+    radial-gradient(420px 280px at 18% 6%, rgba(59, 130, 246, 0.18), transparent 60%),
+    radial-gradient(420px 320px at 85% 22%, rgba(245, 158, 11, 0.14), transparent 62%),
+    radial-gradient(520px 360px at 30% 82%, rgba(31, 107, 99, 0.14), transparent 65%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(248, 250, 252, 0.72));
 }
 
 .hero {
@@ -1227,33 +1848,149 @@ h1 {
 .card {
   border: 1px solid var(--stroke);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 18px 40px var(--shadow);
   padding: 14px;
   display: grid;
   gap: 12px;
 }
 
-.tabs {
+.access-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.access-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(246, 241, 232, 0.55);
+  padding: 7px 10px;
+  font-size: 12px;
+  color: rgba(30, 26, 22, 0.78);
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.status-pill.ok {
+  border-color: rgba(31, 107, 99, 0.28);
+  background: rgba(31, 107, 99, 0.10);
+  color: rgba(31, 107, 99, 0.92);
+}
+
+.status-pill.subtle {
+  opacity: 0.85;
+}
+
+.tabs {
+  position: sticky;
+  top: 14px;
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  align-items: center;
 }
 
 .tab-btn {
-  border: 1px solid var(--stroke);
-  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid transparent;
+  background: transparent;
   border-radius: 999px;
   padding: 9px 14px;
   cursor: pointer;
   font-weight: 650;
   letter-spacing: 0.01em;
+  transition: background 160ms ease, border-color 160ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 120px;
+  white-space: nowrap;
 }
 
 .tab-btn.active {
-  background: rgba(31, 107, 99, 0.16);
-  border-color: rgba(31, 107, 99, 0.28);
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.22);
+}
+
+.panel {
+  gap: 12px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.panel-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 10px;
+  color: rgba(30, 26, 22, 0.55);
+}
+
+.panel-title {
+  margin: 2px 0 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.panel-sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.panel-body {
+  display: grid;
+  gap: 12px;
+}
+
+.callout {
+  border-radius: 16px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(246, 241, 232, 0.40);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: rgba(30, 26, 22, 0.78);
+}
+
+.callout.error {
+  border-color: rgba(174, 43, 40, 0.22);
+  background: rgba(174, 43, 40, 0.08);
+  color: rgba(174, 43, 40, 0.92);
 }
 
 .row {
@@ -1339,6 +2076,11 @@ h1 {
   letter-spacing: 0.01em;
   box-shadow: 0 12px 26px rgba(30, 26, 22, 0.14);
   transition: transform 120ms ease, box-shadow 120ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 112px;
+  white-space: nowrap;
 }
 
 .btn:active {
@@ -1378,62 +2120,52 @@ h1 {
   font-size: 13px;
 }
 
-.cards {
+.kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
   align-items: start;
+}
+
+.kpi {
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 18px 40px rgba(20, 18, 16, 0.12);
+  padding: 14px 14px 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.kpi-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.kpi-value {
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.kpi-value-sub {
+  font-size: 19px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.kpi-meta {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 12px;
-  align-items: start;
-}
-
-.broadcast {
-  display: grid;
-  gap: 14px;
-}
-
-.feedback {
-  display: grid;
-  gap: 14px;
-}
-
-.feedback-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-}
-
-.feedback h2 {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.2;
-}
-
-.feedback-count {
-  border: 1px solid rgba(31, 107, 99, 0.2);
-  background: rgba(31, 107, 99, 0.08);
-  border-radius: 16px;
-  padding: 8px 12px;
-  font-weight: 650;
-}
-
-.broadcast h2 {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.2;
-}
-
-.broadcast-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
   align-items: start;
 }
 
@@ -1441,30 +2173,105 @@ h1 {
   margin-top: 6px;
 }
 
-.broadcast-counter {
+.counter-chip {
   min-width: 180px;
-  border: 1px solid rgba(31, 107, 99, 0.2);
-  background: rgba(31, 107, 99, 0.08);
   border-radius: 16px;
+  border: 1px solid rgba(31, 107, 99, 0.22);
+  background: rgba(31, 107, 99, 0.08);
   padding: 10px 12px;
   display: grid;
   gap: 4px;
 }
 
-.counter-label {
+.counter-chip.warn {
+  border-color: rgba(174, 43, 40, 0.22);
+  background: rgba(174, 43, 40, 0.08);
+}
+
+.counter-chip-label {
   font-size: 12px;
   color: var(--muted);
 }
 
-.counter-value {
+.counter-chip-value {
   font-family: var(--font-display);
   font-size: 32px;
   line-height: 1;
 }
 
-.counter-meta {
+.counter-chip-meta {
   font-size: 11px;
   color: var(--muted);
+}
+
+.broadcast-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.broadcast-pane {
+  border-radius: 18px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.54);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.pane-title {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.sample-card {
+  border-top: 1px solid rgba(30, 26, 22, 0.10);
+  padding-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.sample-title {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sample-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.sample-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.sample-table th,
+.sample-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(30, 26, 22, 0.08);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sample-table th {
+  position: sticky;
+  top: 0;
+  background: rgba(246, 241, 232, 0.85);
+  color: rgba(30, 26, 22, 0.68);
+  font-weight: 750;
+}
+
+.sample-table tbody tr:nth-child(even) td {
+  background: rgba(246, 241, 232, 0.14);
+}
+
+.sample-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.70);
 }
 
 .plan-pills {
@@ -1504,34 +2311,6 @@ h1 {
   width: 14px;
   margin: 0;
   cursor: pointer;
-}
-
-.preview-sample {
-  border-top: 1px solid rgba(30, 26, 22, 0.1);
-  padding-top: 10px;
-  display: grid;
-  gap: 6px;
-}
-
-.sample-title {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.preview-sample ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.preview-sample li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  font-size: 12px;
 }
 
 .bot-badge {
@@ -1587,6 +2366,13 @@ h1 {
   padding: 10px 12px;
   display: grid;
   gap: 8px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.feedback-item:hover {
+  background: rgba(255, 255, 255, 0.74);
+  border-color: rgba(59, 130, 246, 0.22);
+  box-shadow: 0 18px 44px rgba(20, 18, 16, 0.12);
 }
 
 .feedback-item-head {
@@ -1646,6 +2432,21 @@ h1 {
   flex-wrap: wrap;
 }
 
+.users-limit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.users-limit select {
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 10px;
+  padding: 4px 8px;
+  font: inherit;
+  color: var(--ink);
+}
+
 .users-table-wrap {
   overflow-x: auto;
   border: 1px solid rgba(30, 26, 22, 0.1);
@@ -1668,9 +2469,20 @@ h1 {
 }
 
 .users-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   color: var(--muted);
   font-weight: 650;
   background: rgba(246, 241, 232, 0.6);
+}
+
+.users-table tbody tr:nth-child(even) td {
+  background: rgba(246, 241, 232, 0.16);
+}
+
+.users-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.66);
 }
 
 .users-table tbody tr:last-child td {
@@ -1678,7 +2490,7 @@ h1 {
 }
 
 @media (max-width: 820px) {
-  .cards {
+  .kpi-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1686,52 +2498,19 @@ h1 {
     grid-template-columns: 1fr;
   }
 
-  .broadcast-head {
-    flex-direction: column;
+  .tab-btn {
+    min-inline-size: 0;
   }
 
-  .broadcast-counter {
-    width: 100%;
+  .btn {
+    min-inline-size: 0;
   }
 }
 
-.stat {
-  border: 1px solid var(--stroke);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: 0 18px 40px var(--shadow);
-  padding: 14px 14px 12px;
-  display: grid;
-  gap: 6px;
-  align-self: start;
-}
-
-.label {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.value {
-  font-family: var(--font-display);
-  font-size: 34px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.value-pair {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.value-secondary {
-  font-size: 19px;
-  color: var(--muted);
-}
-
-.meta {
-  color: var(--muted);
-  font-size: 12px;
+@media (max-width: 980px) {
+  .broadcast-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .foot {
@@ -1763,72 +2542,88 @@ h1 {
   gap: 6px;
 }
 
-.bot-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-
-.bot-stat {
-  border: 1px solid rgba(30, 26, 22, 0.12);
+.bot-table-wrap {
+  margin-top: 10px;
+  overflow: auto;
   border-radius: 14px;
-  background: rgba(246, 241, 232, 0.4);
-  padding: 12px;
-  display: grid;
-  gap: 10px;
-  align-self: start;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: rgba(246, 241, 232, 0.35);
 }
 
-.bot-stat-header {
-  display: flex;
-  justify-content: space-between;
+.bot-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.bot-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(246, 241, 232, 0.9);
+  border-bottom: 1px solid rgba(30, 26, 22, 0.10);
+  padding: 10px 10px;
+  text-align: left;
+  font-size: 12px;
+  color: rgba(30, 26, 22, 0.78);
+  white-space: nowrap;
+}
+
+.bot-table th.num,
+.bot-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bot-table tbody td {
+  border-top: 1px solid rgba(30, 26, 22, 0.08);
+  padding: 10px 10px;
+  font-size: 13px;
+  color: rgba(30, 26, 22, 0.85);
+  white-space: nowrap;
+}
+
+.bot-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.bot-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.sort {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+  font-weight: 700;
 }
 
-.bot-key-badge {
+.sort-ind {
+  display: inline-block;
+  min-width: 10px;
+  opacity: 0.65;
+}
+
+.bot {
+  display: grid;
+  gap: 2px;
+}
+
+.bot-key {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: 0.02em;
+  font-weight: 760;
+  letter-spacing: 0.01em;
   color: var(--ink);
 }
 
-.bot-stat-total {
-  font-size: 13px;
+.bot-meta {
+  font-size: 12px;
   color: var(--muted);
-  font-weight: 650;
-}
-
-.bot-stat-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.metric {
-  display: grid;
-  gap: 3px;
-}
-
-.metric-label {
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.metric-value {
-  font-family: var(--font-display);
-  font-size: 20px;
-  line-height: 1;
-  letter-spacing: -0.01em;
-}
-
-@media (max-width: 820px) {
-  .bot-stats-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

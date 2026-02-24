@@ -1,15 +1,22 @@
 {
   "nav": {
     "home": "Startseite",
+    "features": "Funktionen",
+    "how": "So funktioniert es",
     "teachers": "Lehrkräfte",
     "pricing": "Preise",
+    "faq": "FAQ",
     "blog": "Blog",
+    "menu": "Menü",
     "about": "Über uns",
     "contact": "Kontakt"
   },
   "cta": {
     "start": "Lehrkräfte ansehen",
+    "try": "TRY",
+    "tryNow": "In Telegram testen",
     "openTelegram": "In Telegram öffnen",
+    "close": "Schließen",
     "viewProfile": "Profil ansehen",
     "allTeachers": "Alle Lehrkräfte",
     "backToTeachers": "Zurück zu den Lehrkräften"
@@ -19,6 +26,8 @@
     "seoTitle": "AI Language School | Sprachlern-Bot mit Fokus auf Sprechen in Telegram",
     "seoDescription": "Trainiere Sprechen in Telegram mit einem KI-Sprachcoach. Sende Sprache oder Text, erhalte sofortige Korrekturen, natürlichere Formulierungen, Übersetzungshilfe und Anschlussfragen.",
     "subhead": "Trainiere Sprechen in Telegram mit einem KI-Coach: sende Sprache oder Text, erhalte sofortige Korrekturen und halte den Dialog mit praktischen Anschlussimpulsen am Laufen.",
+    "tryModalTitle": "Lehrkraft wählen",
+    "tryModalSubhead": "Wähle eine Lehrkraft und öffne den Chat in Telegram.",
     "meetTeachers": "Lehrkräfte entdecken",
     "chat": {
       "you": "Du",
@@ -50,6 +59,33 @@
     },
     "teachersTitle": "Lehrkräfte",
     "teachersDesc": "Jede Lehrkraft hat einen eigenen Stil, Sprachen und Fokus.",
+    "featuredTeachersTitle": "Lehrkräfte entdecken",
+    "featuredTeachersSubhead": "Wähle einen Stil, der zu deinen Zielen passt, und starte in Telegram.",
+    "featuredTeachersCta": "Alle Lehrkräfte ansehen",
+    "featuresTitle": "Funktionen",
+    "featuresSubhead": "Voice-first Tools, die dein Gespräch im Fluss halten.",
+    "featureCards": {
+      "voice": {
+        "tag": "Voice",
+        "title": "Sprachnachrichten",
+        "desc": "Sende deine Nachricht als Audio. Der Bot transkribiert sie und antwortet mit passendem Kontext."
+      },
+      "translation": {
+        "tag": "Übersetzen",
+        "title": "Übersetzung",
+        "desc": "Erhalte schnelle Übersetzungshilfe, damit du beim Sprechen nicht aus dem Rhythmus kommst."
+      },
+      "followUp": {
+        "tag": "Follow-up",
+        "title": "Anschlussimpulse",
+        "desc": "Nach jeder Antwort bekommst du konkrete Ideen, was du als Nächstes sagen kannst."
+      },
+      "memory": {
+        "tag": "Memory",
+        "title": "Kontextspeicher",
+        "desc": "Der Bot merkt sich euren Gesprächsverlauf, damit deine Übung persönlich und zusammenhängend bleibt."
+      }
+    },
     "howTitle": "So funktioniert es",
     "steps": {
       "oneTitle": "Lehrkraft und Niveau wählen",
@@ -58,6 +94,22 @@
       "twoDesc": "Sprich natürlich in Telegram. Der Bot transkribiert Sprache, versteht den Kontext und erstellt eine gezielte Antwort.",
       "threeTitle": "Korrekturen erhalten, die du sofort nutzen kannst",
       "threeDesc": "Erhalte eine bessere Version, klare regelbasierte Hinweise, Übersetzungshilfe und Impulse für deine nächste Antwort."
+    },
+    "whyWorksTitle": "Warum das funktioniert",
+    "whyWorksSubhead": "Kleine, regelmäßige Wiederholungen schlagen perfekte Pläne. Übe im vertrauten Chat und bleib dran.",
+    "whyWorksItems": {
+      "noScheduling": {
+        "title": "Ohne Termine",
+        "desc": "Asynchron üben heißt: du trainierst, wenn du wirklich Zeit hast."
+      },
+      "telegram": {
+        "title": "Üben in Telegram",
+        "desc": "Der Chat-Flow senkt die Hürde – so übst du konsequenter."
+      },
+      "reusableCorrections": {
+        "title": "Korrekturen zum Wiederholen",
+        "desc": "Du bekommst eine natürlichere Version, die du sofort nachsprechen kannst."
+      }
     }
   },
   "pricing": {
@@ -67,8 +119,8 @@
     "perYear": "Jahr",
     "freePrice": "Kostenlos",
     "annualNote": "{total}/Jahr ({perMonth}/Monat). Spare {save}%.",
-    "ctaTry": "Kostenlos testen",
-    "ctaChooseTeacher": "Lehrkräfte ansehen",
+    "ctaTry": "In Telegram testen",
+    "ctaChooseTeacher": "In Telegram testen",
     "tiers": {
       "free": {
         "name": "Free",
@@ -131,20 +183,18 @@
   },
   "contact": {
     "title": "Kontakt",
-    "subhead": "Frage oder Feedback? Schreib uns - wir lesen alles.",
-    "name": "Name",
-    "telegram": "Telegram",
-    "message": "Nachricht",
-    "send": "Senden",
-    "sending": "Wird gesendet...",
-    "sent": "Gesendet. Danke!",
-    "error": "Senden fehlgeschlagen. Bitte später erneut versuchen.",
-    "unavailable": "Kontakt ist vorübergehend nicht verfügbar."
+    "subhead": "Für Feedback nutze den Bot direkt in Telegram.",
+    "stepOpenBot": "Öffne deinen Bot in Telegram.",
+    "stepTypeCommand": "Gib ein",
+    "stepSend": "Sende dein Feedback als Text oder Sprachnachricht."
   },
   "teachers": {
     "title": "Lehrkräfte",
     "subhead": "Lehrkräfte ansehen und deine nächste Lektion in Telegram starten.",
-    "baseTeachersHeading": "Basissprache: {language}",
+    "baseLanguageLabel": "Basissprache",
+    "baseTeachersHeading": "Lehrkräfte mit Basissprache {language}",
+    "baseTeachersSubhead": "{targets} lernen mit Lehrkräften, die auf {language} erklären.",
+    "baseTeachersSubheadFallback": "Mit Lehrkräften üben, die auf {language} erklären.",
     "showMoreTeachers": "Mehr anzeigen",
     "showLessTeachers": "Weniger anzeigen",
     "empty": "Noch keine Lehrkräfte verfügbar."

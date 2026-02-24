@@ -42,23 +42,12 @@
           </p>
           <div class="manage-usage" v-if="usage">
             <div class="usage-item">
-              <span class="label">{{ $t('subscription.manage.practiceTime') }}</span>
-              <div class="usage-bar">
-                <div class="usage-track">
-                  <div
-                    class="usage-fill"
-                    :style="{ width: `${usagePercent(usage.used_user, usage.limit_user)}%` }"
-                  ></div>
-                </div>
-              </div>
-            </div>
-            <div class="usage-item">
-              <span class="label">{{ $t('subscription.manage.voiceReplies') }}</span>
+              <span class="label">{{ $t('subscription.manage.voiceTotal') }}</span>
               <div class="usage-bar">
                 <div class="usage-track">
                   <div
                     class="usage-fill accent"
-                    :style="{ width: `${usagePercent(usage.used_tts, usage.limit_tts)}%` }"
+                    :style="{ width: `${usagePercent(totalVoiceUsed(usage), totalVoiceLimit(usage))}%` }"
                   ></div>
                 </div>
               </div>
@@ -235,6 +224,33 @@ const statusMessage = computed(() => {
   return '';
 });
 
+function trackPurchaseSuccessOnce() {
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = (params.get('session_id') || '').toString().trim();
+  const isSuccessPath = window.location.pathname.endsWith('/success');
+  if (!sessionId && !isSuccessPath) return;
+
+  const dedupeKey = sessionId
+    ? `purchase_success:${sessionId}`
+    : `purchase_success:path:${window.location.pathname}`;
+
+  try {
+    const storageKey = 'miniapp_purchase_success_seen';
+    const existingRaw = window.sessionStorage.getItem(storageKey) || '';
+    const seen = new Set(existingRaw.split('|').filter(Boolean));
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    window.sessionStorage.setItem(storageKey, Array.from(seen).slice(-20).join('|'));
+  } catch {
+    // Best-effort dedupe only.
+  }
+
+  track('purchase_success', {
+    source: 'miniapp',
+    session_id: sessionId || null
+  });
+}
+
 const plans = computed(() => state.plans || []);
 const user = computed(() => state.user);
 const usage = computed(() => state.usage);
@@ -298,6 +314,18 @@ function formatPrice(cents) {
 function usagePercent(used, limit) {
   if (!limit || limit <= 0) return 0;
   return Math.min(100, Math.round((used / limit) * 100));
+}
+
+function totalVoiceUsed(usageData) {
+  if (!usageData || typeof usageData !== 'object') return 0;
+  if (Number.isFinite(Number(usageData.used_total))) return Number(usageData.used_total);
+  return Number(usageData.used_user || 0) + Number(usageData.used_tts || 0);
+}
+
+function totalVoiceLimit(usageData) {
+  if (!usageData || typeof usageData !== 'object') return 0;
+  if (Number.isFinite(Number(usageData.limit_total))) return Number(usageData.limit_total);
+  return Number(usageData.limit_user || 0) + Number(usageData.limit_tts || 0);
 }
 
 const proPlans = computed(() =>
@@ -520,6 +548,7 @@ async function resume() {
 }
 
 onMounted(async () => {
+  trackPurchaseSuccessOnce();
   addDebugLog('subscription_screen_mounted', {
     path: window.location.pathname,
     search: window.location.search,

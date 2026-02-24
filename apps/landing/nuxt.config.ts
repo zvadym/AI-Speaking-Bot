@@ -115,8 +115,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.VITE_SITE_URL || DEFAULT_SITE_URL,
-      contactWebhookUrl: process.env.NUXT_PUBLIC_CONTACT_WEBHOOK_URL || process.env.VITE_CONTACT_WEBHOOK_URL || ''
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.VITE_SITE_URL || DEFAULT_SITE_URL
     }
   },
   nitro: {

@@ -15,11 +15,13 @@
     "uk": "Ukrainian",
     "en": "English",
     "de": "German",
+    "es": "Spanish",
     "it": "Italian"
   },
   "practiceLanguages": {
     "en": "English",
     "de": "German",
+    "es": "Spanish",
     "it": "Italian"
   },
   "plans": {
@@ -167,6 +169,7 @@
       "yourPlan": "Your plan",
       "practiceTime": "Practice time",
       "voiceReplies": "Voice replies",
+      "voiceTotal": "Total voice usage",
       "managePayments": "Manage payments",
       "turnOffAutoRenew": "Turn off auto-renew",
       "resumeAutoRenew": "Resume auto-renew"

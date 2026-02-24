@@ -1,15 +1,22 @@
 {
   "nav": {
     "home": "Inicio",
+    "features": "Funciones",
+    "how": "Cómo funciona",
     "teachers": "Profesores",
     "pricing": "Precios",
+    "faq": "FAQ",
     "blog": "Blog",
+    "menu": "Menú",
     "about": "Acerca de",
     "contact": "Contacto"
   },
   "cta": {
     "start": "Ver profesores",
+    "try": "TRY",
+    "tryNow": "Probar en Telegram",
     "openTelegram": "Abrir en Telegram",
+    "close": "Cerrar",
     "viewProfile": "Ver perfil",
     "allTeachers": "Todos los profesores",
     "backToTeachers": "Volver a profesores"
@@ -19,6 +26,8 @@
     "seoTitle": "AI Language School | Bot de aprendizaje de idiomas en Telegram",
     "seoDescription": "Practica speaking en Telegram con un tutor de IA. Envía voz o texto, recibe correcciones instantáneas, frases más naturales, apoyo de traducción y sugerencias para continuar.",
     "subhead": "Practica speaking en Telegram con un tutor de IA: envía voz o texto, recibe correcciones al instante y mantén la conversación con sugerencias útiles.",
+    "tryModalTitle": "Elige un profesor",
+    "tryModalSubhead": "Elige un profesor para abrir su chat en Telegram.",
     "meetTeachers": "Ver profesores",
     "chat": {
       "you": "Tú",
@@ -50,6 +59,33 @@
     },
     "teachersTitle": "Profesores",
     "teachersDesc": "Cada profesor tiene su propio estilo, idiomas y enfoque.",
+    "featuredTeachersTitle": "Conoce a los profesores",
+    "featuredTeachersSubhead": "Elige un estilo que encaje con tus objetivos y empieza a practicar en Telegram.",
+    "featuredTeachersCta": "Ver todos los profesores",
+    "featuresTitle": "Funciones",
+    "featuresSubhead": "Herramientas centradas en voz para mantener la conversación en marcha.",
+    "featureCards": {
+      "voice": {
+        "tag": "Voz",
+        "title": "Mensajes de voz",
+        "desc": "Habla de forma natural con audio. El bot transcribe tu mensaje y responde con contexto."
+      },
+      "translation": {
+        "tag": "Traducir",
+        "title": "Traducción",
+        "desc": "Obtén ayuda de traducción al instante para seguir conversando sin bloquearte."
+      },
+      "followUp": {
+        "tag": "Seguimiento",
+        "title": "Seguimiento",
+        "desc": "Después de cada respuesta recibes sugerencias útiles para saber qué decir a continuación."
+      },
+      "memory": {
+        "tag": "Memoria",
+        "title": "Memoria",
+        "desc": "El bot recuerda el contexto de tu conversación para que la práctica sea continua y personalizada."
+      }
+    },
     "howTitle": "Cómo funciona",
     "steps": {
       "oneTitle": "Elige profesor y nivel",
@@ -58,6 +94,22 @@
       "twoDesc": "Habla con naturalidad en Telegram. El bot transcribe la voz, lee el contexto y prepara una respuesta enfocada.",
       "threeTitle": "Recibe correcciones que puedes usar de inmediato",
       "threeDesc": "Obtén una versión mejor, feedback claro basado en reglas, ayuda de traducción y pistas para tu siguiente respuesta."
+    },
+    "whyWorksTitle": "Por qué funciona",
+    "whyWorksSubhead": "Pequeñas repeticiones frecuentes superan los planes perfectos. Practica en un chat familiar y gana ritmo.",
+    "whyWorksItems": {
+      "noScheduling": {
+        "title": "Sin horarios",
+        "desc": "La práctica asíncrona te permite entrenar cuando de verdad tienes tiempo."
+      },
+      "telegram": {
+        "title": "Practica en Telegram",
+        "desc": "Un flujo simple reduce fricción y te ayuda a practicar con constancia."
+      },
+      "reusableCorrections": {
+        "title": "Correcciones reutilizables",
+        "desc": "Recibe una versión más natural y repítela al momento."
+      }
     }
   },
   "pricing": {
@@ -67,8 +119,8 @@
     "perYear": "año",
     "freePrice": "Gratis",
     "annualNote": "{total}/año ({perMonth}/mes). Ahorra {save}%.",
-    "ctaTry": "Probar gratis",
-    "ctaChooseTeacher": "Ver profesores",
+    "ctaTry": "Probar en Telegram",
+    "ctaChooseTeacher": "Probar en Telegram",
     "tiers": {
       "free": {
         "name": "Free",
@@ -131,20 +183,18 @@
   },
   "contact": {
     "title": "Contacto",
-    "subhead": "¿Tienes una pregunta o feedback? Escríbenos: leemos todo.",
-    "name": "Nombre",
-    "telegram": "Telegram",
-    "message": "Mensaje",
-    "send": "Enviar",
-    "sending": "Enviando...",
-    "sent": "Enviado. ¡Gracias!",
-    "error": "No se pudo enviar. Inténtalo más tarde.",
-    "unavailable": "El contacto no está disponible temporalmente."
+    "subhead": "Para feedback, usa el bot directamente en Telegram.",
+    "stepOpenBot": "Abre tu bot en Telegram.",
+    "stepTypeCommand": "Escribe",
+    "stepSend": "Envía tu feedback como texto o audio."
   },
   "teachers": {
     "title": "Profesores",
     "subhead": "Explora profesores y empieza tu próxima clase en Telegram.",
-    "baseTeachersHeading": "Idioma base: {language}",
+    "baseLanguageLabel": "Idioma base",
+    "baseTeachersHeading": "Profesores con idioma base {language}",
+    "baseTeachersSubhead": "Aprende {targets} con profesores que explican en {language}.",
+    "baseTeachersSubheadFallback": "Practica con profesores que explican en {language}.",
     "showMoreTeachers": "Mostrar más",
     "showLessTeachers": "Mostrar menos",
     "empty": "Aún no hay profesores disponibles."
