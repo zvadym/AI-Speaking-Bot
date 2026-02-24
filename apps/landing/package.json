@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "prepare:thumbnails": "node scripts/prepare-teacher-thumbnails.mjs",
-    "predev": "npm run prepare:thumbnails && node scripts/generate-teachers.mjs",
+    "predev": "npm run prepare:thumbnails && node scripts/generate-teachers.mjs && node scripts/generate-pricing.mjs",
     "dev": "nuxt dev",
-    "prebuild": "npm run prepare:thumbnails && node scripts/generate-teachers.mjs",
+    "prebuild": "npm run prepare:thumbnails && node scripts/generate-teachers.mjs && node scripts/generate-pricing.mjs",
     "build": "nuxt generate",
     "generate": "nuxt generate",
     "preview": "nuxt preview --host"

@@ -283,7 +283,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch, ref } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import ChatConversationDemo from '../components/ChatConversationDemo.vue';
 import TeacherCard from '../components/TeacherCard.vue';
@@ -291,16 +291,13 @@ import HomeFooterMini from '../components/HomeFooterMini.vue';
 import { blogPosts } from '../data/blogPosts.js';
 import { teachers } from '../data/teachers.js';
 import { featuredTeacherKeys } from '../data/featuredTeachers.js';
+import { pricing } from '../generated/pricing.js';
 import { normalizeLocale, routeWithLocale, useI18n } from '../i18n.js';
 
 const { t, tm, locale } = useI18n();
 const tryTeacherModalOpen = useState('tryTeacherModalOpen', () => false);
 const billingInterval = useState('pricingBillingInterval', () => 'year');
-const runtimeConfig = useRuntimeConfig();
-const apiBase = computed(() => (runtimeConfig.public.apiBase || '').toString().trim().replace(/\/+$/, ''));
-const pricingCurrency = ref('EUR');
-const pricingPlans = ref([]);
-const pricingLoading = ref(false);
+const pricingCurrency = computed(() => (pricing?.currency || 'EUR').toString().trim().toUpperCase() || 'EUR');
 
 const posts = computed(() => blogPosts.slice(0, 3));
 const featureCards = computed(() => {
@@ -385,12 +382,13 @@ function formatDate(value) {
 }
 
 function formatPrice(value) {
+  if (value == null) return '';
   const amount = Number(value);
   if (!Number.isFinite(amount)) return '';
   try {
     return new Intl.NumberFormat(locale.value, {
       style: 'currency',
-      currency: pricingCurrency.value || 'EUR',
+      currency: pricingCurrency.value,
       minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
       maximumFractionDigits: 2
     }).format(amount);
@@ -405,17 +403,12 @@ function normalizeBillingInterval(raw, fallback = null) {
   return fallback;
 }
 
-const proMonthlyPlan = computed(() => pricingPlans.value.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'month') || null);
-const proAnnualPlan = computed(() => pricingPlans.value.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'year') || null);
+const proMonthlyPlan = computed(() => pricing?.pro?.month || null);
+const proAnnualPlan = computed(() => pricing?.pro?.year || null);
 const showBillingSwitch = computed(() => Boolean(proMonthlyPlan.value && proAnnualPlan.value));
 const annualSavingsPercent = computed(() => {
-  const monthCents = Number(proMonthlyPlan.value?.amount_cents);
-  const yearCents = Number(proAnnualPlan.value?.amount_cents);
-  if (!Number.isFinite(monthCents) || !Number.isFinite(yearCents)) return null;
-  const base = monthCents * 12;
-  if (base <= 0) return null;
-  const pct = Math.round((1 - yearCents / base) * 100);
-  return pct > 0 ? pct : null;
+  const pct = Number(pricing?.pro?.savings_percent);
+  return Number.isFinite(pct) && pct > 0 ? pct : null;
 });
 
 const freeTier = computed(() => ({
@@ -490,35 +483,6 @@ function syncBillingIntervalWithAvailability() {
   billingInterval.value = available.has('year') ? 'year' : 'month';
 }
 
-async function loadPublicPlans() {
-  const base = apiBase.value;
-  if (!base) return;
-
-  pricingLoading.value = true;
-  try {
-    const url = new URL(`${base}/public/plans`);
-    url.searchParams.set('include_all_intervals', 'true');
-    url.searchParams.set('currency', pricingCurrency.value || 'EUR');
-    const resp = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
-    if (!resp.ok) return;
-    const data = await resp.json().catch(() => ({}));
-    const currency = (data?.currency || pricingCurrency.value || 'EUR').toString().toUpperCase();
-    const plans = Array.isArray(data?.plans) ? data.plans : [];
-    pricingCurrency.value = currency;
-    pricingPlans.value = plans
-      .map((row) => ({
-        tier: (row?.tier || '').toString().toLowerCase(),
-        currency: (row?.currency || currency).toString().toUpperCase(),
-        amount_cents: Number(row?.amount_cents),
-        billing_interval: normalizeBillingInterval(row?.billing_interval, null)
-      }))
-      .filter((row) => row.tier && row.currency && Number.isFinite(row.amount_cents) && row.billing_interval);
-  } finally {
-    pricingLoading.value = false;
-    syncBillingIntervalWithAvailability();
-  }
-}
-
 function setBillingInterval(intervalRaw) {
   const interval = normalizeBillingInterval(intervalRaw, null);
   if (!interval) return;
@@ -534,7 +498,7 @@ onMounted(() => {
   } catch {
     // ignore
   }
-  loadPublicPlans();
+  syncBillingIntervalWithAvailability();
 });
 
 watch(billingInterval, (next) => {

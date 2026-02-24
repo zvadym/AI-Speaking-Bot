@@ -2,7 +2,6 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const DEFAULT_SITE_URL = 'https://ai-language-school.online';
-const DEFAULT_API_BASE = 'https://learn-language-api.notarobot.dev';
 const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it'];
 
 function normalizeSlug(input: unknown) {
@@ -116,8 +115,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.VITE_SITE_URL || DEFAULT_SITE_URL,
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || process.env.VITE_API_BASE || DEFAULT_API_BASE
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.VITE_SITE_URL || DEFAULT_SITE_URL
     }
   },
   nitro: {
