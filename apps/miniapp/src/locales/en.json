@@ -68,7 +68,7 @@
       },
       "level": {
         "title": "Level",
-        "desc": "Set correction strictness and pacing."
+        "desc": "Set correction strictness and reply difficulty."
       },
       "about": {
         "title": "About",
@@ -106,11 +106,11 @@
     "subPrefix": "This mirrors your teacher’s",
     "subSuffix": " selector.",
     "notes": {
-      "a1": "Gentle basics. One key fix at a time.",
-      "a2": "Simple grammar, more stable sentences.",
-      "b1": "Useful corrections + better alternatives.",
-      "b2": "Naturalness, collocations, flow.",
-      "c1": "Only non-trivial, high-value fixes."
+      "a1": "Simple replies. One key fix at a time.",
+      "a2": "Simple replies + simple grammar.",
+      "b1": "Conversational replies + useful corrections.",
+      "b2": "More natural replies: collocations, flow.",
+      "c1": "Advanced replies + only high-value fixes."
     },
     "toasts": {
       "saved": "Level saved ✅"
@@ -139,7 +139,7 @@
       "languageTitle": "Language & teacher",
       "languageDesc": "the language you practice and who you practice with.",
       "levelTitle": "Level",
-      "levelDesc": "how detailed your feedback should be.",
+      "levelDesc": "how detailed feedback is and how complex replies are.",
       "subscriptionTitle": "Subscription",
       "subscriptionDesc": "plans, limits, and auto-renew."
     },

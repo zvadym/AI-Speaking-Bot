@@ -68,7 +68,7 @@
       },
       "level": {
         "title": "Niveau",
-        "desc": "Stelle Korrektur-Strenge und Tempo ein."
+        "desc": "Stelle Korrektur-Strenge und Antwortkomplexität ein."
       },
       "about": {
         "title": "Über",
@@ -106,11 +106,11 @@
     "subPrefix": "Das entspricht dem Auswahlfeld deiner Lehrkraft für",
     "subSuffix": ".",
     "notes": {
-      "a1": "Sanfte Grundlagen. Eine wichtige Korrektur pro Schritt.",
-      "a2": "Einfache Grammatik, stabilere Sätze.",
-      "b1": "Nützliche Korrekturen + bessere Alternativen.",
-      "b2": "Natürlichkeit, Kollokationen, Sprachfluss.",
-      "c1": "Nur nicht-triviale, wirklich wertvolle Korrekturen."
+      "a1": "Sehr einfache Antworten. Eine wichtige Korrektur pro Schritt.",
+      "a2": "Einfache Antworten + einfache Grammatik.",
+      "b1": "Alltagstaugliche Antworten + nützliche Korrekturen.",
+      "b2": "Natürlichere Antworten: Kollokationen, Sprachfluss.",
+      "c1": "Fortgeschrittene Antworten + nur wirklich wertvolle Korrekturen."
     },
     "toasts": {
       "saved": "Niveau gespeichert ✅"
@@ -139,7 +139,7 @@
       "languageTitle": "Sprache und Lehrkraft",
       "languageDesc": "die Sprache, die du übst, und mit wem du übst.",
       "levelTitle": "Niveau",
-      "levelDesc": "wie detailliert dein Feedback sein soll.",
+      "levelDesc": "wie detailliert dein Feedback ist und wie komplex Antworten sind.",
       "subscriptionTitle": "Abo",
       "subscriptionDesc": "Pläne, Limits und automatische Verlängerung."
     },

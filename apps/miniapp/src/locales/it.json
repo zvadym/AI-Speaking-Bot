@@ -68,7 +68,7 @@
       },
       "level": {
         "title": "Livello",
-        "desc": "Imposta rigore delle correzioni e ritmo."
+        "desc": "Imposta rigore delle correzioni e complessità delle risposte."
       },
       "about": {
         "title": "Informazioni",
@@ -106,11 +106,11 @@
     "subPrefix": "Questo rispecchia il selettore del tuo insegnante",
     "subSuffix": ".",
     "notes": {
-      "a1": "Basi leggere. Una correzione chiave alla volta.",
-      "a2": "Grammatica semplice, frasi più stabili.",
-      "b1": "Correzioni utili + alternative migliori.",
-      "b2": "Naturalezza, collocazioni, fluidità.",
-      "c1": "Solo correzioni non banali e ad alto valore."
+      "a1": "Risposte molto semplici. Una correzione chiave alla volta.",
+      "a2": "Risposte semplici + grammatica semplice.",
+      "b1": "Risposte più conversazionali + correzioni utili.",
+      "b2": "Risposte più naturali: collocazioni, fluidità.",
+      "c1": "Risposte avanzate + solo correzioni ad alto valore."
     },
     "toasts": {
       "saved": "Livello salvato ✅"
@@ -139,7 +139,7 @@
       "languageTitle": "Lingua e insegnante",
       "languageDesc": "la lingua che pratichi e con chi pratichi.",
       "levelTitle": "Livello",
-      "levelDesc": "quanto dettagliato deve essere il tuo feedback.",
+      "levelDesc": "quanto dettagliato è il tuo feedback e quanto sono complesse le risposte.",
       "subscriptionTitle": "Abbonamento",
       "subscriptionDesc": "piani, limiti e rinnovo automatico."
     },
