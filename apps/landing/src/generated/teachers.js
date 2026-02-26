@@ -378,7 +378,7 @@ export const teachers = [
       "it": "Леся"
     },
     "taglines": {
-      "uk": "Німецька для життя, роботи та подорожей. М’яко підказую і допомагаю звучати природно.",
+      "uk": "Німецька для життя, роботи та подорожей. Дам чіткі підказки й допоможу формулювати думки природно.",
       "en": "German for life, work, and travel. Gentle feedback, more natural speech.",
       "it": "German for life, work, and travel. Gentle feedback, more natural speech."
     },
@@ -434,6 +434,92 @@ export const teachers = [
     "canonicalLocale": "uk",
     "canonicalSlug": "uk-en-anhliyska-teacher",
     "canonicalPath": "/uk/teachers/uk-en-anhliyska-teacher"
+  },
+  {
+    "slug": "uk-es",
+    "teacherKey": "uk-es",
+    "legacyPairSlug": "uk-es",
+    "teacherSlugBase": "uk-es",
+    "publicSlugs": {
+      "en": "uk-es-spanish-teacher",
+      "de": "uk-es-spanisch-teacher",
+      "es": "uk-es-espanol-teacher",
+      "pt": "uk-es-espanhol-teacher",
+      "uk": "uk-es-ispanska-teacher",
+      "it": "uk-es-spagnolo-teacher"
+    },
+    "botKey": "uk-es",
+    "baseLanguage": "uk",
+    "learningLanguage": "es",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/thumbnail/uk-es.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/uk-es.avif",
+      "webp": "/teachers/thumbnail/uk-es.webp",
+      "png": "/teachers/thumbnail/uk-es.png"
+    },
+    "displayName": {
+      "uk": "Соломія",
+      "en": "Соломія",
+      "it": "Соломія"
+    },
+    "taglines": {
+      "uk": "Іспанська для подорожей і живих розмов 🇪🇸. М’яко підказую і допомагаю говорити природно.",
+      "en": "Spanish for travel and real conversations 🇪🇸. Gentle feedback, more natural speech.",
+      "it": "Spanish for travel and real conversations 🇪🇸. Gentle feedback, more natural speech."
+    },
+    "styleTags": [
+      "gentle",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/LanguageUkrainianSpanishBot",
+    "canonicalLocale": "uk",
+    "canonicalSlug": "uk-es-ispanska-teacher",
+    "canonicalPath": "/uk/teachers/uk-es-ispanska-teacher"
+  },
+  {
+    "slug": "uk-pl",
+    "teacherKey": "uk-pl",
+    "legacyPairSlug": "uk-pl",
+    "teacherSlugBase": "uk-pl",
+    "publicSlugs": {
+      "en": "uk-pl-polish-teacher",
+      "de": "uk-pl-polnisch-teacher",
+      "es": "uk-pl-polaco-teacher",
+      "pt": "uk-pl-polones-teacher",
+      "uk": "uk-pl-polska-teacher",
+      "it": "uk-pl-polacco-teacher"
+    },
+    "botKey": "uk-pl",
+    "baseLanguage": "uk",
+    "learningLanguage": "pl",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/thumbnail/uk-pl.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/uk-pl.avif",
+      "webp": "/teachers/thumbnail/uk-pl.webp",
+      "png": "/teachers/thumbnail/uk-pl.png"
+    },
+    "displayName": {
+      "uk": "Ярина",
+      "en": "Ярина",
+      "it": "Ярина"
+    },
+    "taglines": {
+      "uk": "Польська для життя, роботи та подорожей 🇵🇱. Дам чіткі підказки й допоможу формулювати думки природно.",
+      "en": "Polish for life, work, and travel 🇵🇱. Gentle feedback, more natural speech.",
+      "it": "Polish for life, work, and travel 🇵🇱. Gentle feedback, more natural speech."
+    },
+    "styleTags": [
+      "gentle",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/LanguagePolishBot",
+    "canonicalLocale": "uk",
+    "canonicalSlug": "uk-pl-polska-teacher",
+    "canonicalPath": "/uk/teachers/uk-pl-polska-teacher"
   }
 ];
 

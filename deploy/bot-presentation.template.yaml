@@ -7,7 +7,6 @@ required_fields:
   - short_description
   - commands
   - menu_button
-  - username
 
 limits:
   name_min: 1

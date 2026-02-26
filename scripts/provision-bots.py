@@ -218,7 +218,6 @@ def load_contract(path: Path) -> Dict[str, Any]:
             "short_description",
             "commands",
             "menu_button",
-            "username",
         ],
         "limits": {
             "name_min": 1,
@@ -387,6 +386,7 @@ def validate_presentation_section(
     repo_root: Path,
     require_photo_exists: bool,
     normalize_menu_url: bool,
+    fallback_username: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], List[str]]:
     if not isinstance(presentation, dict):
         raise BotProvisioningError(f"Missing or invalid '{PRESENTATION_SECTION}' section")
@@ -396,6 +396,8 @@ def validate_presentation_section(
     pattern = re.compile(str(contract["patterns"]["command"]))
 
     for key in required_fields:
+        if key == "username" and fallback_username:
+            continue
         if key not in presentation:
             raise BotProvisioningError(f"{PRESENTATION_SECTION}.{key} is required")
 
@@ -423,12 +425,24 @@ def validate_presentation_section(
         )
     normalized["short_description"] = short_description
 
-    username = str(normalized.get("username") or "").strip().lstrip("@")
-    if not validate_bot_username(username):
-        raise BotProvisioningError(
-            f"{PRESENTATION_SECTION}.username must match Telegram username format"
-        )
-    normalized["username"] = username
+    raw_username = str(normalized.get("username") or "").strip()
+    if "username" in required_fields and not raw_username and not fallback_username:
+        raise BotProvisioningError(f"{PRESENTATION_SECTION}.username is required")
+    username_in_payload = "username" in normalized and bool(raw_username)
+
+    if username_in_payload:
+        username = raw_username.strip().lstrip("@")
+        if not validate_bot_username(username):
+            raise BotProvisioningError(
+                f"{PRESENTATION_SECTION}.username must match Telegram username format"
+            )
+        normalized["username"] = username
+    else:
+        normalized.pop("username", None)
+        if fallback_username:
+            username = str(fallback_username).strip().lstrip("@")
+            if username and not validate_bot_username(username):
+                raise BotProvisioningError("Bot username must match Telegram username format")
 
     commands = normalized.get("commands")
     if not isinstance(commands, list) or not commands:
@@ -500,6 +514,34 @@ def validate_presentation_section(
         normalized.pop("profile_photo_path", None)
 
     return normalized, changes
+
+
+def resolve_expected_username(config: Dict[str, Any], presentation: Dict[str, Any]) -> str:
+    root_username = str(config.get("username") or "").strip().lstrip("@")
+    if root_username:
+        if not validate_bot_username(root_username):
+            raise BotProvisioningError("username must match Telegram username format")
+        return root_username
+
+    presentation_username = str(presentation.get("username") or "").strip().lstrip("@")
+    if presentation_username:
+        if not validate_bot_username(presentation_username):
+            raise BotProvisioningError(
+                f"{PRESENTATION_SECTION}.username must match Telegram username format"
+            )
+        return presentation_username
+
+    url_username = parse_username_from_url(str(config.get("telegram_url") or ""))
+    if url_username:
+        if not validate_bot_username(url_username):
+            raise BotProvisioningError("telegram_url must contain a valid Telegram username")
+        return url_username
+
+    raise BotProvisioningError(
+        "Missing bot username: set root 'username' (preferred), "
+        f"or '{PRESENTATION_SECTION}.username', "
+        "or a parseable 'telegram_url' (or pass --skip-username-check)"
+    )
 
 
 def load_existing_bot_configs(bots_dir: Path) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Path]]:
@@ -818,6 +860,7 @@ def build_bot_config(template: Dict[str, Any], intake: Dict[str, Any], miniapp_u
     config["teacher_style_tags"] = intake["teacher_style_tags"]
     config["bot_voice"] = intake["bot_voice"]
     config["telegram_url"] = f"https://t.me/{intake['bot_username']}"
+    config["username"] = intake["bot_username"]
     config["telegram_bot_token"] = intake["telegram_bot_token"]
     config["telegram_credential_id"] = intake["telegram_credential_id"]
 
@@ -898,11 +941,13 @@ def run_apply(args: argparse.Namespace) -> int:
                 repo_root=repo_root,
                 require_photo_exists=True,
                 normalize_menu_url=True,
+                fallback_username=config.get("username")
+                or parse_username_from_url(str(config.get("telegram_url") or "")),
             )
 
             expected_username = None
             if not args.skip_username_check:
-                expected_username = normalized_presentation["username"]
+                expected_username = resolve_expected_username(config, normalized_presentation)
 
             profile_photo_path: Optional[Path] = None
             if args.profile_photo:
@@ -1014,6 +1059,8 @@ def run_sync(args: argparse.Namespace) -> int:
                 repo_root=repo_root,
                 require_photo_exists=True,
                 normalize_menu_url=True,
+                fallback_username=config.get("username")
+                or parse_username_from_url(str(config.get("telegram_url") or "")),
             )
 
             did_write = False
@@ -1112,6 +1159,8 @@ def run_interactive(args: argparse.Namespace) -> int:
                 repo_root=repo_root,
                 require_photo_exists=False,
                 normalize_menu_url=True,
+                fallback_username=config.get("username")
+                or parse_username_from_url(str(config.get("telegram_url") or "")),
             )
             config[PRESENTATION_SECTION] = normalized_presentation
 
@@ -1142,7 +1191,9 @@ def run_interactive(args: argparse.Namespace) -> int:
                 bot_key=bot_key,
                 token=str(config["telegram_bot_token"]),
                 presentation=normalized_presentation,
-                expected_username=normalized_presentation.get("username"),
+                expected_username=None
+                if args.skip_username_check
+                else resolve_expected_username(config, normalized_presentation),
                 profile_photo=profile_photo,
                 dry_run=args.dry_run,
             )

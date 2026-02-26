@@ -4,7 +4,7 @@
   "learning_language": "de",
   "bot_name": "Леся",
   "teacher_avatar_emoji": "👩‍🏫",
-  "teacher_tagline_uk": "Німецька для життя, роботи та подорожей. М’яко підказую і допомагаю звучати природно.",
+  "teacher_tagline_uk": "Німецька для життя, роботи та подорожей. Дам чіткі підказки й допоможу формулювати думки природно.",
   "teacher_tagline_en": "German for life, work, and travel. Gentle feedback, more natural speech.",
   "teacher_style_tags": [
     "gentle",
@@ -107,8 +107,8 @@
   },
   "telegram_presentation": {
     "name": "Леся 🇺🇦→🇩🇪 репетитор німецької",
-    "description": "Німецька для життя, роботи та подорожей. М’яко підказую і допомагаю звучати природно.\nhttps://ai-language-school.online/uk",
-    "short_description": "Німецька для життя, роботи та подорожей. М’яко підказую і допомагаю звучати природно.",
+    "description": "Німецька для життя, роботи та подорожей. Дам чіткі підказки й допоможу формулювати думки природно.\nhttps://ai-language-school.online/uk",
+    "short_description": "Німецька для життя, роботи та подорожей. Дам чіткі підказки й допоможу формулювати думки природно.",
     "commands": [
       {
         "command": "start",
