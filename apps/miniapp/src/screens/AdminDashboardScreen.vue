@@ -287,6 +287,18 @@
           :data="activeUsersByHourTodaySeries"
           :series="[{ key: 'count', label: 'Active users', color: 'rgba(199, 90, 36, 0.86)' }]"
         />
+
+        <AdminChart
+          title="Voice usage seconds by hour today"
+          subtitle="UTC, today only"
+          kind="line"
+          x-labels="all"
+          :data="activeUsersByHourTodaySeries"
+          :series="[
+            { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)' },
+            { key: 'out_seconds', label: 'Out', color: 'rgba(46, 88, 142, 0.9)' }
+          ]"
+        />
       </section>
     </template>
 

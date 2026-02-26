@@ -62,7 +62,7 @@
               :x="tick.x"
               :y="xLabelY"
               class="xLabel"
-              text-anchor="middle"
+              :text-anchor="xTickAnchor(tick.i)"
               :transform="xLabelTransform(tick.x, xLabelY)"
             >
               {{ tick.label }}
@@ -173,16 +173,48 @@ function formatXLabel(label) {
 
 const xLabelAngle = computed(() => {
   if (props.xLabels !== 'all') return 0;
-  const first = props.data?.[0]?.day;
-  if (isIsoDateLabel(first)) return -55;
-  const s = String(first || '');
-  if (s.length >= 5 && props.data.length >= 10) return -45;
-  return 0;
+  const n = props.data.length;
+  if (n <= 1) return 0;
+  const maxLen = props.data.reduce((acc, row) => {
+    const label = formatXLabel(row?.day);
+    return Math.max(acc, String(label || '').length);
+  }, 0);
+  const approxLabelWidth = maxLen * 6.2 + 6;
+  const stepPx = props.kind === 'bar' ? innerW() / n : innerW() / (n - 1);
+  if (approxLabelWidth <= stepPx * 0.92) return 0;
+  if (approxLabelWidth <= stepPx * 1.8) return -38;
+  return -55;
 });
+
+const xLabelStride = computed(() => {
+  if (props.xLabels !== 'all') return 1;
+  const n = props.data.length;
+  if (n <= 1) return 1;
+  const maxLen = props.data.reduce((acc, row) => {
+    const label = formatXLabel(row?.day);
+    return Math.max(acc, String(label || '').length);
+  }, 0);
+  const approxLabelWidth = maxLen * 6.2 + 6;
+  const stepPx = props.kind === 'bar' ? innerW() / n : innerW() / (n - 1);
+  const horizontalProjection = xLabelAngle.value
+    ? approxLabelWidth * Math.cos((Math.abs(xLabelAngle.value) * Math.PI) / 180)
+    : approxLabelWidth;
+  return Math.max(1, Math.ceil((horizontalProjection + 4) / stepPx));
+});
+
+function xTickAnchor(i) {
+  if (!xLabelAngle.value) return 'middle';
+  const n = props.data.length;
+  if (i <= 0) return 'start';
+  if (i >= n - 1) return 'end';
+  return 'middle';
+}
 
 const padB = computed(() => {
   if (props.xLabels !== 'all') return 34;
-  return xLabelAngle.value ? 76 : 46;
+  if (xLabelAngle.value <= -50) return 92;
+  if (xLabelAngle.value < 0) return 80;
+  return 46;
 });
 
 const height = computed(() => 210 + (padB.value - 34));
@@ -245,7 +277,11 @@ function xForIndex(i) {
   return padL + i * step;
 }
 
-const xLabelY = computed(() => height.value - 8);
+const xLabelY = computed(() => {
+  if (props.xLabels !== 'all') return height.value - 8;
+  if (xLabelAngle.value) return height.value - padB.value + 12;
+  return height.value - 8;
+});
 function xLabelTransform(x, y) {
   if (!xLabelAngle.value) return undefined;
   return `rotate(${xLabelAngle.value} ${x} ${y})`;
@@ -256,6 +292,8 @@ const xTicks = computed(() => {
   if (!n) return [];
   const ticks = [];
   for (let i = 0; i < n; i += 1) {
+    const show = i === 0 || i === n - 1 || i % xLabelStride.value === 0;
+    if (!show) continue;
     const row = props.data[i] || {};
     ticks.push({
       key: `${row.day || 'x'}-${i}`,

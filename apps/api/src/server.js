@@ -1735,10 +1735,12 @@ app.get('/admin/metrics/active-users-by-hour-today', requireAdmin, async (req, r
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
      ),
-     counts AS (
+     stats AS (
        SELECT
          EXTRACT(HOUR FROM v.occurred_at AT TIME ZONE 'UTC')::int AS hour_utc,
-         COUNT(DISTINCT v.chat_id)::int AS count
+         COUNT(DISTINCT v.chat_id)::int AS count,
+         COALESCE(SUM(v.seconds) FILTER (WHERE v.direction = 'in'), 0)::bigint AS in_seconds,
+         COALESCE(SUM(v.seconds) FILTER (WHERE v.direction = 'out'), 0)::bigint AS out_seconds
        FROM voice_usage_events v
        JOIN filtered_users u ON u.chat_id = v.chat_id
        WHERE v.occurred_at >= (SELECT from_ts FROM params)
@@ -1747,9 +1749,11 @@ app.get('/admin/metrics/active-users-by-hour-today', requireAdmin, async (req, r
      )
      SELECT
        LPAD(h.hour_utc::text, 2, '0') || ':00' AS day,
-       COALESCE(c.count, 0)::int AS count
+       COALESCE(s.count, 0)::int AS count,
+       COALESCE(s.in_seconds, 0)::bigint AS in_seconds,
+       COALESCE(s.out_seconds, 0)::bigint AS out_seconds
      FROM hours h
-     LEFT JOIN counts c USING (hour_utc)
+     LEFT JOIN stats s USING (hour_utc)
      ORDER BY h.hour_utc ASC`,
     [from.toISOString(), to.toISOString(), payload]
   );
