@@ -1912,71 +1912,427 @@ app.get('/admin/feedbacks', requireAdmin, async (req, res) => {
 
   const kindRaw = (req.query.kind ?? '').toString().trim().toLowerCase();
   const kind = ['text', 'voice'].includes(kindRaw) ? kindRaw : null;
+  const statusRaw = (req.query.status ?? '').toString().trim().toLowerCase();
+  const status = ['active', 'archived'].includes(statusRaw) ? statusRaw : null;
   const searchRaw = (req.query.search ?? '').toString().trim();
   const search = searchRaw ? searchRaw.slice(0, 120) : null;
   const limit = clampInteger(req.query.limit, { min: 1, max: 200, fallback: 50 });
   const offset = clampInteger(req.query.offset, { min: 0, max: 100000, fallback: 0 });
 
-  const params = [range.from.toISOString(), range.to.toISOString(), kind, search, limit, offset];
-  const [totalRes, rowsRes] = await Promise.all([
+  const baseParams = [range.from.toISOString(), range.to.toISOString(), kind, search, status];
+  const [totalRes, threadsRes] = await Promise.all([
     pool.query(
-      `SELECT COUNT(*)::int AS total
+      `WITH matching_threads AS (
+         SELECT DISTINCT
+           f.chat_id,
+           f.bot_key
          FROM feedback f
-        WHERE f.created_at >= $1::timestamptz
-          AND f.created_at < $2::timestamptz
-          AND ($3::text IS NULL OR f.kind = $3::text)
-          AND (
-            $4::text IS NULL
-            OR f.username ILIKE ('%' || $4::text || '%')
-            OR f.first_name ILIKE ('%' || $4::text || '%')
-            OR f.feedback_text ILIKE ('%' || $4::text || '%')
-            OR f.transcript ILIKE ('%' || $4::text || '%')
-            OR f.chat_id::text ILIKE ('%' || $4::text || '%')
-          )`,
-      params.slice(0, 4)
+         LEFT JOIN feedback_threads ft
+           ON ft.chat_id = f.chat_id
+          AND ft.bot_key = f.bot_key
+         WHERE f.created_at >= $1::timestamptz
+           AND f.created_at < $2::timestamptz
+           AND ($3::text IS NULL OR f.kind = $3::text)
+           AND (
+             $4::text IS NULL
+             OR f.username ILIKE ('%' || $4::text || '%')
+             OR f.first_name ILIKE ('%' || $4::text || '%')
+             OR f.feedback_text ILIKE ('%' || $4::text || '%')
+             OR f.transcript ILIKE ('%' || $4::text || '%')
+             OR f.chat_id::text ILIKE ('%' || $4::text || '%')
+             OR f.bot_key ILIKE ('%' || $4::text || '%')
+           )
+           AND (
+             $5::text IS NULL
+             OR ($5::text = 'archived' AND ft.archived_at IS NOT NULL)
+             OR ($5::text = 'active' AND ft.archived_at IS NULL)
+           )
+         UNION
+         SELECT DISTINCT
+           r.chat_id,
+           r.bot_key
+         FROM feedback_replies r
+         LEFT JOIN feedback_threads ft
+           ON ft.chat_id = r.chat_id
+          AND ft.bot_key = r.bot_key
+         WHERE $3::text IS NULL
+           AND r.created_at >= $1::timestamptz
+           AND r.created_at < $2::timestamptz
+           AND (
+             $4::text IS NULL
+             OR r.message_text ILIKE ('%' || $4::text || '%')
+             OR r.created_by ILIKE ('%' || $4::text || '%')
+             OR r.chat_id::text ILIKE ('%' || $4::text || '%')
+             OR r.bot_key ILIKE ('%' || $4::text || '%')
+           )
+           AND (
+             $5::text IS NULL
+             OR ($5::text = 'archived' AND ft.archived_at IS NOT NULL)
+             OR ($5::text = 'active' AND ft.archived_at IS NULL)
+           )
+       )
+       SELECT COUNT(*)::int AS total
+       FROM matching_threads`,
+      baseParams
     ),
     pool.query(
-      `SELECT
-         f.id,
-         f.created_at,
-         f.chat_id,
-         f.bot_key,
-         f.username,
-         f.first_name,
-         f.message_id,
-         f.kind,
-         f.feedback_text,
-         f.transcript,
-         f.telegram_file_id
-       FROM feedback f
-       WHERE f.created_at >= $1::timestamptz
-         AND f.created_at < $2::timestamptz
-         AND ($3::text IS NULL OR f.kind = $3::text)
-         AND (
-           $4::text IS NULL
-           OR f.username ILIKE ('%' || $4::text || '%')
-           OR f.first_name ILIKE ('%' || $4::text || '%')
-           OR f.feedback_text ILIKE ('%' || $4::text || '%')
-           OR f.transcript ILIKE ('%' || $4::text || '%')
-           OR f.chat_id::text ILIKE ('%' || $4::text || '%')
-         )
-       ORDER BY f.created_at DESC, f.id DESC
-       LIMIT $5::int
-       OFFSET $6::int`,
-      params
+      `WITH matching_activity AS (
+         SELECT
+           f.chat_id,
+           f.bot_key,
+           MAX(f.created_at) AS last_matching_message_at
+         FROM feedback f
+         LEFT JOIN feedback_threads ft
+           ON ft.chat_id = f.chat_id
+          AND ft.bot_key = f.bot_key
+         WHERE f.created_at >= $1::timestamptz
+           AND f.created_at < $2::timestamptz
+           AND ($3::text IS NULL OR f.kind = $3::text)
+           AND (
+             $4::text IS NULL
+             OR f.username ILIKE ('%' || $4::text || '%')
+             OR f.first_name ILIKE ('%' || $4::text || '%')
+             OR f.feedback_text ILIKE ('%' || $4::text || '%')
+             OR f.transcript ILIKE ('%' || $4::text || '%')
+             OR f.chat_id::text ILIKE ('%' || $4::text || '%')
+             OR f.bot_key ILIKE ('%' || $4::text || '%')
+           )
+           AND (
+             $5::text IS NULL
+             OR ($5::text = 'archived' AND ft.archived_at IS NOT NULL)
+             OR ($5::text = 'active' AND ft.archived_at IS NULL)
+           )
+         GROUP BY f.chat_id, f.bot_key
+         UNION ALL
+         SELECT
+           r.chat_id,
+           r.bot_key,
+           MAX(r.created_at) AS last_matching_message_at
+         FROM feedback_replies r
+         LEFT JOIN feedback_threads ft
+           ON ft.chat_id = r.chat_id
+          AND ft.bot_key = r.bot_key
+         WHERE $3::text IS NULL
+           AND r.created_at >= $1::timestamptz
+           AND r.created_at < $2::timestamptz
+           AND (
+             $4::text IS NULL
+             OR r.message_text ILIKE ('%' || $4::text || '%')
+             OR r.created_by ILIKE ('%' || $4::text || '%')
+             OR r.chat_id::text ILIKE ('%' || $4::text || '%')
+             OR r.bot_key ILIKE ('%' || $4::text || '%')
+           )
+           AND (
+             $5::text IS NULL
+             OR ($5::text = 'archived' AND ft.archived_at IS NOT NULL)
+             OR ($5::text = 'active' AND ft.archived_at IS NULL)
+           )
+         GROUP BY r.chat_id, r.bot_key
+       ),
+       ranked_threads AS (
+         SELECT
+           m.chat_id,
+            m.bot_key,
+            MAX(m.last_matching_message_at) AS last_message_at
+         FROM matching_activity m
+         GROUP BY m.chat_id, m.bot_key
+         ORDER BY MAX(m.last_matching_message_at) DESC, m.chat_id DESC, m.bot_key ASC
+         LIMIT $6::int
+         OFFSET $7::int
+       )
+       SELECT
+         t.chat_id,
+         t.bot_key,
+         t.last_message_at,
+         ft.archived_at,
+         ft.archived_by,
+         latest_feedback.latest_feedback_id,
+         COALESCE(NULLIF(latest_feedback.username, ''), u.username) AS username,
+         COALESCE(NULLIF(latest_feedback.first_name, ''), u.first_name) AS first_name
+       FROM ranked_threads t
+       LEFT JOIN feedback_threads ft
+         ON ft.chat_id = t.chat_id
+        AND ft.bot_key = t.bot_key
+       LEFT JOIN users u
+         ON u.chat_id = t.chat_id
+       LEFT JOIN LATERAL (
+         SELECT
+           f.id AS latest_feedback_id,
+           f.username,
+           f.first_name
+         FROM feedback f
+         WHERE f.chat_id = t.chat_id
+           AND f.bot_key = t.bot_key
+         ORDER BY f.created_at DESC, f.id DESC
+         LIMIT 1
+         ) latest_feedback ON TRUE
+       ORDER BY t.last_message_at DESC, t.chat_id DESC, t.bot_key ASC`,
+      [...baseParams, limit, offset]
     )
   ]);
+
+  const threads = Array.isArray(threadsRes.rows) ? threadsRes.rows : [];
+  const threadChatIds = threads.map((row) => Number(row.chat_id)).filter(Number.isFinite);
+  const threadBotKeys = threads.map((row) => normalizeBotKey(row.bot_key) || 'uk-de');
+
+  let messages = [];
+  if (threadChatIds.length > 0) {
+    const messagesRes = await pool.query(
+      `WITH selected_threads AS (
+         SELECT *
+         FROM UNNEST($3::bigint[], $4::text[]) AS t(chat_id, bot_key)
+       ),
+       combined_messages AS (
+         SELECT
+           f.chat_id,
+           f.bot_key,
+           'user'::text AS sender,
+           f.kind,
+           f.id,
+           f.id AS feedback_id,
+           f.created_at,
+           f.username,
+           f.first_name,
+           NULL::text AS created_by,
+           f.message_id,
+           NULL::bigint AS telegram_message_id,
+           f.telegram_file_id,
+           CASE
+             WHEN f.kind = 'voice'
+               THEN COALESCE(NULLIF(f.transcript, ''), NULLIF(f.feedback_text, ''), '')
+             ELSE COALESCE(f.feedback_text, '')
+           END AS body
+         FROM feedback f
+         INNER JOIN selected_threads t
+           ON t.chat_id = f.chat_id
+          AND t.bot_key = f.bot_key
+         WHERE f.created_at >= $1::timestamptz
+           AND f.created_at < $2::timestamptz
+         UNION ALL
+         SELECT
+           r.chat_id,
+           r.bot_key,
+           'admin'::text AS sender,
+           'text'::text AS kind,
+           r.id,
+           r.feedback_id,
+           r.created_at,
+           NULL::text AS username,
+           NULL::text AS first_name,
+           r.created_by,
+           NULL::integer AS message_id,
+           r.telegram_message_id,
+           NULL::text AS telegram_file_id,
+           r.message_text AS body
+         FROM feedback_replies r
+         INNER JOIN selected_threads t
+           ON t.chat_id = r.chat_id
+          AND t.bot_key = r.bot_key
+         WHERE r.created_at >= $1::timestamptz
+           AND r.created_at < $2::timestamptz
+       )
+       SELECT
+         m.chat_id,
+         m.bot_key,
+         m.sender,
+         m.kind,
+         m.id,
+         m.feedback_id,
+         m.created_at,
+         m.username,
+         m.first_name,
+         m.created_by,
+         m.message_id,
+         m.telegram_message_id,
+         m.telegram_file_id,
+         m.body
+       FROM combined_messages m
+       ORDER BY
+         m.chat_id ASC,
+         m.bot_key ASC,
+         m.created_at ASC,
+         CASE WHEN m.sender = 'user' THEN 0 ELSE 1 END ASC,
+         m.id ASC`,
+      [range.from.toISOString(), range.to.toISOString(), threadChatIds, threadBotKeys]
+    );
+    messages = Array.isArray(messagesRes.rows) ? messagesRes.rows : [];
+  }
+
+  const threadItems = threads.map((row) => ({
+    id: `${row.chat_id}:${row.bot_key}`,
+    chat_id: Number(row.chat_id),
+    bot_key: row.bot_key,
+    username: row.username || null,
+    first_name: row.first_name || null,
+    archived_at: row.archived_at || null,
+    archived_by: row.archived_by || null,
+    latest_feedback_id: Number(row.latest_feedback_id || 0) || null,
+    first_message_at: null,
+    last_message_at: row.last_message_at,
+    latest_preview: '',
+    message_count: 0,
+    user_message_count: 0,
+    admin_message_count: 0,
+    messages: []
+  }));
+
+  const threadMap = new Map(threadItems.map((row) => [row.id, row]));
+  for (const row of messages) {
+    const key = `${row.chat_id}:${row.bot_key}`;
+    const thread = threadMap.get(key);
+    if (!thread) continue;
+
+    const body = (row.body ?? '').toString();
+    const createdAt = row.created_at;
+    thread.messages.push({
+      id: `${row.sender}:${row.id}`,
+      sender: row.sender,
+      kind: row.kind,
+      created_at: createdAt,
+      feedback_id: row.feedback_id ? Number(row.feedback_id) : null,
+      username: row.username || null,
+      first_name: row.first_name || null,
+      created_by: row.created_by || null,
+      message_id: row.message_id ? Number(row.message_id) : null,
+      telegram_message_id: row.telegram_message_id ? Number(row.telegram_message_id) : null,
+      telegram_file_id: row.telegram_file_id || null,
+      body
+    });
+
+    if (!thread.first_message_at) thread.first_message_at = createdAt;
+    thread.last_message_at = createdAt;
+    thread.latest_preview = body;
+    thread.message_count += 1;
+    if (row.sender === 'admin') thread.admin_message_count += 1;
+    else thread.user_message_count += 1;
+  }
 
   return res.json({
     tz: 'UTC',
     from: range.from.toISOString(),
     to: range.to.toISOString(),
     kind,
+    status: status || 'all',
     search,
     limit,
     offset,
     total: totalRes.rows[0]?.total || 0,
-    items: rowsRes.rows || []
+    items: threadItems
+  });
+});
+
+function parseAdminFeedbackThreadTarget(body = {}) {
+  const chatId = Number(body?.chatId ?? body?.chat_id);
+  const botKey = normalizeBotKey(body?.botKey ?? body?.bot_key);
+  if (!Number.isFinite(chatId)) return { ok: false, error: 'bad_chat_id' };
+  if (!botKey) return { ok: false, error: 'bad_bot_key' };
+  return { ok: true, chatId, botKey };
+}
+
+app.post('/admin/feedbacks/thread/archive', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const target = parseAdminFeedbackThreadTarget(req.body || {});
+  if (!target.ok) return res.status(400).json({ error: target.error });
+
+  const createdByRaw = (req.headers['x-admin-user'] || 'admin_dashboard').toString().trim();
+  const createdBy = createdByRaw ? createdByRaw.slice(0, 120) : 'admin_dashboard';
+
+  await pool.query(
+    `INSERT INTO feedback_threads (
+       chat_id,
+       bot_key,
+       archived_at,
+       archived_by
+     )
+     VALUES ($1::bigint, $2::text, NOW(), $3::text)
+     ON CONFLICT (chat_id, bot_key)
+     DO UPDATE SET
+       archived_at = NOW(),
+       archived_by = EXCLUDED.archived_by`,
+    [target.chatId, target.botKey, createdBy]
+  );
+
+  return res.json({
+    ok: true,
+    chat_id: target.chatId,
+    bot_key: target.botKey,
+    archived_at: new Date().toISOString(),
+    archived_by: createdBy
+  });
+});
+
+app.post('/admin/feedbacks/thread/unarchive', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const target = parseAdminFeedbackThreadTarget(req.body || {});
+  if (!target.ok) return res.status(400).json({ error: target.error });
+
+  await pool.query(
+    `DELETE FROM feedback_threads
+     WHERE chat_id = $1::bigint
+       AND bot_key = $2::text`,
+    [target.chatId, target.botKey]
+  );
+
+  return res.json({
+    ok: true,
+    chat_id: target.chatId,
+    bot_key: target.botKey,
+    archived_at: null,
+    archived_by: null
+  });
+});
+
+app.post('/admin/feedbacks/thread/delete', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const target = parseAdminFeedbackThreadTarget(req.body || {});
+  if (!target.ok) return res.status(400).json({ error: target.error });
+
+  let replyDeleted = 0;
+  let feedbackDeleted = 0;
+  let metaDeleted = 0;
+
+  await pool.query('BEGIN');
+  try {
+    const repliesRes = await pool.query(
+      `DELETE FROM feedback_replies
+       WHERE chat_id = $1::bigint
+         AND bot_key = $2::text`,
+      [target.chatId, target.botKey]
+    );
+    replyDeleted = repliesRes.rowCount || 0;
+
+    const feedbackRes = await pool.query(
+      `DELETE FROM feedback
+       WHERE chat_id = $1::bigint
+         AND bot_key = $2::text`,
+      [target.chatId, target.botKey]
+    );
+    feedbackDeleted = feedbackRes.rowCount || 0;
+
+    const metaRes = await pool.query(
+      `DELETE FROM feedback_threads
+       WHERE chat_id = $1::bigint
+         AND bot_key = $2::text`,
+      [target.chatId, target.botKey]
+    );
+    metaDeleted = metaRes.rowCount || 0;
+
+    await pool.query('COMMIT');
+  } catch (err) {
+    await pool.query('ROLLBACK');
+    throw err;
+  }
+
+  if (replyDeleted === 0 && feedbackDeleted === 0 && metaDeleted === 0) {
+    return res.status(404).json({ error: 'thread_not_found' });
+  }
+
+  return res.json({
+    ok: true,
+    chat_id: target.chatId,
+    bot_key: target.botKey,
+    deleted_feedback_count: feedbackDeleted,
+    deleted_reply_count: replyDeleted
   });
 });
 
@@ -2020,6 +2376,30 @@ app.post('/admin/feedbacks/:id/reply', requireAdmin, async (req, res) => {
     const telegramResult = await sendTelegramTextMessage(chatId, messageText, { botKey });
     const messageIdRaw = Number(telegramResult?.message_id ?? 0);
     const telegramMessageId = Number.isFinite(messageIdRaw) && messageIdRaw > 0 ? messageIdRaw : null;
+    const createdByRaw = (req.headers['x-admin-user'] || 'admin_dashboard').toString().trim();
+    const createdBy = createdByRaw ? createdByRaw.slice(0, 120) : 'admin_dashboard';
+
+    const { rows: replyRows } = await pool.query(
+      `INSERT INTO feedback_replies (
+         feedback_id,
+         chat_id,
+         bot_key,
+         message_text,
+         telegram_message_id,
+         created_by
+       )
+       VALUES ($1::bigint, $2::bigint, $3::text, $4::text, $5::bigint, $6::text)
+       RETURNING id, created_at`,
+      [feedbackId, chatId, botKey || 'uk-de', messageText, telegramMessageId, createdBy]
+    );
+    const reply = replyRows[0] || null;
+
+    await pool.query(
+      `DELETE FROM feedback_threads
+       WHERE chat_id = $1::bigint
+         AND bot_key = $2::text`,
+      [chatId, botKey || 'uk-de']
+    );
 
     await updateUserDeliveryState(chatId, {
       status: 'sent',
@@ -2033,7 +2413,16 @@ app.post('/admin/feedbacks/:id/reply', requireAdmin, async (req, res) => {
       feedback_id: feedbackId,
       chat_id: chatId,
       bot_key: botKey,
-      telegram_message_id: telegramMessageId
+      telegram_message_id: telegramMessageId,
+      reply: reply ? {
+        id: Number(reply.id || 0) || null,
+        sender: 'admin',
+        kind: 'text',
+        created_at: reply.created_at,
+        created_by: createdBy,
+        body: messageText,
+        telegram_message_id: telegramMessageId
+      } : null
     });
   } catch (err) {
     const detail = sanitizeErrorText(err?.message || String(err)) || 'telegram_send_failed';

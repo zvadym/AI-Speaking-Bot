@@ -719,11 +719,11 @@
         <div>
           <div class="panel-kicker">Feedback</div>
           <h2 class="panel-title">Inbox</h2>
-          <p class="panel-sub">Text and voice feedback submitted with <code>/feedback</code>.</p>
+          <p class="panel-sub">Per-user threads combining feedback messages and your replies.</p>
         </div>
         <div class="panel-actions">
           <span class="status-pill subtle" v-if="feedbackUpdatedAt">Updated: {{ feedbackUpdatedAt }}</span>
-          <span class="status-pill">Total: {{ fmt(feedbackTotal) }}</span>
+          <span class="status-pill">Threads: {{ fmt(feedbackTotal) }}</span>
           <button class="btn" type="button" :disabled="feedbackLoading" @click="resetFeedbackRange">Last 30d</button>
           <button class="btn primary" type="button" :disabled="!canFetchFeedback || feedbackLoading" @click="refreshFeedback({ resetOffset: true })">
             {{ feedbackLoading ? 'Loading…' : 'Refresh' }}
@@ -749,6 +749,14 @@
               <option value="voice">Voice</option>
             </select>
           </label>
+          <label class="field">
+            <span>Status</span>
+            <select v-model="feedbackStatus">
+              <option value="active">Active</option>
+              <option value="archived">Archived</option>
+              <option value="all">All</option>
+            </select>
+          </label>
           <label class="field grow">
             <span>Search</span>
             <input
@@ -756,7 +764,7 @@
               type="text"
               autocomplete="off"
               inputmode="text"
-              placeholder="username, name, chat id, or text"
+              placeholder="username, name, chat id, bot, or message text"
             />
           </label>
         </div>
@@ -764,54 +772,116 @@
         <div v-if="!password" class="callout">Enter admin password above to load feedback.</div>
         <div v-else-if="feedbackError" class="callout error">{{ feedbackError }}</div>
 
-        <div class="feedback-list" v-if="feedbackRows.length">
-          <article class="feedback-item" v-for="row in feedbackRows" :key="row.id">
-            <div class="feedback-item-head">
-              <div class="feedback-meta">
-                <span class="chip">{{ row.kind }}</span>
-                <code>#{{ row.id }}</code>
-                <code>{{ row.chat_id }}</code>
-                <code v-if="row.bot_key">{{ row.bot_key }}</code>
-                <span>{{ row.username ? `@${row.username}` : (row.first_name || 'unknown user') }}</span>
+        <div class="feedback-list" v-if="feedbackThreads.length">
+          <article class="feedback-item" v-for="thread in feedbackThreads" :key="thread.id">
+            <div class="feedback-item-head feedback-thread-head">
+              <div class="feedback-thread-title">
+                <div class="feedback-meta">
+                  <code>{{ thread.chat_id }}</code>
+                  <code v-if="thread.bot_key">{{ thread.bot_key }}</code>
+                  <span class="chip archived" v-if="thread.archived_at">archived</span>
+                  <span class="feedback-user">{{ feedbackThreadName(thread) }}</span>
+                </div>
+                <div class="feedback-thread-stats">
+                  <span>{{ fmt(thread.message_count) }} msgs</span>
+                  <span>{{ fmt(thread.user_message_count) }} user</span>
+                  <span>{{ fmt(thread.admin_message_count) }} admin</span>
+                </div>
               </div>
-              <time>{{ formatFeedbackTime(row.created_at) }}</time>
+              <div class="feedback-thread-times">
+                <time>{{ formatFeedbackTime(thread.last_message_at) }}</time>
+                <span class="hint" v-if="thread.first_message_at && thread.first_message_at !== thread.last_message_at">
+                  Started {{ formatFeedbackTime(thread.first_message_at) }}
+                </span>
+              </div>
             </div>
-            <pre class="feedback-text">{{ feedbackBody(row) }}</pre>
-            <p class="hint" v-if="row.kind === 'voice' && row.telegram_file_id">
-              Voice file id: <code>{{ row.telegram_file_id }}</code>
-            </p>
+            <div class="feedback-thread-preview" v-if="thread.latest_preview">
+              {{ feedbackThreadPreview(thread) }}
+            </div>
+            <div class="feedback-thread-messages">
+              <div
+                class="feedback-message"
+                :class="{ admin: msg.sender === 'admin', user: msg.sender === 'user' }"
+                v-for="msg in thread.messages"
+                :key="msg.id"
+              >
+                <div class="feedback-message-head">
+                  <div class="feedback-meta">
+                    <span class="chip" :class="{ admin: msg.sender === 'admin' }">
+                      {{ msg.sender === 'admin' ? 'admin' : msg.kind }}
+                    </span>
+                    <span>{{ msg.sender === 'admin' ? (msg.created_by || 'admin') : feedbackMessageAuthor(thread, msg) }}</span>
+                    <code v-if="msg.feedback_id">feedback #{{ msg.feedback_id }}</code>
+                  </div>
+                  <time>{{ formatFeedbackTime(msg.created_at) }}</time>
+                </div>
+                <pre class="feedback-text">{{ msg.body || '(empty)' }}</pre>
+                <p class="hint" v-if="msg.kind === 'voice' && msg.telegram_file_id">
+                  Voice file id: <code>{{ msg.telegram_file_id }}</code>
+                </p>
+              </div>
+            </div>
             <div class="feedback-actions">
-              <button class="btn" type="button" @click="toggleFeedbackReply(row.id)">
-                {{ feedbackReplyOpenId === String(row.id) ? 'Close reply' : 'Reply to user' }}
+              <button class="btn" type="button" @click="toggleFeedbackReply(thread.id)">
+                {{ feedbackReplyOpenId === thread.id ? 'Close reply' : 'Reply to user' }}
               </button>
-              <p class="hint" v-if="feedbackReplyInfo[row.id]">{{ feedbackReplyInfo[row.id] }}</p>
-              <p class="error" v-if="feedbackReplyError[row.id]">{{ feedbackReplyError[row.id] }}</p>
+              <button
+                class="btn"
+                type="button"
+                :disabled="feedbackThreadActionId === thread.id"
+                @click="toggleFeedbackArchive(thread)"
+              >
+                {{ thread.archived_at ? 'Unarchive' : 'Archive' }}
+              </button>
+              <button
+                class="btn danger"
+                type="button"
+                :disabled="feedbackThreadActionId === thread.id"
+                @click="requestFeedbackDelete(thread.id)"
+              >
+                Delete
+              </button>
+              <p class="hint" v-if="feedbackReplyInfo[thread.id]">{{ feedbackReplyInfo[thread.id] }}</p>
+              <p class="error" v-if="feedbackReplyError[thread.id]">{{ feedbackReplyError[thread.id] }}</p>
+              <p class="hint" v-if="feedbackThreadActionInfo[thread.id]">{{ feedbackThreadActionInfo[thread.id] }}</p>
+              <p class="error" v-if="feedbackThreadActionError[thread.id]">{{ feedbackThreadActionError[thread.id] }}</p>
             </div>
-            <div class="feedback-reply" v-if="feedbackReplyOpenId === String(row.id)">
+            <div class="feedback-delete" v-if="feedbackDeleteConfirm[thread.id]">
+              <p class="hint">Delete this thread permanently? This removes user feedback and admin replies for this bot thread.</p>
+              <div class="feedback-delete-actions">
+                <button class="btn danger" type="button" :disabled="feedbackThreadActionId === thread.id" @click="deleteFeedbackThread(thread)">
+                  {{ feedbackThreadActionId === thread.id ? 'Deleting…' : 'Confirm delete' }}
+                </button>
+                <button class="btn" type="button" :disabled="feedbackThreadActionId === thread.id" @click="cancelFeedbackDelete(thread.id)">
+                  Cancel
+                </button>
+              </div>
+            </div>
+            <div class="feedback-reply" v-if="feedbackReplyOpenId === thread.id">
               <label class="field grow">
                 <span>Reply message</span>
                 <textarea
-                  v-model="feedbackReplyDraft[row.id]"
+                  v-model="feedbackReplyDraft[thread.id]"
                   maxlength="4096"
                   placeholder="Write a direct message to this user…"
                 />
               </label>
               <div class="feedback-reply-foot">
-                <span class="hint">{{ feedbackReplyLength(row.id) }} / 4096</span>
+                <span class="hint">{{ feedbackReplyLength(thread.id) }} / 4096</span>
                 <button
                   class="btn primary"
                   type="button"
-                  :disabled="!canSendFeedbackReply(row.id)"
-                  @click="sendFeedbackReply(row)"
+                  :disabled="!canSendFeedbackReply(thread.id)"
+                  @click="sendFeedbackReply(thread)"
                 >
-                  {{ feedbackReplySendingId === String(row.id) ? 'Sending…' : 'Send message' }}
+                  {{ feedbackReplySendingId === thread.id ? 'Sending…' : 'Send message' }}
                 </button>
               </div>
             </div>
           </article>
         </div>
 
-        <p class="hint" v-else-if="password && !feedbackLoading">No feedback found for current filters.</p>
+        <p class="hint" v-else-if="password && !feedbackLoading">No feedback threads found for current filters.</p>
 
         <div class="feedback-pager">
           <button class="btn" type="button" :disabled="feedbackLoading || feedbackOffset <= 0" @click="feedbackPrevPage">
@@ -909,8 +979,9 @@ const payloadOptions = ref([]);
 const feedbackFromDate = ref(defaultFrom);
 const feedbackToDate = ref(defaultTo);
 const feedbackKind = ref('any');
+const feedbackStatus = ref('active');
 const feedbackSearch = ref('');
-const feedbackRows = ref([]);
+const feedbackThreads = ref([]);
 const feedbackTotal = ref(0);
 const feedbackOffset = ref(0);
 const feedbackLimit = 40;
@@ -922,6 +993,10 @@ const feedbackReplyOpenId = ref(null);
 const feedbackReplySendingId = ref(null);
 const feedbackReplyError = reactive({});
 const feedbackReplyInfo = reactive({});
+const feedbackThreadActionId = ref(null);
+const feedbackThreadActionError = reactive({});
+const feedbackThreadActionInfo = reactive({});
+const feedbackDeleteConfirm = reactive({});
 
 const loading = ref(false);
 const errorText = ref('');
@@ -1218,7 +1293,7 @@ const canFetchFeedback = computed(() => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(feedbackToDate.value)) return false;
   return feedbackFromDate.value <= feedbackToDate.value;
 });
-const feedbackHasNext = computed(() => feedbackOffset.value + feedbackRows.value.length < feedbackTotal.value);
+const feedbackHasNext = computed(() => feedbackOffset.value + feedbackThreads.value.length < feedbackTotal.value);
 const usersHasNext = computed(() => usersOffset.value + usersRows.value.length < usersTotal.value);
 
 function adminHeaders() {
@@ -1311,6 +1386,7 @@ function feedbackQuery() {
     from: feedbackFromDate.value,
     to: toExclusiveBoundaryYmd(feedbackToDate.value),
     kind: feedbackKind.value !== 'any' ? feedbackKind.value : undefined,
+    status: feedbackStatus.value !== 'all' ? feedbackStatus.value : undefined,
     search: feedbackSearch.value.trim() ? feedbackSearch.value.trim() : undefined,
     limit: feedbackLimit,
     offset: feedbackOffset.value
@@ -1359,21 +1435,43 @@ function actionLabel(rawAction) {
     .replaceAll('_', ' ');
 }
 
-function feedbackBody(row) {
-  const text = row?.kind === 'voice' ? (row?.transcript || '') : (row?.feedback_text || '');
-  const cleaned = String(text || '').trim();
-  return cleaned || '(empty)';
+function feedbackThreadName(thread) {
+  if (thread?.username) return `@${thread.username}`;
+  if (thread?.first_name) return thread.first_name;
+  return 'unknown user';
+}
+
+function feedbackThreadPreview(thread) {
+  const text = String(thread?.latest_preview || '').trim();
+  if (!text) return '';
+  return text.length > 180 ? `${text.slice(0, 180)}…` : text;
+}
+
+function feedbackMessageAuthor(thread, message) {
+  if (message?.username) return `@${message.username}`;
+  if (message?.first_name) return message.first_name;
+  return feedbackThreadName(thread);
 }
 
 function clearFeedbackReplyState({ clearDrafts = true } = {}) {
   feedbackReplyOpenId.value = null;
   feedbackReplySendingId.value = null;
+  feedbackThreadActionId.value = null;
 
   Object.keys(feedbackReplyError).forEach((key) => {
     delete feedbackReplyError[key];
   });
   Object.keys(feedbackReplyInfo).forEach((key) => {
     delete feedbackReplyInfo[key];
+  });
+  Object.keys(feedbackThreadActionError).forEach((key) => {
+    delete feedbackThreadActionError[key];
+  });
+  Object.keys(feedbackThreadActionInfo).forEach((key) => {
+    delete feedbackThreadActionInfo[key];
+  });
+  Object.keys(feedbackDeleteConfirm).forEach((key) => {
+    delete feedbackDeleteConfirm[key];
   });
 
   if (clearDrafts) {
@@ -1383,8 +1481,8 @@ function clearFeedbackReplyState({ clearDrafts = true } = {}) {
   }
 }
 
-function toggleFeedbackReply(feedbackId) {
-  const key = String(feedbackId);
+function toggleFeedbackReply(threadId) {
+  const key = String(threadId);
   if (feedbackReplyOpenId.value === key) {
     feedbackReplyOpenId.value = null;
     return;
@@ -1397,28 +1495,124 @@ function toggleFeedbackReply(feedbackId) {
   feedbackReplyInfo[key] = '';
 }
 
-function feedbackReplyLength(feedbackId) {
-  const key = String(feedbackId);
+function feedbackReplyLength(threadId) {
+  const key = String(threadId);
   return String(feedbackReplyDraft[key] || '').length;
 }
 
-function canSendFeedbackReply(feedbackId) {
-  const key = String(feedbackId);
+function canSendFeedbackReply(threadId) {
+  const key = String(threadId);
   if (!password.value) return false;
-  if (feedbackReplySendingId.value !== null) return false;
+  if (feedbackReplySendingId.value !== null || feedbackThreadActionId.value !== null) return false;
   const text = String(feedbackReplyDraft[key] || '').trim();
   if (!text) return false;
   if (text.length > 4096) return false;
   return true;
 }
 
-async function sendFeedbackReply(row) {
-  const key = String(row?.id ?? '').trim();
-  const feedbackId = Number(key);
-  if (!key || !Number.isFinite(feedbackId) || feedbackId <= 0) return;
+function requestFeedbackDelete(threadId) {
+  const key = String(threadId);
+  feedbackDeleteConfirm[key] = true;
+  feedbackThreadActionError[key] = '';
+  feedbackThreadActionInfo[key] = '';
+}
+
+function cancelFeedbackDelete(threadId) {
+  const key = String(threadId);
+  delete feedbackDeleteConfirm[key];
+}
+
+function removeFeedbackThreadLocal(threadId) {
+  const key = String(threadId);
+  const before = feedbackThreads.value.length;
+  feedbackThreads.value = feedbackThreads.value.filter((thread) => thread.id !== key);
+  if (feedbackThreads.value.length !== before && feedbackTotal.value > 0) {
+    feedbackTotal.value -= 1;
+  }
+  delete feedbackReplyDraft[key];
+  delete feedbackReplyError[key];
+  delete feedbackReplyInfo[key];
+  delete feedbackThreadActionError[key];
+  delete feedbackThreadActionInfo[key];
+  delete feedbackDeleteConfirm[key];
+  if (feedbackReplyOpenId.value === key) feedbackReplyOpenId.value = null;
+}
+
+async function toggleFeedbackArchive(thread) {
+  const key = String(thread?.id ?? '').trim();
+  if (!key) return;
+  if (!password.value) {
+    feedbackThreadActionError[key] = 'Enter admin password first.';
+    return;
+  }
+
+  feedbackThreadActionId.value = key;
+  feedbackThreadActionError[key] = '';
+  feedbackThreadActionInfo[key] = '';
+  try {
+    const headers = adminHeaders();
+    const body = { chatId: thread.chat_id, botKey: thread.bot_key };
+    const endpoint = thread.archived_at ? '/admin/feedbacks/thread/unarchive' : '/admin/feedbacks/thread/archive';
+    const data = await apiJson(props.apiBase, endpoint, { method: 'POST', headers, body });
+
+    if (feedbackStatus.value === 'all') {
+      thread.archived_at = data?.archived_at || null;
+      thread.archived_by = data?.archived_by || null;
+      feedbackThreadActionInfo[key] = thread.archived_at ? 'Thread archived.' : 'Thread restored to active.';
+    } else if (feedbackStatus.value === 'active' && !thread.archived_at) {
+      removeFeedbackThreadLocal(key);
+    } else if (feedbackStatus.value === 'archived' && thread.archived_at) {
+      removeFeedbackThreadLocal(key);
+    }
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    feedbackThreadActionError[key] = `Action failed: ${msg}`;
+  } finally {
+    feedbackThreadActionId.value = null;
+  }
+}
+
+async function deleteFeedbackThread(thread) {
+  const key = String(thread?.id ?? '').trim();
+  if (!key) return;
+  if (!password.value) {
+    feedbackThreadActionError[key] = 'Enter admin password first.';
+    return;
+  }
+
+  feedbackThreadActionId.value = key;
+  feedbackThreadActionError[key] = '';
+  feedbackThreadActionInfo[key] = '';
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, '/admin/feedbacks/thread/delete', {
+      method: 'POST',
+      headers,
+      body: { chatId: thread.chat_id, botKey: thread.bot_key }
+    });
+    removeFeedbackThreadLocal(key);
+    feedbackThreadActionInfo[key] = `Deleted ${fmt(data?.deleted_feedback_count || 0)} feedback and ${fmt(data?.deleted_reply_count || 0)} replies.`;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    feedbackThreadActionError[key] = `Delete failed: ${msg}`;
+  } finally {
+    feedbackThreadActionId.value = null;
+  }
+}
+
+async function sendFeedbackReply(thread) {
+  const key = String(thread?.id ?? '').trim();
+  const feedbackId = Number(thread?.latest_feedback_id);
+  if (!key) return;
 
   if (!password.value) {
     feedbackReplyError[key] = 'Enter admin password first.';
+    return;
+  }
+  if (!Number.isFinite(feedbackId) || feedbackId <= 0) {
+    feedbackReplyError[key] = 'Cannot reply: thread is missing a feedback anchor.';
     return;
   }
 
@@ -1442,6 +1636,37 @@ async function sendFeedbackReply(row) {
       headers,
       body: { messageText }
     });
+
+    const reply = data?.reply && typeof data.reply === 'object' ? data.reply : null;
+    if (reply) {
+      if (!Array.isArray(thread.messages)) thread.messages = [];
+      thread.messages.push({
+        id: `admin:${reply.id || Date.now()}`,
+        sender: 'admin',
+        kind: 'text',
+        created_at: reply.created_at || new Date().toISOString(),
+        feedback_id: feedbackId,
+        username: null,
+        first_name: null,
+        created_by: reply.created_by || 'admin_dashboard',
+        message_id: null,
+        telegram_message_id: Number(reply.telegram_message_id || 0) || null,
+        telegram_file_id: null,
+        body: reply.body || messageText
+      });
+      thread.message_count = Number(thread.message_count || 0) + 1;
+      thread.admin_message_count = Number(thread.admin_message_count || 0) + 1;
+      thread.last_message_at = reply.created_at || new Date().toISOString();
+      thread.latest_preview = reply.body || messageText;
+      if (!thread.first_message_at) thread.first_message_at = thread.last_message_at;
+    }
+    thread.archived_at = null;
+    thread.archived_by = null;
+
+    if (feedbackStatus.value === 'archived') {
+      removeFeedbackThreadLocal(key);
+      return;
+    }
 
     feedbackReplyDraft[key] = '';
     feedbackReplyOpenId.value = null;
@@ -1770,13 +1995,13 @@ async function refreshFeedback({ resetOffset = false } = {}) {
       query: feedbackQuery(),
       headers
     });
-    feedbackRows.value = Array.isArray(data?.items) ? data.items : [];
+    feedbackThreads.value = Array.isArray(data?.items) ? data.items : [];
     const nextTotal = Number(data?.total || 0);
     feedbackTotal.value = Number.isFinite(nextTotal) ? nextTotal : 0;
     feedbackUpdatedAt.value = isoStampNow();
   } catch (err) {
     console.error(err);
-    feedbackRows.value = [];
+    feedbackThreads.value = [];
     feedbackTotal.value = 0;
     feedbackUpdatedAt.value = '';
     const msg = err?.payload?.error || err?.message || 'request_failed';
@@ -1830,7 +2055,7 @@ function clearPassword() {
   previewUpdatedAt.value = '';
   campaignState.value = null;
   stopCampaignPolling();
-  feedbackRows.value = [];
+  feedbackThreads.value = [];
   feedbackTotal.value = 0;
   feedbackOffset.value = 0;
   feedbackError.value = '';
@@ -1904,7 +2129,7 @@ watch(
     if (tab === 'messaging' && password.value && botStats.value.length === 0) {
       refreshBotStats();
     }
-    if (tab === 'feedback' && password.value && feedbackRows.value.length === 0) {
+    if (tab === 'feedback' && password.value && feedbackThreads.value.length === 0) {
       feedbackOffset.value = 0;
       refreshFeedback();
     }
@@ -2531,6 +2756,80 @@ h1 {
   flex-wrap: wrap;
 }
 
+.feedback-thread-head {
+  align-items: start;
+}
+
+.feedback-thread-title,
+.feedback-thread-times {
+  display: grid;
+  gap: 6px;
+}
+
+.feedback-thread-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.feedback-user {
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.feedback-thread-preview {
+  border-left: 3px solid rgba(31, 107, 99, 0.22);
+  padding-left: 10px;
+  color: rgba(30, 26, 22, 0.82);
+  font-size: 13px;
+}
+
+.feedback-thread-messages {
+  display: grid;
+  gap: 10px;
+}
+
+.feedback-message {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: rgba(246, 241, 232, 0.42);
+}
+
+.feedback-message.admin {
+  background: rgba(199, 90, 36, 0.09);
+  border-color: rgba(199, 90, 36, 0.18);
+}
+
+.feedback-message.user {
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.feedback-message-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chip.admin {
+  background: rgba(199, 90, 36, 0.13);
+  border-color: rgba(199, 90, 36, 0.24);
+}
+
+.chip.archived {
+  background: rgba(87, 60, 127, 0.12);
+  border-color: rgba(87, 60, 127, 0.22);
+  color: rgba(87, 60, 127, 0.92);
+}
+
 .feedback-text {
   margin: 0;
   white-space: pre-wrap;
@@ -2575,6 +2874,21 @@ h1 {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.feedback-delete {
+  border: 1px solid rgba(174, 43, 40, 0.14);
+  background: rgba(174, 43, 40, 0.05);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.feedback-delete-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .feedback-pager {
