@@ -771,6 +771,7 @@
                 <span class="chip">{{ row.kind }}</span>
                 <code>#{{ row.id }}</code>
                 <code>{{ row.chat_id }}</code>
+                <code v-if="row.bot_key">{{ row.bot_key }}</code>
                 <span>{{ row.username ? `@${row.username}` : (row.first_name || 'unknown user') }}</span>
               </div>
               <time>{{ formatFeedbackTime(row.created_at) }}</time>
@@ -779,6 +780,34 @@
             <p class="hint" v-if="row.kind === 'voice' && row.telegram_file_id">
               Voice file id: <code>{{ row.telegram_file_id }}</code>
             </p>
+            <div class="feedback-actions">
+              <button class="btn" type="button" @click="toggleFeedbackReply(row.id)">
+                {{ feedbackReplyOpenId === String(row.id) ? 'Close reply' : 'Reply to user' }}
+              </button>
+              <p class="hint" v-if="feedbackReplyInfo[row.id]">{{ feedbackReplyInfo[row.id] }}</p>
+              <p class="error" v-if="feedbackReplyError[row.id]">{{ feedbackReplyError[row.id] }}</p>
+            </div>
+            <div class="feedback-reply" v-if="feedbackReplyOpenId === String(row.id)">
+              <label class="field grow">
+                <span>Reply message</span>
+                <textarea
+                  v-model="feedbackReplyDraft[row.id]"
+                  maxlength="4096"
+                  placeholder="Write a direct message to this user…"
+                />
+              </label>
+              <div class="feedback-reply-foot">
+                <span class="hint">{{ feedbackReplyLength(row.id) }} / 4096</span>
+                <button
+                  class="btn primary"
+                  type="button"
+                  :disabled="!canSendFeedbackReply(row.id)"
+                  @click="sendFeedbackReply(row)"
+                >
+                  {{ feedbackReplySendingId === String(row.id) ? 'Sending…' : 'Send message' }}
+                </button>
+              </div>
+            </div>
           </article>
         </div>
 
@@ -888,6 +917,11 @@ const feedbackLimit = 40;
 const feedbackLoading = ref(false);
 const feedbackError = ref('');
 const feedbackUpdatedAt = ref('');
+const feedbackReplyDraft = reactive({});
+const feedbackReplyOpenId = ref(null);
+const feedbackReplySendingId = ref(null);
+const feedbackReplyError = reactive({});
+const feedbackReplyInfo = reactive({});
 
 const loading = ref(false);
 const errorText = ref('');
@@ -1331,6 +1365,100 @@ function feedbackBody(row) {
   return cleaned || '(empty)';
 }
 
+function clearFeedbackReplyState({ clearDrafts = true } = {}) {
+  feedbackReplyOpenId.value = null;
+  feedbackReplySendingId.value = null;
+
+  Object.keys(feedbackReplyError).forEach((key) => {
+    delete feedbackReplyError[key];
+  });
+  Object.keys(feedbackReplyInfo).forEach((key) => {
+    delete feedbackReplyInfo[key];
+  });
+
+  if (clearDrafts) {
+    Object.keys(feedbackReplyDraft).forEach((key) => {
+      delete feedbackReplyDraft[key];
+    });
+  }
+}
+
+function toggleFeedbackReply(feedbackId) {
+  const key = String(feedbackId);
+  if (feedbackReplyOpenId.value === key) {
+    feedbackReplyOpenId.value = null;
+    return;
+  }
+  feedbackReplyOpenId.value = key;
+  if (typeof feedbackReplyDraft[key] !== 'string') {
+    feedbackReplyDraft[key] = '';
+  }
+  feedbackReplyError[key] = '';
+  feedbackReplyInfo[key] = '';
+}
+
+function feedbackReplyLength(feedbackId) {
+  const key = String(feedbackId);
+  return String(feedbackReplyDraft[key] || '').length;
+}
+
+function canSendFeedbackReply(feedbackId) {
+  const key = String(feedbackId);
+  if (!password.value) return false;
+  if (feedbackReplySendingId.value !== null) return false;
+  const text = String(feedbackReplyDraft[key] || '').trim();
+  if (!text) return false;
+  if (text.length > 4096) return false;
+  return true;
+}
+
+async function sendFeedbackReply(row) {
+  const key = String(row?.id ?? '').trim();
+  const feedbackId = Number(key);
+  if (!key || !Number.isFinite(feedbackId) || feedbackId <= 0) return;
+
+  if (!password.value) {
+    feedbackReplyError[key] = 'Enter admin password first.';
+    return;
+  }
+
+  const messageText = String(feedbackReplyDraft[key] || '').trim();
+  if (!messageText) {
+    feedbackReplyError[key] = 'Message cannot be empty.';
+    return;
+  }
+  if (messageText.length > 4096) {
+    feedbackReplyError[key] = 'Message is too long (max 4096 chars).';
+    return;
+  }
+
+  feedbackReplySendingId.value = key;
+  feedbackReplyError[key] = '';
+  feedbackReplyInfo[key] = '';
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, `/admin/feedbacks/${feedbackId}/reply`, {
+      method: 'POST',
+      headers,
+      body: { messageText }
+    });
+
+    feedbackReplyDraft[key] = '';
+    feedbackReplyOpenId.value = null;
+    const telegramMessageId = Number(data?.telegram_message_id || 0);
+    const detail = Number.isFinite(telegramMessageId) && telegramMessageId > 0
+      ? `Telegram msg #${telegramMessageId}`
+      : 'Message sent';
+    feedbackReplyInfo[key] = `${detail} at ${isoStampNow()}.`;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    feedbackReplyError[key] = `Send failed: ${msg}`;
+  } finally {
+    feedbackReplySendingId.value = null;
+  }
+}
+
 const selectedPlans = computed(() => {
   const plans = [];
   if (broadcast.planFree) plans.push('free');
@@ -1635,6 +1763,7 @@ async function refreshFeedback({ resetOffset = false } = {}) {
 
   feedbackLoading.value = true;
   feedbackError.value = '';
+  clearFeedbackReplyState();
   try {
     const headers = adminHeaders();
     const data = await apiJson(props.apiBase, '/admin/feedbacks', {
@@ -1706,6 +1835,7 @@ function clearPassword() {
   feedbackOffset.value = 0;
   feedbackError.value = '';
   feedbackUpdatedAt.value = '';
+  clearFeedbackReplyState();
   usersRows.value = [];
   usersTotal.value = 0;
   usersOffset.value = 0;
@@ -2407,6 +2537,44 @@ h1 {
   word-break: break-word;
   font: inherit;
   color: var(--ink);
+}
+
+.feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.feedback-actions .btn,
+.feedback-reply .btn {
+  min-inline-size: 0;
+  padding: 8px 12px;
+  box-shadow: 0 10px 20px rgba(30, 26, 22, 0.12);
+  font-size: 12px;
+}
+
+.feedback-reply {
+  border-top: 1px solid rgba(30, 26, 22, 0.08);
+  padding-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.feedback-reply .field {
+  min-width: 0;
+}
+
+.feedback-reply .field textarea {
+  min-height: 88px;
+}
+
+.feedback-reply-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .feedback-pager {

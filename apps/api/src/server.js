@@ -1940,6 +1940,7 @@ app.get('/admin/feedbacks', requireAdmin, async (req, res) => {
          f.id,
          f.created_at,
          f.chat_id,
+         f.bot_key,
          f.username,
          f.first_name,
          f.message_id,
@@ -1977,6 +1978,80 @@ app.get('/admin/feedbacks', requireAdmin, async (req, res) => {
     total: totalRes.rows[0]?.total || 0,
     items: rowsRes.rows || []
   });
+});
+
+app.post('/admin/feedbacks/:id/reply', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+
+  const feedbackId = Number(req.params.id);
+  if (!Number.isFinite(feedbackId) || feedbackId <= 0) {
+    return res.status(400).json({ error: 'bad_feedback_id' });
+  }
+
+  const messageRaw = (req.body?.messageText ?? req.body?.message ?? '').toString();
+  const messageText = messageRaw.trim();
+  if (!messageText) {
+    return res.status(400).json({ error: 'empty_message' });
+  }
+  if (messageText.length > BROADCAST_MESSAGE_MAX_LEN) {
+    return res.status(400).json({
+      error: 'message_too_long',
+      max_length: BROADCAST_MESSAGE_MAX_LEN
+    });
+  }
+
+  const { rows } = await pool.query(
+    `SELECT
+       f.id,
+       f.chat_id,
+       f.bot_key
+     FROM feedback f
+     WHERE f.id = $1
+     LIMIT 1`,
+    [feedbackId]
+  );
+  const feedback = rows[0];
+  if (!feedback) return res.status(404).json({ error: 'feedback_not_found' });
+
+  const chatId = Number(feedback.chat_id);
+  const botKey = normalizeBotKey(feedback.bot_key) || await resolveUserBotKey(chatId) || null;
+
+  try {
+    const telegramResult = await sendTelegramTextMessage(chatId, messageText, { botKey });
+    const messageIdRaw = Number(telegramResult?.message_id ?? 0);
+    const telegramMessageId = Number.isFinite(messageIdRaw) && messageIdRaw > 0 ? messageIdRaw : null;
+
+    await updateUserDeliveryState(chatId, {
+      status: 'sent',
+      lastError: null,
+      inactiveReason: null,
+      botKey
+    });
+
+    return res.json({
+      ok: true,
+      feedback_id: feedbackId,
+      chat_id: chatId,
+      bot_key: botKey,
+      telegram_message_id: telegramMessageId
+    });
+  } catch (err) {
+    const detail = sanitizeErrorText(err?.message || String(err)) || 'telegram_send_failed';
+    const inactiveReason = classifyPermanentTelegramFailure(err);
+
+    await updateUserDeliveryState(chatId, {
+      status: 'failed',
+      lastError: detail,
+      inactiveReason,
+      botKey
+    });
+
+    return res.status(502).json({
+      error: 'telegram_send_failed',
+      detail,
+      inactive_reason: inactiveReason || null
+    });
+  }
 });
 
 app.get('/admin/users', requireAdmin, async (req, res) => {
