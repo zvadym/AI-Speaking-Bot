@@ -73,9 +73,9 @@ const ACTION_EVENT_TYPES = [
   'profile_set_level',
   'first_voice_sent',
   'first_answer_delivered',
+  'day1_return',
   'paywall_shown',
-  'purchase_success',
-  'day1_return'
+  'purchase_success'
 ];
 
 function normalizeBillingInterval(raw, fallback = 'month') {
@@ -1429,6 +1429,73 @@ app.get('/admin/metrics/new-users-by-day', requireAdmin, async (req, res) => {
   });
 });
 
+app.get('/admin/metrics/new-users-by-day-by-bot', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     new_users AS (
+       SELECT
+         u.chat_id,
+         date_trunc('day', u.created_at AT TIME ZONE 'UTC')::date AS day_utc
+       FROM users u, params
+       WHERE u.created_at >= (SELECT from_ts FROM params)
+         AND u.created_at < (SELECT to_ts FROM params)
+         AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
+     ),
+     first_bot AS (
+       SELECT
+         nu.chat_id,
+         nu.day_utc,
+         COALESCE(ub.bot_key, 'unknown') AS bot_key
+       FROM new_users nu
+       LEFT JOIN LATERAL (
+         SELECT b.bot_key
+         FROM user_bots b
+         WHERE b.chat_id = nu.chat_id
+         ORDER BY COALESCE(b.first_seen_at, b.created_at) ASC, b.bot_key ASC
+         LIMIT 1
+       ) ub ON true
+     ),
+     counts AS (
+       SELECT
+         fb.day_utc,
+         fb.bot_key,
+         COUNT(*)::int AS count
+       FROM first_bot fb
+       GROUP BY 1, 2
+     )
+     SELECT
+       d.day_utc::text AS day,
+       bots.bot_key,
+       COALESCE(c.count, 0)::int AS count
+     FROM days d
+     CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots
+     LEFT JOIN counts c ON c.day_utc = d.day_utc AND c.bot_key = bots.bot_key
+     ORDER BY d.day_utc ASC, bots.bot_key ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
 app.get('/admin/metrics/new-paid-by-day', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
@@ -1693,6 +1760,7 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
          SELECT u.chat_id
          FROM users u
          WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
+           AND COALESCE(u.is_active, true) = true
            AND CASE
              WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
                THEN u.override_plan_tier
@@ -1747,6 +1815,7 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
          SELECT u.chat_id
          FROM users u
          WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
+           AND COALESCE(u.is_active, true) = true
            AND CASE
              WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
                THEN u.override_plan_tier
@@ -1801,6 +1870,7 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
          SELECT u.chat_id
          FROM users u
          WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
+           AND COALESCE(u.is_active, true) = true
            AND CASE
              WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
                THEN u.override_plan_tier
@@ -2024,7 +2094,7 @@ app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
        SELECT
          date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
          e.action_type,
-         COUNT(*)::int AS count
+         COUNT(DISTINCT e.chat_id)::int AS count
        FROM action_events e
        JOIN filtered_users u ON u.chat_id = e.chat_id
        WHERE e.occurred_at >= (SELECT from_ts FROM params)
@@ -2038,9 +2108,9 @@ app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'profile_set_level'), 0)::int AS profile_set_level,
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_voice_sent'), 0)::int AS first_voice_sent,
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_answer_delivered'), 0)::int AS first_answer_delivered,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'day1_return'), 0)::int AS day1_return,
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'paywall_shown'), 0)::int AS paywall_shown,
-       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'purchase_success'), 0)::int AS purchase_success,
-       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'day1_return'), 0)::int AS day1_return
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'purchase_success'), 0)::int AS purchase_success
      FROM days d
      LEFT JOIN counts c USING (day_utc)
      GROUP BY d.day_utc
@@ -2064,7 +2134,7 @@ app.get('/admin/metrics/action-totals', requireAdmin, async (req, res) => {
 
   const { rows } = await pool.query(
     `WITH filtered_users AS (
-       SELECT chat_id
+       SELECT chat_id, created_at
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
      ),
@@ -2073,13 +2143,23 @@ app.get('/admin/metrics/action-totals', requireAdmin, async (req, res) => {
      ),
      counts AS (
        SELECT
+         'start'::text AS action_type,
+         COUNT(DISTINCT u.chat_id)::int AS count
+       FROM filtered_users u
+       WHERE u.created_at >= $1::timestamptz
+         AND u.created_at < $2::timestamptz
+
+       UNION ALL
+
+       SELECT
          e.action_type,
-         COUNT(*)::int AS count
+         COUNT(DISTINCT e.chat_id)::int AS count
        FROM action_events e
        JOIN filtered_users u ON u.chat_id = e.chat_id
        WHERE e.occurred_at >= $1::timestamptz
          AND e.occurred_at < $2::timestamptz
          AND e.action_type = ANY($4::text[])
+         AND e.action_type <> 'start'
        GROUP BY e.action_type
      )
      SELECT
@@ -3076,6 +3156,14 @@ app.post('/auth/telegram', async (req, res) => {
   }
 
   await upsertUser(user, { botKey: result.botKey || null });
+  await recordActionEventSafe({
+    chatId: user.id,
+    botKey: result.botKey || null,
+    actionType: 'start',
+    source: 'auth_telegram',
+    idempotencyKey: `start:${user.id}`,
+    occurredAt: Number.isFinite(result.authDate) ? new Date(result.authDate * 1000) : null
+  });
 
   const authBotKey = normalizeBotKey(result.botKey || null);
   const token = signSession({ chatId: user.id, username: user.username || null, botKey: authBotKey || undefined });
@@ -3359,6 +3447,7 @@ app.post('/me/level', requireAuth, async (req, res) => {
     botKey: currentBotKey,
     actionType: 'profile_set_level',
     source: 'api',
+    idempotencyKey: `profile_set_level:${chatId}`,
     properties: { level: raw, via: 'miniapp' }
   });
 

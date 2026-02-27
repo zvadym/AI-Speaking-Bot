@@ -135,7 +135,7 @@
           <div>
             <div class="panel-kicker">Free users</div>
             <h2 class="panel-title">Usage distribution</h2>
-            <p class="panel-sub">Current effective tier = free. Range-based metrics below use the selected UTC dates and optional payload filter.</p>
+            <p class="panel-sub">Current effective tier = free and user is active. Range-based metrics below use the selected UTC dates and optional payload filter.</p>
           </div>
         </header>
 
@@ -251,11 +251,12 @@
 
       <section class="charts-grid">
         <AdminChart
-          title="New users by day"
+          title="New users by day by bot"
+          subtitle="New users split by first associated bot"
           kind="bar"
           x-labels="all"
-          :data="newUsersSeries"
-          :series="[{ key: 'count', label: 'New users', color: 'rgba(199, 90, 36, 0.86)' }]"
+          :data="newUsersByBotSeries"
+          :series="newUsersByBotSeriesConfig"
         />
 
         <AdminChart
@@ -285,15 +286,6 @@
           x-labels="all"
           :data="actionTotalsSeries"
           :series="[{ key: 'count', label: 'Events', color: 'rgba(87, 60, 127, 0.86)' }]"
-        />
-
-        <AdminChart
-          title="Active users by day"
-          subtitle="Active = at least one voice usage event that day"
-          kind="bar"
-          x-labels="all"
-          :data="activeUsersSeries"
-          :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
         />
 
         <AdminChart
@@ -1095,11 +1087,11 @@ const botSort = reactive({
   dir: 'desc' // 'asc' | 'desc'
 });
 
-const newUsersSeries = ref([]);
+const newUsersByBotSeries = ref([]);
+const newUsersByBotSeriesConfig = ref([]);
 const newPaidSeries = ref([]);
 const actionEventsSeries = ref([]);
 const actionTotalsSeries = ref([]);
-const activeUsersSeries = ref([]);
 const activeUsersByBotSeries = ref([]);
 const activeUsersByBotSeriesConfig = ref([]);
 const inactiveUsersSeries = ref([]);
@@ -1121,11 +1113,11 @@ const activeUsersByHourTodaySeries = ref([]);
 const actionSeriesConfig = [
   { key: 'start', label: 'start', color: 'rgba(31, 107, 99, 0.88)' },
   { key: 'profile_set_level', label: 'profile_set_level', color: 'rgba(199, 90, 36, 0.88)' },
-  { key: 'first_voice_sent', label: 'first_voice_sent', color: 'rgba(46, 88, 142, 0.88)' },
+  { key: 'first_voice_sent', label: 'first_voice_or_text_sent', color: 'rgba(46, 88, 142, 0.88)' },
   { key: 'first_answer_delivered', label: 'first_answer_delivered', color: 'rgba(103, 78, 167, 0.88)' },
+  { key: 'day1_return', label: 'day1_return', color: 'rgba(33, 124, 146, 0.88)' },
   { key: 'paywall_shown', label: 'paywall_shown', color: 'rgba(174, 43, 40, 0.86)' },
-  { key: 'purchase_success', label: 'purchase_success', color: 'rgba(117, 156, 56, 0.88)' },
-  { key: 'day1_return', label: 'day1_return', color: 'rgba(33, 124, 146, 0.88)' }
+  { key: 'purchase_success', label: 'purchase_success', color: 'rgba(117, 156, 56, 0.88)' }
 ];
 const usersRows = ref([]);
 const usersTotal = ref(0);
@@ -1529,10 +1521,9 @@ function displayTier(rawTier) {
 }
 
 function actionLabel(rawAction) {
-  return (rawAction || '')
-    .toString()
-    .trim()
-    .replaceAll('_', ' ');
+  const action = (rawAction || '').toString().trim();
+  if (action === 'first_voice_sent') return 'first voice or text sent';
+  return action.replaceAll('_', ' ');
 }
 
 function feedbackThreadName(thread) {
@@ -2019,11 +2010,10 @@ async function refreshAnalytics() {
     const [
       summary,
       botStatsData,
-      newUsers,
+      newUsersByBot,
       newPaid,
       actionEvents,
       actionTotals,
-      activeUsers,
       activeUsersByBot,
       inactiveUsers,
       usageSeconds,
@@ -2034,11 +2024,10 @@ async function refreshAnalytics() {
     ] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers }),
-      apiJson(props.apiBase, '/admin/metrics/new-users-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/new-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/new-paid-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/actions-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/active-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
@@ -2050,7 +2039,6 @@ async function refreshAnalytics() {
 
     totals.value = summary?.totals || totals.value;
     botStats.value = Array.isArray(botStatsData?.bots) ? botStatsData.bots : [];
-    newUsersSeries.value = Array.isArray(newUsers?.series) ? newUsers.series : [];
     newPaidSeries.value = Array.isArray(newPaid?.series) ? newPaid.series : [];
     actionEventsSeries.value = Array.isArray(actionEvents?.series) ? actionEvents.series : [];
     actionTotalsSeries.value = Array.isArray(actionTotals?.series)
@@ -2059,7 +2047,6 @@ async function refreshAnalytics() {
           count: Number(row?.count || 0)
         }))
       : [];
-    activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
     freeUserTotals.value = freeUsersInsights?.totals || freeUserTotals.value;
@@ -2071,6 +2058,11 @@ async function refreshAnalytics() {
     // Users list is loaded in the Users tab (separate request).
     
     // Transform bot-specific data
+    const newUsersByBotRawRows = Array.isArray(newUsersByBot?.series) ? newUsersByBot.series : [];
+    const { chartData: newUsersByBotData, seriesConfig: newUsersByBotConfig } = transformByBotData(newUsersByBotRawRows);
+    newUsersByBotSeries.value = newUsersByBotData;
+    newUsersByBotSeriesConfig.value = newUsersByBotConfig;
+
     const byBotRawRows = Array.isArray(activeUsersByBot?.series) ? activeUsersByBot.series : [];
     const { chartData: byBotData, seriesConfig: byBotConfig } = transformByBotData(byBotRawRows);
     activeUsersByBotSeries.value = byBotData;

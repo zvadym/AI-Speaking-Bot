@@ -85,6 +85,42 @@ $$;
 
 
 --
+-- Name: log_first_voice_sent_from_message(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.log_first_voice_sent_from_message() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.role <> 'user' THEN
+    RETURN NEW;
+  END IF;
+
+  INSERT INTO public.action_events (
+    chat_id,
+    bot_key,
+    action_type,
+    source,
+    idempotency_key,
+    occurred_at
+  )
+  VALUES (
+    NEW.chat_id,
+    NEW.bot_key,
+    'first_voice_sent',
+    'db_trigger_message',
+    'first_voice_sent:' || NEW.chat_id::text || ':' || COALESCE(NEW.bot_key, ''),
+    NEW.created_at
+  )
+  ON CONFLICT (idempotency_key) DO UPDATE
+    SET occurred_at = LEAST(public.action_events.occurred_at, EXCLUDED.occurred_at);
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: log_first_voice_sent_from_usage_event(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -108,7 +144,7 @@ BEGIN
     NEW.chat_id,
     NEW.bot_key,
     'first_voice_sent',
-    'db_trigger',
+    'db_trigger_voice',
     'first_voice_sent:' || NEW.chat_id::text || ':' || COALESCE(NEW.bot_key, ''),
     NEW.occurred_at
   )
@@ -1198,6 +1234,13 @@ CREATE TRIGGER trg_action_first_voice_sent AFTER INSERT ON public.voice_usage_ev
 
 
 --
+-- Name: messages trg_action_first_voice_sent_from_message; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_action_first_voice_sent_from_message AFTER INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION public.log_first_voice_sent_from_message();
+
+
+--
 -- Name: broadcast_recipients broadcast_recipients_campaign_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1271,4 +1314,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260223160000'),
     ('20260223173000'),
     ('20260227110000'),
-    ('20260227113000');
+    ('20260227113000'),
+    ('20260227154500');
