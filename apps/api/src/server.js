@@ -971,7 +971,7 @@ async function updateUserDeliveryState(chatId, { status, lastError, inactiveReas
   }
 }
 
-async function sendTelegramTextMessage(chatId, text, { botKey = null } = {}) {
+async function sendTelegramTextMessage(chatId, text, { botKey = null, replyToMessageId = null } = {}) {
   const token = resolveTelegramBotToken(botKey);
   if (!token) {
     const err = new Error('missing_telegram_bot_token');
@@ -979,14 +979,21 @@ async function sendTelegramTextMessage(chatId, text, { botKey = null } = {}) {
     throw err;
   }
 
+  const body = {
+    chat_id: Number(chatId),
+    text,
+    disable_web_page_preview: true
+  };
+  const replyMessageId = Number(replyToMessageId);
+  if (Number.isFinite(replyMessageId) && replyMessageId > 0) {
+    body.reply_to_message_id = replyMessageId;
+    body.allow_sending_without_reply = true;
+  }
+
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: Number(chatId),
-      text,
-      disable_web_page_preview: true
-    })
+    body: JSON.stringify(body)
   });
 
   let payload = null;
@@ -2355,12 +2362,22 @@ app.post('/admin/feedbacks/:id/reply', requireAdmin, async (req, res) => {
       max_length: BROADCAST_MESSAGE_MAX_LEN
     });
   }
+  const replyToFeedbackIdRaw = req.body?.replyToFeedbackId ?? req.body?.reply_to_feedback_id ?? null;
+  const replyToFeedbackId = replyToFeedbackIdRaw === null || replyToFeedbackIdRaw === undefined || replyToFeedbackIdRaw === ''
+    ? null
+    : Number(replyToFeedbackIdRaw);
+  if (replyToFeedbackIdRaw !== null && replyToFeedbackIdRaw !== undefined && replyToFeedbackIdRaw !== '') {
+    if (!Number.isFinite(replyToFeedbackId) || replyToFeedbackId <= 0) {
+      return res.status(400).json({ error: 'bad_reply_to_feedback_id' });
+    }
+  }
 
   const { rows } = await pool.query(
     `SELECT
        f.id,
        f.chat_id,
-       f.bot_key
+       f.bot_key,
+       f.message_id
      FROM feedback f
      WHERE f.id = $1
      LIMIT 1`,
@@ -2371,9 +2388,33 @@ app.post('/admin/feedbacks/:id/reply', requireAdmin, async (req, res) => {
 
   const chatId = Number(feedback.chat_id);
   const botKey = normalizeBotKey(feedback.bot_key) || await resolveUserBotKey(chatId) || null;
+  let replyTarget = feedback;
+
+  if (Number.isFinite(replyToFeedbackId) && replyToFeedbackId > 0 && replyToFeedbackId !== feedbackId) {
+    const { rows: replyTargetRows } = await pool.query(
+      `SELECT
+         f.id,
+         f.chat_id,
+         f.bot_key,
+         f.message_id
+       FROM feedback f
+       WHERE f.id = $1
+         AND f.chat_id = $2::bigint
+         AND f.bot_key = $3::text
+       LIMIT 1`,
+      [replyToFeedbackId, chatId, botKey || 'uk-de']
+    );
+    const target = replyTargetRows[0] || null;
+    if (!target) return res.status(404).json({ error: 'reply_target_not_found' });
+    replyTarget = target;
+  }
+  const replyToMessageId = Number(replyTarget?.message_id);
 
   try {
-    const telegramResult = await sendTelegramTextMessage(chatId, messageText, { botKey });
+    const telegramResult = await sendTelegramTextMessage(chatId, messageText, {
+      botKey,
+      replyToMessageId
+    });
     const messageIdRaw = Number(telegramResult?.message_id ?? 0);
     const telegramMessageId = Number.isFinite(messageIdRaw) && messageIdRaw > 0 ? messageIdRaw : null;
     const createdByRaw = (req.headers['x-admin-user'] || 'admin_dashboard').toString().trim();
@@ -2390,7 +2431,7 @@ app.post('/admin/feedbacks/:id/reply', requireAdmin, async (req, res) => {
        )
        VALUES ($1::bigint, $2::bigint, $3::text, $4::text, $5::bigint, $6::text)
        RETURNING id, created_at`,
-      [feedbackId, chatId, botKey || 'uk-de', messageText, telegramMessageId, createdBy]
+      [replyTarget.id, chatId, botKey || 'uk-de', messageText, telegramMessageId, createdBy]
     );
     const reply = replyRows[0] || null;
 
@@ -2410,10 +2451,11 @@ app.post('/admin/feedbacks/:id/reply', requireAdmin, async (req, res) => {
 
     return res.json({
       ok: true,
-      feedback_id: feedbackId,
+      feedback_id: replyTarget.id,
       chat_id: chatId,
       bot_key: botKey,
       telegram_message_id: telegramMessageId,
+      reply_to_message_id: Number.isFinite(replyToMessageId) && replyToMessageId > 0 ? replyToMessageId : null,
       reply: reply ? {
         id: Number(reply.id || 0) || null,
         sender: 'admin',
@@ -2421,7 +2463,8 @@ app.post('/admin/feedbacks/:id/reply', requireAdmin, async (req, res) => {
         created_at: reply.created_at,
         created_by: createdBy,
         body: messageText,
-        telegram_message_id: telegramMessageId
+        telegram_message_id: telegramMessageId,
+        reply_to_message_id: Number.isFinite(replyToMessageId) && replyToMessageId > 0 ? replyToMessageId : null
       } : null
     });
   } catch (err) {

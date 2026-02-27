@@ -812,6 +812,14 @@
                     </span>
                     <span>{{ msg.sender === 'admin' ? (msg.created_by || 'admin') : feedbackMessageAuthor(thread, msg) }}</span>
                     <code v-if="msg.feedback_id">feedback #{{ msg.feedback_id }}</code>
+                    <button
+                      v-if="msg.sender === 'user' && msg.feedback_id"
+                      class="feedback-inline-action"
+                      type="button"
+                      @click="startFeedbackReply(thread, msg)"
+                    >
+                      Reply to this
+                    </button>
                   </div>
                   <time>{{ formatFeedbackTime(msg.created_at) }}</time>
                 </div>
@@ -819,10 +827,13 @@
                 <p class="hint" v-if="msg.kind === 'voice' && msg.telegram_file_id">
                   Voice file id: <code>{{ msg.telegram_file_id }}</code>
                 </p>
+                <p class="hint" v-if="msg.sender === 'admin' && msg.reply_to_message_id">
+                  Replied in Telegram thread.
+                </p>
               </div>
             </div>
             <div class="feedback-actions">
-              <button class="btn" type="button" @click="toggleFeedbackReply(thread.id)">
+              <button class="btn" type="button" @click="startFeedbackReply(thread)">
                 {{ feedbackReplyOpenId === thread.id ? 'Close reply' : 'Reply to user' }}
               </button>
               <button
@@ -858,6 +869,13 @@
               </div>
             </div>
             <div class="feedback-reply" v-if="feedbackReplyOpenId === thread.id">
+              <div class="feedback-reply-target" v-if="feedbackReplyTarget[thread.id]">
+                <span class="chip">replying to {{ feedbackReplyTarget[thread.id].kind }}</span>
+                <span>{{ feedbackReplyTarget[thread.id].label }}</span>
+                <button class="feedback-inline-action" type="button" @click="setFeedbackReplyTarget(thread, latestUserMessage(thread))">
+                  Use latest user message
+                </button>
+              </div>
               <label class="field grow">
                 <span>Reply message</span>
                 <textarea
@@ -993,6 +1011,7 @@ const feedbackReplyOpenId = ref(null);
 const feedbackReplySendingId = ref(null);
 const feedbackReplyError = reactive({});
 const feedbackReplyInfo = reactive({});
+const feedbackReplyTarget = reactive({});
 const feedbackThreadActionId = ref(null);
 const feedbackThreadActionError = reactive({});
 const feedbackThreadActionInfo = reactive({});
@@ -1453,6 +1472,22 @@ function feedbackMessageAuthor(thread, message) {
   return feedbackThreadName(thread);
 }
 
+function latestUserMessage(thread) {
+  const messages = Array.isArray(thread?.messages) ? thread.messages : [];
+  for (let idx = messages.length - 1; idx >= 0; idx -= 1) {
+    const msg = messages[idx];
+    if (msg?.sender === 'user' && Number(msg?.feedback_id) > 0) return msg;
+  }
+  return null;
+}
+
+function feedbackReplyTargetLabel(message) {
+  if (!message) return 'latest user message';
+  const author = message.username ? `@${message.username}` : (message.first_name || 'user');
+  const time = formatFeedbackTime(message.created_at);
+  return `${author} • ${time}`;
+}
+
 function clearFeedbackReplyState({ clearDrafts = true } = {}) {
   feedbackReplyOpenId.value = null;
   feedbackReplySendingId.value = null;
@@ -1463,6 +1498,9 @@ function clearFeedbackReplyState({ clearDrafts = true } = {}) {
   });
   Object.keys(feedbackReplyInfo).forEach((key) => {
     delete feedbackReplyInfo[key];
+  });
+  Object.keys(feedbackReplyTarget).forEach((key) => {
+    delete feedbackReplyTarget[key];
   });
   Object.keys(feedbackThreadActionError).forEach((key) => {
     delete feedbackThreadActionError[key];
@@ -1481,16 +1519,34 @@ function clearFeedbackReplyState({ clearDrafts = true } = {}) {
   }
 }
 
-function toggleFeedbackReply(threadId) {
-  const key = String(threadId);
-  if (feedbackReplyOpenId.value === key) {
-    feedbackReplyOpenId.value = null;
+function setFeedbackReplyTarget(thread, message) {
+  const key = String(thread?.id ?? '').trim();
+  if (!key) return;
+  const targetMessage = message && Number(message?.feedback_id) > 0 ? message : latestUserMessage(thread);
+  if (!targetMessage) {
+    delete feedbackReplyTarget[key];
     return;
+  }
+  feedbackReplyTarget[key] = {
+    feedbackId: Number(targetMessage.feedback_id),
+    kind: targetMessage.kind || 'text',
+    label: feedbackReplyTargetLabel(targetMessage)
+  };
+}
+
+function startFeedbackReply(thread, message = null) {
+  const key = String(thread?.id ?? '').trim();
+  if (feedbackReplyOpenId.value === key) {
+    if (!message) {
+      feedbackReplyOpenId.value = null;
+      return;
+    }
   }
   feedbackReplyOpenId.value = key;
   if (typeof feedbackReplyDraft[key] !== 'string') {
     feedbackReplyDraft[key] = '';
   }
+  setFeedbackReplyTarget(thread, message);
   feedbackReplyError[key] = '';
   feedbackReplyInfo[key] = '';
 }
@@ -1604,7 +1660,7 @@ async function deleteFeedbackThread(thread) {
 
 async function sendFeedbackReply(thread) {
   const key = String(thread?.id ?? '').trim();
-  const feedbackId = Number(thread?.latest_feedback_id);
+  const feedbackId = Number(feedbackReplyTarget[key]?.feedbackId || thread?.latest_feedback_id);
   if (!key) return;
 
   if (!password.value) {
@@ -1634,7 +1690,10 @@ async function sendFeedbackReply(thread) {
     const data = await apiJson(props.apiBase, `/admin/feedbacks/${feedbackId}/reply`, {
       method: 'POST',
       headers,
-      body: { messageText }
+      body: {
+        messageText,
+        replyToFeedbackId: feedbackId
+      }
     });
 
     const reply = data?.reply && typeof data.reply === 'object' ? data.reply : null;
@@ -1651,6 +1710,7 @@ async function sendFeedbackReply(thread) {
         created_by: reply.created_by || 'admin_dashboard',
         message_id: null,
         telegram_message_id: Number(reply.telegram_message_id || 0) || null,
+        reply_to_message_id: Number(reply.reply_to_message_id || 0) || null,
         telegram_file_id: null,
         body: reply.body || messageText
       });
@@ -1670,6 +1730,7 @@ async function sendFeedbackReply(thread) {
 
     feedbackReplyDraft[key] = '';
     feedbackReplyOpenId.value = null;
+    delete feedbackReplyTarget[key];
     const telegramMessageId = Number(data?.telegram_message_id || 0);
     const detail = Number.isFinite(telegramMessageId) && telegramMessageId > 0
       ? `Telegram msg #${telegramMessageId}`
@@ -2830,6 +2891,17 @@ h1 {
   color: rgba(87, 60, 127, 0.92);
 }
 
+.feedback-inline-action {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--accent-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
 .feedback-text {
   margin: 0;
   white-space: pre-wrap;
@@ -2858,6 +2930,15 @@ h1 {
   padding-top: 8px;
   display: grid;
   gap: 8px;
+}
+
+.feedback-reply-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .feedback-reply .field {
