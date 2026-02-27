@@ -13,153 +13,82 @@
       </div>
     </header>
 
-    <div
-      ref="wrapEl"
-      class="chart"
-      @pointermove="onPointerMove"
-      @pointerleave="onPointerLeave"
-      @click="onClick"
-    >
-      <div class="clip">
-        <svg
-          :viewBox="`0 0 ${width} ${height}`"
-          :width="width"
-          :height="height"
+    <div ref="surfaceEl" class="chart">
+      <div class="clip" :style="{ height: `${chartHeight}px` }">
+        <canvas
+          v-if="hasData"
+          ref="canvasEl"
+          class="canvas"
           role="img"
           :aria-label="title"
-        >
-          <g>
-            <line :x1="padL" :y1="padT" :x2="padL" :y2="height - padB" class="axis" />
-            <line
-              :x1="padL"
-              :y1="height - padB"
-              :x2="width - padR"
-              :y2="height - padB"
-              class="axis"
-            />
-          </g>
-
-          <g v-if="yMax > 0">
-            <text :x="padL - 8" :y="padT + 4" class="yLabel" text-anchor="end">
-              {{ formatCompact(yMax) }}
-            </text>
-            <text :x="padL - 8" :y="height - padB + 4" class="yLabel" text-anchor="end">0</text>
-          </g>
-
-          <g v-if="days.length && xLabels !== 'all'">
-            <text :x="padL" :y="height - 6" class="xLabel" text-anchor="start">
-              {{ formatXLabel(days[0]) }}
-            </text>
-            <text :x="width - padR" :y="height - 6" class="xLabel" text-anchor="end">
-              {{ formatXLabel(days[days.length - 1]) }}
-            </text>
-          </g>
-
-          <g v-else-if="days.length && xLabels === 'all'">
-            <text
-              v-for="tick in xTicks"
-              :key="tick.key"
-              :x="tick.x"
-              :y="xLabelY"
-              class="xLabel"
-              :text-anchor="xTickAnchor(tick.i)"
-              :transform="xLabelTransform(tick.x, xLabelY)"
-            >
-              {{ tick.label }}
-            </text>
-          </g>
-
-          <g v-if="isHoverActive">
-            <line :x1="hoverX" :y1="padT" :x2="hoverX" :y2="height - padB" class="guide" />
-          </g>
-
-          <g v-if="kind === 'bar'">
-            <template v-for="bar in barRects" :key="bar.key">
-              <rect
-                v-for="seg in bar.segments"
-                :key="seg.key"
-                :x="seg.x"
-                :y="seg.y"
-                :width="seg.w"
-                :height="seg.h"
-                :fill="seg.color"
-                :class="[
-                  'bar',
-                  { hovered: isHoverActive && hover.index === bar.i, dimmed: isHoverActive && hover.index !== bar.i }
-                ]"
-              />
-            </template>
-          </g>
-
-          <g v-else>
-            <polyline
-              v-for="line in lines"
-              :key="line.key"
-              :points="line.points"
-              :stroke="line.color"
-              :class="['line', { dimmed: isHoverActive && hover.index !== -1 }]"
-              fill="none"
-            />
-          </g>
-
-          <g v-if="kind !== 'bar' && pointDots.length">
-            <circle
-              v-for="pt in pointDots"
-              :key="pt.key"
-              :cx="pt.x"
-              :cy="pt.y"
-              :r="pt.i === hover.index ? 4 : 2.5"
-              :fill="pt.color"
-              :class="['dotPoint', { dimmed: isHoverActive && pt.i !== hover.index }]"
-            />
-          </g>
-
-          <g v-if="!days.length" class="empty">
-            <text :x="width / 2" :y="height / 2" text-anchor="middle">No data</text>
-          </g>
-        </svg>
-      </div>
-
-      <div v-if="tooltip && isHoverActive && tooltipPayload" class="tooltip" :style="tooltipStyle">
-        <div class="tooltip-title">{{ tooltipPayload.title }}</div>
-        <div v-if="tooltipPayload.total !== null" class="tooltip-total">
-          Total: <strong>{{ formatNumber(tooltipPayload.total) }}</strong>
+        />
+        <div v-else class="empty" role="img" :aria-label="title">
+          <span>No data</span>
         </div>
-        <div class="tooltip-rows">
-          <div v-for="row in tooltipPayload.rows" :key="row.key" class="tooltip-row">
-            <span class="tooltip-dot" :style="{ background: row.color }" />
-            <span class="tooltip-label">{{ row.label }}</span>
-            <span class="tooltip-value">{{ formatNumber(row.value) }}</span>
-          </div>
-        </div>
-        <div class="tooltip-hint" v-if="hover.locked">Tap to unpin</div>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  BarController,
+  BarElement,
+  CategoryScale,
+  Chart,
+  Legend,
+  LineController,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip
+} from 'chart.js';
+
+Chart.register(
+  BarController,
+  BarElement,
+  CategoryScale,
+  Legend,
+  LineController,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip
+);
+
+const BASE_WIDTH = 680;
+const PAD_L = 48;
+const PAD_R = 18;
 
 const props = defineProps({
   title: { type: String, required: true },
   subtitle: { type: String, default: '' },
-  kind: { type: String, default: 'bar' }, // 'bar' | 'line'
+  kind: { type: String, default: 'bar' },
   data: { type: Array, default: () => [] },
-  xLabels: { type: String, default: 'ends' }, // 'ends' | 'all'
+  xLabels: { type: String, default: 'ends' },
   tooltip: { type: Boolean, default: true },
   series: {
     type: Array,
-    default: () => [
-      { key: 'count', label: 'Count', color: 'rgba(199, 90, 36, 0.85)' }
-    ]
+    default: () => [{ key: 'count', label: 'Count', color: 'rgba(199, 90, 36, 0.85)' }]
   }
 });
 
-const width = 680;
-const padL = 48;
-const padR = 18;
-const padT = 18;
+const canvasEl = ref(null);
+const surfaceEl = ref(null);
+const chartInstance = ref(null);
+const chartWidth = ref(BASE_WIDTH);
+
+let resizeObserver = null;
+
+const labels = computed(() => props.data.map((row) => String(row?.day ?? '')));
+const hasData = computed(() => labels.value.length > 0);
+const isStacked = computed(() => props.kind === 'bar' && props.series.length > 1);
+
+function safeNum(value) {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
 
 function isIsoDateLabel(label) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(label || ''));
@@ -167,8 +96,34 @@ function isIsoDateLabel(label) {
 
 function formatXLabel(label) {
   const s = String(label || '');
-  if (isIsoDateLabel(s)) return s.slice(5); // MM-DD
+  if (isIsoDateLabel(s)) return s.slice(5);
   return s;
+}
+
+function formatCompact(n) {
+  const v = safeNum(n);
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}m`;
+  if (v >= 10_000) return `${Math.round(v / 1000)}k`;
+  if (v >= 1_000) return `${(v / 1000).toFixed(1)}k`;
+  return String(Math.round(v));
+}
+
+const numFmt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+
+function formatNumber(n) {
+  const v = Number(n ?? 0);
+  if (!Number.isFinite(v)) return '—';
+  return numFmt.format(v);
+}
+
+function chartFontFamily() {
+  if (typeof window === 'undefined') return 'Chivo, system-ui, sans-serif';
+  const value = window.getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim();
+  return value || 'Chivo, system-ui, sans-serif';
+}
+
+function innerWidth() {
+  return Math.max(120, chartWidth.value - PAD_L - PAD_R);
 }
 
 const xLabelAngle = computed(() => {
@@ -180,7 +135,7 @@ const xLabelAngle = computed(() => {
     return Math.max(acc, String(label || '').length);
   }, 0);
   const approxLabelWidth = maxLen * 6.2 + 6;
-  const stepPx = props.kind === 'bar' ? innerW() / n : innerW() / (n - 1);
+  const stepPx = props.kind === 'bar' ? innerWidth() / n : innerWidth() / Math.max(1, n - 1);
   if (approxLabelWidth <= stepPx * 0.92) return 0;
   if (approxLabelWidth <= stepPx * 1.8) return -38;
   return -55;
@@ -195,293 +150,285 @@ const xLabelStride = computed(() => {
     return Math.max(acc, String(label || '').length);
   }, 0);
   const approxLabelWidth = maxLen * 6.2 + 6;
-  const stepPx = props.kind === 'bar' ? innerW() / n : innerW() / (n - 1);
+  const stepPx = props.kind === 'bar' ? innerWidth() / n : innerWidth() / Math.max(1, n - 1);
   const horizontalProjection = xLabelAngle.value
     ? approxLabelWidth * Math.cos((Math.abs(xLabelAngle.value) * Math.PI) / 180)
     : approxLabelWidth;
-  return Math.max(1, Math.ceil((horizontalProjection + 4) / stepPx));
+  return Math.max(1, Math.ceil((horizontalProjection + 4) / Math.max(stepPx, 1)));
 });
 
-function xTickAnchor(i) {
-  if (!xLabelAngle.value) return 'middle';
-  const n = props.data.length;
-  if (i <= 0) return 'start';
-  if (i >= n - 1) return 'end';
-  return 'middle';
-}
-
-const padB = computed(() => {
+const padBottom = computed(() => {
   if (props.xLabels !== 'all') return 34;
   if (xLabelAngle.value <= -50) return 92;
   if (xLabelAngle.value < 0) return 80;
   return 46;
 });
 
-const height = computed(() => 210 + (padB.value - 34));
+const chartHeight = computed(() => 210 + (padBottom.value - 34));
 
-const days = computed(() => props.data.map((r) => r.day));
+function tickLabelForIndex(index) {
+  const count = labels.value.length;
+  if (!count) return '';
+  if (props.xLabels === 'ends') {
+    if (index !== 0 && index !== count - 1) return '';
+    return formatXLabel(labels.value[index]);
+  }
 
-function formatCompact(n) {
-  const v = Number(n || 0);
-  if (!Number.isFinite(v)) return '0';
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}m`;
-  if (v >= 10_000) return `${Math.round(v / 1000)}k`;
-  if (v >= 1_000) return `${(v / 1000).toFixed(1)}k`;
-  return String(Math.round(v));
+  const show = index === 0 || index === count - 1 || index % xLabelStride.value === 0;
+  return show ? formatXLabel(labels.value[index]) : '';
 }
 
-const numFmt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
-function formatNumber(n) {
-  const v = Number(n ?? 0);
-  if (!Number.isFinite(v)) return '—';
-  return numFmt.format(v);
-}
+function buildDatasets() {
+  return props.series.map((series) => {
+    const values = props.data.map((row) => Math.max(0, safeNum(row?.[series.key])));
 
-const yMax = computed(() => {
-  let max = 0;
-  for (const row of props.data) {
-    if (props.kind === 'bar' && props.series.length > 1) {
-      const sum = props.series.reduce((acc, s) => acc + Number(row?.[s.key] || 0), 0);
-      if (sum > max) max = sum;
-      continue;
+    if (props.kind === 'line') {
+      return {
+        type: 'line',
+        label: series.label,
+        data: values,
+        borderColor: series.color,
+        backgroundColor: series.color,
+        pointBackgroundColor: series.color,
+        pointBorderColor: series.color,
+        pointBorderWidth: 0,
+        pointRadius: 2.5,
+        pointHoverRadius: props.tooltip ? 4 : 2.5,
+        pointHitRadius: 12,
+        borderWidth: 2.25,
+        tension: 0.18,
+        fill: false
+      };
     }
-    for (const s of props.series) {
-      const v = Number(row?.[s.key] || 0);
-      if (v > max) max = v;
-    }
-  }
-  return max;
-});
 
-function yForValue(value) {
-  const v = Math.max(0, Number(value || 0));
-  if (!yMax.value) return height.value - padB.value;
-  const innerH = height.value - padT - padB.value;
-  const t = v / yMax.value;
-  return padT + (1 - t) * innerH;
+    return {
+      type: 'bar',
+      label: series.label,
+      data: values,
+      backgroundColor: series.color,
+      borderColor: series.color,
+      borderWidth: 0,
+      borderRadius: 8,
+      borderSkipped: false,
+      barPercentage: 0.72,
+      categoryPercentage: 0.84,
+      maxBarThickness: 36,
+      hoverBackgroundColor: series.color,
+      stack: isStacked.value ? 'total' : undefined
+    };
+  });
 }
 
-function innerW() {
-  return width - padL - padR;
+function tooltipLabel(context) {
+  const parsed = typeof context.parsed === 'object' ? context.parsed?.y : context.parsed;
+  return `${context.dataset.label}: ${formatNumber(parsed)}`;
 }
 
-function xForIndex(i) {
-  const n = props.data.length;
-  if (!n) return padL;
-  if (props.kind === 'bar') {
-    const step = innerW() / n;
-    return padL + i * step + step / 2;
-  }
-  if (n === 1) return padL;
-  const step = innerW() / (n - 1);
-  return padL + i * step;
-}
+function buildOptions() {
+  const rotation = Math.abs(xLabelAngle.value);
+  const fontFamily = chartFontFamily();
 
-const xLabelY = computed(() => {
-  if (props.xLabels !== 'all') return height.value - 8;
-  if (xLabelAngle.value) return height.value - padB.value + 12;
-  return height.value - 8;
-});
-function xLabelTransform(x, y) {
-  if (!xLabelAngle.value) return undefined;
-  return `rotate(${xLabelAngle.value} ${x} ${y})`;
-}
-
-const xTicks = computed(() => {
-  const n = props.data.length;
-  if (!n) return [];
-  const ticks = [];
-  for (let i = 0; i < n; i += 1) {
-    const show = i === 0 || i === n - 1 || i % xLabelStride.value === 0;
-    if (!show) continue;
-    const row = props.data[i] || {};
-    ticks.push({
-      key: `${row.day || 'x'}-${i}`,
-      i,
-      x: xForIndex(i),
-      label: formatXLabel(row.day)
-    });
-  }
-  return ticks;
-});
-
-const barRects = computed(() => {
-  const n = props.data.length;
-  if (!n) return [];
-  const step = innerW() / n;
-  const barW = Math.max(2, step * 0.72);
-  const bars = [];
-  for (let i = 0; i < n; i += 1) {
-    const row = props.data[i] || {};
-    const x = padL + i * step + (step - barW) / 2;
-
-    const segments = [];
-    let acc = 0;
-    for (const s of props.series) {
-      const v = Math.max(0, Number(row?.[s.key] || 0));
-      const yTop = yForValue(acc + v);
-      const yBottom = yForValue(acc);
-      const h = Math.max(0, yBottom - yTop);
-      if (h > 0.5) {
-        segments.push({
-          key: `${row.day}-${s.key}`,
-          x,
-          y: yTop,
-          w: barW,
-          h,
-          color: s.color
-        });
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+      duration: 220
+    },
+    events: props.tooltip ? undefined : [],
+    interaction: props.tooltip
+      ? {
+          mode: 'index',
+          intersect: false
+        }
+      : undefined,
+    layout: {
+      padding: {
+        left: 6,
+        right: 8,
+        top: 10,
+        bottom: 8
       }
-      acc += v;
+    },
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        enabled: props.tooltip,
+        callbacks: {
+          title(items) {
+            return String(items[0]?.label ?? '');
+          },
+          label: tooltipLabel,
+          footer(items) {
+            if (!isStacked.value || !items.length) return '';
+            const total = items.reduce((sum, item) => {
+              const value = typeof item.parsed === 'object' ? item.parsed?.y : item.parsed;
+              return sum + safeNum(value);
+            }, 0);
+            return `Total: ${formatNumber(total)}`;
+          }
+        },
+        backgroundColor: 'rgba(255, 255, 255, 0.94)',
+        borderColor: 'rgba(30, 26, 22, 0.10)',
+        borderWidth: 1,
+        titleColor: 'rgba(30, 26, 22, 0.92)',
+        bodyColor: 'rgba(30, 26, 22, 0.82)',
+        footerColor: 'rgba(30, 26, 22, 0.74)',
+        titleFont: {
+          family: fontFamily,
+          size: 12,
+          weight: '700'
+        },
+        bodyFont: {
+          family: fontFamily,
+          size: 12
+        },
+        footerFont: {
+          family: fontFamily,
+          size: 12,
+          weight: '600'
+        },
+        padding: 10,
+        displayColors: true,
+        boxPadding: 6
+      }
+    },
+    scales: {
+      x: {
+        stacked: isStacked.value,
+        grid: {
+          display: false,
+          drawBorder: false
+        },
+        border: {
+          color: 'rgba(30, 26, 22, 0.18)'
+        },
+        ticks: {
+          autoSkip: false,
+          color: 'rgba(30, 26, 22, 0.55)',
+          font: {
+            family: fontFamily,
+            size: 11
+          },
+          maxRotation: rotation,
+          minRotation: rotation,
+          callback(value, index) {
+            return tickLabelForIndex(index);
+          }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        stacked: isStacked.value,
+        grid: {
+          color: 'rgba(30, 26, 22, 0.08)',
+          drawBorder: false
+        },
+        border: {
+          color: 'rgba(30, 26, 22, 0.18)'
+        },
+        ticks: {
+          color: 'rgba(30, 26, 22, 0.55)',
+          font: {
+            family: fontFamily,
+            size: 11
+          },
+          padding: 8,
+          callback(value) {
+            return formatCompact(value);
+          }
+        }
+      }
     }
-
-    bars.push({ key: row.day || String(i), i, segments });
-  }
-  return bars;
-});
-
-const lines = computed(() => {
-  const n = props.data.length;
-  if (!n) return [];
-  const step = n === 1 ? 0 : innerW() / (n - 1);
-  const out = [];
-  for (const s of props.series) {
-    const pts = [];
-    for (let i = 0; i < n; i += 1) {
-      const row = props.data[i] || {};
-      const x = padL + i * step;
-      const y = yForValue(row?.[s.key] || 0);
-      pts.push(`${x.toFixed(2)},${y.toFixed(2)}`);
-    }
-    out.push({ key: s.key, color: s.color, points: pts.join(' ') });
-  }
-  return out;
-});
-
-const pointDots = computed(() => {
-  if (props.kind !== 'line') return [];
-  const n = props.data.length;
-  if (!n) return [];
-  const step = n === 1 ? 0 : innerW() / (n - 1);
-  const dots = [];
-  for (const s of props.series) {
-    for (let i = 0; i < n; i += 1) {
-      const row = props.data[i] || {};
-      const x = padL + i * step;
-      const y = yForValue(row?.[s.key] || 0);
-      dots.push({ key: `${s.key}-${i}`, i, x, y, color: s.color });
-    }
-  }
-  return dots;
-});
-
-const wrapEl = ref(null);
-const hover = reactive({
-  index: -1,
-  px: 0,
-  py: 0,
-  locked: false,
-  rectW: 0,
-  rectH: 0
-});
-
-const isHoverActive = computed(() => props.tooltip && hover.index >= 0 && hover.index < props.data.length);
-const hoverX = computed(() => xForIndex(hover.index));
-
-function pickIndexFromPointer(event) {
-  const el = wrapEl.value;
-  if (!el) return { index: -1 };
-  const rect = el.getBoundingClientRect();
-  if (!rect.width || !rect.height) return { index: -1 };
-  const px = event.clientX - rect.left;
-  const py = event.clientY - rect.top;
-  const xSvg = (px / rect.width) * width;
-
-  const n = props.data.length;
-  if (!n) return { index: -1 };
-
-  let idx = 0;
-  if (props.kind === 'bar') {
-    const step = innerW() / n;
-    idx = Math.floor((xSvg - padL) / step);
-  } else {
-    if (n === 1) idx = 0;
-    else {
-      const step = innerW() / (n - 1);
-      idx = Math.round((xSvg - padL) / step);
-    }
-  }
-
-  idx = Math.max(0, Math.min(n - 1, idx));
-  return { index: idx, px, py, rectW: rect.width, rectH: rect.height };
+  };
 }
 
-function onPointerMove(event) {
-  if (hover.locked) return;
-  const picked = pickIndexFromPointer(event);
-  if (picked.index === -1) return;
-  hover.index = picked.index;
-  hover.px = picked.px;
-  hover.py = picked.py;
-  hover.rectW = picked.rectW;
-  hover.rectH = picked.rectH;
+function buildConfig() {
+  return {
+    type: props.kind,
+    data: {
+      labels: labels.value,
+      datasets: buildDatasets()
+    },
+    options: buildOptions()
+  };
 }
 
-function onPointerLeave() {
-  if (hover.locked) return;
-  hover.index = -1;
+function destroyChart() {
+  if (!chartInstance.value) return;
+  chartInstance.value.destroy();
+  chartInstance.value = null;
 }
 
-function onClick(event) {
-  if (!props.tooltip) return;
-  if (hover.locked) {
-    hover.locked = false;
-    hover.index = -1;
+function createChart() {
+  if (!hasData.value || !canvasEl.value) return;
+  const ctx = canvasEl.value.getContext('2d');
+  if (!ctx) return;
+  chartInstance.value = new Chart(ctx, buildConfig());
+}
+
+async function syncChart() {
+  await nextTick();
+
+  if (!hasData.value) {
+    destroyChart();
     return;
   }
-  const picked = pickIndexFromPointer(event);
-  if (picked.index === -1) return;
-  hover.index = picked.index;
-  hover.px = picked.px;
-  hover.py = picked.py;
-  hover.rectW = picked.rectW;
-  hover.rectH = picked.rectH;
-  hover.locked = true;
+
+  if (!chartInstance.value || chartInstance.value.config.type !== props.kind) {
+    destroyChart();
+    createChart();
+    return;
+  }
+
+  const config = buildConfig();
+  chartInstance.value.data = config.data;
+  chartInstance.value.options = config.options;
+  chartInstance.value.update();
 }
 
-const tooltipPayload = computed(() => {
-  if (!isHoverActive.value) return null;
-  const row = props.data[hover.index] || {};
-  const rows = props.series.map((s) => ({
-    key: s.key,
-    label: s.label,
-    color: s.color,
-    value: Number(row?.[s.key] ?? 0)
-  }));
-  const isStacked = props.kind === 'bar' && props.series.length > 1;
-  const total = isStacked ? rows.reduce((acc, r) => acc + (Number.isFinite(r.value) ? r.value : 0), 0) : null;
-  return {
-    title: String(row.day ?? ''),
-    rows,
-    total
-  };
+function updateChartWidth() {
+  const width = surfaceEl.value?.clientWidth;
+  chartWidth.value = width && width > 0 ? width : BASE_WIDTH;
+}
+
+onMounted(async () => {
+  updateChartWidth();
+
+  if (typeof ResizeObserver !== 'undefined' && surfaceEl.value) {
+    resizeObserver = new ResizeObserver((entries) => {
+      const nextWidth = entries[0]?.contentRect?.width;
+      if (!nextWidth) return;
+      chartWidth.value = nextWidth;
+    });
+    resizeObserver.observe(surfaceEl.value);
+  }
+
+  await syncChart();
 });
 
-const tooltipStyle = computed(() => {
-  const w = hover.rectW || 0;
-  const h = hover.rectH || 0;
-  const px = hover.px || 0;
-  const py = hover.py || 0;
-  const offset = 12;
-  const pad = 10;
-
-  const preferRight = px > w * 0.66;
-  const left = Math.max(pad, Math.min(w - pad, preferRight ? px - offset : px + offset));
-  const top = Math.max(pad, Math.min(h - pad, py - offset));
-
-  const transform = preferRight ? 'translate(-100%, -100%)' : 'translate(0, -100%)';
-  return { left: `${left}px`, top: `${top}px`, transform };
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  destroyChart();
 });
+
+watch(
+  [
+    () => props.kind,
+    () => props.title,
+    () => props.tooltip,
+    () => props.xLabels,
+    () => props.data,
+    () => props.series,
+    chartWidth
+  ],
+  () => {
+    syncChart();
+  },
+  { deep: true }
+);
 </script>
 
 <style scoped>
@@ -547,131 +494,22 @@ const tooltipStyle = computed(() => {
   border-radius: 14px;
   border: 1px solid rgba(30, 26, 22, 0.08);
   background: rgba(246, 241, 232, 0.5);
+  position: relative;
 }
 
-svg {
+.canvas {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   touch-action: pan-y;
 }
 
-.axis {
-  stroke: rgba(30, 26, 22, 0.18);
-  stroke-width: 1;
-}
-
-.guide {
-  stroke: rgba(30, 26, 22, 0.18);
-  stroke-width: 1;
-  stroke-dasharray: 3 4;
-}
-
-.yLabel,
-.xLabel {
-  fill: rgba(30, 26, 22, 0.55);
-  font-size: 11px;
-  font-family: var(--font-body);
-}
-
-.bar {
-  opacity: 0.92;
-}
-
-.bar.hovered {
-  opacity: 1;
-  filter: drop-shadow(0 10px 18px rgba(30, 26, 22, 0.12));
-}
-
-.bar.dimmed {
-  opacity: 0.45;
-}
-
-.line {
-  stroke-width: 2.25;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 10px 18px rgba(30, 26, 22, 0.12));
-}
-
-.line.dimmed {
-  opacity: 0.5;
-}
-
-.dotPoint {
-  opacity: 0.9;
-}
-
-.dotPoint.dimmed {
-  opacity: 0.35;
-}
-
-.tooltip {
-  position: absolute;
-  z-index: 2;
-  pointer-events: none;
-  min-width: 170px;
-  max-width: 260px;
-  padding: 10px 10px 9px;
-  border-radius: 12px;
-  border: 1px solid rgba(30, 26, 22, 0.10);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 18px 40px rgba(20, 18, 16, 0.18);
-  backdrop-filter: blur(8px);
-}
-
-.tooltip-title {
-  font-weight: 760;
-  letter-spacing: -0.01em;
-  font-size: 12px;
-  margin-bottom: 6px;
-}
-
-.tooltip-total {
-  font-size: 12px;
-  color: rgba(30, 26, 22, 0.75);
-  margin-bottom: 6px;
-}
-
-.tooltip-rows {
-  display: grid;
-  gap: 6px;
-}
-
-.tooltip-row {
-  display: grid;
-  grid-template-columns: 10px 1fr auto;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: rgba(30, 26, 22, 0.82);
-}
-
-.tooltip-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  box-shadow: 0 8px 16px rgba(30, 26, 22, 0.12);
-}
-
-.tooltip-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tooltip-value {
-  font-variant-numeric: tabular-nums;
-}
-
-.tooltip-hint {
-  margin-top: 8px;
-  font-size: 11px;
-  color: rgba(30, 26, 22, 0.55);
-}
-
 .empty {
-  fill: rgba(30, 26, 22, 0.5);
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: rgba(30, 26, 22, 0.5);
   font-size: 12px;
+  font-family: var(--font-body);
 }
 </style>
