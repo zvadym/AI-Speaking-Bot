@@ -1677,6 +1677,194 @@ app.get('/admin/metrics/usage-seconds-by-day', requireAdmin, async (req, res) =>
   });
 });
 
+app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const params = [range.from.toISOString(), range.to.toISOString(), range.payload];
+
+  const [totalsRes, usageBucketsRes, messageBucketsRes] = await Promise.all([
+    pool.query(
+      `WITH params AS (
+         SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+       ),
+       free_users AS (
+         SELECT u.chat_id
+         FROM users u
+         WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
+           AND CASE
+             WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
+               THEN u.override_plan_tier
+             WHEN u.plan_expires_at IS NOT NULL AND NOW() < u.plan_expires_at
+               THEN u.plan_tier
+             ELSE 'free'
+           END = 'free'
+       ),
+       usage_per_user AS (
+         SELECT
+           f.chat_id,
+           COALESCE(SUM(v.seconds) FILTER (WHERE v.direction = 'in'), 0)::bigint AS in_seconds,
+           COALESCE(SUM(v.seconds) FILTER (WHERE v.direction = 'out'), 0)::bigint AS out_seconds
+         FROM free_users f
+         LEFT JOIN voice_usage_events v
+           ON v.chat_id = f.chat_id
+          AND v.occurred_at >= (SELECT from_ts FROM params)
+          AND v.occurred_at < (SELECT to_ts FROM params)
+         GROUP BY f.chat_id
+       ),
+       message_per_user AS (
+         SELECT
+           f.chat_id,
+           COUNT(*) FILTER (WHERE m.role = 'user')::int AS sent_messages,
+           COUNT(*) FILTER (WHERE m.role = 'assistant')::int AS assistant_messages
+         FROM free_users f
+         LEFT JOIN messages m
+           ON m.chat_id = f.chat_id
+          AND m.created_at >= (SELECT from_ts FROM params)
+          AND m.created_at < (SELECT to_ts FROM params)
+         GROUP BY f.chat_id
+       )
+       SELECT
+         (SELECT COUNT(*) FROM free_users)::int AS free_users_all_time,
+         COUNT(*) FILTER (WHERE (u.in_seconds + u.out_seconds) > 0)::int AS free_users_with_voice_in_range,
+         COUNT(*) FILTER (WHERE m.sent_messages > 0)::int AS free_users_with_messages_in_range,
+         COUNT(*) FILTER (WHERE (u.in_seconds + u.out_seconds) > 0 OR m.sent_messages > 0)::int AS engaged_free_users_in_range,
+         COALESCE(SUM(u.in_seconds), 0)::bigint AS in_seconds,
+         COALESCE(SUM(u.out_seconds), 0)::bigint AS out_seconds,
+         COALESCE(SUM(m.sent_messages), 0)::bigint AS sent_messages,
+         COALESCE(SUM(m.assistant_messages), 0)::bigint AS assistant_messages
+       FROM free_users f
+       LEFT JOIN usage_per_user u ON u.chat_id = f.chat_id
+       LEFT JOIN message_per_user m ON m.chat_id = f.chat_id`,
+      params
+    ),
+    pool.query(
+      `WITH params AS (
+         SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+       ),
+       free_users AS (
+         SELECT u.chat_id
+         FROM users u
+         WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
+           AND CASE
+             WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
+               THEN u.override_plan_tier
+             WHEN u.plan_expires_at IS NOT NULL AND NOW() < u.plan_expires_at
+               THEN u.plan_tier
+             ELSE 'free'
+           END = 'free'
+       ),
+       usage_per_user AS (
+         SELECT
+           f.chat_id,
+           (
+             COALESCE(SUM(v.seconds) FILTER (WHERE v.direction = 'in'), 0)
+             + COALESCE(SUM(v.seconds) FILTER (WHERE v.direction = 'out'), 0)
+           )::bigint AS total_seconds
+         FROM free_users f
+         LEFT JOIN voice_usage_events v
+           ON v.chat_id = f.chat_id
+          AND v.occurred_at >= (SELECT from_ts FROM params)
+          AND v.occurred_at < (SELECT to_ts FROM params)
+         GROUP BY f.chat_id
+       ),
+       buckets AS (
+         SELECT *
+         FROM (VALUES
+           (0::bigint, 30::bigint, '<30s'::text, 1),
+           (30::bigint, 60::bigint, '<1m'::text, 2),
+           (60::bigint, 120::bigint, '<2m'::text, 3),
+           (120::bigint, 300::bigint, '<5m'::text, 4),
+           (300::bigint, 600::bigint, '<10m'::text, 5),
+           (600::bigint, NULL::bigint, '10m+'::text, 6)
+         ) AS t(min_seconds, max_seconds, label, ord)
+       )
+       SELECT
+         b.label AS day,
+         COUNT(*) FILTER (
+           WHERE u.total_seconds > 0
+             AND u.total_seconds >= b.min_seconds
+             AND (b.max_seconds IS NULL OR u.total_seconds < b.max_seconds)
+         )::int AS users
+       FROM buckets b
+       LEFT JOIN usage_per_user u ON true
+       GROUP BY b.label, b.ord
+       ORDER BY b.ord ASC`,
+      params
+    ),
+    pool.query(
+      `WITH params AS (
+         SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+       ),
+       free_users AS (
+         SELECT u.chat_id
+         FROM users u
+         WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
+           AND CASE
+             WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
+               THEN u.override_plan_tier
+             WHEN u.plan_expires_at IS NOT NULL AND NOW() < u.plan_expires_at
+               THEN u.plan_tier
+             ELSE 'free'
+           END = 'free'
+       ),
+       message_per_user AS (
+         SELECT
+           f.chat_id,
+           COUNT(*) FILTER (WHERE m.role = 'user')::int AS sent_messages
+         FROM free_users f
+         LEFT JOIN messages m
+           ON m.chat_id = f.chat_id
+          AND m.created_at >= (SELECT from_ts FROM params)
+          AND m.created_at < (SELECT to_ts FROM params)
+         GROUP BY f.chat_id
+       ),
+       buckets AS (
+         SELECT *
+         FROM (VALUES
+           (1::int, 2::int, '1'::text, 1),
+           (2::int, 4::int, '2-3'::text, 2),
+           (4::int, 8::int, '4-7'::text, 3),
+           (8::int, 16::int, '8-15'::text, 4),
+           (16::int, 31::int, '16-30'::text, 5),
+           (31::int, NULL::int, '31+'::text, 6)
+         ) AS t(min_messages, max_messages, label, ord)
+       )
+       SELECT
+         b.label AS day,
+         COUNT(*) FILTER (
+           WHERE m.sent_messages >= b.min_messages
+             AND (b.max_messages IS NULL OR m.sent_messages < b.max_messages)
+         )::int AS users
+       FROM buckets b
+       LEFT JOIN message_per_user m ON true
+       GROUP BY b.label, b.ord
+       ORDER BY b.ord ASC`,
+      params
+    )
+  ]);
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    totals: totalsRes.rows[0] || {
+      free_users_all_time: 0,
+      free_users_with_voice_in_range: 0,
+      free_users_with_messages_in_range: 0,
+      engaged_free_users_in_range: 0,
+      in_seconds: 0,
+      out_seconds: 0,
+      sent_messages: 0,
+      assistant_messages: 0
+    },
+    usage_buckets: usageBucketsRes.rows || [],
+    message_buckets: messageBucketsRes.rows || []
+  });
+});
+
 app.get('/admin/metrics/active-users-by-hour', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });

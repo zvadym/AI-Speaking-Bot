@@ -130,6 +130,61 @@
         </article>
       </section>
 
+      <section class="card panel free-users-panel">
+        <header class="panel-head">
+          <div>
+            <div class="panel-kicker">Free users</div>
+            <h2 class="panel-title">Usage distribution</h2>
+            <p class="panel-sub">Current effective tier = free. Range-based metrics below use the selected UTC dates and optional payload filter.</p>
+          </div>
+        </header>
+
+        <div class="panel-body free-users-body">
+          <section class="kpi-grid">
+            <article class="kpi">
+              <div class="kpi-label">Current free users</div>
+              <div class="kpi-value">{{ fmt(freeUserTotals.free_users_all_time) }}</div>
+              <div class="kpi-meta">Engaged in range: {{ fmt(freeUserTotals.engaged_free_users_in_range) }}</div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-label">Free users with voice</div>
+              <div class="kpi-value">{{ fmt(freeUserTotals.free_users_with_voice_in_range) }}</div>
+              <div class="kpi-meta">Any in/out voice usage in selected range</div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-label">Voice used (in+out)</div>
+              <div class="kpi-value">{{ formatDurationCompact(totalFreeVoiceSeconds) }}</div>
+              <div class="kpi-meta">In: {{ formatDurationCompact(freeUserTotals.in_seconds) }} · Out: {{ formatDurationCompact(freeUserTotals.out_seconds) }}</div>
+            </article>
+            <article class="kpi">
+              <div class="kpi-label">Messages sent</div>
+              <div class="kpi-value">{{ fmt(freeUserTotals.sent_messages) }}</div>
+              <div class="kpi-meta">Free users with messages: {{ fmt(freeUserTotals.free_users_with_messages_in_range) }} · Replies: {{ fmt(freeUserTotals.assistant_messages) }}</div>
+            </article>
+          </section>
+
+          <section class="charts-grid">
+            <AdminChart
+              title="Free users by voice seconds"
+              subtitle="Per-user total voice usage (in + out) in selected range"
+              kind="bar"
+              x-labels="all"
+              :data="freeUsersUsageBuckets"
+              :series="[{ key: 'users', label: 'Free users', color: 'rgba(46, 88, 142, 0.88)' }]"
+            />
+
+            <AdminChart
+              title="Free users by messages sent"
+              subtitle="User-originated messages per free user in selected range"
+              kind="bar"
+              x-labels="all"
+              :data="freeUsersMessageBuckets"
+              :series="[{ key: 'users', label: 'Free users', color: 'rgba(199, 90, 36, 0.88)' }]"
+            />
+          </section>
+        </div>
+      </section>
+
       <section class="card" v-if="botStats.length">
         <header class="bot-stats-head">
           <div class="kicker">Bot Statistics</div>
@@ -1049,6 +1104,18 @@ const activeUsersByBotSeries = ref([]);
 const activeUsersByBotSeriesConfig = ref([]);
 const inactiveUsersSeries = ref([]);
 const usageSecondsSeries = ref([]);
+const freeUserTotals = ref({
+  free_users_all_time: 0,
+  free_users_with_voice_in_range: 0,
+  free_users_with_messages_in_range: 0,
+  engaged_free_users_in_range: 0,
+  in_seconds: 0,
+  out_seconds: 0,
+  sent_messages: 0,
+  assistant_messages: 0
+});
+const freeUsersUsageBuckets = ref([]);
+const freeUsersMessageBuckets = ref([]);
 const activeUsersByHourSeries = ref([]);
 const activeUsersByHourTodaySeries = ref([]);
 const actionSeriesConfig = [
@@ -1314,6 +1381,7 @@ const canFetchFeedback = computed(() => {
 });
 const feedbackHasNext = computed(() => feedbackOffset.value + feedbackThreads.value.length < feedbackTotal.value);
 const usersHasNext = computed(() => usersOffset.value + usersRows.value.length < usersTotal.value);
+const totalFreeVoiceSeconds = computed(() => safeNum(freeUserTotals.value.in_seconds) + safeNum(freeUserTotals.value.out_seconds));
 
 function adminHeaders() {
   return { 'X-Admin-Password': password.value };
@@ -1416,6 +1484,19 @@ function fmt(v) {
   const n = Number(v || 0);
   if (!Number.isFinite(n)) return '0';
   return new Intl.NumberFormat('en-US').format(Math.round(n));
+}
+
+function formatDurationCompact(v) {
+  const totalSeconds = Math.max(0, Math.round(safeNum(v)));
+  if (totalSeconds < 60) return `${fmt(totalSeconds)}s`;
+  if (totalSeconds < 3600) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return seconds ? `${fmt(minutes)}m ${fmt(seconds)}s` : `${fmt(minutes)}m`;
+  }
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return minutes ? `${fmt(hours)}h ${fmt(minutes)}m` : `${fmt(hours)}h`;
 }
 
 function isoStampNow() {
@@ -1946,6 +2027,7 @@ async function refreshAnalytics() {
       activeUsersByBot,
       inactiveUsers,
       usageSeconds,
+      freeUsersInsights,
       byHour,
       byHourToday,
       payloads
@@ -1960,6 +2042,7 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/free-users-insights', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload }, headers }),
       apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
@@ -1979,6 +2062,9 @@ async function refreshAnalytics() {
     activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
+    freeUserTotals.value = freeUsersInsights?.totals || freeUserTotals.value;
+    freeUsersUsageBuckets.value = Array.isArray(freeUsersInsights?.usage_buckets) ? freeUsersInsights.usage_buckets : [];
+    freeUsersMessageBuckets.value = Array.isArray(freeUsersInsights?.message_buckets) ? freeUsersInsights.message_buckets : [];
     activeUsersByHourSeries.value = Array.isArray(byHour?.series) ? byHour.series : [];
     activeUsersByHourTodaySeries.value = Array.isArray(byHourToday?.series) ? byHourToday.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
@@ -2127,6 +2213,18 @@ function clearPassword() {
   usersOffset.value = 0;
   usersError.value = '';
   usersUpdatedAt.value = '';
+  freeUserTotals.value = {
+    free_users_all_time: 0,
+    free_users_with_voice_in_range: 0,
+    free_users_with_messages_in_range: 0,
+    engaged_free_users_in_range: 0,
+    in_seconds: 0,
+    out_seconds: 0,
+    sent_messages: 0,
+    assistant_messages: 0
+  };
+  freeUsersUsageBuckets.value = [];
+  freeUsersMessageBuckets.value = [];
 }
 
 function usersNextPage() {
@@ -2592,6 +2690,10 @@ h1 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 12px;
+}
+
+.free-users-body {
+  gap: 14px;
 }
 
 .compact {
