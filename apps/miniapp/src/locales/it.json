@@ -162,9 +162,9 @@
     }
   },
   "subscription": {
-    "heroBadge": "Atelier Abbonamento",
-    "title": "Scegli il tuo ritmo di allenamento",
-    "sub": "Mantieni costante la pratica di conversazione. Scegli una cadenza adatta alla tua routine e attiva/disattiva il rinnovo automatico quando vuoi.",
+    "heroBadge": "Abbonamento",
+    "title": "Abbonamento",
+    "sub": "Gestisci piano, utilizzo e pagamenti in un unico posto.",
     "manage": {
       "yourPlan": "Il tuo piano",
       "practiceTime": "Tempo di pratica",
@@ -222,7 +222,7 @@
   },
   "dock": {
     "home": "Dashboard",
-    "plan": "Plan",
+    "plan": "Abbonamento",
     "profile": "Profile",
     "support": "Support"
   },

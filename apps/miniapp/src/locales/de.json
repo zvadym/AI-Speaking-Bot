@@ -162,9 +162,9 @@
     }
   },
   "subscription": {
-    "heroBadge": "Abo-Atelier",
-    "title": "Wähle dein Trainingstempo",
-    "sub": "Halte dein Sprechtraining konstant. Wähle einen Rhythmus, der zu deinem Alltag passt, und schalte die automatische Verlängerung jederzeit um.",
+    "heroBadge": "Abo",
+    "title": "Abo",
+    "sub": "Verwalte Plan, Nutzung und Zahlungen an einem Ort.",
     "manage": {
       "yourPlan": "Dein Plan",
       "practiceTime": "Übungszeit",
@@ -222,7 +222,7 @@
   },
   "dock": {
     "home": "Dashboard",
-    "plan": "Plan",
+    "plan": "Abo",
     "profile": "Profile",
     "support": "Support"
   },

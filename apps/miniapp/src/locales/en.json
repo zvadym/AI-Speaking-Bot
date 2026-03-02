@@ -78,7 +78,7 @@
   },
   "dock": {
     "home": "Dashboard",
-    "plan": "Plan",
+    "plan": "Subscription",
     "profile": "Profile",
     "support": "Support"
   },
@@ -277,9 +277,9 @@
     }
   },
   "subscription": {
-    "heroBadge": "Subscription Atelier",
-    "title": "Choose your training tempo",
-    "sub": "Keep your speaking practice steady. Pick a cadence that matches your routine and toggle auto-renew whenever you want.",
+    "heroBadge": "Subscription",
+    "title": "Subscription",
+    "sub": "Manage your plan, usage, and billing in one place.",
     "manage": {
       "yourPlan": "Your plan",
       "practiceTime": "Practice time",
