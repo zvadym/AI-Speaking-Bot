@@ -102,6 +102,7 @@ function normalizeBotKey(raw) {
 function normalizeLanguageCode(raw) {
   const value = (raw ?? '').toString().trim().toLowerCase();
   if (!value) return null;
+  if (value === 'ua' || value === 'uk-ua' || value === 'ua-ua') return 'uk';
   return value.slice(0, 16);
 }
 

@@ -21,34 +21,27 @@
         <div class="coach-badge">{{ teacherAvatar }}</div>
       </div>
       <p class="section-copy">{{ teacherTagline }}</p>
-      <BotSwitcher
-        v-if="showBotSwitcher"
-        :label="$t('profile.switchTeacher')"
-        :bots="bots"
-        :model-value="currentBotKey"
-        @update:model-value="handleBotSwitch"
-      />
       <div class="meta-grid">
         <div class="meta-tile">
           <span>{{ $t('profile.learningLanguage') }}</span>
           <strong>{{ languageLabel }}</strong>
         </div>
-        <div class="meta-tile">
+        <button type="button" class="meta-tile meta-button" @click="scrollToLevelSection">
           <span>{{ $t('profile.level') }}</span>
           <strong>{{ currentLevelLabel }}</strong>
-        </div>
+        </button>
         <div class="meta-tile">
           <span>{{ $t('profile.replyMode') }}</span>
           <strong>{{ replyModeLabel }}</strong>
         </div>
-        <div class="meta-tile">
-          <span>{{ $t('profile.voice') }}</span>
-          <strong>{{ ttsVoiceLabel }}</strong>
-        </div>
       </div>
+      <button type="button" class="ghost-link secondary" @click="openTeachersUrl">
+        <Globe class="button-icon" />
+        <span>{{ $t('profile.otherLanguages') }}</span>
+      </button>
     </GlassCard>
 
-    <GlassCard tone="subtle" class="section">
+    <GlassCard ref="levelSectionEl" tone="subtle" class="section">
       <div class="section-head compact">
         <div>
           <div class="eyebrow">{{ $t('profile.levelSection') }}</div>
@@ -83,16 +76,7 @@
         </div>
         <Info class="section-icon" />
       </div>
-      <div class="meta-grid">
-        <div class="meta-tile">
-          <span>{{ $t('profile.interfaceLanguage') }}</span>
-          <strong>{{ localeLabel }}</strong>
-        </div>
-        <div class="meta-tile">
-          <span>{{ $t('profile.botKey') }}</span>
-          <strong>{{ currentBotKey || $t('common.dash') }}</strong>
-        </div>
-      </div>
+      <p class="section-copy">{{ $t('profile.schoolCopy') }}</p>
       <button type="button" class="ghost-link secondary" @click="openSchoolUrl">
         <Globe class="button-icon" />
         <span>{{ $t('profile.schoolLink') }}</span>
@@ -102,13 +86,12 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { Bot, Globe, GraduationCap, Info } from 'lucide-vue-next';
 import GlassCard from '../components/GlassCard.vue';
-import BotSwitcher from '../components/BotSwitcher.vue';
 import { apiJson } from '../lib/api.js';
 import { tgHaptic, tgOpenLink } from '../lib/tg.js';
-import { locale, useI18n } from '../i18n.js';
+import { useI18n } from '../i18n.js';
 
 const props = defineProps({
   apiBase: { type: String, required: true },
@@ -117,16 +100,16 @@ const props = defineProps({
   bots: { type: Array, default: () => [] },
   botKey: { type: String, default: '' },
   refreshMe: { type: Function, required: true },
-  selectBotAndRefresh: { type: Function, required: true },
+  selectBotAndRefresh: { type: Function, required: false, default: null },
   toast: { type: Function, required: true }
 });
 
 const { t } = useI18n({ useScope: 'global' });
 const savingLevel = ref('');
+const levelSectionEl = ref(null);
 const schoolUrl = ((import.meta.env.VITE_SCHOOL_URL || 'https://ai-language-school.online/').toString()).trim();
 
 const selectedBot = computed(() => props.me || {});
-const showBotSwitcher = computed(() => Array.isArray(props.bots) && props.bots.length > 1);
 const currentBotKey = computed(() => props.botKey || selectedBot.value?.bot_key || '');
 const currentLevel = computed(() => (selectedBot.value?.level || 'b1').toString().toLowerCase());
 const currentLevelLabel = computed(() => currentLevel.value.toUpperCase());
@@ -147,11 +130,15 @@ function languageLabelForCode(codeRaw, keyPrefix = 'practiceLanguages') {
 }
 
 const languageLabel = computed(() => languageLabelForCode(selectedBot.value?.learning_language));
-const localeLabel = computed(() => languageLabelForCode(locale.value, 'locales'));
 const replyModeLabel = computed(() => (
   selectedBot.value?.reply_mode === 'voice' ? t('profile.replyModeVoice') : t('profile.replyModeText')
 ));
-const ttsVoiceLabel = computed(() => (selectedBot.value?.tts_voice || 'marin').toString());
+const baseLanguageCode = computed(() => {
+  const raw = (selectedBot.value?.base_language || currentBotKey.value.split('-')[0] || '').toString().trim().toLowerCase();
+  if (raw === 'ua') return 'uk';
+  return raw || 'en';
+});
+const teachersUrl = computed(() => `${schoolUrl.replace(/\/+$/, '')}/${baseLanguageCode.value}/teachers`);
 
 const levels = computed(() => [
   { code: 'a1', note: t('level.notes.a1') },
@@ -161,10 +148,13 @@ const levels = computed(() => [
   { code: 'c1', note: t('level.notes.c1') }
 ]);
 
-async function handleBotSwitch(nextBotKey) {
-  if (!nextBotKey || nextBotKey === currentBotKey.value) return;
-  tgHaptic('selection');
-  await props.selectBotAndRefresh(nextBotKey);
+function scrollToLevelSection() {
+  levelSectionEl.value?.$el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+}
+
+function openTeachersUrl() {
+  if (!teachersUrl.value) return;
+  tgOpenLink(teachersUrl.value);
 }
 
 async function setLevel(code) {
@@ -199,6 +189,13 @@ function openSchoolUrl() {
   if (!schoolUrl) return;
   tgOpenLink(schoolUrl);
 }
+
+onMounted(() => {
+  const section = new URLSearchParams(window.location.search).get('section');
+  if (section === 'level') {
+    window.requestAnimationFrame(() => scrollToLevelSection());
+  }
+});
 </script>
 
 <style scoped>
@@ -307,6 +304,12 @@ h2 {
 .level-tile {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.78);
+}
+
+.meta-button {
+  border: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
 .meta-tile {

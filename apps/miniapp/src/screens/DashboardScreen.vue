@@ -9,13 +9,19 @@
         </div>
 
         <div class="hero-actions">
-          <BotSwitcher
-            v-if="showBotSwitcher"
-            :label="$t('dashboard.botSwitcher')"
-            :bots="bots"
-            :model-value="currentBotKey"
-            @update:model-value="handleBotSwitch"
-          />
+          <div class="hero-chip">
+            <Languages class="hero-chip-icon" />
+            <span>{{ selectedBot.bot_name || languageLabel }}</span>
+          </div>
+
+          <button
+            type="button"
+            class="secondary-link secondary-link--fit"
+            @click="openTeachersUrl"
+          >
+            <Globe class="button-icon" />
+            <span>{{ $t('dashboard.otherLanguages') }}</span>
+          </button>
 
           <div class="hero-chip">
             <Sparkles class="hero-chip-icon" />
@@ -46,7 +52,6 @@
         <div class="coach-meta">
           <span>{{ languageLabel }}</span>
           <span>{{ levelLabel }}</span>
-          <span>{{ replyModeLabel }}</span>
         </div>
       </GlassCard>
     </section>
@@ -101,7 +106,7 @@
     </section>
 
     <section class="dashboard-grid">
-      <GlassCard :tone="streak.status === 'at_risk' ? 'warning' : 'subtle'" class="panel">
+      <GlassCard v-if="showFocusPanel" :tone="streak.status === 'at_risk' ? 'warning' : 'subtle'" class="panel">
         <div class="panel-head">
           <div>
             <div class="panel-label">{{ $t('dashboard.todayFocus') }}</div>
@@ -130,9 +135,9 @@
             <GraduationCap class="action-icon" />
             <span>{{ $t('dashboard.actions.level') }}</span>
           </button>
-          <button type="button" class="action-btn" @click="emit('navigate', '/profile?section=teacher')">
+          <button type="button" class="action-btn" @click="openTeachersUrl">
             <Languages class="action-icon" />
-            <span>{{ $t('dashboard.actions.switchBot') }}</span>
+            <span>{{ $t('dashboard.actions.otherLanguages') }}</span>
           </button>
           <button type="button" class="action-btn" @click="emit('navigate', '/subscription')">
             <WalletCards class="action-icon" />
@@ -184,6 +189,7 @@ import {
   AudioLines,
   ChevronRight,
   Flame,
+  Globe,
   GraduationCap,
   Languages,
   LifeBuoy,
@@ -195,9 +201,8 @@ import {
   WalletCards
 } from 'lucide-vue-next';
 import GlassCard from '../components/GlassCard.vue';
-import BotSwitcher from '../components/BotSwitcher.vue';
 import { apiJson } from '../lib/api.js';
-import { tgHaptic, tgOpenLink } from '../lib/tg.js';
+import { tgOpenLink } from '../lib/tg.js';
 import { useI18n } from '../i18n.js';
 
 const props = defineProps({
@@ -206,7 +211,7 @@ const props = defineProps({
   me: { type: Object, default: null },
   bots: { type: Array, default: () => [] },
   botKey: { type: String, default: '' },
-  selectBotAndRefresh: { type: Function, required: true }
+  selectBotAndRefresh: { type: Function, required: false, default: null }
 });
 
 const emit = defineEmits(['navigate']);
@@ -256,7 +261,6 @@ const feedbackSummary = computed(() => dashboard.value?.feedback_summary || {
 });
 const usage = computed(() => dashboard.value?.usage || null);
 const currentBotKey = computed(() => props.botKey || selectedBot.value?.bot_key || '');
-const showBotSwitcher = computed(() => Array.isArray(props.bots) && props.bots.length > 1);
 
 const greeting = computed(() => {
   const name = (props.me?.first_name || dashboard.value?.user?.first_name || '').toString().trim();
@@ -280,9 +284,12 @@ const teacherTagline = computed(() =>
   || selectedBot.value?.teacher_tagline_uk
   || t('dashboard.teacherFallback')
 );
-const replyModeLabel = computed(() =>
-  selectedBot.value?.reply_mode === 'voice' ? t('dashboard.replyModeVoice') : t('dashboard.replyModeText')
-);
+const baseLanguageCode = computed(() => {
+  const raw = (selectedBot.value?.base_language || currentBotKey.value.split('-')[0] || '').toString().trim().toLowerCase();
+  if (raw === 'ua') return 'uk';
+  return raw || 'en';
+});
+const teachersUrl = computed(() => `https://ai-language-school.online/${baseLanguageCode.value}/teachers`);
 
 const statusCopy = computed(() => {
   if (streak.value.status === 'active') return t('dashboard.statusActive');
@@ -325,10 +332,7 @@ function formatMinutes(secondsRaw) {
 
 const usageCopy = computed(() => {
   if (!usage.value) return t('dashboard.usageFallback');
-  return t('dashboard.usageCopy', {
-    used: formatMinutes(usage.value.used_seconds),
-    remaining: formatMinutes(usage.value.remaining_seconds)
-  });
+  return t('dashboard.usageCopy', { percent: usagePercent.value });
 });
 
 const usagePercent = computed(() => {
@@ -349,6 +353,7 @@ const focusCopy = computed(() => {
   if (streak.value.status === 'at_risk') return t('dashboard.focusRiskCopy');
   return t('dashboard.focusRestartCopy');
 });
+const showFocusPanel = computed(() => streak.value.status !== 'broken');
 
 const lastSenderLabel = computed(() => {
   if (feedbackSummary.value.last_message_sender === 'admin') return t('dashboard.supportFromAdmin');
@@ -356,16 +361,14 @@ const lastSenderLabel = computed(() => {
   return t('dashboard.supportLabel');
 });
 
-async function handleBotSwitch(nextBotKey) {
-  if (!nextBotKey || nextBotKey === currentBotKey.value) return;
-  tgHaptic('selection');
-  await props.selectBotAndRefresh(nextBotKey);
-}
-
 function openTelegram() {
   const url = selectedBot.value?.telegram_url || props.me?.telegram_url || '';
   if (!url) return;
   tgOpenLink(url);
+}
+
+function openTeachersUrl() {
+  tgOpenLink(teachersUrl.value);
 }
 </script>
 
@@ -491,6 +494,10 @@ function openTelegram() {
   background: rgba(255, 255, 255, 0.82);
   color: var(--ink);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+.secondary-link--fit {
+  justify-self: start;
 }
 
 .primary-cta:hover,
