@@ -600,16 +600,36 @@
 
           <div class="row" v-if="botStats.length">
             <div class="field grow">
-              <span>Bot</span>
-              <div class="plan-pills">
-                <label class="pill" :class="{ active: !hasSelectedBots }">
-                  <input type="checkbox" :checked="!hasSelectedBots" @change="broadcast.botKeys = []" />
-                  <span>All bots</span>
-                </label>
-                <label class="pill" v-for="bot in botStats" :key="bot.bot_key" :class="{ active: broadcast.botKeys.includes(bot.bot_key) }">
-                  <input v-model="broadcast.botKeys" type="checkbox" :value="bot.bot_key" />
-                  <span>{{ bot.bot_key }}</span>
-                </label>
+              <span>Bots</span>
+              <small class="hint">Pick at least one bot. A single campaign can only target one base language.</small>
+              <div class="broadcast-groups">
+                <section
+                  class="broadcast-group"
+                  v-for="group in broadcastBotGroups"
+                  :key="group.base_lang"
+                  :class="{ locked: group.locked }"
+                >
+                  <div class="broadcast-group-head">
+                    <strong>{{ group.label }}</strong>
+                    <span class="hint">{{ fmt(group.bots.length) }} bot{{ group.bots.length === 1 ? '' : 's' }}</span>
+                  </div>
+                  <div class="plan-pills">
+                    <label
+                      class="pill"
+                      v-for="bot in group.bots"
+                      :key="bot.bot_key"
+                      :class="{ active: selectedBroadcastBotKeys.includes(bot.bot_key), disabled: group.locked }"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="selectedBroadcastBotKeys.includes(bot.bot_key)"
+                        :disabled="group.locked"
+                        @change="toggleBroadcastBot(bot.bot_key, $event.target.checked)"
+                      />
+                      <span>{{ bot.bot_key }}</span>
+                    </label>
+                  </div>
+                </section>
               </div>
             </div>
           </div>
@@ -694,7 +714,7 @@
             </label>
 
             <div class="actions">
-              <button class="btn" type="button" :disabled="!password || previewLoading" @click="refreshBroadcastPreview()">
+              <button class="btn" type="button" :disabled="!password || !hasAnySelectedPlan || !hasSelectedBots || previewLoading" @click="refreshBroadcastPreview()">
                 {{ previewLoading ? 'Preview…' : 'Refresh preview' }}
               </button>
               <button class="btn primary" type="button" :disabled="!canSendBroadcast || sendingBroadcast" @click="sendBroadcast">
@@ -705,6 +725,7 @@
 
           <div v-if="!password" class="callout">Enter admin password above to use broadcast.</div>
           <div v-else-if="!hasAnySelectedPlan" class="callout">Pick at least one plan.</div>
+          <div v-else-if="!hasSelectedBots" class="callout">Pick at least one bot. Cross-language campaigns are disabled.</div>
           <div v-else-if="broadcast.messageKind === 'text' && !broadcast.messageText.trim()" class="callout">Write a message to send.</div>
           <div
             v-else-if="broadcast.messageKind !== 'text' && !hasBroadcastMedia"
@@ -1110,6 +1131,22 @@ const freeUsersUsageBuckets = ref([]);
 const freeUsersMessageBuckets = ref([]);
 const activeUsersByHourSeries = ref([]);
 const activeUsersByHourTodaySeries = ref([]);
+const botSeriesPalette = [
+  'rgba(31, 107, 99, 0.88)',
+  'rgba(199, 90, 36, 0.88)',
+  'rgba(46, 88, 142, 0.88)',
+  'rgba(103, 78, 167, 0.88)',
+  'rgba(33, 124, 146, 0.88)',
+  'rgba(174, 43, 40, 0.86)',
+  'rgba(117, 156, 56, 0.88)',
+  'rgba(140, 87, 45, 0.88)',
+  'rgba(187, 64, 122, 0.88)',
+  'rgba(81, 102, 120, 0.88)'
+];
+const botSeriesColors = {
+  uk_en: botSeriesPalette[0],
+  uk_de: botSeriesPalette[1]
+};
 const actionSeriesConfig = [
   { key: 'start', label: 'start', color: 'rgba(31, 107, 99, 0.88)' },
   { key: 'profile_set_level', label: 'profile_set_level', color: 'rgba(199, 90, 36, 0.88)' },
@@ -1195,28 +1232,6 @@ const mediaUploadInfo = ref('');
 
 const broadcastMediaAccept = computed(() => (broadcast.messageKind === 'photo' ? 'image/*' : 'video/*'));
 
-const broadcastUploadBots = computed(() => {
-  if (broadcast.botKeys.length > 0) {
-    return Array.from(
-      new Set(
-        broadcast.botKeys
-          .map((v) => (v ?? '').toString().trim().toLowerCase())
-          .filter((v) => v.length > 0 && v.length <= 32)
-      )
-    );
-  }
-  if (botStats.value.length > 0) {
-    return Array.from(
-      new Set(
-        botStats.value
-          .map((b) => (b?.bot_key ?? '').toString().trim().toLowerCase())
-          .filter((v) => v.length > 0 && v.length <= 32)
-      )
-    );
-  }
-  return [];
-});
-
 const hasBroadcastMedia = computed(() => {
   const mediaUrl = broadcast.mediaUrl.trim();
   const ids = broadcast.mediaFileIds && typeof broadcast.mediaFileIds === 'object' ? broadcast.mediaFileIds : {};
@@ -1294,6 +1309,17 @@ function parseBotKeyLangs(botKey) {
   return { base_lang: parts[0] || '', target_lang: '' };
 }
 
+function normalizeBotKeyValue(raw) {
+  const value = (raw ?? '').toString().trim().toLowerCase();
+  if (!value) return '';
+  return value.slice(0, 32);
+}
+
+function languageLabelForCode(codeRaw) {
+  const code = (codeRaw ?? '').toString().trim().toLowerCase();
+  return code ? code.toUpperCase() : 'Unknown';
+}
+
 function botSortIndicator(key) {
   if (botSort.key !== key) return '';
   return botSort.dir === 'asc' ? '↑' : '↓';
@@ -1332,6 +1358,85 @@ const botStatsTable = computed(() =>
     };
   })
 );
+
+const botStatsByKey = computed(() => {
+  const map = new Map();
+  for (const bot of botStatsTable.value) {
+    const botKey = normalizeBotKeyValue(bot?.bot_key);
+    if (!botKey) continue;
+    map.set(botKey, {
+      ...bot,
+      bot_key: botKey,
+      base_lang: (bot?.base_lang ?? '').toString().trim().toLowerCase(),
+      target_lang: (bot?.target_lang ?? '').toString().trim().toLowerCase()
+    });
+  }
+  return map;
+});
+
+function sanitizeBroadcastBotKeys(botKeysRaw) {
+  const next = [];
+  let lockedBaseLang = '';
+  for (const rawBotKey of Array.isArray(botKeysRaw) ? botKeysRaw : []) {
+    const botKey = normalizeBotKeyValue(rawBotKey);
+    if (!botKey || next.includes(botKey)) continue;
+    const bot = botStatsByKey.value.get(botKey);
+    if (!bot) continue;
+    const baseLang = (bot.base_lang ?? '').toString().trim().toLowerCase();
+    if (!lockedBaseLang && baseLang) lockedBaseLang = baseLang;
+    if (lockedBaseLang && baseLang && baseLang !== lockedBaseLang) continue;
+    next.push(botKey);
+  }
+  return next;
+}
+
+const selectedBroadcastBotKeys = computed(() => sanitizeBroadcastBotKeys(broadcast.botKeys));
+
+const selectedBroadcastBaseLang = computed(() => {
+  const botKey = selectedBroadcastBotKeys.value[0] || '';
+  if (!botKey) return '';
+  return (botStatsByKey.value.get(botKey)?.base_lang ?? '').toString().trim().toLowerCase();
+});
+
+const broadcastBotGroups = computed(() => {
+  const groups = new Map();
+  for (const bot of botStatsByKey.value.values()) {
+    const baseLang = (bot.base_lang || '').toString().trim().toLowerCase() || 'unknown';
+    if (!groups.has(baseLang)) {
+      groups.set(baseLang, {
+        base_lang: baseLang,
+        label: languageLabelForCode(baseLang),
+        bots: []
+      });
+    }
+    groups.get(baseLang).bots.push(bot);
+  }
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      locked: Boolean(selectedBroadcastBaseLang.value && selectedBroadcastBaseLang.value !== group.base_lang),
+      bots: group.bots.slice().sort((a, b) => String(a.bot_key || '').localeCompare(String(b.bot_key || '')))
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+});
+
+function toggleBroadcastBot(botKeyRaw, checked) {
+  const botKey = normalizeBotKeyValue(botKeyRaw);
+  if (!botKey) return;
+
+  if (!checked) {
+    broadcast.botKeys = selectedBroadcastBotKeys.value.filter((value) => value !== botKey);
+    return;
+  }
+
+  const bot = botStatsByKey.value.get(botKey);
+  if (!bot) return;
+  const baseLang = (bot.base_lang ?? '').toString().trim().toLowerCase();
+  if (selectedBroadcastBaseLang.value && baseLang && selectedBroadcastBaseLang.value !== baseLang) return;
+
+  broadcast.botKeys = [...selectedBroadcastBotKeys.value, botKey];
+}
 
 const sortedBotStats = computed(() => {
   const rows = botStatsTable.value.slice();
@@ -1407,6 +1512,10 @@ function clampNumber(value, min, max, fallback) {
   return num;
 }
 
+function colorForBotSeries(safeKey, index) {
+  return botSeriesColors[safeKey] || botSeriesPalette[index % botSeriesPalette.length];
+}
+
 function transformByBotData(rows) {
   // Transform rows like [{ day, bot_key, count }, ...] 
   // into [{ day, uk_en: count, uk_de: count }, ...]
@@ -1432,20 +1541,14 @@ function transformByBotData(rows) {
   // Convert to array and sort by day
   const chartData = Object.values(byDay).sort((a, b) => a.day.localeCompare(b.day));
   
-  // Build series config dynamically
-  const botColors = {
-    'uk_en': 'rgba(31, 107, 99, 0.88)',    // Teal for English
-    'uk_de': 'rgba(199, 90, 36, 0.88)',    // Orange for German
-  };
-  
   const seriesConfig = Array.from(botsSet)
     .sort()
-    .map(botKey => {
+    .map((botKey, index) => {
       const safeKey = botKey.replace(/-/g, '_');
       return {
         key: safeKey,
         label: botKey,
-        color: botColors[safeKey] || 'rgba(100, 100, 100, 0.85)'
+        color: colorForBotSeries(safeKey, index)
       };
     });
   
@@ -1825,7 +1928,9 @@ const selectedPlans = computed(() => {
 });
 
 const hasAnySelectedPlan = computed(() => selectedPlans.value.length > 0);
-const hasSelectedBots = computed(() => broadcast.botKeys.length > 0);
+const hasSelectedBots = computed(() => selectedBroadcastBotKeys.value.length > 0);
+
+const broadcastUploadBots = computed(() => selectedBroadcastBotKeys.value.slice());
 
 function broadcastFiltersPayload() {
   const filters = {};
@@ -1849,14 +1954,8 @@ function broadcastFiltersPayload() {
     }
   }
 
-  if (broadcast.botKeys.length > 0) {
-    filters.bots = Array.from(
-      new Set(
-        broadcast.botKeys
-          .map((v) => (v ?? '').toString().trim().toLowerCase())
-          .filter((v) => v.length > 0 && v.length <= 32)
-      )
-    );
+  if (selectedBroadcastBotKeys.value.length > 0) {
+    filters.bots = selectedBroadcastBotKeys.value.slice();
   }
 
   return filters;
@@ -1869,6 +1968,7 @@ const canSendBroadcast = computed(() => {
   const hasFileIds = Object.keys(mediaFileIds).length > 0;
   if (!password.value) return false;
   if (!hasAnySelectedPlan.value) return false;
+  if (!hasSelectedBots.value) return false;
   if (broadcast.messageKind === 'text') {
     if (!message) return false;
     if (message.length > 4096) return false;
@@ -1911,7 +2011,7 @@ function startCampaignPolling(campaignId) {
 
 async function refreshBroadcastPreview({ silent = false } = {}) {
   if (!password.value) return;
-  if (!hasAnySelectedPlan.value) {
+  if (!hasAnySelectedPlan.value || !hasSelectedBots.value) {
     broadcastPreview.count = 0;
     broadcastPreview.sample = [];
     previewError.value = '';
@@ -2245,10 +2345,10 @@ watch(
     broadcast.lastActivityDays,
     broadcast.usageMode,
     broadcast.usagePercent,
-    broadcast.botKeys.slice().sort().join(',')
+    selectedBroadcastBotKeys.value.slice().sort().join(',')
   ],
   () => {
-    if (!password.value) {
+    if (!password.value || !hasSelectedBots.value) {
       previewError.value = '';
       broadcastPreview.count = 0;
       broadcastPreview.sample = [];
@@ -2291,14 +2391,27 @@ watch(
 );
 
 watch(
-  () => botStats.value.map((bot) => bot.bot_key).join(','),
+  () => [botStats.value.map((bot) => bot.bot_key).join(','), broadcast.botKeys.slice().sort().join(',')],
   () => {
-    if (broadcast.botKeys.length === 0) return;
-    const allowed = new Set(botStats.value.map((bot) => bot.bot_key));
-    const next = broadcast.botKeys.filter((botKey) => allowed.has(botKey));
-    if (next.length !== broadcast.botKeys.length) {
+    const next = sanitizeBroadcastBotKeys(broadcast.botKeys);
+    if (next.join(',') !== broadcast.botKeys.slice().sort().join(',')) {
       broadcast.botKeys = next;
     }
+  }
+);
+
+watch(
+  () => selectedBroadcastBotKeys.value.join(','),
+  (next, prev) => {
+    if (next === prev) return;
+    const hasFileIds = Boolean(
+      broadcast.mediaFileIds &&
+      typeof broadcast.mediaFileIds === 'object' &&
+      Object.keys(broadcast.mediaFileIds).length > 0
+    );
+    if (!hasFileIds) return;
+    broadcast.mediaFileIds = {};
+    mediaUploadInfo.value = next ? 'Bot selection changed. Upload media again for the current bots.' : '';
   }
 );
 
@@ -2801,6 +2914,31 @@ h1 {
   align-items: center;
 }
 
+.broadcast-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.broadcast-group {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(30, 26, 22, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.broadcast-group.locked {
+  opacity: 0.58;
+}
+
+.broadcast-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .pill {
   border: 1px solid rgba(30, 26, 22, 0.14);
   border-radius: 999px;
@@ -2825,11 +2963,24 @@ h1 {
   font-weight: 600;
 }
 
+.pill.disabled {
+  cursor: not-allowed;
+}
+
+.pill.disabled:hover {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(30, 26, 22, 0.14);
+}
+
 .pill input {
   height: 14px;
   width: 14px;
   margin: 0;
   cursor: pointer;
+}
+
+.pill input:disabled {
+  cursor: not-allowed;
 }
 
 .bot-badge {

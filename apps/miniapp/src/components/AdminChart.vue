@@ -5,12 +5,6 @@
         <div class="title">{{ title }}</div>
         <div v-if="subtitle" class="sub">{{ subtitle }}</div>
       </div>
-      <div class="legend" v-if="series.length > 1">
-        <div class="legend-item" v-for="s in series" :key="s.key">
-          <span class="dot" :style="{ background: s.color }" />
-          <span class="label">{{ s.label }}</span>
-        </div>
-      </div>
     </header>
 
     <div ref="surfaceEl" class="chart">
@@ -141,22 +135,6 @@ const xLabelAngle = computed(() => {
   return -55;
 });
 
-const xLabelStride = computed(() => {
-  if (props.xLabels !== 'all') return 1;
-  const n = props.data.length;
-  if (n <= 1) return 1;
-  const maxLen = props.data.reduce((acc, row) => {
-    const label = formatXLabel(row?.day);
-    return Math.max(acc, String(label || '').length);
-  }, 0);
-  const approxLabelWidth = maxLen * 6.2 + 6;
-  const stepPx = props.kind === 'bar' ? innerWidth() / n : innerWidth() / Math.max(1, n - 1);
-  const horizontalProjection = xLabelAngle.value
-    ? approxLabelWidth * Math.cos((Math.abs(xLabelAngle.value) * Math.PI) / 180)
-    : approxLabelWidth;
-  return Math.max(1, Math.ceil((horizontalProjection + 4) / Math.max(stepPx, 1)));
-});
-
 const padBottom = computed(() => {
   if (props.xLabels !== 'all') return 34;
   if (xLabelAngle.value <= -50) return 92;
@@ -174,8 +152,7 @@ function tickLabelForIndex(index) {
     return formatXLabel(labels.value[index]);
   }
 
-  const show = index === 0 || index === count - 1 || index % xLabelStride.value === 0;
-  return show ? formatXLabel(labels.value[index]) : '';
+  return formatXLabel(labels.value[index]);
 }
 
 function buildDatasets() {
@@ -208,7 +185,7 @@ function buildDatasets() {
       backgroundColor: series.color,
       borderColor: series.color,
       borderWidth: 0,
-      borderRadius: 8,
+      borderRadius: isStacked.value ? 0 : 8,
       borderSkipped: false,
       barPercentage: 0.72,
       categoryPercentage: 0.84,
@@ -251,7 +228,22 @@ function buildOptions() {
     },
     plugins: {
       legend: {
-        display: false
+        display: props.series.length > 1,
+        position: 'top',
+        align: 'start',
+        labels: {
+          color: 'rgba(30, 26, 22, 0.72)',
+          usePointStyle: true,
+          pointStyle: 'rect',
+          boxWidth: 10,
+          boxHeight: 10,
+          padding: 14,
+          font: {
+            family: fontFamily,
+            size: 12,
+            weight: '600'
+          }
+        }
       },
       tooltip: {
         enabled: props.tooltip,
@@ -445,8 +437,7 @@ watch(
 .head {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
+  gap: 8px;
 }
 
 .title {
@@ -458,30 +449,6 @@ watch(
   margin-top: 3px;
   color: var(--muted);
   font-size: 12px;
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  box-shadow: 0 8px 16px rgba(30, 26, 22, 0.18);
 }
 
 .chart {

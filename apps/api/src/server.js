@@ -621,6 +621,43 @@ function parseBotKeysField(raw) {
   return Array.from(new Set(normalized));
 }
 
+function baseLanguageForBotKey(botKeyRaw) {
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (!botKey) return null;
+  const botMeta = publicBotMetaForKey(botKey);
+  return normalizeLanguageCode(botMeta?.base_language || botKey.split('-')[0] || '');
+}
+
+function validateBroadcastBotSelection(botKeysRaw) {
+  const botKeys = Array.isArray(botKeysRaw)
+    ? Array.from(new Set(botKeysRaw.map((v) => normalizeBotKey(v)).filter(Boolean)))
+    : [];
+
+  if (botKeys.length === 0) {
+    return { ok: false, error: 'bot_selection_required' };
+  }
+
+  const baseLanguages = [];
+  for (const botKey of botKeys) {
+    const baseLanguage = baseLanguageForBotKey(botKey);
+    if (!baseLanguage) {
+      return { ok: false, error: 'invalid_bot_selection' };
+    }
+    baseLanguages.push(baseLanguage);
+  }
+
+  const uniqueBaseLanguages = Array.from(new Set(baseLanguages));
+  if (uniqueBaseLanguages.length !== 1) {
+    return { ok: false, error: 'mixed_base_languages_not_allowed' };
+  }
+
+  return {
+    ok: true,
+    botKeys,
+    baseLanguage: uniqueBaseLanguages[0]
+  };
+}
+
 function clampInteger(value, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER, fallback = 0 } = {}) {
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
@@ -679,8 +716,8 @@ function normalizeBroadcastFilters(raw) {
   const bots = Array.from(
     new Set(
       botsRaw
-        .map((v) => v.toString().trim().toLowerCase())
-        .filter((v) => v.length > 0 && v.length <= 32)
+        .map((v) => normalizeBotKey(v))
+        .filter(Boolean)
     )
   );
   const normalizedBots = botsProvided && bots.length > 0 ? bots : null;
@@ -2855,6 +2892,11 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
 app.post('/admin/broadcasts/preview', requireAdmin, async (req, res) => {
   res.set('Cache-Control', 'no-store');
   const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});
+  const botSelection = validateBroadcastBotSelection(filters.bots);
+  if (!botSelection.ok) {
+    return res.status(400).json({ error: botSelection.error });
+  }
+  filters.bots = botSelection.botKeys;
   const preview = await getBroadcastAudiencePreview(filters, 20);
   return res.json({
     filters,
@@ -2885,8 +2927,13 @@ app.post('/admin/broadcasts/upload-media', requireAdmin, broadcastMediaUpload.si
     return res.status(400).json({ error: 'missing_file' });
   }
 
-  const bots = parseBotKeysField(req.body?.bots ?? req.body?.botKeys ?? req.body?.bot_keys);
-  const targetBots = bots.length ? bots : [normalizeBotKey(env.defaultBotKey) || 'uk-de'];
+  const botSelection = validateBroadcastBotSelection(
+    parseBotKeysField(req.body?.bots ?? req.body?.botKeys ?? req.body?.bot_keys)
+  );
+  if (!botSelection.ok) {
+    return res.status(400).json({ error: botSelection.error });
+  }
+  const targetBots = botSelection.botKeys;
 
   const mediaFileIds = {};
   for (const botKey of targetBots) {
@@ -2911,6 +2958,11 @@ app.post('/admin/broadcasts/upload-media', requireAdmin, broadcastMediaUpload.si
 
 app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
   const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});
+  const botSelection = validateBroadcastBotSelection(filters.bots);
+  if (!botSelection.ok) {
+    return res.status(400).json({ error: botSelection.error });
+  }
+  filters.bots = botSelection.botKeys;
   const messageKindRaw = (req.body?.messageKind ?? req.body?.message_kind ?? 'text').toString().trim().toLowerCase();
   const messageKind = BROADCAST_MESSAGE_KINDS.has(messageKindRaw) ? messageKindRaw : null;
   if (!messageKind) {
