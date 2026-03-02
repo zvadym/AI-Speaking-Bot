@@ -83,12 +83,15 @@
     "support": "Support"
   },
   "dashboard": {
+    "title": "AI Language School",
     "eyebrow": "Personal dashboard",
     "greetingNamed": "Welcome back, {name}.",
     "greetingAnon": "Welcome back.",
-    "heroSub": "Your {language} practice is set to {level}. This screen only keeps today's essentials in view.",
+    "heroSub": "Your {language} practice is set to {level}.",
     "setupLabel": "Current setup",
     "manageSetup": "Adjust setup",
+    "openSubscription": "Open subscription",
+    "streakCalendar": "Streak calendar",
     "otherLanguages": "Other languages",
     "openChat": "Open coach chat",
     "coachLabel": "Selected coach",
@@ -304,7 +307,6 @@
       "subscribe": "Subscribe"
     },
     "notes": {
-      "alreadyTopTier": "You're already on the top tier.",
       "billedAnnually": "Billed annually: {total} {period}"
     },
     "statusMessage": {

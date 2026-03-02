@@ -189,7 +189,6 @@
       "subscribe": "Підписатися"
     },
     "notes": {
-      "alreadyTopTier": "Ти вже на найвищому рівні.",
       "billedAnnually": "Щорічна оплата: {total} {period}"
     },
     "statusMessage": {
@@ -227,12 +226,15 @@
     "support": "Підтримка"
   },
   "dashboard": {
+    "title": "AI Language School",
     "eyebrow": "Твій дашборд",
     "greetingNamed": "З поверненням, {name}.",
     "greetingAnon": "З поверненням.",
-    "heroSub": "Практика {language} зараз налаштована на рівень {level}. На цьому екрані лишається тільки те, що важливо сьогодні.",
+    "heroSub": "Практика {language} зараз налаштована на рівень {level}.",
     "setupLabel": "Поточне налаштування",
     "manageSetup": "Змінити налаштування",
+    "openSubscription": "Відкрити підписку",
+    "streakCalendar": "Календар streak",
     "otherLanguages": "Інші мови",
     "openChat": "Відкрити чат із викладачем",
     "coachLabel": "Твій викладач",

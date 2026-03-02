@@ -526,7 +526,8 @@ async function getUserStreakSummary(chatIdRaw) {
       longest: 0,
       status: 'broken',
       activity_today: false,
-      last_activity_at: null
+      last_activity_at: null,
+      activity_days: []
     };
   }
 
@@ -549,6 +550,12 @@ async function getUserStreakSummary(chatIdRaw) {
      activity_days AS (
        SELECT DISTINCT date_trunc('day', occurred_at AT TIME ZONE 'UTC')::date AS day_utc
        FROM activity
+     ),
+     recent_activity_days AS (
+       SELECT ad.day_utc
+       FROM activity_days ad, dates d
+       WHERE ad.day_utc >= (d.today_utc - 34)
+       ORDER BY ad.day_utc
      ),
      streak_groups AS (
        SELECT
@@ -607,7 +614,8 @@ async function getUserStreakSummary(chatIdRaw) {
          ELSE 'broken'
        END AS streak_status,
        (SELECT value FROM today_activity) AS activity_today,
-       (SELECT occurred_at FROM last_activity) AS last_activity_at`,
+       (SELECT occurred_at FROM last_activity) AS last_activity_at,
+       COALESCE((SELECT ARRAY_AGG(day_utc) FROM recent_activity_days), ARRAY[]::date[]) AS recent_activity_days`,
     [chatId]
   );
 
@@ -617,7 +625,13 @@ async function getUserStreakSummary(chatIdRaw) {
     longest: Number(row.longest_streak_days || 0),
     status: row.streak_status || 'broken',
     activity_today: Boolean(row.activity_today),
-    last_activity_at: row.last_activity_at || null
+    last_activity_at: row.last_activity_at || null,
+    activity_days: Array.isArray(row.recent_activity_days)
+      ? row.recent_activity_days.map((value) => {
+        if (value instanceof Date) return value.toISOString().slice(0, 10);
+        return (value ?? '').toString().slice(0, 10);
+      }).filter(Boolean)
+      : []
   };
 }
 

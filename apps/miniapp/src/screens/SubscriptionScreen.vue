@@ -163,9 +163,6 @@
         </button>
       </article>
 
-      <div class="plan-empty" v-if="!visiblePlans.length">
-        {{ $t('subscription.notes.alreadyTopTier') }}
-      </div>
     </section>
   </div>
 </template>

@@ -189,7 +189,6 @@
       "subscribe": "Abonnieren"
     },
     "notes": {
-      "alreadyTopTier": "Du bist bereits im höchsten Tarif.",
       "billedAnnually": "Jährliche Abrechnung: {total} {period}"
     },
     "statusMessage": {
@@ -227,12 +226,15 @@
     "support": "Support"
   },
   "dashboard": {
+    "title": "AI Language School",
     "eyebrow": "Personal dashboard",
     "greetingNamed": "Welcome back, {name}.",
     "greetingAnon": "Welcome back.",
-    "heroSub": "Your {language} practice is set to {level}. This screen only keeps today's essentials in view.",
+    "heroSub": "Your {language} practice is set to {level}.",
     "setupLabel": "Current setup",
     "manageSetup": "Adjust setup",
+    "openSubscription": "Abo öffnen",
+    "streakCalendar": "Streak-Kalender",
     "botSwitcher": "Teacher context",
     "openChat": "Open coach chat",
     "coachLabel": "Selected coach",
