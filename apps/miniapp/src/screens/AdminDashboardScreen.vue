@@ -49,12 +49,9 @@
           <div>
             <div class="panel-kicker">Analytics</div>
             <h2 class="panel-title">Metrics</h2>
-            <p class="panel-sub">UTC charts. Date range is inclusive for both From and To dates.</p>
+            <p class="panel-sub">UTC charts with live preset windows. Custom mode stays inclusive for both From and To dates.</p>
           </div>
           <div class="panel-actions">
-            <button class="btn" type="button" :disabled="loading" @click="resetRange">Last 30d</button>
-            <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_week')">Last week</button>
-            <button class="btn" type="button" :disabled="loading" @click="applyRangePreset('last_month')">Last month</button>
             <button class="btn primary" type="button" :disabled="!canFetch || loading" @click="refreshAnalytics">
               {{ loading ? 'Loading…' : 'Refresh' }}
             </button>
@@ -62,41 +59,84 @@
         </header>
 
         <div class="panel-body">
-          <div class="row">
-            <label class="field">
-              <span>From (UTC)</span>
-              <input v-model="fromDate" type="date" />
-            </label>
+          <section class="filter-panel" aria-label="Analytics filters">
+            <div class="filter-topline">
+              <div class="field grow">
+                <span>Time window</span>
+                <div class="range-toolbar">
+                  <button
+                    v-for="option in rangePresetOptions"
+                    :key="option.value"
+                    class="preset-chip"
+                    type="button"
+                    :class="{ active: rangePreset === option.value }"
+                    :disabled="loading"
+                    @click="selectRangePreset(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                  <button
+                    class="preset-chip"
+                    type="button"
+                    :class="{ active: isCustomRange }"
+                    :disabled="loading"
+                    @click="selectCustomRange"
+                  >
+                    Custom
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            <label class="field">
-              <span>To (UTC, inclusive)</span>
-              <input v-model="toDate" type="date" />
-            </label>
+            <div class="range-summary-card" :class="{ custom: isCustomRange }">
+              <div class="range-summary-copy">
+                <span class="range-summary-kicker">{{ isCustomRange ? 'Custom range' : 'Live preset' }}</span>
+                <strong class="range-summary-title">{{ activeRangeLabel }}</strong>
+                <span class="range-summary-text">{{ activeRangeText }}</span>
+              </div>
+              <div class="range-summary-window">
+                <span class="range-summary-window-label">Resolved UTC window</span>
+                <strong>{{ activeRangeWindow }}</strong>
+              </div>
+            </div>
 
-            <label class="field">
-              <span>Quick range</span>
-              <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
-                <option value="last_30_days">Last 30 days</option>
-                <option value="last_week">Last week</option>
-                <option value="last_month">Last month</option>
-              </select>
-            </label>
-          </div>
+            <div v-if="isCustomRange" class="row range-custom-row">
+              <label class="field">
+                <span>From (UTC)</span>
+                <input v-model="fromDate" type="date" />
+              </label>
+
+              <label class="field">
+                <span>To (UTC, inclusive)</span>
+                <input v-model="toDate" type="date" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label class="field grow">
+                <span>Acquisition payload</span>
+                <input
+                  v-model="payload"
+                  type="text"
+                  inputmode="text"
+                  autocomplete="off"
+                  placeholder="All payloads"
+                  list="payloads"
+                />
+                <datalist id="payloads">
+                  <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
+                </datalist>
+              </label>
+            </div>
+          </section>
 
           <div class="row">
             <label class="field grow">
-              <span>Acquisition payload</span>
-              <input
-                v-model="payload"
-                type="text"
-                inputmode="text"
-                autocomplete="off"
-                placeholder="(optional)"
-                list="payloads"
-              />
-              <datalist id="payloads">
-                <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
-              </datalist>
+              <span>Current query</span>
+              <div class="query-chip-row">
+                <span class="query-chip">{{ activeRangeWindow }}</span>
+                <span v-if="payload.trim()" class="query-chip subtle">Payload: {{ payload.trim() }}</span>
+              </div>
             </label>
           </div>
 
@@ -355,12 +395,9 @@
           <div>
             <div class="panel-kicker">Users</div>
             <h2 class="panel-title">Directory</h2>
-            <p class="panel-sub">Server-side sorting and pagination. Range filters are UTC.</p>
+            <p class="panel-sub">Server-side sorting and pagination with the same live UTC range model used in analytics.</p>
           </div>
           <div class="panel-actions">
-            <button class="btn" type="button" :disabled="usersLoading" @click="resetRange">Last 30d</button>
-            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_week')">Last week</button>
-            <button class="btn" type="button" :disabled="usersLoading" @click="applyRangePreset('last_month')">Last month</button>
             <button class="btn primary" type="button" :disabled="!canFetch || usersLoading" @click="refreshUsersPage({ resetOffset: true })">
               {{ usersLoading ? 'Loading…' : 'Refresh users' }}
             </button>
@@ -368,41 +405,84 @@
         </header>
 
         <div class="panel-body">
-          <div class="row">
-            <label class="field">
-              <span>From (UTC)</span>
-              <input v-model="fromDate" type="date" />
-            </label>
+          <section class="filter-panel" aria-label="User filters">
+            <div class="filter-topline">
+              <div class="field grow">
+                <span>Time window</span>
+                <div class="range-toolbar">
+                  <button
+                    v-for="option in rangePresetOptions"
+                    :key="option.value"
+                    class="preset-chip"
+                    type="button"
+                    :class="{ active: rangePreset === option.value }"
+                    :disabled="usersLoading"
+                    @click="selectRangePreset(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                  <button
+                    class="preset-chip"
+                    type="button"
+                    :class="{ active: isCustomRange }"
+                    :disabled="usersLoading"
+                    @click="selectCustomRange"
+                  >
+                    Custom
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            <label class="field">
-              <span>To (UTC, inclusive)</span>
-              <input v-model="toDate" type="date" />
-            </label>
+            <div class="range-summary-card" :class="{ custom: isCustomRange }">
+              <div class="range-summary-copy">
+                <span class="range-summary-kicker">{{ isCustomRange ? 'Custom range' : 'Live preset' }}</span>
+                <strong class="range-summary-title">{{ activeRangeLabel }}</strong>
+                <span class="range-summary-text">{{ activeRangeText }}</span>
+              </div>
+              <div class="range-summary-window">
+                <span class="range-summary-window-label">Resolved UTC window</span>
+                <strong>{{ activeRangeWindow }}</strong>
+              </div>
+            </div>
 
-            <label class="field">
-              <span>Quick range</span>
-              <select v-model="rangePreset" @change="applyRangePreset(rangePreset)">
-                <option value="last_30_days">Last 30 days</option>
-                <option value="last_week">Last week</option>
-                <option value="last_month">Last month</option>
-              </select>
-            </label>
-          </div>
+            <div v-if="isCustomRange" class="row range-custom-row">
+              <label class="field">
+                <span>From (UTC)</span>
+                <input v-model="fromDate" type="date" />
+              </label>
+
+              <label class="field">
+                <span>To (UTC, inclusive)</span>
+                <input v-model="toDate" type="date" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label class="field grow">
+                <span>Acquisition payload</span>
+                <input
+                  v-model="payload"
+                  type="text"
+                  inputmode="text"
+                  autocomplete="off"
+                  placeholder="All payloads"
+                  list="payloads"
+                />
+                <datalist id="payloads">
+                  <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
+                </datalist>
+              </label>
+            </div>
+          </section>
 
           <div class="row">
             <label class="field grow">
-              <span>Acquisition payload</span>
-              <input
-                v-model="payload"
-                type="text"
-                inputmode="text"
-                autocomplete="off"
-                placeholder="(optional)"
-                list="payloads"
-              />
-              <datalist id="payloads">
-                <option v-for="p in payloadOptions" :key="p.payload" :value="p.payload" />
-              </datalist>
+              <span>Current query</span>
+              <div class="query-chip-row">
+                <span class="query-chip">{{ activeRangeWindow }}</span>
+                <span v-if="payload.trim()" class="query-chip subtle">Payload: {{ payload.trim() }}</span>
+              </div>
             </label>
           </div>
 
@@ -1054,6 +1134,12 @@ function rangeForPreset(preset) {
   return defaultRange();
 }
 
+const rangePresetOptions = [
+  { value: 'last_30_days', label: 'Last 30d', hint: 'Rolling window including the current UTC day.' },
+  { value: 'last_week', label: 'Last week', hint: 'Previous Monday through Sunday in UTC.' },
+  { value: 'last_month', label: 'Last month', hint: 'Previous calendar month in UTC.' }
+];
+
 const password = ref('');
 const activeTab = ref('analytics');
 const { from: defaultFrom, to: defaultTo } = defaultRange();
@@ -1084,6 +1170,38 @@ const feedbackThreadActionId = ref(null);
 const feedbackThreadActionError = reactive({});
 const feedbackThreadActionInfo = reactive({});
 const feedbackDeleteConfirm = reactive({});
+const isCustomRange = computed(() => rangePreset.value === 'custom');
+const effectiveRange = computed(() => {
+  if (isCustomRange.value) {
+    return { from: fromDate.value, to: toDate.value };
+  }
+  return rangeForPreset(rangePreset.value);
+});
+const effectiveFromDate = computed(() => effectiveRange.value.from);
+const effectiveToDate = computed(() => effectiveRange.value.to);
+
+function formatShortUtcDate(ymd) {
+  const parsed = parseYmdAsUtc(ymd);
+  if (!parsed) return ymd || '—';
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC'
+  }).format(parsed);
+}
+
+const activeRangeLabel = computed(() => {
+  if (isCustomRange.value) return 'Custom UTC range';
+  return rangePresetOptions.find((option) => option.value === rangePreset.value)?.label || 'Preset';
+});
+
+const activeRangeText = computed(() => {
+  if (isCustomRange.value) return 'Manual range. Dates stay fixed until you change them.';
+  return rangePresetOptions.find((option) => option.value === rangePreset.value)?.hint || 'Live UTC preset.';
+});
+
+const activeRangeWindow = computed(() => `${formatShortUtcDate(effectiveFromDate.value)} - ${formatShortUtcDate(effectiveToDate.value)}`);
 
 const loading = ref(false);
 const errorText = ref('');
@@ -1466,9 +1584,9 @@ const sortedBotStats = computed(() => {
 
 const canFetch = computed(() => {
   if (!password.value) return false;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate.value)) return false;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(toDate.value)) return false;
-  return fromDate.value <= toDate.value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(effectiveFromDate.value)) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(effectiveToDate.value)) return false;
+  return effectiveFromDate.value <= effectiveToDate.value;
 });
 const canFetchFeedback = computed(() => {
   if (!password.value) return false;
@@ -1557,8 +1675,8 @@ function transformByBotData(rows) {
 
 function query() {
   return {
-    from: fromDate.value,
-    to: toExclusiveBoundaryYmd(toDate.value),
+    from: effectiveFromDate.value,
+    to: toExclusiveBoundaryYmd(effectiveToDate.value),
     payload: payload.value.trim() ? payload.value.trim() : undefined
   };
 }
@@ -2264,16 +2382,26 @@ function feedbackPrevPage() {
 
 function resetRange() {
   rangePreset.value = 'last_30_days';
-  const r = rangeForPreset('last_30_days');
-  fromDate.value = r.from;
-  toDate.value = r.to;
 }
 
 function applyRangePreset(preset) {
+  if (preset === 'custom') {
+    selectCustomRange();
+    return;
+  }
   rangePreset.value = preset;
-  const r = rangeForPreset(preset);
-  fromDate.value = r.from;
-  toDate.value = r.to;
+}
+
+function selectRangePreset(preset) {
+  applyRangePreset(preset);
+}
+
+function selectCustomRange() {
+  if (!isCustomRange.value) {
+    fromDate.value = effectiveFromDate.value;
+    toDate.value = effectiveToDate.value;
+  }
+  rangePreset.value = 'custom';
 }
 
 function resetFeedbackRange() {
@@ -2426,8 +2554,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .shell {
-  width: min(1420px, 100%);
-  padding: 44px 22px 76px;
+  width: min(1600px, 100%);
+  padding: 44px 20px 76px;
   display: grid;
   gap: 18px;
   position: relative;
@@ -2607,6 +2735,129 @@ h1 {
 .panel-body {
   display: grid;
   gap: 12px;
+}
+
+.filter-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(246, 241, 232, 0.55));
+}
+
+.filter-topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: start;
+}
+
+.range-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-chip {
+  border: 1px solid rgba(30, 26, 22, 0.14);
+  background: rgba(255, 255, 255, 0.74);
+  border-radius: 999px;
+  padding: 9px 12px;
+  min-height: 42px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.preset-chip:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(59, 130, 246, 0.24);
+}
+
+.preset-chip.active {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.preset-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.range-summary-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.9fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: rgba(248, 250, 252, 0.76);
+}
+
+.range-summary-card.custom {
+  background: rgba(246, 241, 232, 0.72);
+}
+
+.range-summary-copy,
+.range-summary-window {
+  display: grid;
+  gap: 4px;
+}
+
+.range-summary-kicker,
+.range-summary-window-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(30, 26, 22, 0.52);
+}
+
+.range-summary-title {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.range-summary-text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.range-summary-window strong {
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.range-custom-row {
+  padding-top: 2px;
+}
+
+.query-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 42px;
+  align-items: center;
+}
+
+.query-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 8px 11px;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.query-chip.subtle {
+  font-weight: 550;
+  color: var(--muted);
 }
 
 .callout {
@@ -2793,7 +3044,7 @@ h1 {
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -3306,11 +3557,19 @@ h1 {
 }
 
 @media (max-width: 820px) {
+  .shell {
+    padding-inline: 14px;
+  }
+
   .kpi-grid {
     grid-template-columns: 1fr;
   }
 
   .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .range-summary-card {
     grid-template-columns: 1fr;
   }
 
