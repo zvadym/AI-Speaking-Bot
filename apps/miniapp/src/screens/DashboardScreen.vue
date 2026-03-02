@@ -53,12 +53,18 @@
             v-for="cell in calendarCells"
             :key="cell.key"
             class="calendar-day"
-            :class="{ muted: cell.muted, today: cell.isToday, outside: cell.outside, future: cell.isFuture }"
+            :class="{
+              muted: cell.muted,
+              today: cell.isToday,
+              outside: cell.outside,
+              future: cell.isFuture,
+              active: cell.isActive,
+              inactive: cell.isInactive
+            }"
             role="gridcell"
             :aria-label="cell.ariaLabel"
           >
             <span class="day-num">{{ cell.dayNumber }}</span>
-            <span v-if="cell.isActive" class="dot" aria-hidden="true" />
           </div>
         </div>
       </div>
@@ -256,7 +262,8 @@ const calendarCells = computed(() => {
     const key = utcDateKey(cursor);
     const outside = cursor.getUTCMonth() !== monthStart.getUTCMonth();
     const isFuture = cursor.getTime() > today.getTime();
-    const isActive = activeSet.has(key) && !isFuture;
+    const isActive = activeSet.has(key) && !isFuture && !outside;
+    const isInactive = !isFuture && !outside && !isActive;
 
     cells.push({
       key,
@@ -264,9 +271,10 @@ const calendarCells = computed(() => {
       muted: outside,
       isToday: key === utcDateKey(today),
       isActive,
+      isInactive,
       isFuture,
       dayNumber: cursor.getUTCDate(),
-      ariaLabel: `${dateFmt.format(cursor)}${isActive ? ', active' : ''}`
+      ariaLabel: `${dateFmt.format(cursor)}${isActive ? ', active' : isInactive ? ', no activity' : ''}`
     });
   }
   return cells;
@@ -476,6 +484,16 @@ const calendarCells = computed(() => {
   opacity: 0.55;
 }
 
+.calendar-day.active {
+  background: rgba(39, 177, 111, 0.22);
+  border-color: rgba(39, 177, 111, 0.35);
+}
+
+.calendar-day.inactive {
+  background: rgba(192, 75, 85, 0.16);
+  border-color: rgba(192, 75, 85, 0.28);
+}
+
 .calendar-day.today {
   border-color: rgba(63, 129, 216, 0.5);
   box-shadow: 0 10px 28px rgba(63, 129, 216, 0.14);
@@ -487,15 +505,6 @@ const calendarCells = computed(() => {
 
 .day-num {
   font-size: 12px;
-}
-
-.dot {
-  position: absolute;
-  bottom: 6px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--accent-strong);
 }
 
 .notice-card p {
