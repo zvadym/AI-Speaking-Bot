@@ -6,10 +6,6 @@
         <h1>{{ $t('profile.title') }}</h1>
         <p class="hero-copy">{{ $t('profile.sub') }}</p>
       </div>
-      <button v-if="selectedBot.telegram_url" type="button" class="ghost-link" @click="openTelegram">
-        <Bot class="button-icon" />
-        <span>{{ $t('profile.openCoachChat') }}</span>
-      </button>
     </GlassCard>
 
     <GlassCard tone="subtle" class="section">
@@ -87,7 +83,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { Bot, Globe, GraduationCap, Info } from 'lucide-vue-next';
+import { Globe, GraduationCap, Info } from 'lucide-vue-next';
 import GlassCard from '../components/GlassCard.vue';
 import { apiJson } from '../lib/api.js';
 import { tgHaptic, tgOpenLink } from '../lib/tg.js';
@@ -177,12 +173,6 @@ async function setLevel(code) {
   } finally {
     savingLevel.value = '';
   }
-}
-
-function openTelegram() {
-  const url = selectedBot.value?.telegram_url || '';
-  if (!url) return;
-  tgOpenLink(url);
 }
 
 function openSchoolUrl() {

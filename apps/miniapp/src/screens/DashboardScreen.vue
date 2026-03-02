@@ -1,162 +1,69 @@
 <template>
   <div class="dashboard-shell fade-in">
-    <section class="hero-grid">
-      <GlassCard tone="accent" class="hero-card">
-        <div class="hero-copy">
-          <div class="eyebrow">{{ $t('dashboard.eyebrow') }}</div>
-          <h1>{{ greeting }}</h1>
-          <p class="hero-sub">{{ heroSubtitle }}</p>
-        </div>
+    <GlassCard tone="accent" class="hero-card">
+      <div class="hero-copy">
+        <h1>{{ greeting }}</h1>
+        <p class="hero-sub">{{ heroSubtitle }}</p>
+      </div>
 
-        <div class="hero-actions">
-          <div class="hero-chip">
-            <Languages class="hero-chip-icon" />
-            <span>{{ selectedBot.bot_name || languageLabel }}</span>
-          </div>
+      <div class="hero-chip">
+        <Sparkles class="hero-chip-icon" />
+        <span>{{ statusCopy }}</span>
+      </div>
 
-          <button
-            type="button"
-            class="secondary-link secondary-link--fit"
-            @click="openTeachersUrl"
-          >
-            <Globe class="button-icon" />
-            <span>{{ $t('dashboard.otherLanguages') }}</span>
-          </button>
-
-          <div class="hero-chip">
-            <Sparkles class="hero-chip-icon" />
-            <span>{{ statusCopy }}</span>
-          </div>
-
-          <button
-            v-if="selectedBot.telegram_url"
-            type="button"
-            class="primary-cta"
-            @click="openTelegram"
-          >
-            <Send class="button-icon" />
-            <span>{{ $t('dashboard.openChat') }}</span>
-          </button>
-        </div>
-      </GlassCard>
-
-      <GlassCard tone="subtle" class="coach-card">
-        <div class="coach-head">
+      <div class="setup-card">
+        <div class="setup-main">
           <div class="coach-avatar">{{ teacherAvatar }}</div>
           <div>
-            <div class="coach-overline">{{ $t('dashboard.coachLabel') }}</div>
+            <div class="setup-label">{{ $t('dashboard.setupLabel') }}</div>
             <h2>{{ selectedBot.bot_name || languageLabel }}</h2>
+            <p class="setup-copy">{{ teacherTagline }}</p>
           </div>
         </div>
-        <p class="coach-copy">{{ teacherTagline }}</p>
-        <div class="coach-meta">
+        <div class="setup-meta">
           <span>{{ languageLabel }}</span>
           <span>{{ levelLabel }}</span>
         </div>
-      </GlassCard>
-    </section>
+        <button type="button" class="secondary-link secondary-link--fit" @click="emit('navigate', '/profile')">
+          <SlidersHorizontal class="button-icon" />
+          <span>{{ $t('dashboard.manageSetup') }}</span>
+        </button>
+      </div>
+    </GlassCard>
 
-    <section class="stats-grid" v-if="!loading">
-      <GlassCard :tone="streakTone" class="stat-card">
-        <div class="stat-head">
+    <section class="summary-grid" v-if="!loading">
+      <GlassCard :tone="streakTone" class="summary-card">
+        <div class="summary-head">
           <div>
-            <div class="stat-label">{{ $t('dashboard.currentStreak') }}</div>
-            <div class="stat-value">{{ streak.current }}</div>
+            <div class="summary-label">{{ $t('dashboard.currentStreak') }}</div>
+            <div class="summary-value">{{ streak.current }}</div>
           </div>
-          <Flame class="stat-icon" />
+          <Flame class="summary-icon" />
         </div>
-        <p class="stat-copy">{{ currentStreakCopy }}</p>
-      </GlassCard>
-
-      <GlassCard tone="subtle" class="stat-card">
-        <div class="stat-head">
-          <div>
-            <div class="stat-label">{{ $t('dashboard.longestStreak') }}</div>
-            <div class="stat-value">{{ streak.longest }}</div>
-          </div>
-          <Trophy class="stat-icon" />
-        </div>
-        <p class="stat-copy">{{ longestStreakCopy }}</p>
+        <p class="summary-copy">{{ currentStreakCopy }}</p>
       </GlassCard>
 
-      <GlassCard tone="subtle" class="stat-card usage-card">
-        <div class="stat-head">
+      <GlassCard tone="subtle" class="summary-card">
+        <div class="summary-head">
           <div>
-            <div class="stat-label">{{ $t('dashboard.planUsage') }}</div>
-            <div class="stat-inline">{{ planLabel }}</div>
+            <div class="summary-label">{{ $t('dashboard.planUsage') }}</div>
+            <div class="summary-inline">{{ planLabel }}</div>
           </div>
-          <WalletCards class="stat-icon" />
+          <WalletCards class="summary-icon" />
         </div>
-        <p class="usage-copy">{{ usageCopy }}</p>
+        <p class="summary-copy">{{ usageCopy }}</p>
         <div class="usage-track">
           <div class="usage-fill" :style="{ width: `${usagePercent}%` }"></div>
         </div>
       </GlassCard>
 
-      <GlassCard tone="subtle" class="stat-card">
-        <div class="stat-head">
+      <GlassCard tone="subtle" class="summary-card support-card">
+        <div class="summary-head">
           <div>
-            <div class="stat-label">{{ $t('dashboard.learningProfile') }}</div>
-            <div class="stat-inline">{{ languageLabel }}</div>
+            <div class="summary-label">{{ $t('dashboard.supportLabel') }}</div>
+            <h3 class="support-title">{{ $t('dashboard.supportTitle') }}</h3>
           </div>
-          <GraduationCap class="stat-icon" />
-        </div>
-        <p class="stat-copy">{{ $t('dashboard.profileSummary', { level: levelLabel }) }}</p>
-      </GlassCard>
-    </section>
-
-    <section class="dashboard-grid">
-      <GlassCard v-if="showFocusPanel" :tone="streak.status === 'at_risk' ? 'warning' : 'subtle'" class="panel">
-        <div class="panel-head">
-          <div>
-            <div class="panel-label">{{ $t('dashboard.todayFocus') }}</div>
-            <h3>{{ focusTitle }}</h3>
-          </div>
-          <TimerReset class="panel-icon" />
-        </div>
-        <p class="panel-copy">{{ focusCopy }}</p>
-        <button type="button" class="secondary-link" @click="openTelegram">
-          <AudioLines class="button-icon" />
-          <span>{{ $t('dashboard.practiceNow') }}</span>
-        </button>
-      </GlassCard>
-
-      <GlassCard tone="subtle" class="panel">
-        <div class="panel-head">
-          <div>
-            <div class="panel-label">{{ $t('dashboard.quickActions') }}</div>
-            <h3>{{ $t('dashboard.quickActionsTitle') }}</h3>
-          </div>
-          <ChevronRight class="panel-icon" />
-        </div>
-
-        <div class="action-list">
-          <button type="button" class="action-btn" @click="emit('navigate', '/profile?section=level')">
-            <GraduationCap class="action-icon" />
-            <span>{{ $t('dashboard.actions.level') }}</span>
-          </button>
-          <button type="button" class="action-btn" @click="openTeachersUrl">
-            <Languages class="action-icon" />
-            <span>{{ $t('dashboard.actions.otherLanguages') }}</span>
-          </button>
-          <button type="button" class="action-btn" @click="emit('navigate', '/subscription')">
-            <WalletCards class="action-icon" />
-            <span>{{ $t('dashboard.actions.plan') }}</span>
-          </button>
-          <button type="button" class="action-btn" @click="emit('navigate', '/feedback')">
-            <LifeBuoy class="action-icon" />
-            <span>{{ $t('dashboard.actions.support') }}</span>
-          </button>
-        </div>
-      </GlassCard>
-
-      <GlassCard tone="subtle" class="panel support-panel">
-        <div class="panel-head">
-          <div>
-            <div class="panel-label">{{ $t('dashboard.supportLabel') }}</div>
-            <h3>{{ $t('dashboard.supportTitle') }}</h3>
-          </div>
-          <MessageSquareText class="panel-icon" />
+          <MessageSquareText class="summary-icon" />
         </div>
 
         <div v-if="feedbackSummary.has_thread" class="support-preview">
@@ -170,7 +77,7 @@
         </div>
         <p v-else class="support-empty">{{ $t('dashboard.supportEmpty') }}</p>
 
-        <button type="button" class="secondary-link" @click="emit('navigate', '/feedback')">
+        <button type="button" class="secondary-link secondary-link--fit" @click="emit('navigate', '/feedback')">
           <MessageSquareText class="button-icon" />
           <span>{{ feedbackSummary.has_thread ? $t('dashboard.openSupport') : $t('dashboard.startSupport') }}</span>
         </button>
@@ -186,23 +93,14 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import {
-  AudioLines,
-  ChevronRight,
   Flame,
-  Globe,
-  GraduationCap,
-  Languages,
-  LifeBuoy,
   MessageSquareText,
-  Send,
+  SlidersHorizontal,
   Sparkles,
-  TimerReset,
-  Trophy,
   WalletCards
 } from 'lucide-vue-next';
 import GlassCard from '../components/GlassCard.vue';
 import { apiJson } from '../lib/api.js';
-import { tgOpenLink } from '../lib/tg.js';
 import { useI18n } from '../i18n.js';
 
 const props = defineProps({
@@ -260,7 +158,6 @@ const feedbackSummary = computed(() => dashboard.value?.feedback_summary || {
   last_message_sender: null
 });
 const usage = computed(() => dashboard.value?.usage || null);
-const currentBotKey = computed(() => props.botKey || selectedBot.value?.bot_key || '');
 
 const greeting = computed(() => {
   const name = (props.me?.first_name || dashboard.value?.user?.first_name || '').toString().trim();
@@ -284,12 +181,6 @@ const teacherTagline = computed(() =>
   || selectedBot.value?.teacher_tagline_uk
   || t('dashboard.teacherFallback')
 );
-const baseLanguageCode = computed(() => {
-  const raw = (selectedBot.value?.base_language || currentBotKey.value.split('-')[0] || '').toString().trim().toLowerCase();
-  if (raw === 'ua') return 'uk';
-  return raw || 'en';
-});
-const teachersUrl = computed(() => `https://ai-language-school.online/${baseLanguageCode.value}/teachers`);
 
 const statusCopy = computed(() => {
   if (streak.value.status === 'active') return t('dashboard.statusActive');
@@ -314,21 +205,10 @@ const currentStreakCopy = computed(() => {
   return t('dashboard.currentStreakBroken');
 });
 
-const longestStreakCopy = computed(() => {
-  if (!streak.value.longest) return t('dashboard.longestStreakEmpty');
-  return t('dashboard.longestStreakCopy', { count: streak.value.longest });
-});
-
 const planLabel = computed(() => {
   const tier = (usage.value?.tier || dashboard.value?.user?.plan_tier || 'free').toString().toLowerCase();
   return tier === 'pro' ? t('plans.tiers.pro') : t('plans.tiers.free');
 });
-
-function formatMinutes(secondsRaw) {
-  const seconds = Number(secondsRaw || 0);
-  const minutes = Math.max(0, Math.round(seconds / 60));
-  return `${minutes} ${t('dashboard.minutes')}`;
-}
 
 const usageCopy = computed(() => {
   if (!usage.value) return t('dashboard.usageFallback');
@@ -342,34 +222,11 @@ const usagePercent = computed(() => {
   return Math.min(100, Math.max(0, Math.round((used / limit) * 100)));
 });
 
-const focusTitle = computed(() => {
-  if (streak.value.status === 'active') return t('dashboard.focusActiveTitle');
-  if (streak.value.status === 'at_risk') return t('dashboard.focusRiskTitle');
-  return t('dashboard.focusRestartTitle');
-});
-
-const focusCopy = computed(() => {
-  if (streak.value.status === 'active') return t('dashboard.focusActiveCopy');
-  if (streak.value.status === 'at_risk') return t('dashboard.focusRiskCopy');
-  return t('dashboard.focusRestartCopy');
-});
-const showFocusPanel = computed(() => streak.value.status !== 'broken');
-
 const lastSenderLabel = computed(() => {
   if (feedbackSummary.value.last_message_sender === 'admin') return t('dashboard.supportFromAdmin');
   if (feedbackSummary.value.last_message_sender === 'user') return t('dashboard.supportFromYou');
   return t('dashboard.supportLabel');
 });
-
-function openTelegram() {
-  const url = selectedBot.value?.telegram_url || props.me?.telegram_url || '';
-  if (!url) return;
-  tgOpenLink(url);
-}
-
-function openTeachersUrl() {
-  tgOpenLink(teachersUrl.value);
-}
 </script>
 
 <style scoped>
@@ -380,17 +237,13 @@ function openTeachersUrl() {
   gap: 18px;
 }
 
-.hero-grid,
-.stats-grid,
-.dashboard-grid {
+.summary-grid {
   display: grid;
   gap: 16px;
 }
 
 .hero-card,
-.coach-card,
-.panel,
-.stat-card,
+.summary-card,
 .notice-card {
   padding: 20px;
 }
@@ -400,20 +253,9 @@ function openTeachersUrl() {
   gap: 18px;
 }
 
-.eyebrow,
-.coach-overline,
-.stat-label,
-.panel-label {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--muted-strong);
-}
-
 .hero-card h1,
-.coach-card h2,
-.panel h3 {
+.setup-card h2,
+.support-title {
   margin: 0;
   font-family: var(--font-display);
   letter-spacing: -0.03em;
@@ -422,24 +264,24 @@ function openTeachersUrl() {
 .hero-card h1 {
   font-size: clamp(34px, 9vw, 56px);
   line-height: 0.96;
-  margin-top: 10px;
 }
 
 .hero-sub,
-.coach-copy,
-.panel-copy,
-.stat-copy,
+.setup-copy,
+.summary-copy,
 .support-empty,
 .support-preview p,
-.usage-copy {
+.support-title {
   margin: 0;
-  color: var(--muted);
-  line-height: 1.6;
 }
 
-.hero-actions {
-  display: grid;
-  gap: 12px;
+.hero-sub,
+.setup-copy,
+.summary-copy,
+.support-empty,
+.support-preview p {
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .hero-chip {
@@ -457,16 +299,47 @@ function openTeachersUrl() {
 }
 
 .hero-chip-icon,
-.panel-icon,
-.stat-icon {
+.summary-icon {
   width: 20px;
   height: 20px;
   color: var(--accent-strong);
 }
 
-.primary-cta,
-.secondary-link,
-.action-btn {
+.setup-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.52);
+}
+
+.setup-main,
+.summary-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.setup-main {
+  align-items: flex-start;
+}
+
+.setup-label,
+.summary-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted-strong);
+}
+
+.setup-card h2 {
+  margin-top: 6px;
+  font-size: clamp(24px, 6vw, 30px);
+}
+
+.secondary-link {
   border: 0;
   border-radius: 18px;
   cursor: pointer;
@@ -474,7 +347,6 @@ function openTeachersUrl() {
   transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
 
-.primary-cta,
 .secondary-link {
   display: inline-flex;
   align-items: center;
@@ -482,12 +354,6 @@ function openTeachersUrl() {
   gap: 10px;
   min-height: 52px;
   padding: 0 18px;
-}
-
-.primary-cta {
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-  color: white;
-  box-shadow: 0 18px 34px rgba(66, 121, 214, 0.28);
 }
 
 .secondary-link {
@@ -500,24 +366,13 @@ function openTeachersUrl() {
   justify-self: start;
 }
 
-.primary-cta:hover,
-.secondary-link:hover,
-.action-btn:hover {
+.secondary-link:hover {
   transform: translateY(-1px);
 }
 
-.button-icon,
-.action-icon {
+.button-icon {
   width: 18px;
   height: 18px;
-}
-
-.coach-head,
-.panel-head,
-.stat-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
 }
 
 .coach-avatar {
@@ -531,18 +386,13 @@ function openTeachersUrl() {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-.coach-card {
-  display: grid;
-  gap: 14px;
-}
-
-.coach-meta {
+.setup-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.coach-meta span,
+.setup-meta span,
 .support-badge {
   display: inline-flex;
   align-items: center;
@@ -555,19 +405,19 @@ function openTeachersUrl() {
   font-weight: 700;
 }
 
-.stat-card {
+.summary-card {
   display: grid;
   gap: 12px;
 }
 
-.stat-value {
+.summary-value {
   font-size: clamp(34px, 8vw, 42px);
   font-weight: 800;
   letter-spacing: -0.05em;
   color: var(--ink);
 }
 
-.stat-inline {
+.summary-inline {
   margin-top: 8px;
   font-size: 19px;
   font-weight: 700;
@@ -587,28 +437,7 @@ function openTeachersUrl() {
   background: linear-gradient(90deg, var(--accent), var(--accent-strong));
 }
 
-.panel {
-  display: grid;
-  gap: 16px;
-}
-
-.action-list {
-  display: grid;
-  gap: 10px;
-}
-
-.action-btn {
-  min-height: 54px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  justify-content: flex-start;
-  background: rgba(255, 255, 255, 0.78);
-  color: var(--ink);
-}
-
-.support-panel {
+.support-card {
   display: grid;
   gap: 14px;
 }
@@ -627,6 +456,10 @@ function openTeachersUrl() {
   font-weight: 700;
 }
 
+.support-title {
+  font-size: clamp(22px, 5vw, 28px);
+}
+
 .notice-card p {
   margin: 0;
   color: var(--ink);
@@ -634,8 +467,12 @@ function openTeachersUrl() {
 }
 
 @media (min-width: 768px) {
-  .stats-grid {
+  .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .support-card {
+    grid-column: 1 / -1;
   }
 }
 </style>
