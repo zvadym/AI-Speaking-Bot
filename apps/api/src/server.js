@@ -1626,6 +1626,81 @@ app.get('/admin/metrics/active-users-by-day', requireAdmin, async (req, res) => 
   });
 });
 
+app.get('/admin/metrics/user-streaks', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+     ),
+     activity_days AS (
+       SELECT DISTINCT activity.chat_id, activity.day_utc
+       FROM (
+         SELECT
+           v.chat_id,
+           date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc
+         FROM voice_usage_events v
+         WHERE v.occurred_at >= (SELECT from_ts FROM params)
+           AND v.occurred_at < (SELECT to_ts FROM params)
+
+         UNION
+
+         SELECT
+           m.chat_id,
+           date_trunc('day', m.created_at AT TIME ZONE 'UTC')::date AS day_utc
+         FROM messages m
+         WHERE m.role = 'user'
+           AND m.created_at >= (SELECT from_ts FROM params)
+           AND m.created_at < (SELECT to_ts FROM params)
+       ) activity
+       JOIN filtered_users u ON u.chat_id = activity.chat_id
+     ),
+     streak_groups AS (
+       SELECT
+         chat_id,
+         day_utc,
+         day_utc - ROW_NUMBER() OVER (PARTITION BY chat_id ORDER BY day_utc)::int AS grp
+       FROM activity_days
+     ),
+     streaks AS (
+       SELECT
+         chat_id,
+         COUNT(*)::int AS streak_days
+       FROM streak_groups
+       GROUP BY chat_id, grp
+     ),
+     max_streaks AS (
+       SELECT
+         chat_id,
+         MAX(streak_days)::int AS streak_days
+       FROM streaks
+       GROUP BY chat_id
+     )
+     SELECT
+       streak_days::text AS day,
+       COUNT(*)::int AS users
+     FROM max_streaks
+     GROUP BY streak_days
+     ORDER BY streak_days ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
 app.get('/admin/metrics/active-users-by-day-by-bot', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });

@@ -250,6 +250,17 @@
             { key: 'message_count', label: 'Messages', color: 'rgba(199, 90, 36, 0.58)', type: 'bar', yAxisId: 'y1' }
           ]"
         />
+
+        <AdminChart
+          title="User streaks"
+          subtitle="Longest consecutive active-day streak per user in selected UTC range"
+          kind="bar"
+          x-labels="all"
+          :data="userStreakSeries"
+          :series="[
+            { key: 'users', label: 'Users', color: 'rgba(103, 78, 167, 0.88)' }
+          ]"
+        />
       </section>
 
       <section class="card" v-if="botStats.length">
@@ -1246,6 +1257,7 @@ const freeUsersUsageBuckets = ref([]);
 const freeUsersMessageBuckets = ref([]);
 const activeUsersByHourSeries = ref([]);
 const activeUsersByHourTodaySeries = ref([]);
+const userStreakSeries = ref([]);
 const activeUsersByHourCombinedSeries = computed(() => {
   const merged = new Map();
 
@@ -2254,6 +2266,7 @@ async function refreshAnalytics() {
       freeUsersInsights,
       byHour,
       byHourToday,
+      userStreaks,
       payloads
     ] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
@@ -2268,6 +2281,7 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/free-users-insights', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload }, headers }),
+      apiJson(props.apiBase, '/admin/metrics/user-streaks', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
     ]);
 
@@ -2288,6 +2302,7 @@ async function refreshAnalytics() {
     freeUsersMessageBuckets.value = Array.isArray(freeUsersInsights?.message_buckets) ? freeUsersInsights.message_buckets : [];
     activeUsersByHourSeries.value = Array.isArray(byHour?.series) ? byHour.series : [];
     activeUsersByHourTodaySeries.value = Array.isArray(byHourToday?.series) ? byHourToday.series : [];
+    userStreakSeries.value = Array.isArray(userStreaks?.series) ? userStreaks.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
     // Users list is loaded in the Users tab (separate request).
     
