@@ -86,7 +86,7 @@
     "pending_change_suffix": " at period end",
     "stats_footer": "Details and subscription management are available in the mini-app below.",
     "btn_open_miniapp": "Open mini-app",
-    "msg_limit_reached": "I’d love to keep practicing with you, but your weekly limit is already used up 😔\\nTo continue, open the subscription in the mini-app with the button below ✨\\nYou can check your status with /stats.",
+    "msg_limit_reached": "I’d love to keep practicing with you, but your weekly limit is already used up 😔\\nTo continue, open the subscription in the mini-app with the button below ✨\\n⬇️⬇️⬇️",
     "msg_tts_limit_reached": "You’ve reached the weekly limit for my voice replies 😔 Check /stats or change mode with /voice.",
     "btn_open_subscription": "💎 Open subscription",
     "msg_too_short": "I couldn’t hear anything 😭 Please try a slightly longer voice message.",
