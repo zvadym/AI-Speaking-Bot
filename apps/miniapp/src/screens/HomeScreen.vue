@@ -84,7 +84,6 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from '../i18n.js';
-import { track } from '../lib/metrics.js';
 
 const props = defineProps({
   me: { type: Object, default: null }
@@ -95,7 +94,6 @@ const emit = defineEmits(['navigate']);
 const { t } = useI18n({ useScope: 'global' });
 
 function go(path, id) {
-  track('ui_click', { id, to: path });
   emit('navigate', path);
 }
 

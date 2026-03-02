@@ -179,7 +179,6 @@
 import { onMounted, reactive, computed, ref, watch } from 'vue';
 import { useI18n } from '../i18n.js';
 import { tgOpenLink } from '../lib/tg.js';
-import { track } from '../lib/metrics.js';
 import BackToMenu from '../components/BackToMenu.vue';
 import { addDebugLog } from '../lib/debug.js';
 
@@ -279,33 +278,6 @@ const statusMessage = computed(() => {
   if (window.location.pathname.endsWith('/cancel')) return t('subscription.statusMessage.checkoutCanceled');
   return '';
 });
-
-function trackPurchaseSuccessOnce() {
-  const params = new URLSearchParams(window.location.search);
-  const sessionId = (params.get('session_id') || '').toString().trim();
-  const isSuccessPath = window.location.pathname.endsWith('/success');
-  if (!sessionId && !isSuccessPath) return;
-
-  const dedupeKey = sessionId
-    ? `purchase_success:${sessionId}`
-    : `purchase_success:path:${window.location.pathname}`;
-
-  try {
-    const storageKey = 'miniapp_purchase_success_seen';
-    const existingRaw = window.sessionStorage.getItem(storageKey) || '';
-    const seen = new Set(existingRaw.split('|').filter(Boolean));
-    if (seen.has(dedupeKey)) return;
-    seen.add(dedupeKey);
-    window.sessionStorage.setItem(storageKey, Array.from(seen).slice(-20).join('|'));
-  } catch {
-    // Best-effort dedupe only.
-  }
-
-  track('purchase_success', {
-    source: 'miniapp',
-    session_id: sessionId || null
-  });
-}
 
 const plans = computed(() => state.plans || []);
 const user = computed(() => state.user);
@@ -491,7 +463,6 @@ function selectBillingInterval(intervalRaw) {
   if (!interval) return;
   if (!availableBillingIntervals.value.includes(interval)) return;
   selectedBillingInterval.value = interval;
-  track('ui_click', { id: 'subscription_billing_interval', billing_interval: interval });
 }
 
 function planActionKey(plan) {
@@ -530,7 +501,6 @@ async function subscribe(tier, billingIntervalRaw = BILLING_INTERVAL_MONTH) {
   actionPending.value = `${tier}:${billingInterval}`;
   clearMessages();
   try {
-    track('ui_click', { id: 'subscription_subscribe', tier, billing_interval: billingInterval });
     addDebugLog('subscribe_clicked', {
       tier,
       billingInterval,
@@ -543,7 +513,6 @@ async function subscribe(tier, billingIntervalRaw = BILLING_INTERVAL_MONTH) {
     if (useEmbeddedCheckout.value) {
       const target = buildCheckoutPath(tier, state.currency, billingInterval);
       addDebugLog('embedded_checkout_navigation', { target });
-      track('checkout_opened', { tier, currency: state.currency, billing_interval: billingInterval, mode: 'embedded' });
       emit('navigate', target);
       return;
     }
@@ -564,7 +533,6 @@ async function subscribe(tier, billingIntervalRaw = BILLING_INTERVAL_MONTH) {
 
     const data = await resp.json();
     addDebugLog('redirect_checkout_url_received', { hasUrl: Boolean(data?.url) });
-    track('checkout_opened', { tier, currency: state.currency, billing_interval: billingInterval, mode: 'redirect' });
     tgOpenLink(data.url);
   } catch (err) {
     console.error(err);
@@ -579,7 +547,6 @@ async function subscribe(tier, billingIntervalRaw = BILLING_INTERVAL_MONTH) {
 	  actionPending.value = 'portal';
     clearMessages();
 	  try {
-      track('ui_click', { id: 'subscription_open_billing_portal' });
       addDebugLog('billing_portal_request_started');
 	    const resp = await fetch(`${props.apiBase}/billing/portal`, {
 	      method: 'POST',
@@ -603,7 +570,6 @@ async function subscribe(tier, billingIntervalRaw = BILLING_INTERVAL_MONTH) {
 	      return;
 	    }
 
-      track('billing_portal_opened');
       addDebugLog('billing_portal_opened', { hasUrl: Boolean(data?.url) });
 	    tgOpenLink(data.url);
 	  } catch (err) {
@@ -617,14 +583,12 @@ async function subscribe(tier, billingIntervalRaw = BILLING_INTERVAL_MONTH) {
 
 async function cancel() {
   actionPending.value = 'cancel';
-  track('ui_click', { id: 'subscription_cancel_autorenew' });
   const resp = await fetch(`${props.apiBase}/billing/cancel`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${props.token}` }
   });
 
   if (resp.ok) {
-    track('subscription_autorenew_disabled');
     await loadPlans();
   }
   actionPending.value = '';
@@ -632,14 +596,12 @@ async function cancel() {
 
 async function resume() {
   actionPending.value = 'resume';
-  track('ui_click', { id: 'subscription_resume_autorenew' });
   const resp = await fetch(`${props.apiBase}/billing/resume`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${props.token}` }
   });
 
   if (resp.ok) {
-    track('subscription_autorenew_enabled');
     await loadPlans();
   }
   actionPending.value = '';
@@ -648,7 +610,6 @@ async function resume() {
 onMounted(async () => {
   const savedInterval = readSavedBillingInterval();
   if (savedInterval) selectedBillingInterval.value = savedInterval;
-  trackPurchaseSuccessOnce();
   addDebugLog('subscription_screen_mounted', {
     path: window.location.pathname,
     search: window.location.search,

@@ -76,7 +76,6 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from '../i18n.js';
 import { tgHaptic, tgOpenLink } from '../lib/tg.js';
-import { track } from '../lib/metrics.js';
 import BackToMenu from '../components/BackToMenu.vue';
 
 const props = defineProps({
@@ -221,9 +220,6 @@ watch(
 function toggleShowMore() {
   if (busy.value || !canShowMoreToggle.value) return;
   showMoreSections.value = !showMoreSections.value;
-  track('ui_click', {
-    id: showMoreSections.value ? 'teachers_show_more' : 'teachers_show_less'
-  });
   tgHaptic('selection');
 }
 
@@ -232,7 +228,6 @@ async function chooseTeacher(teacher) {
   if (busy.value) return;
 
   busy.value = teacher.bot_key;
-  track('ui_click', { id: 'teacher_select', bot_key: teacher.bot_key, language: teacher.learningCode });
   tgHaptic('impact', 'light');
 
   try {

@@ -9,7 +9,7 @@ Essential steps to run and update the project locally. Env files and secrets are
 | File | Purpose | Create from |
 |------|---------|-------------|
 | `deploy/.env.api` | API: DB, Telegram, Stripe, JWT | `deploy/.env.api.example` |
-| `deploy/.env.miniapp` | Miniapp: API URL, Stripe, PostHog | `deploy/.env.miniapp.example` |
+| `deploy/.env.miniapp` | Miniapp: API URL, Stripe | `deploy/.env.miniapp.example` |
 | `deploy/.env.dev` | n8n dev: URL, credential IDs | See below |
 
 **Miniapp → local API:** in `deploy/.env.miniapp` set:

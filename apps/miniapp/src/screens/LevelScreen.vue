@@ -34,7 +34,6 @@ import { computed, ref } from 'vue';
 import { useI18n } from '../i18n.js';
 import { apiJson } from '../lib/api.js';
 import { tgHaptic } from '../lib/tg.js';
-import { track } from '../lib/metrics.js';
 import BackToMenu from '../components/BackToMenu.vue';
 
 const props = defineProps({
@@ -64,7 +63,6 @@ const current = computed(() => (props.me?.level || 'b1').toString().toLowerCase(
 async function setLevel(code) {
   if (busy.value) return;
   busy.value = code;
-  track('ui_click', { id: 'level_select', level: code });
   tgHaptic('impact', 'light');
   try {
     await apiJson(props.apiBase, '/me/level', {
@@ -74,8 +72,6 @@ async function setLevel(code) {
       body: { level: code }
     });
     await props.refreshMe();
-    track('profile_set_level', { level: code, source: 'miniapp' });
-    track('setting_saved', { key: 'level', value: code });
     props.toast(t('level.toasts.saved'));
   } catch (err) {
     console.error(err);

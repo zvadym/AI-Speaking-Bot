@@ -359,20 +359,14 @@
 
         <AdminChart
           title="Active users by hour"
-          subtitle="UTC hour-of-day distribution for selected range"
-          kind="bar"
+          subtitle="UTC hour-of-day distribution for selected range vs today"
+          kind="line"
           x-labels="all"
-          :data="activeUsersByHourSeries"
-          :series="[{ key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.86)' }]"
-        />
-
-        <AdminChart
-          title="Active users by hour today"
-          subtitle="UTC, today only"
-          kind="bar"
-          x-labels="all"
-          :data="activeUsersByHourTodaySeries"
-          :series="[{ key: 'count', label: 'Active users', color: 'rgba(199, 90, 36, 0.86)' }]"
+          :data="activeUsersByHourCombinedSeries"
+          :series="[
+            { key: 'selected_range', label: 'Selected range', color: 'rgba(31, 107, 99, 0.9)' },
+            { key: 'today', label: 'Today', color: 'rgba(199, 90, 36, 0.9)' }
+          ]"
         />
 
         <AdminChart
@@ -1249,6 +1243,25 @@ const freeUsersUsageBuckets = ref([]);
 const freeUsersMessageBuckets = ref([]);
 const activeUsersByHourSeries = ref([]);
 const activeUsersByHourTodaySeries = ref([]);
+const activeUsersByHourCombinedSeries = computed(() => {
+  const merged = new Map();
+
+  for (const row of activeUsersByHourSeries.value) {
+    const hour = String(row?.day ?? '').trim();
+    if (!hour) continue;
+    if (!merged.has(hour)) merged.set(hour, { day: hour, selected_range: 0, today: 0 });
+    merged.get(hour).selected_range = safeNum(row?.count);
+  }
+
+  for (const row of activeUsersByHourTodaySeries.value) {
+    const hour = String(row?.day ?? '').trim();
+    if (!hour) continue;
+    if (!merged.has(hour)) merged.set(hour, { day: hour, selected_range: 0, today: 0 });
+    merged.get(hour).today = safeNum(row?.count);
+  }
+
+  return Array.from(merged.values()).sort((a, b) => String(a.day).localeCompare(String(b.day), undefined, { numeric: true }));
+});
 const botSeriesPalette = [
   'rgba(31, 107, 99, 0.88)',
   'rgba(199, 90, 36, 0.88)',

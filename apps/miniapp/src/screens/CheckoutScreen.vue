@@ -22,14 +22,6 @@
       <div ref="mountEl" class="checkout-mount" />
     </section>
 
-    <section class="debug-wrap" v-if="debugEnabled">
-      <DebugPanel
-        title="Checkout Debug"
-        :logs="debugLogs"
-        @clear="clearDebugPanel"
-      />
-    </section>
-
     <div class="bottom-nav">
       <button class="ghost" type="button" @click="goBack" :disabled="loading">
         {{ $t('common.back') }}
@@ -42,9 +34,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
 import { useI18n } from '../i18n.js';
-import { track } from '../lib/metrics.js';
-import DebugPanel from '../components/DebugPanel.vue';
-import { addDebugLog, clearDebugLogs, isDebugEnabled, readDebugLogs, subscribeDebugLogs } from '../lib/debug.js';
+import { addDebugLog } from '../lib/debug.js';
 
 const props = defineProps({
   apiBase: { type: String, required: true },
@@ -58,9 +48,6 @@ const loading = ref(true);
 const errorKey = ref('');
 const errorMessage = computed(() => (errorKey.value ? t(errorKey.value) : ''));
 const mountEl = ref(null);
-const debugEnabled = ref(isDebugEnabled());
-const debugLogs = ref(readDebugLogs());
-let unsubscribeDebug = null;
 
 const publishableKey = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').toString().trim();
 const BILLING_INTERVAL_MONTH = 'month';
@@ -68,10 +55,6 @@ const BILLING_INTERVAL_YEAR = 'year';
 const BILLING_INTERVALS = new Set([BILLING_INTERVAL_MONTH, BILLING_INTERVAL_YEAR]);
 
 let embeddedCheckout = null;
-
-function clearDebugPanel() {
-  clearDebugLogs();
-}
 
 function buildSubscriptionPath() {
   const params = new URLSearchParams(window.location.search);
@@ -81,7 +64,6 @@ function buildSubscriptionPath() {
 }
 
 function goBack() {
-  track('ui_click', { id: 'checkout_back', to: '/subscription' });
   emit('navigate', buildSubscriptionPath());
 }
 
@@ -133,14 +115,10 @@ async function fetchClientSecret() {
   }
 
   addDebugLog('embedded_client_secret_received', { hasClientSecret: Boolean(data?.client_secret) });
-  track('checkout_embedded_client_secret_loaded', { tier, currency, billing_interval: billingInterval });
   return data.client_secret;
 }
 
 onMounted(async () => {
-  unsubscribeDebug = subscribeDebugLogs((logs) => {
-    debugLogs.value = logs;
-  });
   loading.value = true;
   errorKey.value = '';
   addDebugLog('checkout_screen_mounted', {
@@ -172,7 +150,6 @@ onMounted(async () => {
 
     embeddedCheckout.mount(mountEl.value);
     addDebugLog('embedded_checkout_mounted');
-    track('checkout_embedded_mounted');
   } catch (err) {
     console.error(err);
     addDebugLog('checkout_mount_error', { message: err?.message || 'unknown_error' });
@@ -183,8 +160,6 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  if (unsubscribeDebug) unsubscribeDebug();
-  unsubscribeDebug = null;
   try {
     embeddedCheckout?.destroy?.();
   } catch {
@@ -283,10 +258,6 @@ onBeforeUnmount(() => {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.6);
   overflow: hidden;
-}
-
-.debug-wrap {
-  display: grid;
 }
 
 .bottom-nav {

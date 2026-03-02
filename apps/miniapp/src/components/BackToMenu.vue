@@ -8,12 +8,9 @@
 </template>
 
 <script setup>
-import { track } from '../lib/metrics.js';
-
 const emit = defineEmits(['navigate']);
 
 function goHome() {
-  track('ui_click', { id: 'back_to_menu', to: '/' });
   emit('navigate', '/');
 }
 </script>
