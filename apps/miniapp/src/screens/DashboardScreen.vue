@@ -354,7 +354,7 @@ const calendarCells = computed(() => {
 
 .streak-card {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .streak-head {
@@ -386,14 +386,14 @@ const calendarCells = computed(() => {
 
 .calendar {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .calendar-head {
   display: grid;
-  grid-template-columns: 40px 1fr 40px;
+  grid-template-columns: 34px 1fr 34px;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .calendar-month {
@@ -401,14 +401,15 @@ const calendarCells = computed(() => {
   font-weight: 850;
   letter-spacing: -0.02em;
   color: var(--ink);
+  font-size: 13px;
 }
 
 .cal-nav {
   border: 1px solid rgba(255, 255, 255, 0.68);
   background: rgba(255, 255, 255, 0.78);
-  height: 36px;
-  width: 36px;
-  border-radius: 14px;
+  height: 32px;
+  width: 32px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -436,9 +437,9 @@ const calendarCells = computed(() => {
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   color: var(--muted-strong);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -451,15 +452,15 @@ const calendarCells = computed(() => {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .calendar-day {
   position: relative;
-  height: 42px;
+  height: 34px;
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.68);
-  border-radius: 14px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   color: var(--ink);
@@ -485,12 +486,12 @@ const calendarCells = computed(() => {
 }
 
 .day-num {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .dot {
   position: absolute;
-  bottom: 8px;
+  bottom: 6px;
   width: 6px;
   height: 6px;
   border-radius: 999px;

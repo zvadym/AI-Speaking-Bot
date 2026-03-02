@@ -1,20 +1,11 @@
 <template>
   <div class="profile-shell fade-in">
-    <GlassCard tone="accent" class="profile-hero">
-      <div>
-        <div class="eyebrow">{{ $t('profile.eyebrow') }}</div>
-        <h1>{{ $t('profile.title') }}</h1>
-        <p class="hero-copy">{{ $t('profile.sub') }}</p>
-      </div>
-    </GlassCard>
-
     <GlassCard tone="subtle" class="section">
       <div class="section-head">
         <div>
           <div class="eyebrow">{{ $t('profile.teacherSection') }}</div>
           <h2>{{ selectedBot.bot_name || languageLabel }}</h2>
         </div>
-        <div class="coach-badge">{{ teacherAvatar }}</div>
       </div>
       <p class="section-copy">{{ teacherTagline }}</p>
       <div class="meta-grid">
@@ -109,7 +100,6 @@ const selectedBot = computed(() => props.me || {});
 const currentBotKey = computed(() => props.botKey || selectedBot.value?.bot_key || '');
 const currentLevel = computed(() => (selectedBot.value?.level || 'b1').toString().toLowerCase());
 const currentLevelLabel = computed(() => currentLevel.value.toUpperCase());
-const teacherAvatar = computed(() => (selectedBot.value?.teacher_avatar_emoji || 'AI').toString());
 const teacherTagline = computed(() =>
   selectedBot.value?.teacher_tagline_en
   || selectedBot.value?.teacher_tagline_it
@@ -196,12 +186,10 @@ onMounted(() => {
   gap: 18px;
 }
 
-.profile-hero,
 .section {
   padding: 20px;
 }
 
-.profile-hero,
 .section {
   display: grid;
   gap: 16px;
@@ -272,16 +260,6 @@ h2 {
 .section-icon {
   width: 18px;
   height: 18px;
-}
-
-.coach-badge {
-  width: 50px;
-  height: 50px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.84);
-  font-size: 26px;
 }
 
 .meta-grid,
