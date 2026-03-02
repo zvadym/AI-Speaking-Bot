@@ -225,6 +225,33 @@
         </div>
       </section>
 
+      <section class="charts-grid">
+        <AdminChart
+          title="Active users by hour"
+          subtitle="UTC hour-of-day distribution for selected range vs today"
+          kind="bar"
+          x-labels="all"
+          :data="activeUsersByHourCombinedSeries"
+          :series="[
+            { key: 'selected_range', label: 'Selected range', color: 'rgba(31, 107, 99, 0.9)' },
+            { key: 'today', label: 'Today', color: 'rgba(199, 90, 36, 0.9)' }
+          ]"
+        />
+
+        <AdminChart
+          title="Voice usage seconds by hour today"
+          subtitle="UTC, today only. Voice seconds on left axis, messages on right axis"
+          kind="line"
+          x-labels="all"
+          :data="activeUsersByHourTodaySeries"
+          :series="[
+            { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)', type: 'line' },
+            { key: 'out_seconds', label: 'Out', color: 'rgba(46, 88, 142, 0.9)', type: 'line' },
+            { key: 'message_count', label: 'Messages', color: 'rgba(199, 90, 36, 0.58)', type: 'bar', yAxisId: 'y1' }
+          ]"
+        />
+      </section>
+
       <section class="card" v-if="botStats.length">
         <header class="bot-stats-head">
           <div class="kicker">Bot Statistics</div>
@@ -354,30 +381,6 @@
           :series="[
             { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)' },
             { key: 'out_seconds', label: 'Out', color: 'rgba(199, 90, 36, 0.9)' }
-          ]"
-        />
-
-        <AdminChart
-          title="Active users by hour"
-          subtitle="UTC hour-of-day distribution for selected range vs today"
-          kind="line"
-          x-labels="all"
-          :data="activeUsersByHourCombinedSeries"
-          :series="[
-            { key: 'selected_range', label: 'Selected range', color: 'rgba(31, 107, 99, 0.9)' },
-            { key: 'today', label: 'Today', color: 'rgba(199, 90, 36, 0.9)' }
-          ]"
-        />
-
-        <AdminChart
-          title="Voice usage seconds by hour today"
-          subtitle="UTC, today only"
-          kind="line"
-          x-labels="all"
-          :data="activeUsersByHourTodaySeries"
-          :series="[
-            { key: 'in_seconds', label: 'In', color: 'rgba(31, 107, 99, 0.9)' },
-            { key: 'out_seconds', label: 'Out', color: 'rgba(46, 88, 142, 0.9)' }
           ]"
         />
       </section>

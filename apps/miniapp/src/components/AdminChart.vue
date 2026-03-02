@@ -78,6 +78,7 @@ let resizeObserver = null;
 const labels = computed(() => props.data.map((row) => String(row?.day ?? '')));
 const hasData = computed(() => labels.value.length > 0);
 const isStacked = computed(() => props.kind === 'bar' && props.series.length > 1);
+const usesRightAxis = computed(() => props.series.some((series) => series?.yAxisId === 'y1'));
 
 function safeNum(value) {
   const num = Number(value ?? 0);
@@ -155,11 +156,18 @@ function tickLabelForIndex(index) {
   return formatXLabel(labels.value[index]);
 }
 
+function seriesType(series) {
+  const type = String(series?.type || props.kind).toLowerCase();
+  return type === 'line' ? 'line' : 'bar';
+}
+
 function buildDatasets() {
   return props.series.map((series) => {
     const values = props.data.map((row) => Math.max(0, safeNum(row?.[series.key])));
+    const type = seriesType(series);
+    const yAxisId = series?.yAxisId === 'y1' ? 'y1' : 'y';
 
-    if (props.kind === 'line') {
+    if (type === 'line') {
       return {
         type: 'line',
         label: series.label,
@@ -174,7 +182,8 @@ function buildDatasets() {
         pointHitRadius: 12,
         borderWidth: 2.25,
         tension: 0.18,
-        fill: false
+        fill: false,
+        yAxisId
       };
     }
 
@@ -191,7 +200,8 @@ function buildDatasets() {
       categoryPercentage: 0.84,
       maxBarThickness: 36,
       hoverBackgroundColor: series.color,
-      stack: isStacked.value ? 'total' : undefined
+      stack: isStacked.value ? 'total' : undefined,
+      yAxisId
     };
   });
 }
@@ -204,6 +214,78 @@ function tooltipLabel(context) {
 function buildOptions() {
   const rotation = Math.abs(xLabelAngle.value);
   const fontFamily = chartFontFamily();
+  const scales = {
+    x: {
+      stacked: isStacked.value,
+      grid: {
+        display: false,
+        drawBorder: false
+      },
+      border: {
+        color: 'rgba(30, 26, 22, 0.18)'
+      },
+      ticks: {
+        autoSkip: false,
+        color: 'rgba(30, 26, 22, 0.55)',
+        font: {
+          family: fontFamily,
+          size: 11
+        },
+        maxRotation: rotation,
+        minRotation: rotation,
+        callback(value, index) {
+          return tickLabelForIndex(index);
+        }
+      }
+    },
+    y: {
+      beginAtZero: true,
+      stacked: isStacked.value,
+      grid: {
+        color: 'rgba(30, 26, 22, 0.08)',
+        drawBorder: false
+      },
+      border: {
+        color: 'rgba(30, 26, 22, 0.18)'
+      },
+      ticks: {
+        color: 'rgba(30, 26, 22, 0.55)',
+        font: {
+          family: fontFamily,
+          size: 11
+        },
+        padding: 8,
+        callback(value) {
+          return formatCompact(value);
+        }
+      }
+    }
+  };
+
+  if (usesRightAxis.value) {
+    scales.y1 = {
+      beginAtZero: true,
+      position: 'right',
+      grid: {
+        drawOnChartArea: false,
+        drawBorder: false
+      },
+      border: {
+        color: 'rgba(30, 26, 22, 0.18)'
+      },
+      ticks: {
+        color: 'rgba(30, 26, 22, 0.55)',
+        font: {
+          family: fontFamily,
+          size: 11
+        },
+        padding: 8,
+        callback(value) {
+          return formatCompact(value);
+        }
+      }
+    };
+  }
 
   return {
     responsive: true,
@@ -286,53 +368,7 @@ function buildOptions() {
         boxPadding: 6
       }
     },
-    scales: {
-      x: {
-        stacked: isStacked.value,
-        grid: {
-          display: false,
-          drawBorder: false
-        },
-        border: {
-          color: 'rgba(30, 26, 22, 0.18)'
-        },
-        ticks: {
-          autoSkip: false,
-          color: 'rgba(30, 26, 22, 0.55)',
-          font: {
-            family: fontFamily,
-            size: 11
-          },
-          maxRotation: rotation,
-          minRotation: rotation,
-          callback(value, index) {
-            return tickLabelForIndex(index);
-          }
-        }
-      },
-      y: {
-        beginAtZero: true,
-        stacked: isStacked.value,
-        grid: {
-          color: 'rgba(30, 26, 22, 0.08)',
-          drawBorder: false
-        },
-        border: {
-          color: 'rgba(30, 26, 22, 0.18)'
-        },
-        ticks: {
-          color: 'rgba(30, 26, 22, 0.55)',
-          font: {
-            family: fontFamily,
-            size: 11
-          },
-          padding: 8,
-          callback(value) {
-            return formatCompact(value);
-          }
-        }
-      }
-    }
+    scales
   };
 }
 

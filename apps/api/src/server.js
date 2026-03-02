@@ -2030,7 +2030,7 @@ app.get('/admin/metrics/active-users-by-hour-today', requireAdmin, async (req, r
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
      ),
-     stats AS (
+     voice_stats AS (
        SELECT
          EXTRACT(HOUR FROM v.occurred_at AT TIME ZONE 'UTC')::int AS hour_utc,
          COUNT(DISTINCT v.chat_id)::int AS count,
@@ -2041,14 +2041,26 @@ app.get('/admin/metrics/active-users-by-hour-today', requireAdmin, async (req, r
        WHERE v.occurred_at >= (SELECT from_ts FROM params)
          AND v.occurred_at < (SELECT to_ts FROM params)
        GROUP BY 1
+     ),
+     message_stats AS (
+       SELECT
+         EXTRACT(HOUR FROM m.created_at AT TIME ZONE 'UTC')::int AS hour_utc,
+         COUNT(*)::int AS message_count
+       FROM messages m
+       JOIN filtered_users u ON u.chat_id = m.chat_id
+       WHERE m.created_at >= (SELECT from_ts FROM params)
+         AND m.created_at < (SELECT to_ts FROM params)
+       GROUP BY 1
      )
      SELECT
        LPAD(h.hour_utc::text, 2, '0') || ':00' AS day,
-       COALESCE(s.count, 0)::int AS count,
-       COALESCE(s.in_seconds, 0)::bigint AS in_seconds,
-       COALESCE(s.out_seconds, 0)::bigint AS out_seconds
+       COALESCE(vs.count, 0)::int AS count,
+       COALESCE(vs.in_seconds, 0)::bigint AS in_seconds,
+       COALESCE(vs.out_seconds, 0)::bigint AS out_seconds,
+       COALESCE(ms.message_count, 0)::int AS message_count
      FROM hours h
-     LEFT JOIN stats s USING (hour_utc)
+     LEFT JOIN voice_stats vs USING (hour_utc)
+     LEFT JOIN message_stats ms USING (hour_utc)
      ORDER BY h.hour_utc ASC`,
     [from.toISOString(), to.toISOString(), payload]
   );
