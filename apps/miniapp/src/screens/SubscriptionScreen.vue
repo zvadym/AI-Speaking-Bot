@@ -626,7 +626,7 @@ onMounted(async () => {
   width: min(1100px, 100%);
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 48px 24px calc(22px + env(safe-area-inset-bottom, 0px));
+  padding: 48px 24px calc(118px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 32px;

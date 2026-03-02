@@ -17,10 +17,10 @@
       </div>
     </header>
 
-    <GlassCard v-if="!loading" tone="subtle" class="streak-card">
+    <GlassCard tone="subtle" class="streak-card">
       <div class="streak-head">
         <div class="streak-label">{{ $t('dashboard.currentStreak') }}</div>
-        <div class="streak-value">{{ streak.current }}</div>
+        <div class="streak-value" :class="{ placeholder: loading }">{{ streakCountDisplay }}</div>
       </div>
 
       <div class="calendar" role="group" :aria-label="$t('dashboard.streakCalendar')">
@@ -143,6 +143,8 @@ const planLabel = computed(() => {
   const tier = (usage.value?.tier || dashboard.value?.user?.plan_tier || 'free').toString().toLowerCase();
   return tier === 'pro' ? t('plans.tiers.pro') : t('plans.tiers.free');
 });
+
+const streakCountDisplay = computed(() => (loading.value ? '—' : String(streak.value.current ?? 0)));
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -297,6 +299,10 @@ const calendarCells = computed(() => {
   color: var(--muted-strong);
   font-weight: 650;
   line-height: 1.35;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chip-row {
@@ -372,6 +378,10 @@ const calendarCells = computed(() => {
   letter-spacing: -0.05em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+
+.streak-value.placeholder {
+  opacity: 0.55;
 }
 
 .calendar {
