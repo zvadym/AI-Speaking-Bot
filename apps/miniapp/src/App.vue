@@ -23,9 +23,14 @@
       @select="selectBotAndRefresh"
     />
 
-    <HomeScreen
+    <DashboardScreen
       v-else-if="nav.screen.value === 'home'"
+      :apiBase="apiBase"
+      :token="token"
       :me="me"
+      :bots="meBots"
+      :botKey="botKey"
+      :selectBotAndRefresh="selectBotAndRefresh"
       @navigate="nav.go"
     />
 
@@ -49,48 +54,52 @@
       @navigate="nav.go"
     />
 
-    <LanguageScreen
-      v-else-if="nav.screen.value === 'language'"
+    <ProfileScreen
+      v-else-if="nav.screen.value === 'profile'"
+      :apiBase="apiBase"
+      :token="token"
       :me="me"
       :bots="meBots"
+      :botKey="botKey"
+      :refreshMe="refreshMe"
+      :selectBotAndRefresh="selectBotAndRefresh"
       :toast="toast"
       @navigate="nav.go"
     />
 
-    <LevelScreen
-      v-else-if="nav.screen.value === 'level'"
+    <FeedbackScreen
+      v-else-if="nav.screen.value === 'feedback'"
       :apiBase="apiBase"
       :token="token"
       :me="me"
       :botKey="botKey"
-      :refreshMe="refreshMe"
       :toast="toast"
-      @navigate="nav.go"
-    />
-
-    <AboutScreen
-      v-else
-      :bots="meBots"
       @navigate="nav.go"
     />
 
     <div class="toast" v-if="toastState.show" role="status" aria-live="polite">
       <div class="toast-card">{{ toastState.message }}</div>
     </div>
+
+    <BottomDock
+      v-if="showBottomDock"
+      :active="nav.screen.value"
+      @navigate="nav.go"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { setAppLocale, useI18n } from './i18n.js';
-import HomeScreen from './screens/HomeScreen.vue';
+import DashboardScreen from './screens/DashboardScreen.vue';
 import AdminDashboardScreen from './screens/AdminDashboardScreen.vue';
 import SubscriptionScreen from './screens/SubscriptionScreen.vue';
 import CheckoutScreen from './screens/CheckoutScreen.vue';
-import LanguageScreen from './screens/LanguageScreen.vue';
-import LevelScreen from './screens/LevelScreen.vue';
-import AboutScreen from './screens/AboutScreen.vue';
+import ProfileScreen from './screens/ProfileScreen.vue';
+import FeedbackScreen from './screens/FeedbackScreen.vue';
 import BotPickerScreen from './screens/BotPickerScreen.vue';
+import BottomDock from './components/BottomDock.vue';
 import { useNav } from './lib/nav.js';
 import { apiJson, authTelegram } from './lib/api.js';
 import { getTelegramWebApp, tgReady } from './lib/tg.js';
@@ -111,6 +120,13 @@ const botKey = ref('');
 const meBots = ref([]);
 const showBotPicker = computed(
   () => !isAdmin.value && !loading.value && !fatalKey.value && meBots.value.length > 1 && !botKey.value
+);
+const showBottomDock = computed(
+  () => !loading.value
+    && !fatalKey.value
+    && !showBotPicker.value
+    && !isAdmin.value
+    && nav.screen.value !== 'checkout'
 );
 const effectiveBaseLanguage = computed(() => {
   const fromMe = (me.value?.base_language || '').toString().trim().toLowerCase();
@@ -399,7 +415,7 @@ onBeforeUnmount(() => {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 20px;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   display: grid;
   justify-items: center;
   padding: 0 18px;

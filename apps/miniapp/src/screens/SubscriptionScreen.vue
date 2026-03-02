@@ -167,11 +167,6 @@
         {{ $t('subscription.notes.alreadyTopTier') }}
       </div>
     </section>
-
-    <div class="bottom-nav">
-      <BackToMenu @navigate="(path) => $emit('navigate', path)" />
-    </div>
-
   </div>
 </template>
 
@@ -179,7 +174,6 @@
 import { onMounted, reactive, computed, ref, watch } from 'vue';
 import { useI18n } from '../i18n.js';
 import { tgOpenLink } from '../lib/tg.js';
-import BackToMenu from '../components/BackToMenu.vue';
 import { addDebugLog } from '../lib/debug.js';
 
 const props = defineProps({
@@ -1005,11 +999,6 @@ onMounted(async () => {
   border: 1px dashed rgba(30, 26, 22, 0.22);
   color: var(--muted);
   grid-column: 1 / -1;
-}
-
-.bottom-nav {
-  margin-top: auto;
-  padding-top: 6px;
 }
 
 @media (max-width: 720px) {

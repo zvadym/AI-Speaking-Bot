@@ -68,6 +68,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PURCHASE_ALLOWED_TIERS = new Set(['pro']);
 const PURCHASE_ALLOWED_BILLING_INTERVALS = new Set(['month', 'year']);
 const QUERY_TRUE_VALUES = new Set(['true', '1', 'yes']);
+const FEEDBACK_CATEGORIES = new Set(['bug', 'idea', 'billing', 'coach']);
+const MINIAPP_FEEDBACK_MESSAGE_MAX_LEN = 1000;
 const ACTION_EVENT_TYPES = [
   'start',
   'profile_set_level',
@@ -107,6 +109,13 @@ function normalizeOptionalText(raw, maxLen) {
   const value = (raw ?? '').toString().trim();
   if (!value) return null;
   return value.slice(0, maxLen);
+}
+
+function normalizeFeedbackCategory(raw) {
+  const value = (raw ?? '').toString().trim().toLowerCase();
+  if (!value) return null;
+  if (!FEEDBACK_CATEGORIES.has(value)) return null;
+  return value;
 }
 
 function normalizeStringArray(raw, { maxItems = 12, maxItemLen = 32 } = {}) {
@@ -432,6 +441,353 @@ function listAvailableBotsForUser(userBots = []) {
   });
 
   return merged;
+}
+
+async function getUserUsageSummary(chatIdRaw) {
+  const chatId = Number(chatIdRaw);
+  if (!Number.isFinite(chatId)) return null;
+
+  const { rows } = await pool.query(
+    `WITH user_plan AS (
+       SELECT
+         chat_id,
+         COALESCE(plan_tier, 'free') AS plan_tier,
+         plan_expires_at,
+         COALESCE(plan_autorenew, false) AS plan_autorenew,
+         pending_plan_tier,
+         pending_plan_effective_at,
+         override_plan_tier,
+         override_expires_at
+       FROM users
+       WHERE chat_id = $1
+       LIMIT 1
+     ),
+     effective AS (
+       SELECT
+         chat_id,
+         plan_expires_at,
+         plan_autorenew,
+         pending_plan_tier,
+         pending_plan_effective_at,
+         CASE
+           WHEN override_plan_tier IS NOT NULL AND override_expires_at IS NOT NULL AND NOW() < override_expires_at
+             THEN override_plan_tier
+           WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
+             THEN plan_tier
+           ELSE 'free'
+         END AS effective_tier
+       FROM user_plan
+     ),
+     p AS (
+       SELECT
+         tier,
+         voice_seconds_limit AS limit_seconds,
+         voice_limit_period AS limit_period
+       FROM plans
+       WHERE tier = (SELECT effective_tier FROM effective)
+       LIMIT 1
+     ),
+     usage_totals AS (
+       SELECT
+         COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_seconds
+       FROM usage_hourly uh
+       WHERE uh.chat_id = (SELECT chat_id FROM effective)
+         AND (
+           COALESCE((SELECT limit_period FROM p), 'lifetime') <> 'month'
+           OR uh.hour_start >= date_trunc('month', NOW())
+         )
+     )
+     SELECT
+       (SELECT effective_tier FROM effective) AS tier,
+       (SELECT plan_expires_at FROM effective) AS plan_expires_at,
+       (SELECT plan_autorenew FROM effective) AS plan_autorenew,
+       (SELECT pending_plan_tier FROM effective) AS pending_plan_tier,
+       (SELECT pending_plan_effective_at FROM effective) AS pending_plan_effective_at,
+       COALESCE((SELECT limit_period FROM p), 'lifetime') AS limit_period,
+       COALESCE((SELECT limit_seconds FROM p), 0) AS limit_seconds,
+       COALESCE((SELECT used_seconds FROM usage_totals), 0) AS used_seconds,
+       GREATEST(COALESCE((SELECT limit_seconds FROM p), 0) - COALESCE((SELECT used_seconds FROM usage_totals), 0), 0) AS remaining_seconds,
+       (
+         COALESCE((SELECT limit_seconds FROM p), 0) > 0
+         AND COALESCE((SELECT used_seconds FROM usage_totals), 0) >= COALESCE((SELECT limit_seconds FROM p), 0)
+       ) AS limit_reached`,
+    [chatId]
+  );
+
+  return rows[0] || null;
+}
+
+async function getUserStreakSummary(chatIdRaw) {
+  const chatId = Number(chatIdRaw);
+  if (!Number.isFinite(chatId)) {
+    return {
+      current: 0,
+      longest: 0,
+      status: 'broken',
+      activity_today: false,
+      last_activity_at: null
+    };
+  }
+
+  const { rows } = await pool.query(
+    `WITH activity AS (
+       SELECT v.occurred_at
+       FROM voice_usage_events v
+       WHERE v.chat_id = $1
+
+       UNION ALL
+
+       SELECT m.created_at AS occurred_at
+       FROM messages m
+       WHERE m.chat_id = $1
+         AND m.role = 'user'
+     ),
+     dates AS (
+       SELECT (NOW() AT TIME ZONE 'UTC')::date AS today_utc
+     ),
+     activity_days AS (
+       SELECT DISTINCT date_trunc('day', occurred_at AT TIME ZONE 'UTC')::date AS day_utc
+       FROM activity
+     ),
+     streak_groups AS (
+       SELECT
+         day_utc,
+         day_utc - ROW_NUMBER() OVER (ORDER BY day_utc)::int AS grp
+       FROM activity_days
+     ),
+     streaks AS (
+       SELECT
+         MIN(day_utc) AS start_day,
+         MAX(day_utc) AS end_day,
+         COUNT(*)::int AS streak_days
+       FROM streak_groups
+       GROUP BY grp
+     ),
+     longest_streak AS (
+       SELECT COALESCE(MAX(streak_days), 0)::int AS streak_days
+       FROM streaks
+     ),
+     current_streak AS (
+       SELECT s.streak_days, s.end_day
+       FROM streaks s, dates d
+       WHERE s.end_day = d.today_utc
+          OR s.end_day = (d.today_utc - 1)
+       ORDER BY s.end_day DESC
+       LIMIT 1
+     ),
+     today_activity AS (
+       SELECT EXISTS(
+         SELECT 1
+         FROM activity_days ad, dates d
+         WHERE ad.day_utc = d.today_utc
+       ) AS value
+     ),
+     yesterday_activity AS (
+       SELECT EXISTS(
+         SELECT 1
+         FROM activity_days ad, dates d
+         WHERE ad.day_utc = (d.today_utc - 1)
+       ) AS value
+     ),
+     last_activity AS (
+       SELECT MAX(occurred_at) AS occurred_at
+       FROM activity
+     )
+     SELECT
+       CASE
+         WHEN (SELECT value FROM today_activity) THEN COALESCE((SELECT streak_days FROM current_streak), 0)
+         WHEN (SELECT value FROM yesterday_activity) THEN COALESCE((SELECT streak_days FROM current_streak), 0)
+         ELSE 0
+       END::int AS current_streak_days,
+       (SELECT streak_days FROM longest_streak)::int AS longest_streak_days,
+       CASE
+         WHEN (SELECT value FROM today_activity) THEN 'active'
+         WHEN (SELECT value FROM yesterday_activity) THEN 'at_risk'
+         ELSE 'broken'
+       END AS streak_status,
+       (SELECT value FROM today_activity) AS activity_today,
+       (SELECT occurred_at FROM last_activity) AS last_activity_at`,
+    [chatId]
+  );
+
+  const row = rows[0] || {};
+  return {
+    current: Number(row.current_streak_days || 0),
+    longest: Number(row.longest_streak_days || 0),
+    status: row.streak_status || 'broken',
+    activity_today: Boolean(row.activity_today),
+    last_activity_at: row.last_activity_at || null
+  };
+}
+
+function feedbackPreviewText(raw) {
+  const text = (raw ?? '').toString().replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  return text.slice(0, 160);
+}
+
+async function getUserFeedbackSummary(chatIdRaw, botKeyRaw) {
+  const chatId = Number(chatIdRaw);
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (!Number.isFinite(chatId) || !botKey) {
+    return {
+      has_thread: false,
+      archived: false,
+      unread_admin_replies: 0,
+      user_last_read_at: null,
+      last_message_at: null,
+      last_message_preview: '',
+      last_message_sender: null
+    };
+  }
+
+  const [threadRes, lastMessageRes, unreadRes] = await Promise.all([
+    pool.query(
+      `SELECT archived_at, user_last_read_at
+       FROM feedback_threads
+       WHERE chat_id = $1
+         AND bot_key = $2
+       LIMIT 1`,
+      [chatId, botKey]
+    ),
+    pool.query(
+      `SELECT sender, created_at, text
+       FROM (
+         SELECT
+           'user'::text AS sender,
+           f.created_at,
+           CASE
+             WHEN f.kind = 'voice'
+               THEN COALESCE(NULLIF(f.transcript, ''), NULLIF(f.feedback_text, ''), '')
+             ELSE COALESCE(f.feedback_text, '')
+           END AS text
+         FROM feedback f
+         WHERE f.chat_id = $1
+           AND f.bot_key = $2
+
+         UNION ALL
+
+         SELECT
+           'admin'::text AS sender,
+           r.created_at,
+           r.message_text AS text
+         FROM feedback_replies r
+         WHERE r.chat_id = $1
+           AND r.bot_key = $2
+       ) messages
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [chatId, botKey]
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS unread_admin_replies
+       FROM feedback_replies r
+       LEFT JOIN feedback_threads ft
+         ON ft.chat_id = r.chat_id
+        AND ft.bot_key = r.bot_key
+       WHERE r.chat_id = $1
+         AND r.bot_key = $2
+         AND (
+           ft.user_last_read_at IS NULL
+           OR r.created_at > ft.user_last_read_at
+         )`,
+      [chatId, botKey]
+    )
+  ]);
+
+  const threadRow = threadRes.rows[0] || null;
+  const lastRow = lastMessageRes.rows[0] || null;
+  const unreadAdminReplies = Number(unreadRes.rows[0]?.unread_admin_replies || 0);
+
+  return {
+    has_thread: Boolean(lastRow),
+    archived: Boolean(threadRow?.archived_at),
+    unread_admin_replies: unreadAdminReplies,
+    user_last_read_at: threadRow?.user_last_read_at || null,
+    last_message_at: lastRow?.created_at || null,
+    last_message_preview: feedbackPreviewText(lastRow?.text),
+    last_message_sender: lastRow?.sender || null
+  };
+}
+
+async function getUserFeedbackThread(chatIdRaw, botKeyRaw) {
+  const chatId = Number(chatIdRaw);
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (!Number.isFinite(chatId) || !botKey) {
+    return {
+      bot_key: botKey || null,
+      thread: {
+        archived: false,
+        user_last_read_at: null,
+        unread_admin_replies: 0
+      },
+      items: []
+    };
+  }
+
+  const [threadRes, itemsRes, unreadSummary] = await Promise.all([
+    pool.query(
+      `SELECT archived_at, user_last_read_at
+       FROM feedback_threads
+       WHERE chat_id = $1
+         AND bot_key = $2
+       LIMIT 1`,
+      [chatId, botKey]
+    ),
+    pool.query(
+      `SELECT *
+       FROM (
+         SELECT
+           f.id,
+           'feedback'::text AS kind,
+           'user'::text AS sender,
+           f.category,
+           CASE
+             WHEN f.kind = 'voice'
+               THEN COALESCE(NULLIF(f.transcript, ''), NULLIF(f.feedback_text, ''), '')
+             ELSE COALESCE(f.feedback_text, '')
+           END AS text,
+           f.created_at
+         FROM feedback f
+         WHERE f.chat_id = $1
+           AND f.bot_key = $2
+
+         UNION ALL
+
+         SELECT
+           r.id,
+           'reply'::text AS kind,
+           'admin'::text AS sender,
+           NULL::text AS category,
+           r.message_text AS text,
+           r.created_at
+         FROM feedback_replies r
+         WHERE r.chat_id = $1
+           AND r.bot_key = $2
+       ) thread_items
+       ORDER BY created_at ASC, id ASC`,
+      [chatId, botKey]
+    ),
+    getUserFeedbackSummary(chatId, botKey)
+  ]);
+
+  const threadRow = threadRes.rows[0] || null;
+  return {
+    bot_key: botKey,
+    thread: {
+      archived: Boolean(threadRow?.archived_at),
+      user_last_read_at: threadRow?.user_last_read_at || null,
+      unread_admin_replies: unreadSummary.unread_admin_replies
+    },
+    items: (itemsRes.rows || []).map((row) => ({
+      id: Number(row.id || 0),
+      kind: row.kind || 'feedback',
+      sender: row.sender || 'user',
+      category: row.category || null,
+      text: (row.text || '').toString(),
+      created_at: row.created_at
+    }))
+  };
 }
 
 function webhookUrlForBot(templateUrl, hookName, botKeyRaw, { forceAppendBotKey = false } = {}) {
@@ -3495,76 +3851,7 @@ app.get('/plans', requireAuth, async (req, res) => {
     [currency, includeAllIntervals]
   );
 
-  let usage = null;
-  if (userRows[0]) {
-    const { rows: usageRows } = await pool.query(
-      `WITH user_plan AS (
-         SELECT
-           chat_id,
-           COALESCE(plan_tier, 'free') AS plan_tier,
-           plan_expires_at,
-           COALESCE(plan_autorenew, false) AS plan_autorenew,
-           pending_plan_tier,
-           pending_plan_effective_at,
-           override_plan_tier,
-           override_expires_at
-         FROM users
-         WHERE chat_id = $1
-         LIMIT 1
-       ),
-       effective AS (
-         SELECT
-           chat_id,
-           plan_expires_at,
-           plan_autorenew,
-           pending_plan_tier,
-           pending_plan_effective_at,
-           CASE
-             WHEN override_plan_tier IS NOT NULL AND override_expires_at IS NOT NULL AND NOW() < override_expires_at
-               THEN override_plan_tier
-             WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
-               THEN plan_tier
-             ELSE 'free'
-           END AS effective_tier
-         FROM user_plan
-       ),
-       p AS (
-         SELECT
-           tier,
-           voice_seconds_limit AS limit_seconds,
-           voice_limit_period AS limit_period
-         FROM plans
-         WHERE tier = (SELECT effective_tier FROM effective)
-         LIMIT 1
-       ),
-       usage_totals AS (
-         SELECT
-           COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_seconds
-         FROM usage_hourly uh
-         WHERE uh.chat_id = (SELECT chat_id FROM effective)
-           AND (
-             COALESCE((SELECT limit_period FROM p), 'lifetime') <> 'month'
-             OR uh.hour_start >= date_trunc('month', NOW())
-           )
-       )
-       SELECT
-         (SELECT effective_tier FROM effective) AS tier,
-         (SELECT plan_expires_at FROM effective) AS plan_expires_at,
-         (SELECT plan_autorenew FROM effective) AS plan_autorenew,
-         (SELECT pending_plan_tier FROM effective) AS pending_plan_tier,
-         (SELECT pending_plan_effective_at FROM effective) AS pending_plan_effective_at,
-         COALESCE((SELECT limit_period FROM p), 'lifetime') AS limit_period,
-         COALESCE((SELECT limit_seconds FROM p), 0) AS limit_seconds,
-         COALESCE((SELECT used_seconds FROM usage_totals), 0) AS used_seconds,
-         GREATEST(COALESCE((SELECT limit_seconds FROM p), 0) - COALESCE((SELECT used_seconds FROM usage_totals), 0), 0) AS remaining_seconds,
-         (
-           COALESCE((SELECT limit_seconds FROM p), 0) > 0
-           AND COALESCE((SELECT used_seconds FROM usage_totals), 0) >= COALESCE((SELECT limit_seconds FROM p), 0)
-         ) AS limit_reached`,
-      [chatId]
-    );
-    usage = usageRows[0] || null;
-  }
+  const usage = userRows[0] ? await getUserUsageSummary(chatId) : null;
 
   return res.json({
     currency,
@@ -3623,6 +3910,46 @@ app.get('/me', requireAuth, async (req, res) => {
   return res.json({ user });
 });
 
+app.get('/me/dashboard', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null);
+  const user = await getMeUserRow(chatId, requestedBotKey);
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+
+  const [usage, streak, feedbackSummary] = await Promise.all([
+    getUserUsageSummary(chatId),
+    getUserStreakSummary(chatId),
+    getUserFeedbackSummary(chatId, user.bot_key)
+  ]);
+
+  return res.json({
+    user: {
+      chat_id: user.chat_id,
+      username: user.username || null,
+      first_name: user.first_name || null,
+      plan_tier: user.plan_tier || 'free'
+    },
+    selected_bot: {
+      bot_key: user.bot_key,
+      bot_name: user.bot_name || null,
+      learning_language: user.learning_language || null,
+      base_language: user.base_language || null,
+      level: user.level || 'b1',
+      telegram_url: user.telegram_url || null,
+      reply_mode: user.reply_mode || 'text',
+      tts_voice: user.tts_voice || 'marin',
+      teacher_avatar_emoji: user.teacher_avatar_emoji || null,
+      teacher_tagline_uk: user.teacher_tagline_uk || null,
+      teacher_tagline_en: user.teacher_tagline_en || null,
+      teacher_tagline_it: user.teacher_tagline_it || null,
+      teacher_style_tags: user.teacher_style_tags || null
+    },
+    streak,
+    usage,
+    feedback_summary: feedbackSummary
+  });
+});
+
 app.get('/me/bots', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null);
@@ -3636,6 +3963,117 @@ app.get('/me/bots', requireAuth, async (req, res) => {
     selected_bot_key: user?.bot_key || requestedBotKey || null,
     bots: userBots,
     available_bots: listAvailableBotsForUser(userBots)
+  });
+});
+
+app.get('/me/feedback-thread', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null) || await resolveUserBotKey(chatId);
+  const botKey = requestedBotKey || normalizeBotKey(env.defaultBotKey) || 'uk-de';
+  const thread = await getUserFeedbackThread(chatId, botKey);
+  return res.json(thread);
+});
+
+app.post('/me/feedbacks', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null) || await resolveUserBotKey(chatId);
+  const botKey = requestedBotKey || normalizeBotKey(env.defaultBotKey) || 'uk-de';
+  const category = normalizeFeedbackCategory(req.body?.category);
+  const message = (req.body?.message ?? '').toString().trim();
+
+  if (!category) {
+    return res.status(400).json({ error: 'bad_feedback_category' });
+  }
+  if (!message) {
+    return res.status(400).json({ error: 'feedback_message_required' });
+  }
+  if (message.length > MINIAPP_FEEDBACK_MESSAGE_MAX_LEN) {
+    return res.status(400).json({ error: 'feedback_message_too_long' });
+  }
+
+  const user = await getMeUserRow(chatId, botKey);
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+
+  const { rows } = await pool.query(
+    `INSERT INTO feedback (
+       chat_id,
+       username,
+       first_name,
+       kind,
+       feedback_text,
+       bot_key,
+       category,
+       source
+     )
+     VALUES ($1, $2, $3, 'text', $4, $5, $6, 'miniapp')
+     RETURNING id, created_at, feedback_text, category`,
+    [
+      chatId,
+      user.username || null,
+      user.first_name || null,
+      message,
+      botKey,
+      category
+    ]
+  );
+
+  await pool.query(
+    `INSERT INTO feedback_threads (
+       chat_id,
+       bot_key,
+       archived_at,
+       archived_by,
+       user_last_read_at
+     )
+     VALUES ($1, $2, NULL, NULL, NOW())
+     ON CONFLICT (chat_id, bot_key) DO UPDATE
+       SET archived_at = NULL,
+           archived_by = NULL,
+           user_last_read_at = NOW()`,
+    [chatId, botKey]
+  );
+
+  const feedbackSummary = await getUserFeedbackSummary(chatId, botKey);
+  const row = rows[0] || null;
+
+  return res.status(201).json({
+    bot_key: botKey,
+    item: row ? {
+      id: Number(row.id || 0),
+      kind: 'feedback',
+      sender: 'user',
+      category: row.category || category,
+      text: row.feedback_text || message,
+      created_at: row.created_at
+    } : null,
+    feedback_summary: feedbackSummary
+  });
+});
+
+app.post('/me/feedback-thread/read', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null) || await resolveUserBotKey(chatId);
+  const botKey = requestedBotKey || normalizeBotKey(env.defaultBotKey) || 'uk-de';
+
+  await pool.query(
+    `INSERT INTO feedback_threads (
+       chat_id,
+       bot_key,
+       archived_at,
+       archived_by,
+       user_last_read_at
+     )
+     VALUES ($1, $2, NULL, NULL, NOW())
+     ON CONFLICT (chat_id, bot_key) DO UPDATE
+       SET user_last_read_at = NOW()`,
+    [chatId, botKey]
+  );
+
+  const feedbackSummary = await getUserFeedbackSummary(chatId, botKey);
+  return res.json({
+    bot_key: botKey,
+    user_last_read_at: feedbackSummary.user_last_read_at,
+    unread_admin_replies: feedbackSummary.unread_admin_replies
   });
 });
 

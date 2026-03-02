@@ -423,7 +423,11 @@ CREATE TABLE public.feedback (
     telegram_file_id text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     bot_key text NOT NULL,
-    CONSTRAINT feedback_kind_check CHECK ((kind = ANY (ARRAY['text'::text, 'voice'::text])))
+    category text,
+    source text DEFAULT 'telegram'::text NOT NULL,
+    CONSTRAINT feedback_category_check CHECK (((category IS NULL) OR (category = ANY (ARRAY['bug'::text, 'idea'::text, 'billing'::text, 'coach'::text])))),
+    CONSTRAINT feedback_kind_check CHECK ((kind = ANY (ARRAY['text'::text, 'voice'::text]))),
+    CONSTRAINT feedback_source_check CHECK ((source = ANY (ARRAY['telegram'::text, 'miniapp'::text])))
 );
 
 
@@ -479,7 +483,8 @@ CREATE TABLE public.feedback_threads (
     chat_id bigint NOT NULL,
     bot_key text NOT NULL,
     archived_at timestamp with time zone,
-    archived_by text
+    archived_by text,
+    user_last_read_at timestamp with time zone
 );
 
 
@@ -1319,4 +1324,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260227110000'),
     ('20260227113000'),
     ('20260227154500'),
-    ('20260302120000');
+    ('20260302120000'),
+    ('20260302153000');
