@@ -227,6 +227,7 @@
   },
   "dashboard": {
     "title": "AI Language School",
+    "subtitle": "Panoramica progressi.",
     "eyebrow": "Personal dashboard",
     "greetingNamed": "Welcome back, {name}.",
     "greetingAnon": "Welcome back.",
@@ -235,6 +236,8 @@
     "manageSetup": "Adjust setup",
     "openSubscription": "Apri abbonamento",
     "streakCalendar": "Calendario streak",
+    "prevMonth": "Mese precedente",
+    "nextMonth": "Mese successivo",
     "botSwitcher": "Teacher context",
     "openChat": "Open coach chat",
     "coachLabel": "Selected coach",

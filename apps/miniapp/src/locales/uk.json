@@ -227,6 +227,7 @@
   },
   "dashboard": {
     "title": "AI Language School",
+    "subtitle": "Огляд прогресу.",
     "eyebrow": "Твій дашборд",
     "greetingNamed": "З поверненням, {name}.",
     "greetingAnon": "З поверненням.",
@@ -235,6 +236,8 @@
     "manageSetup": "Змінити налаштування",
     "openSubscription": "Відкрити підписку",
     "streakCalendar": "Календар streak",
+    "prevMonth": "Попередній місяць",
+    "nextMonth": "Наступний місяць",
     "otherLanguages": "Інші мови",
     "openChat": "Відкрити чат із викладачем",
     "coachLabel": "Твій викладач",
