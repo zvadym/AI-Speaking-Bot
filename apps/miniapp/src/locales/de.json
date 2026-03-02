@@ -164,12 +164,13 @@
   "subscription": {
     "heroBadge": "Abo-Atelier",
     "title": "Wähle dein Trainingstempo",
-    "sub": "Halte dein Sprechtraining konstant. Wähle einen Rhythmus, der zu deiner Woche passt, und schalte die automatische Verlängerung jederzeit um.",
+    "sub": "Halte dein Sprechtraining konstant. Wähle einen Rhythmus, der zu deinem Alltag passt, und schalte die automatische Verlängerung jederzeit um.",
     "manage": {
       "yourPlan": "Dein Plan",
       "practiceTime": "Übungszeit",
       "voiceReplies": "Sprachantworten",
-      "voiceTotal": "Gesamte Sprachnutzung",
+      "voiceTotalLifetime": "Sprachnutzung insgesamt",
+      "voiceTotalMonthly": "Sprachnutzung diesen Monat",
       "managePayments": "Zahlungen verwalten",
       "turnOffAutoRenew": "Automatische Verlängerung deaktivieren",
       "resumeAutoRenew": "Automatische Verlängerung fortsetzen"

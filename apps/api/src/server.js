@@ -778,15 +778,6 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
       FROM voice_usage_events v
       GROUP BY v.chat_id
     ),
-    week_usage AS (
-      SELECT
-        w.chat_id,
-        COALESCE(SUM(w.user_audio_seconds), 0)::int AS used_user,
-        COALESCE(SUM(w.tts_seconds), 0)::int AS used_tts
-      FROM usage_week w
-      WHERE w.week_start = date_trunc('week', NOW())::date
-      GROUP BY w.chat_id
-    ),
     enriched AS (
       SELECT
         e.chat_id,
@@ -797,28 +788,33 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         e.bot_key,
         e.effective_tier,
         a.last_activity_at,
-        COALESCE(w.used_user, 0)::int AS used_user,
-        COALESCE(w.used_tts, 0)::int AS used_tts,
-        (COALESCE(w.used_user, 0) + COALESCE(w.used_tts, 0))::int AS used_total,
-        COALESCE(p.user_audio_seconds_per_week, 0)::int AS limit_user,
-        COALESCE(p.tts_seconds_per_week, 0)::int AS limit_tts,
-        (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0))::int AS limit_total,
+        COALESCE(p.voice_limit_period, 'lifetime') AS limit_period,
+        COALESCE(u.used_total, 0)::int AS used_total,
+        COALESCE(p.voice_seconds_limit, 0)::int AS limit_total,
         CASE
-          WHEN (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0)) > 0
-            THEN ((COALESCE(w.used_user, 0) + COALESCE(w.used_tts, 0))::numeric * 100.0)
-              / (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0))
+          WHEN COALESCE(p.voice_seconds_limit, 0) > 0
+            THEN (COALESCE(u.used_total, 0)::numeric * 100.0)
+              / COALESCE(p.voice_seconds_limit, 0)
           ELSE 0
         END::numeric AS usage_percent,
         (
-          (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0)) > 0
+          COALESCE(p.voice_seconds_limit, 0) > 0
           AND
-          (COALESCE(w.used_user, 0) + COALESCE(w.used_tts, 0))
-            >= (COALESCE(p.user_audio_seconds_per_week, 0) + COALESCE(p.tts_seconds_per_week, 0))
+          COALESCE(u.used_total, 0) >= COALESCE(p.voice_seconds_limit, 0)
         ) AS limit_reached
       FROM effective_users e
       LEFT JOIN last_activity a ON a.chat_id = e.chat_id
-      LEFT JOIN week_usage w ON w.chat_id = e.chat_id
       LEFT JOIN plans p ON p.tier = e.effective_tier
+      LEFT JOIN LATERAL (
+        SELECT
+          COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_total
+        FROM usage_hourly uh
+        WHERE uh.chat_id = e.chat_id
+          AND (
+            COALESCE(p.voice_limit_period, 'lifetime') <> 'month'
+            OR uh.hour_start >= date_trunc('month', NOW())
+          )
+      ) u ON true
     ),
     filtered AS (
       SELECT
@@ -830,11 +826,8 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         e.bot_key,
         e.effective_tier,
         e.last_activity_at,
-        e.used_user,
-        e.used_tts,
+        e.limit_period,
         e.used_total,
-        e.limit_user,
-        e.limit_tts,
         e.limit_total,
         e.usage_percent,
         e.limit_reached
@@ -3247,8 +3240,7 @@ app.get('/plans', requireAuth, async (req, res) => {
   );
 
   const { rows: plans } = await pool.query(
-    `SELECT p.tier, p.user_audio_seconds_per_week, p.tts_seconds_per_week,
-            (p.user_audio_seconds_per_week + p.tts_seconds_per_week)::int AS voice_seconds_per_week,
+    `SELECT p.tier, p.voice_seconds_limit, p.voice_limit_period,
             pp.currency, pp.amount_cents, pp.billing_interval, pp.stripe_price_id
        FROM plans p
        LEFT JOIN plan_prices pp
@@ -3302,21 +3294,21 @@ app.get('/plans', requireAuth, async (req, res) => {
        p AS (
          SELECT
            tier,
-           user_audio_seconds_per_week AS limit_user,
-           tts_seconds_per_week AS limit_tts,
-           (user_audio_seconds_per_week + tts_seconds_per_week)::int AS limit_total
+           voice_seconds_limit AS limit_seconds,
+           voice_limit_period AS limit_period
          FROM plans
          WHERE tier = (SELECT effective_tier FROM effective)
          LIMIT 1
        ),
-       w AS (
+       u AS (
          SELECT
-           COALESCE(user_audio_seconds, 0) AS used_user,
-           COALESCE(tts_seconds, 0) AS used_tts
-         FROM usage_week
-         WHERE chat_id = (SELECT chat_id FROM effective)
-           AND week_start = date_trunc('week', NOW())::date
-         LIMIT 1
+           COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_seconds
+         FROM usage_hourly uh
+         WHERE uh.chat_id = (SELECT chat_id FROM effective)
+           AND (
+             COALESCE((SELECT limit_period FROM p), 'lifetime') <> 'month'
+             OR uh.hour_start >= date_trunc('month', NOW())
+           )
        )
        SELECT
          (SELECT effective_tier FROM effective) AS tier,
@@ -3324,15 +3316,14 @@ app.get('/plans', requireAuth, async (req, res) => {
          (SELECT plan_autorenew FROM effective) AS plan_autorenew,
          (SELECT pending_plan_tier FROM effective) AS pending_plan_tier,
          (SELECT pending_plan_effective_at FROM effective) AS pending_plan_effective_at,
-         (SELECT limit_user FROM p) AS limit_user,
-         (SELECT limit_tts FROM p) AS limit_tts,
-         (SELECT limit_total FROM p) AS limit_total,
-         COALESCE((SELECT used_user FROM w), 0) AS used_user,
-         COALESCE((SELECT used_tts FROM w), 0) AS used_tts,
-         COALESCE((SELECT used_user FROM w), 0) + COALESCE((SELECT used_tts FROM w), 0) AS used_total,
-         GREATEST((SELECT limit_user FROM p) - COALESCE((SELECT used_user FROM w), 0), 0) AS remaining_user,
-         GREATEST((SELECT limit_tts FROM p) - COALESCE((SELECT used_tts FROM w), 0), 0) AS remaining_tts,
-         GREATEST((SELECT limit_total FROM p) - (COALESCE((SELECT used_user FROM w), 0) + COALESCE((SELECT used_tts FROM w), 0)), 0) AS remaining_total`,
+         COALESCE((SELECT limit_period FROM p), 'lifetime') AS limit_period,
+         COALESCE((SELECT limit_seconds FROM p), 0) AS limit_seconds,
+         COALESCE((SELECT used_seconds FROM u), 0) AS used_seconds,
+         GREATEST(COALESCE((SELECT limit_seconds FROM p), 0) - COALESCE((SELECT used_seconds FROM u), 0), 0) AS remaining_seconds,
+         (
+           COALESCE((SELECT limit_seconds FROM p), 0) > 0
+           AND COALESCE((SELECT used_seconds FROM u), 0) >= COALESCE((SELECT limit_seconds FROM p), 0)
+         ) AS limit_reached`,
       [chatId]
     );
     usage = usageRows[0] || null;
@@ -3353,8 +3344,7 @@ app.get('/public/plans', async (req, res) => {
   );
 
   const { rows: plans } = await pool.query(
-    `SELECT p.tier, p.user_audio_seconds_per_week, p.tts_seconds_per_week,
-            (p.user_audio_seconds_per_week + p.tts_seconds_per_week)::int AS voice_seconds_per_week,
+    `SELECT p.tier, p.voice_seconds_limit, p.voice_limit_period,
             pp.currency, pp.amount_cents, pp.billing_interval
        FROM plans p
        LEFT JOIN plan_prices pp
@@ -3379,6 +3369,8 @@ app.get('/public/plans', async (req, res) => {
       .filter((row) => row?.currency && row?.amount_cents != null && row?.billing_interval)
       .map((row) => ({
         tier: row.tier,
+        voice_seconds_limit: row.voice_seconds_limit,
+        voice_limit_period: row.voice_limit_period,
         currency: row.currency,
         amount_cents: row.amount_cents,
         billing_interval: row.billing_interval

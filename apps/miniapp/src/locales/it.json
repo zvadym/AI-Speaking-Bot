@@ -164,12 +164,13 @@
   "subscription": {
     "heroBadge": "Atelier Abbonamento",
     "title": "Scegli il tuo ritmo di allenamento",
-    "sub": "Mantieni costante la pratica di conversazione. Scegli una cadenza adatta alla tua settimana e attiva/disattiva il rinnovo automatico quando vuoi.",
+    "sub": "Mantieni costante la pratica di conversazione. Scegli una cadenza adatta alla tua routine e attiva/disattiva il rinnovo automatico quando vuoi.",
     "manage": {
       "yourPlan": "Il tuo piano",
       "practiceTime": "Tempo di pratica",
       "voiceReplies": "Risposte vocali",
-      "voiceTotal": "Uso vocale totale",
+      "voiceTotalLifetime": "Uso vocale totale",
+      "voiceTotalMonthly": "Uso vocale di questo mese",
       "managePayments": "Gestisci pagamenti",
       "turnOffAutoRenew": "Disattiva rinnovo automatico",
       "resumeAutoRenew": "Riattiva rinnovo automatico"

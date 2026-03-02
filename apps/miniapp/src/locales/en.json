@@ -164,12 +164,13 @@
   "subscription": {
     "heroBadge": "Subscription Atelier",
     "title": "Choose your training tempo",
-    "sub": "Keep your speaking practice steady. Pick a cadence that matches your week and toggle auto-renew whenever you want.",
+    "sub": "Keep your speaking practice steady. Pick a cadence that matches your routine and toggle auto-renew whenever you want.",
     "manage": {
       "yourPlan": "Your plan",
       "practiceTime": "Practice time",
       "voiceReplies": "Voice replies",
-      "voiceTotal": "Total voice usage",
+      "voiceTotalLifetime": "Lifetime voice usage",
+      "voiceTotalMonthly": "Voice usage this month",
       "managePayments": "Manage payments",
       "turnOffAutoRenew": "Turn off auto-renew",
       "resumeAutoRenew": "Resume auto-renew"

@@ -42,7 +42,7 @@
           </p>
           <div class="manage-usage" v-if="usage">
             <div class="usage-item">
-              <span class="label">{{ $t('subscription.manage.voiceTotal') }}</span>
+              <span class="label">{{ voiceUsageLabel }}</span>
               <div class="usage-bar">
                 <div class="usage-track">
                   <div
@@ -319,6 +319,11 @@ const currentPlanLabel = computed(() => {
   return planLabel(effectiveTier.value);
 });
 
+const voiceUsageLabel = computed(() => {
+  if (usage.value?.limit_period === 'month') return t('subscription.manage.voiceTotalMonthly');
+  return t('subscription.manage.voiceTotalLifetime');
+});
+
 function formatDate(date) {
   try {
     return new Intl.DateTimeFormat(locale.value, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
@@ -394,12 +399,14 @@ function usagePercent(used, limit) {
 
 function totalVoiceUsed(usageData) {
   if (!usageData || typeof usageData !== 'object') return 0;
+  if (Number.isFinite(Number(usageData.used_seconds))) return Number(usageData.used_seconds);
   if (Number.isFinite(Number(usageData.used_total))) return Number(usageData.used_total);
   return Number(usageData.used_user || 0) + Number(usageData.used_tts || 0);
 }
 
 function totalVoiceLimit(usageData) {
   if (!usageData || typeof usageData !== 'object') return 0;
+  if (Number.isFinite(Number(usageData.limit_seconds))) return Number(usageData.limit_seconds);
   if (Number.isFinite(Number(usageData.limit_total))) return Number(usageData.limit_total);
   return Number(usageData.limit_user || 0) + Number(usageData.limit_tts || 0);
 }
