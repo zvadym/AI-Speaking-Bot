@@ -577,6 +577,7 @@ async function recordActionEventSafe(payload) {
 const BROADCAST_ALLOWED_TIERS = new Set(['free', 'plus', 'pro']);
 const BROADCAST_LAST_ACTIVITY_MODES = new Set(['active_within', 'inactive_for', 'never_active']);
 const BROADCAST_USAGE_MODES = new Set(['reached', 'percent_gte']);
+const BROADCAST_STREAK_MODES = new Set(['gte', 'zero']);
 const BROADCAST_MESSAGE_MAX_LEN = 4096;
 const BROADCAST_MESSAGE_KINDS = new Set(['text', 'photo', 'video']);
 const BROADCAST_CAPTION_MAX_LEN = 1024;
@@ -711,6 +712,14 @@ function normalizeBroadcastFilters(raw) {
     fallback: 80
   });
 
+  const streakModeRaw = (source.streakMode ?? source.streak_mode ?? '').toString().trim();
+  const streakMode = BROADCAST_STREAK_MODES.has(streakModeRaw) ? streakModeRaw : null;
+  const streakDays = clampInteger(source.streakDays ?? source.streak_days, {
+    min: 1,
+    max: 3650,
+    fallback: 3
+  });
+
   const botsProvided = Array.isArray(source.bots);
   const botsRaw = botsProvided ? source.bots : [];
   const bots = Array.from(
@@ -729,11 +738,13 @@ function normalizeBroadcastFilters(raw) {
     lastActivityDays,
     usageMode,
     usagePercent,
+    streakMode,
+    streakDays,
     bots: normalizedBots
   };
 }
 
-function broadcastAudienceParams(filters) {
+function broadcastAudienceParams(filters, range) {
   const plans = Array.isArray(filters.plans) ? filters.plans : null;
   const bots = Array.isArray(filters.bots) ? filters.bots : null;
   return [
@@ -743,12 +754,21 @@ function broadcastAudienceParams(filters) {
     filters.lastActivityDays,
     filters.usageMode,
     filters.usagePercent,
-    bots
+    bots,
+    filters.streakMode,
+    filters.streakDays,
+    range.from.toISOString(),
+    range.to.toISOString()
   ];
 }
 
 function broadcastAudienceSql(selectSql, suffixSql = '') {
-  return `WITH effective_users AS (
+  return `WITH params AS (
+      SELECT
+        $10::timestamptz AS from_ts,
+        $11::timestamptz AS to_ts
+    ),
+    effective_users AS (
       SELECT
         u.chat_id,
         u.username,
@@ -771,6 +791,49 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
       WHERE COALESCE(u.is_active, true) = true
         AND COALESCE(ub.is_active, true) = true
     ),
+    activity_days AS (
+      SELECT DISTINCT activity.chat_id, activity.day_utc
+      FROM (
+        SELECT
+          v.chat_id,
+          date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc
+        FROM voice_usage_events v, params
+        WHERE v.occurred_at >= (SELECT from_ts FROM params)
+          AND v.occurred_at < (SELECT to_ts FROM params)
+
+        UNION
+
+        SELECT
+          m.chat_id,
+          date_trunc('day', m.created_at AT TIME ZONE 'UTC')::date AS day_utc
+        FROM messages m, params
+        WHERE m.role = 'user'
+          AND m.created_at >= (SELECT from_ts FROM params)
+          AND m.created_at < (SELECT to_ts FROM params)
+      ) activity
+      JOIN (SELECT DISTINCT chat_id FROM effective_users) u ON u.chat_id = activity.chat_id
+    ),
+    streak_groups AS (
+      SELECT
+        chat_id,
+        day_utc,
+        day_utc - ROW_NUMBER() OVER (PARTITION BY chat_id ORDER BY day_utc)::int AS grp
+      FROM activity_days
+    ),
+    streaks AS (
+      SELECT
+        chat_id,
+        COUNT(*)::int AS streak_days
+      FROM streak_groups
+      GROUP BY chat_id, grp
+    ),
+    max_streaks AS (
+      SELECT
+        chat_id,
+        MAX(streak_days)::int AS streak_days
+      FROM streaks
+      GROUP BY chat_id
+    ),
     last_activity AS (
       SELECT
         v.chat_id,
@@ -791,6 +854,7 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         COALESCE(p.voice_limit_period, 'lifetime') AS limit_period,
         COALESCE(u.used_total, 0)::int AS used_total,
         COALESCE(p.voice_seconds_limit, 0)::int AS limit_total,
+        COALESCE(ms.streak_days, 0)::int AS streak_days,
         CASE
           WHEN COALESCE(p.voice_seconds_limit, 0) > 0
             THEN (COALESCE(u.used_total, 0)::numeric * 100.0)
@@ -805,6 +869,7 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
       FROM effective_users e
       LEFT JOIN last_activity a ON a.chat_id = e.chat_id
       LEFT JOIN plans p ON p.tier = e.effective_tier
+      LEFT JOIN max_streaks ms ON ms.chat_id = e.chat_id
       LEFT JOIN LATERAL (
         SELECT
           COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_total
@@ -830,7 +895,8 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         e.used_total,
         e.limit_total,
         e.usage_percent,
-        e.limit_reached
+        e.limit_reached,
+        e.streak_days
       FROM enriched e
       WHERE ($1::text IS NULL OR e.username ILIKE ('%' || $1::text || '%'))
         AND ($2::text[] IS NULL OR e.effective_tier = ANY($2::text[]))
@@ -849,14 +915,31 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
           OR ($5::text = 'percent_gte' AND e.usage_percent >= $6::numeric)
         )
         AND ($7::text[] IS NULL OR e.bot_key = ANY($7::text[]))
+        AND (
+          $8::text IS NULL
+          OR ($8::text = 'gte' AND e.streak_days >= $9::int)
+          OR ($8::text = 'zero' AND e.streak_days = 0)
+        )
     )
     SELECT ${selectSql}
     FROM filtered f
     ${suffixSql}`;
 }
 
-async function getBroadcastAudiencePreview(filters, sampleLimit = 20) {
-  const params = broadcastAudienceParams(filters);
+function withBroadcastStreakRange(filters, range) {
+  if (!filters?.streakMode) return filters;
+  return {
+    ...filters,
+    streakRange: {
+      from: range.from.toISOString(),
+      to: range.to.toISOString(),
+      tz: 'UTC'
+    }
+  };
+}
+
+async function getBroadcastAudiencePreview(filters, range, sampleLimit = 20) {
+  const params = broadcastAudienceParams(filters, range);
   const countQuery = broadcastAudienceSql('COUNT(*)::int AS count');
   const sampleQuery = broadcastAudienceSql(
     `f.chat_id,
@@ -865,9 +948,10 @@ async function getBroadcastAudiencePreview(filters, sampleLimit = 20) {
      f.bot_key,
      f.effective_tier,
      f.last_activity_at,
+     f.streak_days,
      ROUND(f.usage_percent, 2)::numeric AS usage_percent,
      f.limit_reached`,
-    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $8::int'
+    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $12::int'
   );
 
   const [countRes, sampleRes] = await Promise.all([
@@ -881,14 +965,14 @@ async function getBroadcastAudiencePreview(filters, sampleLimit = 20) {
   };
 }
 
-async function listBroadcastRecipients(filters, limit) {
-  const params = broadcastAudienceParams(filters);
+async function listBroadcastRecipients(filters, range, limit) {
+  const params = broadcastAudienceParams(filters, range);
   const query = broadcastAudienceSql(
     `f.chat_id,
      f.username,
      f.first_name,
      f.bot_key`,
-    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $8::int'
+    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $12::int'
   );
   const { rows } = await pool.query(query, [...params, limit]);
   return rows;
@@ -2890,7 +2974,8 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
     'bot_key',
     'effective_tier',
     'is_active',
-    'last_seen_at'
+    'last_seen_at',
+    'streak_days'
   ]);
   const sortKey = sortKeyAllow.has(sortKeyRaw) ? sortKeyRaw : 'created_at';
 
@@ -2902,7 +2987,8 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
     bot_key: `ub.bot_key`,
     effective_tier: `effective_tier`,
     is_active: `COALESCE(u.is_active, true)`,
-    last_seen_at: `last_seen_at`
+    last_seen_at: `last_seen_at`,
+    streak_days: `COALESCE(ms.streak_days, 0)`
   };
   const orderExpr = orderByMap[sortKey] || orderByMap.created_at;
 
@@ -2917,7 +3003,67 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
       params.slice(0, 3)
     ),
     pool.query(
-      `SELECT
+      `WITH filtered_users AS (
+         SELECT
+           u.chat_id,
+           u.username,
+           u.first_name,
+           u.created_at,
+           u.updated_at,
+           u.is_active,
+           u.plan_tier,
+           u.plan_expires_at,
+           u.override_plan_tier,
+           u.override_expires_at
+         FROM users u
+         WHERE u.created_at >= $1::timestamptz
+           AND u.created_at < $2::timestamptz
+           AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)
+       ),
+       activity_days AS (
+         SELECT DISTINCT activity.chat_id, activity.day_utc
+         FROM (
+           SELECT
+             v.chat_id,
+             date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc
+           FROM voice_usage_events v
+           WHERE v.occurred_at >= $1::timestamptz
+             AND v.occurred_at < $2::timestamptz
+
+           UNION
+
+           SELECT
+             m.chat_id,
+             date_trunc('day', m.created_at AT TIME ZONE 'UTC')::date AS day_utc
+           FROM messages m
+           WHERE m.role = 'user'
+             AND m.created_at >= $1::timestamptz
+             AND m.created_at < $2::timestamptz
+         ) activity
+         JOIN filtered_users u ON u.chat_id = activity.chat_id
+       ),
+       streak_groups AS (
+         SELECT
+           chat_id,
+           day_utc,
+           day_utc - ROW_NUMBER() OVER (PARTITION BY chat_id ORDER BY day_utc)::int AS grp
+         FROM activity_days
+       ),
+       streaks AS (
+         SELECT
+           chat_id,
+           COUNT(*)::int AS streak_days
+         FROM streak_groups
+         GROUP BY chat_id, grp
+       ),
+       max_streaks AS (
+         SELECT
+           chat_id,
+           MAX(streak_days)::int AS streak_days
+         FROM streaks
+         GROUP BY chat_id
+       )
+       SELECT
          u.chat_id,
          u.username,
          u.first_name,
@@ -2934,8 +3080,9 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
              AND NOW() < u.plan_expires_at
              THEN u.plan_tier
            ELSE 'free'
-         END AS effective_tier
-       FROM users u
+         END AS effective_tier,
+         COALESCE(ms.streak_days, 0) AS streak_days
+       FROM filtered_users u
        LEFT JOIN LATERAL (
          SELECT
            b.bot_key,
@@ -2945,9 +3092,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
          ORDER BY COALESCE(b.last_seen_at, b.updated_at, b.created_at) DESC, b.bot_key ASC
          LIMIT 1
        ) ub ON true
-       WHERE u.created_at >= $1::timestamptz
-         AND u.created_at < $2::timestamptz
-         AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)
+       LEFT JOIN max_streaks ms ON ms.chat_id = u.chat_id
        ORDER BY ${orderExpr} ${sortDir} NULLS LAST, u.chat_id DESC
        LIMIT $4::int
        OFFSET $5::int`,
@@ -2971,15 +3116,17 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
 
 app.post('/admin/broadcasts/preview', requireAdmin, async (req, res) => {
   res.set('Cache-Control', 'no-store');
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
   const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});
   const botSelection = validateBroadcastBotSelection(filters.bots);
   if (!botSelection.ok) {
     return res.status(400).json({ error: botSelection.error });
   }
   filters.bots = botSelection.botKeys;
-  const preview = await getBroadcastAudiencePreview(filters, 20);
+  const preview = await getBroadcastAudiencePreview(filters, range, 20);
   return res.json({
-    filters,
+    filters: withBroadcastStreakRange(filters, range),
     count: preview.count,
     sample: preview.sample
   });
@@ -3037,6 +3184,8 @@ app.post('/admin/broadcasts/upload-media', requireAdmin, broadcastMediaUpload.si
 });
 
 app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
   const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});
   const botSelection = validateBroadcastBotSelection(filters.bots);
   if (!botSelection.ok) {
@@ -3089,7 +3238,7 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
     }
   }
 
-  const recipients = await listBroadcastRecipients(filters, env.broadcastMaxRecipients + 1);
+  const recipients = await listBroadcastRecipients(filters, range, env.broadcastMaxRecipients + 1);
   if (recipients.length === 0) {
     return res.status(400).json({ error: 'empty_audience' });
   }
@@ -3108,6 +3257,7 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
   const botKeys = recipients.map((r) => normalizeBotKey(r.bot_key) || fallbackBotKey);
   const createdByRaw = (req.headers['x-admin-user'] || 'admin_dashboard').toString().trim();
   const createdBy = createdByRaw ? createdByRaw.slice(0, 120) : 'admin_dashboard';
+  const storedFilters = withBroadcastStreakRange(filters, range);
 
   let campaignId = null;
   await pool.query('BEGIN');
@@ -3129,7 +3279,7 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
        VALUES ('queued', $1::jsonb, $2::text, $3::text, $4::text, $5::text, $6::jsonb, $7::int, 0, 0, $8::text)
        RETURNING id`,
       [
-        JSON.stringify(filters),
+        JSON.stringify(storedFilters),
         messageText,
         messageKind,
         mediaUrl || null,

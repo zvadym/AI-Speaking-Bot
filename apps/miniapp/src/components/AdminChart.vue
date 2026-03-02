@@ -59,6 +59,7 @@ const props = defineProps({
   title: { type: String, required: true },
   subtitle: { type: String, default: '' },
   kind: { type: String, default: 'bar' },
+  stacked: { type: Boolean, default: null },
   data: { type: Array, default: () => [] },
   xLabels: { type: String, default: 'ends' },
   tooltip: { type: Boolean, default: true },
@@ -77,7 +78,11 @@ let resizeObserver = null;
 
 const labels = computed(() => props.data.map((row) => String(row?.day ?? '')));
 const hasData = computed(() => labels.value.length > 0);
-const isStacked = computed(() => props.kind === 'bar' && props.series.length > 1);
+const isStacked = computed(() => {
+  if (props.kind !== 'bar') return false;
+  if (typeof props.stacked === 'boolean') return props.stacked;
+  return props.series.length > 1;
+});
 const usesRightAxis = computed(() => props.series.some((series) => series?.yAxisId === 'y1'));
 
 function safeNum(value) {
@@ -196,11 +201,13 @@ function buildDatasets() {
       borderWidth: 0,
       borderRadius: isStacked.value ? 0 : 8,
       borderSkipped: false,
-      barPercentage: 0.72,
-      categoryPercentage: 0.84,
-      maxBarThickness: 36,
+      barPercentage: Number.isFinite(Number(series?.barPercentage)) ? Number(series.barPercentage) : 0.72,
+      categoryPercentage: Number.isFinite(Number(series?.categoryPercentage)) ? Number(series.categoryPercentage) : 0.84,
+      maxBarThickness: Number.isFinite(Number(series?.maxBarThickness)) ? Number(series.maxBarThickness) : 36,
       hoverBackgroundColor: series.color,
       stack: isStacked.value ? 'total' : undefined,
+      grouped: series?.grouped === false ? false : true,
+      order: Number.isFinite(Number(series?.order)) ? Number(series.order) : 0,
       yAxisId
     };
   });

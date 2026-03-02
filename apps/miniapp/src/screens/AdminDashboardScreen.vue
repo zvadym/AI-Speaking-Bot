@@ -228,13 +228,14 @@
       <section class="charts-grid">
         <AdminChart
           title="Active users by hour"
-          subtitle="UTC hour-of-day distribution for selected range vs today"
+          subtitle="UTC hour-of-day distribution for selected range with today layered on top"
           kind="bar"
+          :stacked="false"
           x-labels="all"
           :data="activeUsersByHourCombinedSeries"
           :series="[
-            { key: 'selected_range', label: 'Selected range', color: 'rgba(31, 107, 99, 0.9)' },
-            { key: 'today', label: 'Today', color: 'rgba(199, 90, 36, 0.9)' }
+            { key: 'selected_range', label: 'Selected range', color: 'rgba(31, 107, 99, 0.42)', grouped: false, maxBarThickness: 30, barPercentage: 0.88, categoryPercentage: 0.92, order: 1 },
+            { key: 'today', label: 'Today', color: 'rgba(199, 90, 36, 0.88)', grouped: false, maxBarThickness: 16, barPercentage: 0.52, categoryPercentage: 0.92, order: 2 }
           ]"
         />
 
@@ -578,6 +579,12 @@
                     <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('last_seen_at') }}</span>
                   </button>
                 </th>
+                <th>
+                  <button class="sort" type="button" @click="toggleUsersSort('streak_days')">
+                    Streak
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('streak_days') }}</span>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -590,6 +597,7 @@
                 <td>{{ displayTier(row.effective_tier) }}</td>
                 <td>{{ row.is_active ? 'yes' : 'no' }}</td>
                 <td>{{ row.last_seen_at ? formatFeedbackTime(row.last_seen_at) : '—' }}</td>
+                <td class="num">{{ fmt(row.streak_days || 0) }}</td>
               </tr>
             </tbody>
           </table>
@@ -671,6 +679,20 @@
               <input v-model.number="broadcast.usagePercent" type="number" min="0" max="100" />
             </label>
 
+            <label class="field">
+              <span>Streak</span>
+              <select v-model="broadcast.streakMode">
+                <option value="any">Any</option>
+                <option value="gte">At least X days</option>
+                <option value="zero">No streak in range</option>
+              </select>
+            </label>
+
+            <label class="field" v-if="broadcast.streakMode === 'gte'">
+              <span>X days</span>
+              <input v-model.number="broadcast.streakDays" type="number" min="1" max="3650" />
+            </label>
+
             <div class="field grow">
               <span>Current plan</span>
               <div class="plan-pills">
@@ -683,6 +705,13 @@
                   <span>Pro</span>
                 </label>
               </div>
+            </div>
+          </div>
+
+          <div class="row" v-if="broadcast.streakMode !== 'any'">
+            <div class="field grow">
+              <span>Streak range</span>
+              <small class="hint">Uses the current UTC range from Analytics/Users: <code>{{ activeRangeWindow }}</code></small>
             </div>
           </div>
 
@@ -838,6 +867,7 @@
                     <th>Bot</th>
                     <th>Tier</th>
                     <th>Last activity</th>
+                    <th>Streak</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -847,6 +877,7 @@
                     <td><span class="bot-badge">{{ row.bot_key }}</span></td>
                     <td>{{ displayTier(row.effective_tier) }}</td>
                     <td>{{ formatLastActivity(row.last_activity_at) }}</td>
+                    <td class="num">{{ fmt(row.streak_days || 0) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -1335,7 +1366,7 @@ function toggleUsersSort(key) {
     usersSort.dir = usersSort.dir === 'asc' ? 'desc' : 'asc';
   } else {
     usersSort.key = key;
-    usersSort.dir = key === 'created_at' || key === 'last_seen_at' ? 'desc' : 'asc';
+    usersSort.dir = key === 'created_at' || key === 'last_seen_at' || key === 'streak_days' ? 'desc' : 'asc';
   }
   usersOffset.value = 0;
   refreshUsersPage({ resetOffset: true });
@@ -1364,6 +1395,8 @@ const broadcast = reactive({
   lastActivityDays: 14,
   usageMode: 'any',
   usagePercent: 80,
+  streakMode: 'any',
+  streakDays: 3,
   messageKind: 'text',
   mediaUrl: '',
   mediaFileIds: {},
@@ -2100,11 +2133,26 @@ function broadcastFiltersPayload() {
     }
   }
 
+  if (broadcast.streakMode !== 'any') {
+    filters.streakMode = broadcast.streakMode;
+    if (broadcast.streakMode === 'gte') {
+      filters.streakDays = clampInt(broadcast.streakDays, 1, 3650, 3);
+    }
+  }
+
   if (selectedBroadcastBotKeys.value.length > 0) {
     filters.bots = selectedBroadcastBotKeys.value.slice();
   }
 
   return filters;
+}
+
+function broadcastRangeQuery() {
+  const q = query();
+  return {
+    from: q.from,
+    to: q.to
+  };
 }
 
 const canSendBroadcast = computed(() => {
@@ -2172,6 +2220,7 @@ async function refreshBroadcastPreview({ silent = false } = {}) {
     const data = await apiJson(props.apiBase, '/admin/broadcasts/preview', {
       method: 'POST',
       headers,
+      query: broadcastRangeQuery(),
       body
     });
     const nextCount = Number(data?.count || 0);
@@ -2225,6 +2274,7 @@ async function sendBroadcast() {
     const data = await apiJson(props.apiBase, '/admin/broadcasts/send', {
       method: 'POST',
       headers,
+      query: broadcastRangeQuery(),
       body: payloadBody
     });
 
@@ -2504,6 +2554,11 @@ watch(
     broadcast.lastActivityDays,
     broadcast.usageMode,
     broadcast.usagePercent,
+    broadcast.streakMode,
+    broadcast.streakDays,
+    rangePreset.value,
+    fromDate.value,
+    toDate.value,
     selectedBroadcastBotKeys.value.slice().sort().join(',')
   ],
   () => {
