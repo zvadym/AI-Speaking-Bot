@@ -3261,7 +3261,7 @@ app.get('/plans', requireAuth, async (req, res) => {
   let usage = null;
   if (userRows[0]) {
     const { rows: usageRows } = await pool.query(
-      `WITH u AS (
+      `WITH user_plan AS (
          SELECT
            chat_id,
            COALESCE(plan_tier, 'free') AS plan_tier,
@@ -3289,7 +3289,7 @@ app.get('/plans', requireAuth, async (req, res) => {
                THEN plan_tier
              ELSE 'free'
            END AS effective_tier
-         FROM u
+         FROM user_plan
        ),
        p AS (
          SELECT
@@ -3300,7 +3300,7 @@ app.get('/plans', requireAuth, async (req, res) => {
          WHERE tier = (SELECT effective_tier FROM effective)
          LIMIT 1
        ),
-       u AS (
+       usage_totals AS (
          SELECT
            COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_seconds
          FROM usage_hourly uh
@@ -3318,11 +3318,11 @@ app.get('/plans', requireAuth, async (req, res) => {
          (SELECT pending_plan_effective_at FROM effective) AS pending_plan_effective_at,
          COALESCE((SELECT limit_period FROM p), 'lifetime') AS limit_period,
          COALESCE((SELECT limit_seconds FROM p), 0) AS limit_seconds,
-         COALESCE((SELECT used_seconds FROM u), 0) AS used_seconds,
-         GREATEST(COALESCE((SELECT limit_seconds FROM p), 0) - COALESCE((SELECT used_seconds FROM u), 0), 0) AS remaining_seconds,
+         COALESCE((SELECT used_seconds FROM usage_totals), 0) AS used_seconds,
+         GREATEST(COALESCE((SELECT limit_seconds FROM p), 0) - COALESCE((SELECT used_seconds FROM usage_totals), 0), 0) AS remaining_seconds,
          (
            COALESCE((SELECT limit_seconds FROM p), 0) > 0
-           AND COALESCE((SELECT used_seconds FROM u), 0) >= COALESCE((SELECT limit_seconds FROM p), 0)
+           AND COALESCE((SELECT used_seconds FROM usage_totals), 0) >= COALESCE((SELECT limit_seconds FROM p), 0)
          ) AS limit_reached`,
       [chatId]
     );
