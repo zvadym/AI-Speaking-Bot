@@ -4,6 +4,7 @@ import { localizedPath, normalizeLocale, stripLocalePrefix, supportedLocales } f
 
 const DEFAULT_SITE_URL = 'https://ai-language-school.online';
 const DEFAULT_DESCRIPTION = 'Voice-first language practice in Telegram.';
+const DEFAULT_OG_IMAGE_PATH = '/og_tag_img.png';
 
 function normalizePath(pathname = '') {
   const raw = (pathname || '').toString().trim();
@@ -24,6 +25,12 @@ function getSiteUrl() {
   const config = useRuntimeConfig();
   const raw = (config.public.siteUrl || DEFAULT_SITE_URL).toString().trim();
   return (raw || DEFAULT_SITE_URL).replace(/\/+$/, '');
+}
+
+function getDefaultOgImagePath() {
+  const config = useRuntimeConfig();
+  const raw = (config.public.ogImage || DEFAULT_OG_IMAGE_PATH).toString().trim();
+  return raw || DEFAULT_OG_IMAGE_PATH;
 }
 
 function normalizeFaqItems(items) {
@@ -53,6 +60,7 @@ function normalizeStructuredData(items) {
 export function useLocalizedSeo(options = {}) {
   const route = useRoute();
   const siteUrl = getSiteUrl();
+  const defaultOgImagePath = getDefaultOgImagePath();
 
   const activeLocale = computed(() => normalizeLocale(readValue(options.locale)) || 'en');
   const pathSuffix = computed(() => {
@@ -106,6 +114,14 @@ export function useLocalizedSeo(options = {}) {
     const description = (readValue(options.description) || '').toString().trim() || DEFAULT_DESCRIPTION;
     const robots = readValue(options.noindex) ? 'noindex,follow' : 'index,follow';
     const canonicalUrl = toAbsoluteUrl(siteUrl, canonicalPath.value);
+    const imageAlt = (readValue(options.imageAlt) || title).toString().trim() || title;
+    const imageInput = readValue(options.image);
+    const imageValue = (imageInput === undefined || imageInput === null || String(imageInput).trim() === '')
+      ? defaultOgImagePath
+      : String(imageInput).trim();
+    const imageUrl = imageValue.startsWith('http://') || imageValue.startsWith('https://')
+      ? imageValue
+      : toAbsoluteUrl(siteUrl, imageValue);
     const faqItems = normalizeFaqItems(readValue(options.faqItems));
     const structuredData = normalizeStructuredData(readValue(options.structuredData));
     const scripts = [];
@@ -147,9 +163,14 @@ export function useLocalizedSeo(options = {}) {
         { key: 'og:title', property: 'og:title', content: title },
         { key: 'og:description', property: 'og:description', content: description },
         { key: 'og:url', property: 'og:url', content: canonicalUrl },
+        { key: 'og:image', property: 'og:image', content: imageUrl },
+        { key: 'og:image:secure_url', property: 'og:image:secure_url', content: imageUrl },
+        { key: 'og:image:alt', property: 'og:image:alt', content: imageAlt },
         { key: 'twitter:card', name: 'twitter:card', content: 'summary_large_image' },
         { key: 'twitter:title', name: 'twitter:title', content: title },
-        { key: 'twitter:description', name: 'twitter:description', content: description }
+        { key: 'twitter:description', name: 'twitter:description', content: description },
+        { key: 'twitter:image', name: 'twitter:image', content: imageUrl },
+        { key: 'twitter:image:alt', name: 'twitter:image:alt', content: imageAlt }
       ],
       link: [
         {

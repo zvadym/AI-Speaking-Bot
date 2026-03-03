@@ -183,17 +183,26 @@ const structuredData = computed(() => {
     },
     {
       '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
+      '@type': 'Service',
+      '@id': `${toAbsoluteUrl(getTeacherCanonicalPath(teacher.value))}#service`,
       name: `AI Language School ${languageLabel} Teacher`,
-      applicationCategory: 'EducationalApplication',
-      operatingSystem: 'Telegram',
+      serviceType: 'AI language practice in Telegram',
       inLanguage: locale,
+      provider: {
+        '@id': `${siteUrl.value}/#organization`
+      },
+      availableChannel: teacher.value.telegramUrl
+        ? {
+            '@type': 'ServiceChannel',
+            serviceUrl: teacher.value.telegramUrl
+          }
+        : undefined,
+      url: toAbsoluteUrl(getTeacherCanonicalPath(teacher.value)),
       offers: {
         '@type': 'Offer',
         price: '0',
         priceCurrency: 'EUR'
-      },
-      url: toAbsoluteUrl(getTeacherCanonicalPath(teacher.value))
+      }
     }
   ];
 });
@@ -206,6 +215,8 @@ useLocalizedSeo({
   xDefaultLocale: () => pageLocale.value,
   title: () => seoContent.value?.metaTitle || `${t('notFound.title')} — AI Language School`,
   description: () => seoContent.value?.metaDescription || t('notFound.desc'),
+  image: () => teacher.value?.avatarImage,
+  imageAlt: () => (teacher.value ? getTeacherName(teacher.value, pageLocale.value) : 'AI Language School'),
   noindex: () => !teacher.value,
   structuredData
 });

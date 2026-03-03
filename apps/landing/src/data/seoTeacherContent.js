@@ -6,37 +6,90 @@ const LANGUAGE_FORMS = {
   en: {
     en: { display: 'English', adjective: 'English' },
     de: { display: 'German', adjective: 'German' },
+    es: { display: 'Spanish', adjective: 'Spanish' },
     it: { display: 'Italian', adjective: 'Italian' },
+    pl: { display: 'Polish', adjective: 'Polish' },
+    pt: { display: 'Portuguese', adjective: 'Portuguese' },
     uk: { display: 'Ukrainian', adjective: 'Ukrainian' }
   },
   de: {
     en: { display: 'Englisch' },
     de: { display: 'Deutsch' },
+    es: { display: 'Spanisch' },
     it: { display: 'Italienisch' },
+    pl: { display: 'Polnisch' },
+    pt: { display: 'Portugiesisch' },
     uk: { display: 'Ukrainisch' }
   },
   uk: {
-    en: { display: 'англійська', genitive: 'англійської' },
-    de: { display: 'німецька', genitive: 'німецької' },
-    it: { display: 'італійська', genitive: 'італійської' },
-    uk: { display: 'українська', genitive: 'української' }
+    en: {
+      display: 'англійська',
+      genitive: 'англійської',
+      accusative: 'англійську',
+      instrumental: 'англійською'
+    },
+    de: {
+      display: 'німецька',
+      genitive: 'німецької',
+      accusative: 'німецьку',
+      instrumental: 'німецькою'
+    },
+    es: {
+      display: 'іспанська',
+      genitive: 'іспанської',
+      accusative: 'іспанську',
+      instrumental: 'іспанською'
+    },
+    it: {
+      display: 'італійська',
+      genitive: 'італійської',
+      accusative: 'італійську',
+      instrumental: 'італійською'
+    },
+    pl: {
+      display: 'польська',
+      genitive: 'польської',
+      accusative: 'польську',
+      instrumental: 'польською'
+    },
+    pt: {
+      display: 'португальська',
+      genitive: 'португальської',
+      accusative: 'португальську',
+      instrumental: 'португальською'
+    },
+    uk: {
+      display: 'українська',
+      genitive: 'української',
+      accusative: 'українську',
+      instrumental: 'українською'
+    }
   },
   it: {
     en: { display: 'inglese' },
     de: { display: 'tedesco' },
+    es: { display: 'spagnolo' },
     it: { display: 'italiano' },
+    pl: { display: 'polacco' },
+    pt: { display: 'portoghese' },
     uk: { display: 'ucraino' }
   },
   es: {
     en: { display: 'inglés' },
     de: { display: 'alemán' },
+    es: { display: 'español' },
     it: { display: 'italiano' },
+    pl: { display: 'polaco' },
+    pt: { display: 'portugués' },
     uk: { display: 'ucraniano' }
   },
   pt: {
     en: { display: 'inglês' },
     de: { display: 'alemão' },
+    es: { display: 'espanhol' },
     it: { display: 'italiano' },
+    pl: { display: 'polonês' },
+    pt: { display: 'português' },
     uk: { display: 'ucraniano' }
   }
 };
@@ -166,12 +219,14 @@ function buildUkrainianContent(teacher, languageForm) {
   const teacherName = getTeacherName(teacher, 'uk') || getTeacherName(teacher, 'en') || 'викладач';
   const targetDisplay = languageForm.display || 'англійська';
   const targetGenitive = languageForm.genitive || targetDisplay;
+  const targetAccusative = languageForm.accusative || targetDisplay;
+  const targetInstrumental = languageForm.instrumental || targetDisplay;
 
   return {
     metaTitle: `Практика розмовної ${targetGenitive} в Telegram з ${teacherName} — AI викладач | AI Language School`,
-    metaDescription: `Практикуй розмовну ${targetGenitive} щодня: надсилай голосові в Telegram, отримуй миттєві виправлення, природні фрази та чіткий фідбек. Почни за 1 хвилину з ${teacherName}.`,
+    metaDescription: `Практикуй розмовну ${targetAccusative} щодня: надсилай голосові в Telegram, отримуй миттєві виправлення, природні фрази та чіткий фідбек. Почни за 1 хвилину з ${teacherName}.`,
     h1: `Практика розмовної ${targetGenitive} у Telegram з ${teacherName}`,
-    heroLead: `Практикуй живе спілкування ${targetGenitive} у Telegram. Надішли коротке голосове, і ${teacherName} поверне виправлену та природнішу версію, яку можна одразу повторити.`,
+    heroLead: `Практикуй живе спілкування ${targetInstrumental} у Telegram. Надішли коротке голосове, і ${teacherName} поверне виправлену та природнішу версію, яку можна одразу повторити.`,
     heroOutcome: `Ти швидше формулюєш думки, говориш чіткіше й упевненіше в роботі, на співбесідах, у подорожах та щоденних ситуаціях.`,
     coreBullets: [
       'Миттєві виправлення: помилки, кращі фрази, чітка логіка, чому саме так.',
@@ -215,7 +270,7 @@ function buildUkrainianContent(teacher, languageForm) {
     ],
     dialoguesTitle: 'Приклад діалогу',
     dialoguesIntro: 'Короткий приклад реального діалогу. Голосове → краща відповідь → пояснення правила → варіанти для наступної репліки.',
-    deepDiveTitle: `Як реально прокачати розмовну ${targetGenitive} через Telegram`,
+    deepDiveTitle: `Як реально прокачати розмовну ${targetAccusative} через Telegram`,
     deepDiveParagraphs: [
       `Більшість людей застрягають не через “мало слів”, а через повільне формулювання думки в реальному діалозі. Ти ніби знаєш тему, але в момент відповіді губишся. Саме тому формат коротких голосових у Telegram працює краще за епізодичні довгі уроки: він тренує швидкість реакції, структуру відповіді та сміливість говорити тут і зараз.`,
       `Ключова перевага — миттєвий цикл практики: сказав, отримав фідбек, перефразував, сказав краще. За 10–15 хвилин у тебе проходить кілька повних ітерацій, а не одна спроба на тиждень. Така щоденна практика розмовної мови знімає бар’єр і поступово робить правильні конструкції автоматичними.`,
