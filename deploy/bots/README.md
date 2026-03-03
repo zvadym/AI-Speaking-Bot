@@ -115,6 +115,18 @@ python3 scripts/provision-bots.py apply \
   --config deploy/bots/en-es.json
 ```
 
+Apply every config in `deploy/bots`:
+
+```bash
+python3 scripts/provision-bots.py apply --all
+```
+
+Apply every config from a custom directory:
+
+```bash
+python3 scripts/provision-bots.py apply --all --bots-dir deploy/bots-dev
+```
+
 ## Bot API Calls Per Apply
 
 - `getMe` (token validation + username mismatch guard)

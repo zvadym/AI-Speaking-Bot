@@ -906,20 +906,35 @@ def run_apply(args: argparse.Namespace) -> int:
     contract_path = contract_path_from_arg(repo_root, args.source)
     contract = load_contract(contract_path)
 
+    bots_dir = Path(args.bots_dir)
+    if not bots_dir.is_absolute():
+        bots_dir = (repo_root / bots_dir).resolve()
+
     config_args = args.config or []
-    if not config_args:
-        raise BotProvisioningError("apply mode requires at least one --config <path>")
+    if args.all and config_args:
+        raise BotProvisioningError("apply mode accepts either --all or --config <path>, not both")
 
     config_paths: List[Path] = []
-    for raw in config_args:
-        path = Path(raw)
-        if not path.is_absolute():
-            path = (repo_root / path).resolve()
-        config_paths.append(path)
+    if args.all:
+        if not bots_dir.exists() or not bots_dir.is_dir():
+            raise BotProvisioningError(f"Bots directory not found: {bots_dir}")
+        config_paths = sorted(path.resolve() for path in bots_dir.glob("*.json") if path.is_file())
+        if not config_paths:
+            raise BotProvisioningError(f"No bot config JSON files found in {bots_dir}")
+    else:
+        if not config_args:
+            raise BotProvisioningError("apply mode requires --all or at least one --config <path>")
+        for raw in config_args:
+            path = Path(raw)
+            if not path.is_absolute():
+                path = (repo_root / path).resolve()
+            config_paths.append(path)
 
     summary: List[Dict[str, Any]] = []
     print(f"Repo root: {repo_root}")
     print(f"Contract: {contract_path}")
+    if args.all:
+        print(f"Bots dir: {bots_dir}")
     print(f"Applying Telegram settings for {len(config_paths)} config(s)")
     if args.dry_run:
         print("Mode: DRY-RUN (no Telegram API calls, no file writes)")
@@ -1272,6 +1287,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--config",
         action="append",
         help="Path to bot config JSON. Repeat for multiple files. Used by apply mode.",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Apply all bot config JSON files from --bots-dir in apply mode.",
     )
     parser.add_argument(
         "--profile-photo",
