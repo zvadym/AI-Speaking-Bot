@@ -45,7 +45,7 @@ DEFAULT_COMMANDS_BY_BASE = {
         {"command": "level", "description": "Встановити рівень мови"},
         {"command": "voice", "description": "Обрати голосовий або текстовий режим"},
         {"command": "stats", "description": "Перевірити статус підписки"},
-        {"command": "xp", "description": "Переглянути стрік та XP"},
+        {"command": "xp", "description": "Переглянути серію та XP"},
         {"command": "feedback", "description": "Надіслати фідбек"},
         {"command": "lang", "description": "Показати фіксовану мову навчання"},
     ],

@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import {
   BarController,
   BarElement,
@@ -71,7 +71,7 @@ const props = defineProps({
 
 const canvasEl = ref(null);
 const surfaceEl = ref(null);
-const chartInstance = ref(null);
+const chartInstance = shallowRef(null);
 const chartWidth = ref(BASE_WIDTH);
 
 let resizeObserver = null;
@@ -400,7 +400,7 @@ function createChart() {
   if (!hasData.value || !canvasEl.value) return;
   const ctx = canvasEl.value.getContext('2d');
   if (!ctx) return;
-  chartInstance.value = new Chart(ctx, buildConfig());
+  chartInstance.value = markRaw(new Chart(ctx, buildConfig()));
 }
 
 async function syncChart() {
@@ -411,7 +411,11 @@ async function syncChart() {
     return;
   }
 
-  if (!chartInstance.value || chartInstance.value.config.type !== props.kind) {
+  if (
+    !chartInstance.value ||
+    chartInstance.value.config.type !== props.kind ||
+    chartInstance.value.canvas !== canvasEl.value
+  ) {
     destroyChart();
     createChart();
     return;

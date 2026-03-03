@@ -107,8 +107,8 @@
     "starter_question_day": "¿Cómo estuvo tu día hoy? Cuéntame 1-2 cosas.",
     "starter_question_weekend": "¿Cuáles son tus planes para el fin de semana?",
     "xp_title": "<b>🔥 Твій прогрес</b>",
-    "xp_streak_label": "Стрік",
-    "xp_best_label": "Найкращий стрік",
+    "xp_streak_label": "Серія",
+    "xp_best_label": "Найкраща серія",
     "xp_level_label": "Рівень",
     "xp_total_label": "XP",
     "xp_next_label": "До наступного рівня",
@@ -138,7 +138,7 @@
       },
       {
         "command": "xp",
-        "description": "Переглянути стрік та XP"
+        "description": "Переглянути серію та XP"
       },
       {
         "command": "feedback",
