@@ -46,6 +46,7 @@ Example:
       { "command": "level", "description": "Set your language level" },
       { "command": "voice", "description": "Choose voice or text replies" },
       { "command": "stats", "description": "Check subscription status" },
+      { "command": "xp", "description": "Check your streak and XP" },
       { "command": "feedback", "description": "Send feedback" },
       { "command": "lang", "description": "Show fixed learning language" }
     ],

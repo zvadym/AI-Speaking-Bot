@@ -104,7 +104,15 @@
     "starter_btn_weekend": "Wochenendpläne",
     "starter_question_intro": "Puoi presentarti in 2-3 frasi?",
     "starter_question_day": "Com'è andata la tua giornata oggi? Dimmi 1-2 cose.",
-    "starter_question_weekend": "Quali sono i tuoi programmi per il weekend?"
+    "starter_question_weekend": "Quali sono i tuoi programmi per il weekend?",
+    "xp_title": "<b>🔥 Dein Fortschritt</b>",
+    "xp_streak_label": "Streak",
+    "xp_best_label": "Bester Streak",
+    "xp_level_label": "Level",
+    "xp_total_label": "XP",
+    "xp_next_label": "Bis zum nächsten Level",
+    "xp_coming_soon": "XP kommt bald.",
+    "xp_digest_prefix": "Dein Fortschritt:"
   },
   "telegram_presentation": {
     "name": "Giulia 🇩🇪→🇮🇹 Italienisch-Tutor",
@@ -126,6 +134,10 @@
       {
         "command": "stats",
         "description": "Abo-Status prüfen"
+      },
+      {
+        "command": "xp",
+        "description": "Streak und XP prüfen"
       },
       {
         "command": "feedback",

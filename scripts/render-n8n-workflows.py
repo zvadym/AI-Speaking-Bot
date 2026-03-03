@@ -479,12 +479,13 @@ def patch_settings_node(
     base_language: str,
     learning_language: str,
     bot_voice: str,
+    node_name: str = "Settings",
 ) -> None:
-    node = find_node(ai_data, "Settings")
+    node = find_node(ai_data, node_name)
     params = node.get("parameters", {})
     assignments = (params.get("assignments") or {}).get("assignments")
     if not isinstance(assignments, list):
-        raise ValueError("Settings node assignments missing/invalid")
+        raise ValueError(f"{node_name} node assignments missing/invalid")
 
     seen: Set[str] = set()
     for a in assignments:
@@ -524,12 +525,14 @@ def patch_settings_node(
         )
 
 
-def patch_set_locale_node(ai_data: Dict[str, Any], locale: Dict[str, Any]) -> None:
-    node = find_node(ai_data, "Set Locale")
+def patch_set_locale_node(
+    ai_data: Dict[str, Any], locale: Dict[str, Any], node_name: str = "Set Locale"
+) -> None:
+    node = find_node(ai_data, node_name)
     params = node.get("parameters", {})
     assignments = (params.get("assignments") or {}).get("assignments")
     if not isinstance(assignments, list):
-        raise ValueError("Set Locale node assignments missing/invalid")
+        raise ValueError(f"{node_name} node assignments missing/invalid")
 
     template_keys = [a.get("name") for a in assignments if isinstance(a, dict)]
     template_key_set = {k for k in template_keys if isinstance(k, str)}
@@ -723,7 +726,9 @@ def main() -> int:
         patch_webhook_ids_for_bot(loader, "loader-messages-rotator", bot_key)
 
         patch_settings_node(ai, bot_key, base, learn, bot_voice)
+        patch_settings_node(ai, bot_key, base, learn, bot_voice, node_name="Digest Settings")
         patch_set_locale_node(ai, full_locale)
+        patch_set_locale_node(ai, full_locale, node_name="Digest Locale")
         patch_message_model_node(ai, base, learn)
         patch_start_loader(ai, loader_id, loader["name"], bot_key)
 

@@ -103,7 +103,15 @@
     "starter_btn_weekend": "Плани на вихідні",
     "starter_question_intro": "Can you introduce yourself in 2-3 sentences?",
     "starter_question_day": "How was your day today? Tell me 1-2 things.",
-    "starter_question_weekend": "What are your weekend plans?"
+    "starter_question_weekend": "What are your weekend plans?",
+    "xp_title": "<b>🔥 Твій прогрес</b>",
+    "xp_streak_label": "Стрік",
+    "xp_best_label": "Найкращий стрік",
+    "xp_level_label": "Рівень",
+    "xp_total_label": "XP",
+    "xp_next_label": "До наступного рівня",
+    "xp_coming_soon": "XP скоро зʼявиться.",
+    "xp_digest_prefix": "Твій прогрес:"
   },
   "telegram_presentation": {
     "name": "Джекі 🇺🇦→🇬🇧 репетитор англійської",
@@ -125,6 +133,10 @@
       {
         "command": "stats",
         "description": "Перевірити статус підписки"
+      },
+      {
+        "command": "xp",
+        "description": "Переглянути стрік та XP"
       },
       {
         "command": "feedback",

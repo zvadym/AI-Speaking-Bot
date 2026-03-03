@@ -104,7 +104,15 @@
     "starter_btn_weekend": "Wochenendpläne",
     "starter_question_intro": "Can you introduce yourself in 2-3 sentences?",
     "starter_question_day": "How was your day today? Tell me 1-2 things.",
-    "starter_question_weekend": "What are your plans for the weekend?"
+    "starter_question_weekend": "What are your plans for the weekend?",
+    "xp_title": "<b>🔥 Dein Fortschritt</b>",
+    "xp_streak_label": "Streak",
+    "xp_best_label": "Bester Streak",
+    "xp_level_label": "Level",
+    "xp_total_label": "XP",
+    "xp_next_label": "Bis zum nächsten Level",
+    "xp_coming_soon": "XP kommt bald.",
+    "xp_digest_prefix": "Dein Fortschritt:"
   },
   "telegram_presentation": {
     "name": "Lina 🇩🇪→🇬🇧 Englisch-Tutorin",
@@ -126,6 +134,10 @@
       {
         "command": "stats",
         "description": "Abo-Status prüfen"
+      },
+      {
+        "command": "xp",
+        "description": "Streak und XP prüfen"
       },
       {
         "command": "feedback",

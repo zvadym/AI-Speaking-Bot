@@ -10,6 +10,161 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: grant_xp(bigint, text, text, integer, text, boolean, timestamp with time zone, jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.grant_xp(p_chat_id bigint, p_bot_key text, p_event_type text, p_requested_xp integer, p_idempotency_key text, p_is_practice boolean DEFAULT false, p_occurred_at timestamp with time zone DEFAULT now(), p_meta jsonb DEFAULT '{}'::jsonb) RETURNS TABLE(applied boolean, awarded_xp integer, xp_total integer, xp_daily integer, streak_current integer, streak_best integer, streak_last_day date, level integer, xp_into_level integer, xp_to_next integer)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_progress public.user_progress%ROWTYPE;
+  v_event_day date;
+  v_effective_daily integer;
+  v_awarded_xp integer;
+  v_inserted integer;
+  v_new_streak integer;
+  v_new_best integer;
+  v_new_last_day date;
+BEGIN
+  IF p_chat_id IS NULL THEN
+    RAISE EXCEPTION 'p_chat_id is required';
+  END IF;
+
+  IF COALESCE(trim(p_bot_key), '') = '' THEN
+    RAISE EXCEPTION 'p_bot_key is required';
+  END IF;
+
+  IF COALESCE(trim(p_event_type), '') = '' THEN
+    RAISE EXCEPTION 'p_event_type is required';
+  END IF;
+
+  IF COALESCE(trim(p_idempotency_key), '') = '' THEN
+    RAISE EXCEPTION 'p_idempotency_key is required';
+  END IF;
+
+  IF COALESCE(p_requested_xp, 0) < 0 THEN
+    RAISE EXCEPTION 'p_requested_xp must be >= 0';
+  END IF;
+
+  v_event_day := (COALESCE(p_occurred_at, now()) AT TIME ZONE 'UTC')::date;
+
+  INSERT INTO public.user_progress (chat_id, bot_key)
+  VALUES (p_chat_id, p_bot_key)
+  ON CONFLICT (chat_id, bot_key) DO NOTHING;
+
+  SELECT *
+  INTO v_progress
+  FROM public.user_progress up
+  WHERE up.chat_id = p_chat_id
+    AND up.bot_key = p_bot_key
+  FOR UPDATE;
+
+  v_effective_daily := CASE
+    WHEN v_progress.xp_daily_date IS DISTINCT FROM v_event_day THEN 0
+    ELSE v_progress.xp_daily
+  END;
+
+  v_awarded_xp := LEAST(COALESCE(p_requested_xp, 0), GREATEST(250 - v_effective_daily, 0));
+
+  INSERT INTO public.xp_events (
+    chat_id,
+    bot_key,
+    event_type,
+    xp_delta,
+    idempotency_key,
+    occurred_at,
+    meta
+  )
+  VALUES (
+    p_chat_id,
+    p_bot_key,
+    p_event_type,
+    v_awarded_xp,
+    p_idempotency_key,
+    COALESCE(p_occurred_at, now()),
+    COALESCE(p_meta, '{}'::jsonb) || jsonb_build_object(
+      'requested_xp', COALESCE(p_requested_xp, 0),
+      'practice', p_is_practice,
+      'day_utc', v_event_day,
+      'capped', v_awarded_xp < COALESCE(p_requested_xp, 0)
+    )
+  )
+  ON CONFLICT (idempotency_key) DO NOTHING
+  RETURNING 1 INTO v_inserted;
+
+  IF v_inserted IS NULL THEN
+    RETURN QUERY
+    SELECT
+      false AS applied,
+      0 AS awarded_xp,
+      v_progress.xp_total,
+      v_progress.xp_daily,
+      v_progress.streak_current,
+      v_progress.streak_best,
+      v_progress.streak_last_day,
+      FLOOR(v_progress.xp_total / 200.0)::integer + 1 AS level,
+      MOD(v_progress.xp_total, 200) AS xp_into_level,
+      CASE
+        WHEN v_progress.xp_total = 0 THEN 200
+        ELSE 200 - MOD(v_progress.xp_total, 200)
+      END AS xp_to_next;
+    RETURN;
+  END IF;
+
+  v_new_streak := v_progress.streak_current;
+  v_new_best := v_progress.streak_best;
+  v_new_last_day := v_progress.streak_last_day;
+
+  IF p_is_practice THEN
+    IF v_progress.streak_last_day IS NULL THEN
+      v_new_streak := 1;
+      v_new_last_day := v_event_day;
+    ELSIF v_progress.streak_last_day = v_event_day THEN
+      NULL;
+    ELSIF v_progress.streak_last_day = (v_event_day - 1) THEN
+      v_new_streak := v_progress.streak_current + 1;
+      v_new_last_day := v_event_day;
+    ELSE
+      v_new_streak := 1;
+      v_new_last_day := v_event_day;
+    END IF;
+
+    v_new_best := GREATEST(v_progress.streak_best, v_new_streak);
+  END IF;
+
+  UPDATE public.user_progress
+  SET xp_total = v_progress.xp_total + v_awarded_xp,
+      xp_daily = v_effective_daily + v_awarded_xp,
+      xp_daily_date = v_event_day,
+      streak_current = v_new_streak,
+      streak_best = v_new_best,
+      streak_last_day = v_new_last_day,
+      updated_at = now()
+  WHERE chat_id = p_chat_id
+    AND bot_key = p_bot_key
+  RETURNING *
+  INTO v_progress;
+
+  RETURN QUERY
+  SELECT
+    true AS applied,
+    v_awarded_xp,
+    v_progress.xp_total,
+    v_progress.xp_daily,
+    v_progress.streak_current,
+    v_progress.streak_best,
+    v_progress.streak_last_day,
+    FLOOR(v_progress.xp_total / 200.0)::integer + 1 AS level,
+    MOD(v_progress.xp_total, 200) AS xp_into_level,
+    CASE
+      WHEN v_progress.xp_total = 0 THEN 200
+      ELSE 200 - MOD(v_progress.xp_total, 200)
+    END AS xp_to_next;
+END;
+$$;
+
+
+--
 -- Name: log_day1_return_from_user_bot(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -678,6 +833,23 @@ CREATE TABLE public.usage_week (
 
 
 --
+-- Name: user_progress; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_progress (
+    chat_id bigint NOT NULL,
+    bot_key text NOT NULL,
+    xp_total integer DEFAULT 0 NOT NULL,
+    xp_daily integer DEFAULT 0 NOT NULL,
+    xp_daily_date date,
+    streak_current integer DEFAULT 0 NOT NULL,
+    streak_best integer DEFAULT 0 NOT NULL,
+    streak_last_day date,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: user_summaries; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -695,6 +867,38 @@ CREATE TABLE public.user_summaries (
 
 ALTER TABLE public.voice_usage_events ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
     SEQUENCE NAME public.voice_usage_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: xp_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.xp_events (
+    id bigint NOT NULL,
+    chat_id bigint NOT NULL,
+    bot_key text NOT NULL,
+    event_type text NOT NULL,
+    xp_delta integer NOT NULL,
+    idempotency_key text NOT NULL,
+    occurred_at timestamp with time zone DEFAULT now() NOT NULL,
+    meta jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT xp_events_event_type_check CHECK ((event_type = ANY (ARRAY['voice'::text, 'text'::text, 'btn_translation'::text, 'btn_vocab'::text, 'btn_hints'::text, 'starter'::text]))),
+    CONSTRAINT xp_events_xp_delta_check CHECK ((xp_delta >= 0))
+);
+
+
+--
+-- Name: xp_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.xp_events ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.xp_events_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -854,6 +1058,14 @@ ALTER TABLE ONLY public.user_bots
 
 
 --
+-- Name: user_progress user_progress_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_progress
+    ADD CONSTRAINT user_progress_pkey PRIMARY KEY (chat_id, bot_key);
+
+
+--
 -- Name: user_summaries user_summaries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -875,6 +1087,22 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.voice_usage_events
     ADD CONSTRAINT voice_usage_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: xp_events xp_events_idempotency_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.xp_events
+    ADD CONSTRAINT xp_events_idempotency_key_key UNIQUE (idempotency_key);
+
+
+--
+-- Name: xp_events xp_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.xp_events
+    ADD CONSTRAINT xp_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -1200,6 +1428,13 @@ CREATE INDEX idx_voice_usage_events_occurred ON public.voice_usage_events USING 
 
 
 --
+-- Name: idx_xp_events_chat_bot_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_xp_events_chat_bot_time ON public.xp_events USING btree (chat_id, bot_key, occurred_at DESC);
+
+
+--
 -- Name: plan_prices_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1325,4 +1560,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260227113000'),
     ('20260227154500'),
     ('20260302120000'),
-    ('20260302153000');
+    ('20260302153000'),
+    ('20260303110000');
