@@ -718,6 +718,7 @@ CREATE TABLE public.messages (
     translation_base text DEFAULT ''::text NOT NULL,
     follow_up_hints text DEFAULT '[]'::text NOT NULL,
     bot_key text DEFAULT 'uk-de'::text NOT NULL,
+    topic_template_id text,
     CONSTRAINT messages_role_check CHECK ((role = ANY (ARRAY['user'::text, 'assistant'::text])))
 );
 
@@ -1261,6 +1262,13 @@ CREATE INDEX idx_messages_chat_bot_id ON public.messages USING btree (chat_id, b
 
 
 --
+-- Name: idx_messages_chat_bot_topic_id_desc; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_messages_chat_bot_topic_id_desc ON public.messages USING btree (chat_id, bot_key, topic_template_id, id DESC);
+
+
+--
 -- Name: idx_messages_chat_id_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1621,4 +1629,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260303110000'),
     ('20260304100000'),
     ('20260304130000'),
-    ('20260304143000');
+    ('20260304143000'),
+    ('20260304150000');
