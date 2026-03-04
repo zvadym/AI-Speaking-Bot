@@ -927,6 +927,32 @@
           </div>
 
           <div class="row">
+            <label class="field grow">
+              <span>Inline buttons (optional: JSON or row syntax)</span>
+              <textarea
+                v-model="broadcast.inlineKeyboardJson"
+                rows="5"
+                placeholder='[row][Topics][/row]'
+              />
+              <small class="hint">
+                Row syntax examples:
+                <code>[row][Topics][/row]</code> (auto maps to <code>topic:menu</code>),
+                <code>[row][Open site|https://ai-language-school.online][/row]</code>,
+                <code>[row][Topics|topic:menu][Help|https://t.me/your_support][/row]</code>.
+                You can also use JSON: <code>[[{"text":"Topics","callback_data":"topic:menu"}]]</code>.
+              </small>
+            </label>
+            <div class="actions">
+              <button class="btn" type="button" @click="applyBroadcastTopicsButtonPreset">
+                Use Topics preset
+              </button>
+              <button class="btn danger" type="button" @click="clearBroadcastButtons">
+                Clear buttons
+              </button>
+            </div>
+          </div>
+
+          <div class="row">
             <label class="field">
               <span>Confirm send</span>
               <input
@@ -958,6 +984,7 @@
           >
             Upload media (or provide a media URL).
           </div>
+          <div v-else-if="broadcastInlineKeyboardError" class="callout error">{{ broadcastInlineKeyboardError }}</div>
           <div v-else-if="mediaUploadError" class="callout error">{{ mediaUploadError }}</div>
           <div v-else-if="mediaUploadInfo" class="callout">{{ mediaUploadInfo }}</div>
           <div v-else-if="previewError" class="callout error">{{ previewError }}</div>
@@ -1528,6 +1555,12 @@ const broadcastPreview = reactive({
   count: 0,
   sample: []
 });
+const BROADCAST_INLINE_KEYBOARD_MAX_ROWS = 8;
+const BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW = 8;
+const BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN = 64;
+const BROADCAST_INLINE_KEYBOARD_MAX_CALLBACK_DATA_LEN = 64;
+const BROADCAST_INLINE_KEYBOARD_MAX_URL_LEN = 2048;
+const BROADCAST_TOPICS_BUTTON_PRESET = '[row][Topics|topic:menu][/row]';
 const broadcast = reactive({
   username: '',
   planFree: true,
@@ -1542,6 +1575,7 @@ const broadcast = reactive({
   mediaUrl: '',
   mediaFileIds: {},
   messageText: '',
+  inlineKeyboardJson: '',
   botKeys: []
 });
 
@@ -1558,6 +1592,166 @@ const hasBroadcastMedia = computed(() => {
   const hasFileIds = Object.keys(ids).length > 0;
   return Boolean(mediaUrl || hasFileIds);
 });
+
+function normalizeInlineKeyboardDraft(raw) {
+  const payloadRaw = String(raw ?? '').trim();
+  if (!payloadRaw) return { value: null, error: '' };
+
+  function parseRowSyntax(text) {
+    const lines = String(text || '')
+      .split(/\r?\n/g)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (!lines.length) return { ok: true, rows: [] };
+
+    const rows = [];
+    for (const line of lines) {
+      const rowMatch = line.match(/^\[row\]([\s\S]*?)\[\/row\]$/i);
+      if (!rowMatch) {
+        return {
+          ok: false,
+          error: 'Row syntax: each non-empty line must be [row][Button|action][/row].'
+        };
+      }
+
+      const inside = rowMatch[1] || '';
+      const matches = Array.from(inside.matchAll(/\[([^\]|]+)(?:\|([^\]]+))?\]/g));
+      if (matches.length === 0) {
+        return {
+          ok: false,
+          error: 'Each [row] must include at least one [Button|action] item.'
+        };
+      }
+
+      const row = [];
+      for (const match of matches) {
+        const textRaw = String(match[1] || '').trim();
+        const actionRaw = String(match[2] || '').trim();
+        if (!textRaw) {
+          return { ok: false, error: 'Button text cannot be empty in row syntax.' };
+        }
+
+        let callbackData = '';
+        let url = '';
+        if (!actionRaw) {
+          if (textRaw.toLowerCase() === 'topics') callbackData = 'topic:menu';
+          else return { ok: false, error: 'Each button in row syntax needs an action after "|".' };
+        } else if (/^https?:\/\//i.test(actionRaw)) {
+          url = actionRaw;
+        } else if (/^url:/i.test(actionRaw)) {
+          url = actionRaw.slice(4).trim();
+        } else if (/^(cb|callback):/i.test(actionRaw)) {
+          callbackData = actionRaw.replace(/^(cb|callback):/i, '').trim();
+        } else {
+          callbackData = actionRaw;
+        }
+
+        const button = { text: textRaw };
+        if (callbackData) button.callback_data = callbackData;
+        if (url) button.url = url;
+        row.push(button);
+      }
+
+      rows.push(row);
+    }
+
+    return { ok: true, rows };
+  }
+
+  let sourceRows = null;
+  try {
+    const parsed = JSON.parse(payloadRaw);
+    sourceRows = Array.isArray(parsed)
+      ? parsed
+      : (parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed.inline_keyboard : null);
+  } catch {
+    const rowSyntax = parseRowSyntax(payloadRaw);
+    if (!rowSyntax.ok) return { value: null, error: rowSyntax.error };
+    sourceRows = rowSyntax.rows;
+  }
+
+  if (!Array.isArray(sourceRows)) {
+    return {
+      value: null,
+      error: 'Buttons must be JSON array rows or row syntax: [row][Button|action][/row].'
+    };
+  }
+  if (sourceRows.length > BROADCAST_INLINE_KEYBOARD_MAX_ROWS) {
+    return { value: null, error: `Too many button rows (max ${BROADCAST_INLINE_KEYBOARD_MAX_ROWS}).` };
+  }
+
+  const normalizedRows = [];
+  for (const rowRaw of sourceRows) {
+    if (!Array.isArray(rowRaw)) {
+      return { value: null, error: 'Each button row must be an array.' };
+    }
+    if (rowRaw.length === 0) continue;
+    if (rowRaw.length > BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW) {
+      return { value: null, error: `Too many buttons in a row (max ${BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW}).` };
+    }
+
+    const row = [];
+    for (const buttonRaw of rowRaw) {
+      if (!buttonRaw || typeof buttonRaw !== 'object' || Array.isArray(buttonRaw)) {
+        return { value: null, error: 'Each button must be an object.' };
+      }
+      const text = String(buttonRaw.text ?? '').trim();
+      if (!text) return { value: null, error: 'Every button needs text.' };
+      if (text.length > BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN) {
+        return { value: null, error: `Button text is too long (max ${BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN}).` };
+      }
+
+      const callbackData = String(buttonRaw.callback_data ?? buttonRaw.callbackData ?? '').trim();
+      const url = String(buttonRaw.url ?? '').trim();
+      if (callbackData && url) {
+        return { value: null, error: 'Each button can have either callback_data or url, not both.' };
+      }
+      if (!callbackData && !url) {
+        return { value: null, error: 'Each button must include callback_data or url.' };
+      }
+      if (callbackData && callbackData.length > BROADCAST_INLINE_KEYBOARD_MAX_CALLBACK_DATA_LEN) {
+        return { value: null, error: `callback_data is too long (max ${BROADCAST_INLINE_KEYBOARD_MAX_CALLBACK_DATA_LEN}).` };
+      }
+      if (url) {
+        if (url.length > BROADCAST_INLINE_KEYBOARD_MAX_URL_LEN) {
+          return { value: null, error: `Button URL is too long (max ${BROADCAST_INLINE_KEYBOARD_MAX_URL_LEN}).` };
+        }
+        let parsedUrl = null;
+        try {
+          parsedUrl = new URL(url);
+        } catch {
+          return { value: null, error: 'Button URL must be a valid absolute URL.' };
+        }
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+          return { value: null, error: 'Button URL must use http:// or https://.' };
+        }
+      }
+
+      const button = { text };
+      if (callbackData) button.callback_data = callbackData;
+      if (url) button.url = url;
+      row.push(button);
+    }
+
+    if (row.length > 0) normalizedRows.push(row);
+  }
+
+  return {
+    value: normalizedRows.length > 0 ? normalizedRows : null,
+    error: ''
+  };
+}
+
+const broadcastInlineKeyboardState = computed(() => normalizeInlineKeyboardDraft(broadcast.inlineKeyboardJson));
+const broadcastInlineKeyboardError = computed(() => broadcastInlineKeyboardState.value.error || '');
+
+function applyBroadcastTopicsButtonPreset() {
+  broadcast.inlineKeyboardJson = BROADCAST_TOPICS_BUTTON_PRESET;
+}
+
+function clearBroadcastButtons() {
+  broadcast.inlineKeyboardJson = '';
+}
 
 const canUploadBroadcastMedia = computed(() => {
   if (!password.value) return false;
@@ -2514,6 +2708,7 @@ const canSendBroadcast = computed(() => {
   if (!password.value) return false;
   if (!hasAnySelectedPlan.value) return false;
   if (!hasSelectedBots.value) return false;
+  if (broadcastInlineKeyboardError.value) return false;
   if (broadcast.messageKind === 'text') {
     if (!message) return false;
     if (message.length > 4096) return false;
@@ -2615,12 +2810,14 @@ async function sendBroadcast() {
     const mediaFileIds =
       broadcast.messageKind === 'text' ? null : (broadcast.mediaFileIds && typeof broadcast.mediaFileIds === 'object' ? broadcast.mediaFileIds : null);
     const hasMediaFileIds = Boolean(mediaFileIds && Object.keys(mediaFileIds).length > 0);
+    const inlineKeyboard = broadcastInlineKeyboardState.value.value;
     const payloadBody = {
       filters: broadcastFiltersPayload(),
       messageKind: broadcast.messageKind,
       mediaUrl: broadcast.messageKind === 'text' || hasMediaFileIds ? '' : broadcast.mediaUrl.trim(),
       mediaFileIds,
-      messageText: broadcast.messageText.trim()
+      messageText: broadcast.messageText.trim(),
+      inlineKeyboard
     };
     const data = await apiJson(props.apiBase, '/admin/broadcasts/send', {
       method: 'POST',

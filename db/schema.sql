@@ -571,6 +571,7 @@ CREATE TABLE public.broadcast_campaigns (
     media_url text,
     media_file_id text,
     media_file_ids jsonb,
+    reply_markup jsonb,
     CONSTRAINT broadcast_campaigns_media_presence_check CHECK ((((message_kind = 'text'::text) AND (media_url IS NULL) AND (media_file_id IS NULL) AND ((media_file_ids IS NULL) OR (media_file_ids = '{}'::jsonb))) OR ((message_kind = ANY (ARRAY['photo'::text, 'video'::text])) AND ((media_url IS NOT NULL) OR (media_file_id IS NOT NULL) OR ((media_file_ids IS NOT NULL) AND (jsonb_typeof(media_file_ids) = 'object'::text) AND (media_file_ids <> '{}'::jsonb)))))),
     CONSTRAINT broadcast_campaigns_message_kind_check CHECK ((message_kind = ANY (ARRAY['text'::text, 'photo'::text, 'video'::text]))),
     CONSTRAINT broadcast_campaigns_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'sending'::text, 'completed'::text, 'failed'::text])))
@@ -1630,4 +1631,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260304100000'),
     ('20260304130000'),
     ('20260304143000'),
-    ('20260304150000');
+    ('20260304150000'),
+    ('20260304170000');
