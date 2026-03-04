@@ -383,7 +383,7 @@ def compose_locale_with_generated_prompts(
             "topic_avoid_prefix": "Vermeiden: ",
             "topic_card_rules_line": "Ich bleibe bei diesem Thema. Zum Wechseln nutze /topic.",
             "topic_clear_done": "Thema entfernt. Mit /topic kannst du ein neues waehlen.",
-            "topic_auto_cleared_unpinned": "Thema deaktiviert, weil die Anheftung entfernt wurde. Mit /topic kannst du ein neues waehlen.",
+            "topic_auto_cleared_unpinned": "Thema beendet. Mit /topic kannst du ein neues waehlen.",
         }
     elif base_language_code == "it":
         topic_defaults = {
@@ -400,7 +400,7 @@ def compose_locale_with_generated_prompts(
             "topic_avoid_prefix": "Evita: ",
             "topic_card_rules_line": "Resto su questo argomento. Per cambiarlo usa /topic.",
             "topic_clear_done": "Argomento rimosso. Usa /topic per sceglierne un altro.",
-            "topic_auto_cleared_unpinned": "Argomento disattivato perche il messaggio fissato e stato rimosso. Usa /topic per sceglierne un altro.",
+            "topic_auto_cleared_unpinned": "Argomento concluso. Usa /topic per sceglierne un altro.",
         }
     elif base_language_code == "uk":
         topic_defaults = {
@@ -417,7 +417,7 @@ def compose_locale_with_generated_prompts(
             "topic_avoid_prefix": "Уникати: ",
             "topic_card_rules_line": "Я триматимуся цієї теми. Щоб змінити її, використай /topic.",
             "topic_clear_done": "Тему прибрано. Командою /topic можна обрати нову.",
-            "topic_auto_cleared_unpinned": "Тему вимкнено, бо закріплене повідомлення прибрали. Командою /topic можна обрати нову.",
+            "topic_auto_cleared_unpinned": "Тему завершено. Командою /topic можна обрати нову.",
         }
     else:
         topic_defaults = {
@@ -434,7 +434,7 @@ def compose_locale_with_generated_prompts(
             "topic_avoid_prefix": "Avoid: ",
             "topic_card_rules_line": "I'll stay on this topic. To switch, use /topic.",
             "topic_clear_done": "Topic cleared. Use /topic to choose a new one.",
-            "topic_auto_cleared_unpinned": "Topic disabled because the pinned message was removed. Use /topic to choose a new one.",
+            "topic_auto_cleared_unpinned": "Topic finished. Use /topic to choose a new one.",
         }
 
     for key, default_value in topic_defaults.items():
