@@ -113,7 +113,9 @@
     "xp_total_label": "XP",
     "xp_next_label": "До наступного рівня",
     "xp_coming_soon": "XP скоро зʼявиться.",
-    "xp_digest_prefix": "Твій прогрес:"
+    "xp_digest_prefix": "Твій прогрес:",
+    "topic_btn_set_inline": "🧭 Обрати тему",
+    "topic_btn_manage_inline": "🎯 Змінити/прибрати тему"
   },
   "telegram_presentation": {
     "name": "Ярина 🇺🇦→🇵🇱 репетитор польської",

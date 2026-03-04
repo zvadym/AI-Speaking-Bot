@@ -112,7 +112,9 @@
     "xp_total_label": "XP",
     "xp_next_label": "To next level",
     "xp_coming_soon": "XP is coming soon.",
-    "xp_digest_prefix": "Your progress:"
+    "xp_digest_prefix": "Your progress:",
+    "topic_btn_set_inline": "🧭 Set topic",
+    "topic_btn_manage_inline": "🎯 Change/cancel topic"
   },
   "telegram_presentation": {
     "name": "Mateo 🇬🇧→🇪🇸 Spanish tutor",

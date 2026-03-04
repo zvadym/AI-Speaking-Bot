@@ -112,7 +112,9 @@
     "xp_total_label": "XP",
     "xp_next_label": "Al prossimo livello",
     "xp_coming_soon": "XP in arrivo.",
-    "xp_digest_prefix": "I tuoi progressi:"
+    "xp_digest_prefix": "I tuoi progressi:",
+    "topic_btn_set_inline": "🧭 Scegli argomento",
+    "topic_btn_manage_inline": "🎯 Cambia/rimuovi argomento"
   },
   "telegram_presentation": {
     "name": "Greta 🇮🇹→🇩🇪 tutor di tedesco",
