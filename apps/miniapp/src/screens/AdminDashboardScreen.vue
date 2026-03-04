@@ -921,7 +921,7 @@
                   : 'Optional caption for the media message…'"
               />
               <small class="hint">
-                Plain text only (Telegram HTML/Markdown is not enabled here).
+                Telegram HTML is supported. Allowed tags: <code>&lt;b&gt;</code>, <code>&lt;i&gt;</code>, <code>&lt;u&gt;</code>, <code>&lt;code&gt;</code>, <code>&lt;pre&gt;</code>, <code>&lt;blockquote&gt;</code>.
               </small>
             </label>
           </div>

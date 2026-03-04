@@ -1380,12 +1380,79 @@ function sanitizeErrorText(value) {
   return raw.slice(0, 500);
 }
 
-function escapeTelegramHtml(value) {
-  return (value ?? '')
-    .toString()
-    .replaceAll('&', '&amp;')
+const TELEGRAM_HTML_ALLOWED_TAGS = new Set(['b', 'i', 'u', 'code', 'pre', 'blockquote', 'strong', 'em']);
+const TELEGRAM_HTML_ALIAS_TAGS = { strong: 'b', em: 'i' };
+
+function escapeTelegramHtmlText(value) {
+  return String(value ?? '')
+    .replace(/&(?!(?:[a-zA-Z]+|#\d+|#x[a-fA-F0-9]+);)/g, '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
+}
+
+function normalizeBrokenTelegramTags(input) {
+  return String(input ?? '')
+    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+    .replace(/<\s*(\/?)\s*([a-zA-Z][a-zA-Z0-9]*)\s*[»›]/g, '<$1$2>')
+    .replace(/<\s*(\/?)\s*([a-zA-Z][a-zA-Z0-9]*)\s*[”"']\s*>/g, '<$1$2>')
+    .replace(/<\s*(\/?)\s*([a-zA-Z][a-zA-Z0-9]*)\s*>/g, '<$1$2>');
+}
+
+function sanitizeTelegramHtml(value) {
+  const normalized = normalizeBrokenTelegramTags(value).replace(/\r\n/g, '\n');
+  const parts = normalized.split(/(<[^>]+>)/g);
+  const stack = [];
+  const out = [];
+
+  for (const part of parts) {
+    if (!part) continue;
+
+    if (part.startsWith('<') && part.endsWith('>')) {
+      const match = part.match(/^<\s*(\/?)\s*([a-zA-Z][a-zA-Z0-9]*)(?:\s+[^>]*)?>$/);
+      if (!match) {
+        out.push(escapeTelegramHtmlText(part));
+        continue;
+      }
+
+      const isClose = match[1] === '/';
+      const rawTag = match[2].toLowerCase();
+      const tag = TELEGRAM_HTML_ALIAS_TAGS[rawTag] || rawTag;
+
+      if (!TELEGRAM_HTML_ALLOWED_TAGS.has(rawTag) && !TELEGRAM_HTML_ALLOWED_TAGS.has(tag)) {
+        out.push(escapeTelegramHtmlText(part));
+        continue;
+      }
+
+      if (isClose) {
+        const idx = stack.lastIndexOf(tag);
+        if (idx === -1) continue;
+
+        while (stack.length > idx) {
+          out.push(`</${stack.pop()}>`);
+        }
+        continue;
+      }
+
+      out.push(`<${tag}>`);
+      stack.push(tag);
+      continue;
+    }
+
+    out.push(escapeTelegramHtmlText(part));
+  }
+
+  while (stack.length) {
+    out.push(`</${stack.pop()}>`);
+  }
+
+  return out.join('').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function normalizeTelegramParseMode(value) {
+  const mode = String(value ?? '').trim().toUpperCase();
+  if (mode === 'HTML') return 'HTML';
+  if (mode === 'MARKDOWNV2' || mode === 'MARKDOWN_V2') return 'MarkdownV2';
+  return null;
 }
 
 function classifyPermanentTelegramFailure(err) {
@@ -1481,7 +1548,7 @@ async function updateUserDeliveryState(chatId, { status, lastError, inactiveReas
   }
 }
 
-async function sendTelegramTextMessage(chatId, text, { botKey = null, replyToMessageId = null } = {}) {
+async function sendTelegramTextMessage(chatId, text, { botKey = null, replyToMessageId = null, parseMode = null } = {}) {
   const token = resolveTelegramBotToken(botKey);
   if (!token) {
     const err = new Error('missing_telegram_bot_token');
@@ -1494,6 +1561,8 @@ async function sendTelegramTextMessage(chatId, text, { botKey = null, replyToMes
     text,
     disable_web_page_preview: true
   };
+  const normalizedParseMode = normalizeTelegramParseMode(parseMode);
+  if (normalizedParseMode) body.parse_mode = normalizedParseMode;
   const replyMessageId = Number(replyToMessageId);
   if (Number.isFinite(replyMessageId) && replyMessageId > 0) {
     body.reply_to_message_id = replyMessageId;
@@ -1524,7 +1593,7 @@ async function sendTelegramTextMessage(chatId, text, { botKey = null, replyToMes
   return payload.result || null;
 }
 
-async function sendTelegramPhotoMessage(chatId, photo, caption, { botKey = null } = {}) {
+async function sendTelegramPhotoMessage(chatId, photo, caption, { botKey = null, parseMode = null } = {}) {
   const token = resolveTelegramBotToken(botKey);
   if (!token) {
     const err = new Error('missing_telegram_bot_token');
@@ -1538,6 +1607,8 @@ async function sendTelegramPhotoMessage(chatId, photo, caption, { botKey = null 
   };
   const safeCaption = (caption ?? '').toString().trim();
   if (safeCaption) body.caption = safeCaption;
+  const normalizedParseMode = normalizeTelegramParseMode(parseMode);
+  if (safeCaption && normalizedParseMode) body.parse_mode = normalizedParseMode;
 
   const response = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
     method: 'POST',
@@ -1563,7 +1634,7 @@ async function sendTelegramPhotoMessage(chatId, photo, caption, { botKey = null 
   return payload.result || null;
 }
 
-async function sendTelegramVideoMessage(chatId, video, caption, { botKey = null } = {}) {
+async function sendTelegramVideoMessage(chatId, video, caption, { botKey = null, parseMode = null } = {}) {
   const token = resolveTelegramBotToken(botKey);
   if (!token) {
     const err = new Error('missing_telegram_bot_token');
@@ -1578,6 +1649,8 @@ async function sendTelegramVideoMessage(chatId, video, caption, { botKey = null 
   };
   const safeCaption = (caption ?? '').toString().trim();
   if (safeCaption) body.caption = safeCaption;
+  const normalizedParseMode = normalizeTelegramParseMode(parseMode);
+  if (safeCaption && normalizedParseMode) body.parse_mode = normalizedParseMode;
 
   const response = await fetch(`https://api.telegram.org/bot${token}/sendVideo`, {
     method: 'POST',
@@ -1745,7 +1818,7 @@ async function processBroadcastCampaign(campaignId) {
   const mediaUrl = lockRows[0].media_url ? lockRows[0].media_url.toString() : null;
   const mediaFileId = lockRows[0].media_file_id ? lockRows[0].media_file_id.toString() : null;
   const mediaFileIdsByBot = normalizeBroadcastMediaFileIds(lockRows[0].media_file_ids);
-  const telegramSafeText = escapeTelegramHtml(messageText);
+  const telegramSafeText = sanitizeTelegramHtml(messageText);
   if (!BROADCAST_MESSAGE_KINDS.has(messageKind)) {
     throw new Error('bad_message_kind');
   }
@@ -1780,11 +1853,11 @@ async function processBroadcastCampaign(campaignId) {
         try {
           let telegramResult = null;
           if (messageKind === 'text') {
-            telegramResult = await sendTelegramTextMessage(row.chat_id, telegramSafeText, { botKey });
+            telegramResult = await sendTelegramTextMessage(row.chat_id, telegramSafeText, { botKey, parseMode: 'HTML' });
           } else if (messageKind === 'photo') {
-            telegramResult = await sendTelegramPhotoMessage(row.chat_id, mediaInput, telegramSafeText, { botKey });
+            telegramResult = await sendTelegramPhotoMessage(row.chat_id, mediaInput, telegramSafeText, { botKey, parseMode: 'HTML' });
           } else if (messageKind === 'video') {
-            telegramResult = await sendTelegramVideoMessage(row.chat_id, mediaInput, telegramSafeText, { botKey });
+            telegramResult = await sendTelegramVideoMessage(row.chat_id, mediaInput, telegramSafeText, { botKey, parseMode: 'HTML' });
           } else {
             const err = new Error('bad_message_kind');
             err.code = 'bad_message_kind';
