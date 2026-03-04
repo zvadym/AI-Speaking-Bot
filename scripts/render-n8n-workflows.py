@@ -239,6 +239,22 @@ def build_prompt_context(
         if target_language_code == "en"
         else ""
     )
+
+    hint_title = "Hint"
+    hint_lead_in = "You can say it like this:"
+    if base_language_code == "de":
+        hint_title = "Tipp"
+        hint_lead_in = "Du kannst das so sagen:"
+    elif base_language_code == "it":
+        hint_title = "Suggerimento"
+        hint_lead_in = "Puoi dirlo così:"
+    elif base_language_code == "uk":
+        hint_title = "Підказка"
+        hint_lead_in = "Ти можеш сказати це наступним чином:"
+    elif base_language_code == "ru":
+        hint_title = "Подсказка"
+        hint_lead_in = "Ты можешь сказать это так:"
+
     return {
         "bot_name": bot_name,
         "bot_key": bot_key,
@@ -248,6 +264,8 @@ def build_prompt_context(
         "target_language_label": get_language_label(target_language_code),
         # Instruction fields - AI understands English, will respond in base_language
         "explanation_title": EXPLANATION_TITLES.get(base_language_code, "Explanation"),
+        "hint_title": hint_title,
+        "hint_lead_in": hint_lead_in,
         "article_gender_example": (
             "we need the article ... and we use ..., because the noun has ... gender"
         ),
