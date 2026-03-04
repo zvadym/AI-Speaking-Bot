@@ -2931,6 +2931,156 @@ app.get('/admin/metrics/action-totals', requireAdmin, async (req, res) => {
   });
 });
 
+app.get('/admin/metrics/action-funnel', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+  const funnelActionTypes = [
+    'profile_set_level',
+    'first_voice_sent',
+    'first_answer_delivered',
+    'day1_return',
+    'paywall_shown',
+    'purchase_success'
+  ];
+
+  const { rows } = await pool.query(
+    `WITH cohort AS (
+       SELECT
+         u.chat_id,
+         u.created_at AS start_at
+       FROM users u
+       WHERE u.created_at >= $1::timestamptz
+         AND u.created_at < $2::timestamptz
+         AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
+     ),
+     per_user AS (
+       SELECT
+         c.chat_id,
+         c.start_at,
+         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'profile_set_level') AS profile_set_level_at,
+         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'first_voice_sent') AS first_voice_sent_at,
+         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'first_answer_delivered') AS first_answer_delivered_at,
+         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'day1_return') AS day1_return_at,
+         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'paywall_shown') AS paywall_shown_at,
+         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'purchase_success') AS purchase_success_at
+       FROM cohort c
+       LEFT JOIN action_events e
+         ON e.chat_id = c.chat_id
+        AND e.action_type = ANY($5::text[])
+        AND e.occurred_at >= c.start_at
+       GROUP BY c.chat_id, c.start_at
+     ),
+     counts AS (
+       SELECT
+         COUNT(*)::int AS start_count,
+         SUM(CASE WHEN profile_set_level_at IS NOT NULL THEN 1 ELSE 0 END)::int AS profile_set_level_count,
+         SUM(
+           CASE
+             WHEN profile_set_level_at IS NOT NULL
+              AND first_voice_sent_at IS NOT NULL
+              AND first_voice_sent_at >= profile_set_level_at
+               THEN 1
+             ELSE 0
+           END
+         )::int AS first_voice_sent_count,
+         SUM(
+           CASE
+             WHEN profile_set_level_at IS NOT NULL
+              AND first_voice_sent_at IS NOT NULL
+              AND first_voice_sent_at >= profile_set_level_at
+              AND first_answer_delivered_at IS NOT NULL
+              AND first_answer_delivered_at >= first_voice_sent_at
+               THEN 1
+             ELSE 0
+           END
+         )::int AS first_answer_delivered_count,
+         SUM(
+           CASE
+             WHEN profile_set_level_at IS NOT NULL
+              AND first_voice_sent_at IS NOT NULL
+              AND first_voice_sent_at >= profile_set_level_at
+              AND first_answer_delivered_at IS NOT NULL
+              AND first_answer_delivered_at >= first_voice_sent_at
+              AND day1_return_at IS NOT NULL
+              AND day1_return_at >= first_answer_delivered_at
+               THEN 1
+             ELSE 0
+           END
+         )::int AS day1_return_count,
+         SUM(
+           CASE
+             WHEN profile_set_level_at IS NOT NULL
+              AND first_voice_sent_at IS NOT NULL
+              AND first_voice_sent_at >= profile_set_level_at
+              AND first_answer_delivered_at IS NOT NULL
+              AND first_answer_delivered_at >= first_voice_sent_at
+              AND day1_return_at IS NOT NULL
+              AND day1_return_at >= first_answer_delivered_at
+              AND paywall_shown_at IS NOT NULL
+              AND paywall_shown_at >= day1_return_at
+               THEN 1
+             ELSE 0
+           END
+         )::int AS paywall_shown_count,
+         SUM(
+           CASE
+             WHEN profile_set_level_at IS NOT NULL
+              AND first_voice_sent_at IS NOT NULL
+              AND first_voice_sent_at >= profile_set_level_at
+              AND first_answer_delivered_at IS NOT NULL
+              AND first_answer_delivered_at >= first_voice_sent_at
+              AND day1_return_at IS NOT NULL
+              AND day1_return_at >= first_answer_delivered_at
+              AND paywall_shown_at IS NOT NULL
+              AND paywall_shown_at >= day1_return_at
+              AND purchase_success_at IS NOT NULL
+              AND purchase_success_at >= paywall_shown_at
+               THEN 1
+             ELSE 0
+           END
+         )::int AS purchase_success_count
+       FROM per_user
+     )
+     SELECT * FROM counts`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, funnelActionTypes]
+  );
+
+  const row = rows[0] || {};
+  const startCount = Number(row.start_count || 0);
+  const profileSetLevelCount = Number(row.profile_set_level_count || 0);
+  const firstVoiceSentCount = Number(row.first_voice_sent_count || 0);
+  const firstAnswerDeliveredCount = Number(row.first_answer_delivered_count || 0);
+  const day1ReturnCount = Number(row.day1_return_count || 0);
+  const paywallShownCount = Number(row.paywall_shown_count || 0);
+  const purchaseSuccessCount = Number(row.purchase_success_count || 0);
+
+  function pct(count) {
+    if (!startCount) return 0;
+    const raw = (Number(count || 0) / startCount) * 100;
+    return Math.round(raw * 100) / 100;
+  }
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: [
+      { action: 'start', count: startCount, pct: startCount ? 100 : 0 },
+      { action: 'profile_set_level', count: profileSetLevelCount, pct: pct(profileSetLevelCount) },
+      { action: 'first_voice_sent', count: firstVoiceSentCount, pct: pct(firstVoiceSentCount) },
+      { action: 'first_answer_delivered', count: firstAnswerDeliveredCount, pct: pct(firstAnswerDeliveredCount) },
+      { action: 'day1_return', count: day1ReturnCount, pct: pct(day1ReturnCount) },
+      { action: 'paywall_shown', count: paywallShownCount, pct: pct(paywallShownCount) },
+      { action: 'purchase_success', count: purchaseSuccessCount, pct: pct(purchaseSuccessCount) }
+    ]
+  });
+});
+
 app.get('/admin/feedbacks', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
@@ -4116,6 +4266,23 @@ app.get('/plans', requireAuth, async (req, res) => {
   );
 
   const usage = userRows[0] ? await getUserUsageSummary(chatId) : null;
+
+  const effectiveTier = (usage?.tier || userRows[0]?.plan_tier || 'free').toString().trim().toLowerCase();
+  if (userRows[0] && effectiveTier !== 'pro') {
+    await recordActionEventSafe({
+      chatId,
+      botKey: req.auth?.botKey || null,
+      actionType: 'paywall_shown',
+      source: 'api',
+      idempotencyKey: `paywall_shown:${chatId}`,
+      properties: {
+        tier: effectiveTier,
+        currency,
+        embedded_checkout: null,
+        screen: 'plans'
+      }
+    });
+  }
 
   return res.json({
     currency,

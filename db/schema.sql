@@ -310,6 +310,51 @@ END;
 $$;
 
 
+--
+-- Name: log_profile_set_level_from_user_bot(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.log_profile_set_level_from_user_bot() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP <> 'UPDATE' THEN
+    RETURN NEW;
+  END IF;
+
+  IF (OLD.level IS DISTINCT FROM NEW.level)
+     OR (OLD.onboarding_state = 'await_level' AND NEW.onboarding_state = 'ready') THEN
+    INSERT INTO public.action_events (
+      chat_id,
+      bot_key,
+      action_type,
+      source,
+      idempotency_key,
+      occurred_at,
+      properties
+    )
+    VALUES (
+      NEW.chat_id,
+      NEW.bot_key,
+      'profile_set_level',
+      'db_trigger_user_bots',
+      'profile_set_level:' || NEW.chat_id::text,
+      COALESCE(NEW.updated_at, NOW()),
+      jsonb_build_object(
+        'level', NEW.level,
+        'from_level', OLD.level,
+        'from_state', OLD.onboarding_state,
+        'to_state', NEW.onboarding_state
+      )
+    )
+    ON CONFLICT (idempotency_key) DO NOTHING;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -1484,6 +1529,13 @@ CREATE TRIGGER trg_action_first_voice_sent_from_message AFTER INSERT ON public.m
 
 
 --
+-- Name: user_bots trg_action_profile_set_level; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_action_profile_set_level AFTER UPDATE OF level, onboarding_state ON public.user_bots FOR EACH ROW EXECUTE FUNCTION public.log_profile_set_level_from_user_bot();
+
+
+--
 -- Name: broadcast_recipients broadcast_recipients_campaign_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1561,4 +1613,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260227154500'),
     ('20260302120000'),
     ('20260302153000'),
-    ('20260303110000');
+    ('20260303110000'),
+    ('20260304100000');

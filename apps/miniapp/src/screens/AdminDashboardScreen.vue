@@ -417,12 +417,16 @@
         />
 
         <AdminChart
-          title="Action funnel totals"
-          subtitle="Total events in selected range"
+          title="Action funnel (sequential)"
+          subtitle="Start cohort = users created in selected range; steps can happen later."
           kind="bar"
           x-labels="all"
-          :data="actionTotalsSeries"
-          :series="[{ key: 'count', label: 'Events', color: 'rgba(87, 60, 127, 0.86)' }]"
+          :stacked="false"
+          :data="actionFunnelSeries"
+          :series="[
+            { key: 'count', label: 'Users', color: 'rgba(87, 60, 127, 0.86)' },
+            { key: 'pct', label: '% of start', color: 'rgba(31, 107, 99, 0.9)', type: 'line', yAxisId: 'y1' }
+          ]"
         />
 
         <AdminChart
@@ -1370,6 +1374,7 @@ const newUsersByBotSeriesConfig = ref([]);
 const newPaidSeries = ref([]);
 const actionEventsSeries = ref([]);
 const actionTotalsSeries = ref([]);
+const actionFunnelSeries = ref([]);
 const activeUsersByBotSeries = ref([]);
 const activeUsersByBotSeriesConfig = ref([]);
 const inactiveUsersSeries = ref([]);
@@ -2579,6 +2584,7 @@ async function refreshAnalytics() {
       newPaid,
       actionEvents,
       actionTotals,
+      actionFunnel,
       activeUsersByBot,
       inactiveUsers,
       usageSeconds,
@@ -2596,6 +2602,7 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/new-paid-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/actions-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
@@ -2616,6 +2623,13 @@ async function refreshAnalytics() {
       ? actionTotals.series.map((row) => ({
           day: actionLabel(row?.action),
           count: Number(row?.count || 0)
+        }))
+      : [];
+    actionFunnelSeries.value = Array.isArray(actionFunnel?.series)
+      ? actionFunnel.series.map((row) => ({
+          day: actionLabel(row?.action),
+          count: Number(row?.count || 0),
+          pct: Number(row?.pct || 0)
         }))
       : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
