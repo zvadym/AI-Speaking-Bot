@@ -417,6 +417,15 @@
         />
 
         <AdminChart
+          title="Topic usage by day"
+          subtitle="Distinct users engaging with pinned topics, split by topic"
+          kind="bar"
+          x-labels="all"
+          :data="topicUsageSeries"
+          :series="topicUsageSeriesConfig"
+        />
+
+        <AdminChart
           title="Action funnel (sequential)"
           subtitle="Start cohort = users created in selected range; steps can happen later."
           kind="bar"
@@ -1375,6 +1384,8 @@ const newPaidSeries = ref([]);
 const actionEventsSeries = ref([]);
 const actionTotalsSeries = ref([]);
 const actionFunnelSeries = ref([]);
+const topicUsageSeries = ref([]);
+const topicUsageSeriesConfig = ref([]);
 const activeUsersByBotSeries = ref([]);
 const activeUsersByBotSeriesConfig = ref([]);
 const inactiveUsersSeries = ref([]);
@@ -1436,10 +1447,33 @@ const actionSeriesConfig = [
   { key: 'profile_set_level', label: 'profile_set_level', color: 'rgba(199, 90, 36, 0.88)' },
   { key: 'first_voice_sent', label: 'first_voice_or_text_sent', color: 'rgba(46, 88, 142, 0.88)' },
   { key: 'first_answer_delivered', label: 'first_answer_delivered', color: 'rgba(103, 78, 167, 0.88)' },
-  { key: 'day1_return', label: 'day1_return', color: 'rgba(33, 124, 146, 0.88)' },
+  { key: 'topic_set', label: 'topic_set', color: 'rgba(33, 124, 146, 0.88)' },
+  { key: 'topic_message_sent', label: 'topic_message_sent', color: 'rgba(117, 156, 56, 0.88)' },
+  { key: 'topic_clear', label: 'topic_clear', color: 'rgba(140, 87, 45, 0.88)' },
+  { key: 'day1_return', label: 'day1_return', color: 'rgba(81, 102, 120, 0.88)' },
   { key: 'paywall_shown', label: 'paywall_shown', color: 'rgba(174, 43, 40, 0.86)' },
-  { key: 'purchase_success', label: 'purchase_success', color: 'rgba(117, 156, 56, 0.88)' }
+  { key: 'purchase_success', label: 'purchase_success', color: 'rgba(187, 64, 122, 0.88)' }
 ];
+const topicSeriesPalette = [
+  'rgba(31, 107, 99, 0.88)',
+  'rgba(199, 90, 36, 0.88)',
+  'rgba(46, 88, 142, 0.88)',
+  'rgba(103, 78, 167, 0.88)',
+  'rgba(33, 124, 146, 0.88)',
+  'rgba(174, 43, 40, 0.86)',
+  'rgba(117, 156, 56, 0.88)',
+  'rgba(140, 87, 45, 0.88)'
+];
+const topicSeriesColors = {
+  routine: topicSeriesPalette[0],
+  food: topicSeriesPalette[1],
+  travel: topicSeriesPalette[2],
+  coffee: topicSeriesPalette[3],
+  apartment: topicSeriesPalette[4],
+  interview: topicSeriesPalette[5],
+  office: topicSeriesPalette[6],
+  movies: topicSeriesPalette[7]
+};
 const usersRows = ref([]);
 const usersTotal = ref(0);
 const usersOffset = ref(0);
@@ -1841,6 +1875,45 @@ function transformByBotData(rows) {
   return { chartData, seriesConfig };
 }
 
+function colorForTopicSeries(safeKey, index) {
+  return topicSeriesColors[safeKey] || topicSeriesPalette[index % topicSeriesPalette.length];
+}
+
+function transformByTopicData(rows) {
+  const byDay = {};
+  const topicsSet = new Set();
+
+  for (const row of rows) {
+    const day = String(row?.day || '').trim();
+    const topicId = String(row?.topic_id || 'unknown').trim() || 'unknown';
+    const count = Number(row?.count || 0);
+    if (!day) continue;
+
+    topicsSet.add(topicId);
+
+    if (!byDay[day]) {
+      byDay[day] = { day };
+    }
+
+    const safeKey = topicId.replace(/-/g, '_');
+    byDay[day][safeKey] = count;
+  }
+
+  const chartData = Object.values(byDay).sort((a, b) => a.day.localeCompare(b.day));
+  const seriesConfig = Array.from(topicsSet)
+    .sort()
+    .map((topicId, index) => {
+      const safeKey = topicId.replace(/-/g, '_');
+      return {
+        key: safeKey,
+        label: topicLabel(topicId),
+        color: colorForTopicSeries(safeKey, index)
+      };
+    });
+
+  return { chartData, seriesConfig };
+}
+
 function query() {
   return {
     from: effectiveFromDate.value,
@@ -2080,6 +2153,10 @@ function actionLabel(rawAction) {
   const action = (rawAction || '').toString().trim();
   if (action === 'first_voice_sent') return 'first voice or text sent';
   return action.replaceAll('_', ' ');
+}
+
+function topicLabel(rawTopicId) {
+  return (rawTopicId || '').toString().trim().replaceAll('_', ' ');
 }
 
 function feedbackThreadName(thread) {
@@ -2585,6 +2662,7 @@ async function refreshAnalytics() {
       actionEvents,
       actionTotals,
       actionFunnel,
+      topicsByDay,
       activeUsersByBot,
       inactiveUsers,
       usageSeconds,
@@ -2603,6 +2681,7 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/actions-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/topics-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
@@ -2632,6 +2711,10 @@ async function refreshAnalytics() {
           pct: Number(row?.pct || 0)
         }))
       : [];
+    const topicsByDayRawRows = Array.isArray(topicsByDay?.series) ? topicsByDay.series : [];
+    const { chartData: topicChartData, seriesConfig: topicChartConfig } = transformByTopicData(topicsByDayRawRows);
+    topicUsageSeries.value = topicChartData;
+    topicUsageSeriesConfig.value = topicChartConfig;
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
     freeUserTotals.value = freeUsersInsights?.totals || freeUserTotals.value;

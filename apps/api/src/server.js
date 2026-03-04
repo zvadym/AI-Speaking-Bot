@@ -75,10 +75,14 @@ const ACTION_EVENT_TYPES = [
   'profile_set_level',
   'first_voice_sent',
   'first_answer_delivered',
+  'topic_set',
+  'topic_message_sent',
+  'topic_clear',
   'day1_return',
   'paywall_shown',
   'purchase_success'
 ];
+const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
 
 function normalizeBillingInterval(raw, fallback = 'month') {
   const value = (raw ?? '').toString().trim().toLowerCase();
@@ -2857,6 +2861,9 @@ app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'profile_set_level'), 0)::int AS profile_set_level,
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_voice_sent'), 0)::int AS first_voice_sent,
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_answer_delivered'), 0)::int AS first_answer_delivered,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'topic_set'), 0)::int AS topic_set,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'topic_message_sent'), 0)::int AS topic_message_sent,
+       COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'topic_clear'), 0)::int AS topic_clear,
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'day1_return'), 0)::int AS day1_return,
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'paywall_shown'), 0)::int AS paywall_shown,
        COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'purchase_success'), 0)::int AS purchase_success
@@ -2865,6 +2872,73 @@ app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
      GROUP BY d.day_utc
      ORDER BY d.day_utc ASC`,
     [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, ACTION_EVENT_TYPES]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/topics-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
+     ),
+     topic_ids AS (
+       SELECT DISTINCT NULLIF(BTRIM(e.properties->>'topic_id'), '') AS topic_id
+       FROM action_events e
+       JOIN filtered_users u ON u.chat_id = e.chat_id
+       WHERE e.occurred_at >= (SELECT from_ts FROM params)
+         AND e.occurred_at < (SELECT to_ts FROM params)
+         AND e.action_type = ANY($5::text[])
+         AND NULLIF(BTRIM(e.properties->>'topic_id'), '') IS NOT NULL
+     ),
+     counts AS (
+       SELECT
+         date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+         NULLIF(BTRIM(e.properties->>'topic_id'), '') AS topic_id,
+         COUNT(DISTINCT e.chat_id)::int AS count
+       FROM action_events e
+       JOIN filtered_users u ON u.chat_id = e.chat_id
+       WHERE e.occurred_at >= (SELECT from_ts FROM params)
+         AND e.occurred_at < (SELECT to_ts FROM params)
+         AND e.action_type = ANY($5::text[])
+         AND NULLIF(BTRIM(e.properties->>'topic_id'), '') IS NOT NULL
+       GROUP BY 1, 2
+     )
+     SELECT
+       d.day_utc::text AS day,
+       t.topic_id,
+       COALESCE(c.count, 0)::int AS count
+     FROM days d
+     CROSS JOIN topic_ids t
+     LEFT JOIN counts c
+       ON c.day_utc = d.day_utc
+      AND c.topic_id = t.topic_id
+     ORDER BY d.day_utc ASC, t.topic_id ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, TOPIC_USAGE_ACTION_TYPES]
   );
 
   return res.json({

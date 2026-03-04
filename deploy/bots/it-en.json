@@ -140,6 +140,10 @@
         "description": "Controlla streak e XP"
       },
       {
+        "command": "topic",
+        "description": "Scegli un argomento"
+      },
+      {
         "command": "feedback",
         "description": "Invia feedback"
       },

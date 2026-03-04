@@ -140,6 +140,10 @@
         "description": "Переглянути серію та XP"
       },
       {
+        "command": "topic",
+        "description": "Обрати тему розмови"
+      },
+      {
         "command": "feedback",
         "description": "Надіслати фідбек"
       },

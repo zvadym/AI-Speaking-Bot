@@ -1,0 +1,60 @@
+{
+  "templates": [
+    {
+      "id": "routine",
+      "title": "Tagesablauf",
+      "goal": "Sprich ueber deinen typischen Tag mit einfachen, praktischen Details.",
+      "allowed": ["Morgenroutine", "Arbeit oder Studium", "Abendplaene", "kleine Gewohnheiten"],
+      "avoid": ["Politik", "Geldprobleme", "medizinische Ratschlaege", "abstrakte Philosophie"]
+    },
+    {
+      "id": "food",
+      "title": "Essen und Kochen",
+      "goal": "Beschreibe Mahlzeiten, Geschmack, Kochgewohnheiten und Vorlieben.",
+      "allowed": ["Lieblingsgerichte", "zu Hause kochen", "Restaurants", "Einkaufen fuer Essen"],
+      "avoid": ["strenge Ernaehrungsberatung", "Essstoerungen", "religioese Debatten", "grafische Themen"]
+    },
+    {
+      "id": "travel",
+      "title": "Reiseplanung",
+      "goal": "Sprich ueber Reisen, Verkehrsmittel, Orte und praktische Entscheidungen.",
+      "allowed": ["Reiseziele", "Transport", "Hotel oder Wohnung", "Reiseplaene"],
+      "avoid": ["Visa- oder Rechtsberatung", "gefährliche Situationen", "Kriegsgebiete", "Politik"]
+    },
+    {
+      "id": "coffee",
+      "title": "Im Cafe bestellen",
+      "goal": "Uebe eine kurze Cafe-Szene mit klaren Wuenschen und Rueckfragen.",
+      "allowed": ["Getraenke", "Groessen", "Preise", "was du bestellen moechtest"],
+      "avoid": ["Alkohol", "medizinische Ratschlaege", "Konflikte", "off-topic Nachrichten"]
+    },
+    {
+      "id": "apartment",
+      "title": "Wohnung mieten",
+      "goal": "Sprich ueber Wohnwuensche, Wohnungsdetails und Fragen bei einer Besichtigung.",
+      "allowed": ["Lage", "Miete", "Zimmer", "Moebel und Nebenkosten"],
+      "avoid": ["Rechtsstreit", "Vertragsberatung", "Politik", "Bankthemen"]
+    },
+    {
+      "id": "interview",
+      "title": "Bewerbungsgespraech",
+      "goal": "Uebe typische Interviewfragen klar und selbstbewusst zu beantworten.",
+      "allowed": ["Erfahrung", "Faehigkeiten", "Staerken", "warum diese Stelle"],
+      "avoid": ["Gehaltsverhandlung im Detail", "Einwanderungsberatung", "politische Themen", "vertrauliche Daten"]
+    },
+    {
+      "id": "office",
+      "title": "Buero und Meetings",
+      "goal": "Sprich ueber Aufgaben, Meetings, Deadlines und Arbeit im Alltag.",
+      "allowed": ["Team-Updates", "Deadlines", "Prioritaeten", "Meetingplaene"],
+      "avoid": ["Firmengeheimnisse", "Klatsch", "Politik", "Rechtsstreit"]
+    },
+    {
+      "id": "movies",
+      "title": "Filme und Serien",
+      "goal": "Teile deine Meinung zu Filmen und Serien mit konkreten Beispielen.",
+      "allowed": ["Genres", "Lieblingsszenen", "Figuren", "Empfehlungen"],
+      "avoid": ["grafische Gewalt", "Promi-Skandale", "Politik", "Spoiler ohne Warnung"]
+    }
+  ]
+}

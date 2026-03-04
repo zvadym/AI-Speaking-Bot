@@ -1,0 +1,60 @@
+{
+  "templates": [
+    {
+      "id": "routine",
+      "title": "Routine quotidiana",
+      "goal": "Parla della tua giornata tipica con dettagli semplici e pratici.",
+      "allowed": ["abitudini del mattino", "lavoro o studio", "piani per la sera", "piccole routine"],
+      "avoid": ["politica", "problemi di denaro", "consigli medici", "filosofia astratta"]
+    },
+    {
+      "id": "food",
+      "title": "Cibo e cucina",
+      "goal": "Descrivi pasti, gusti, abitudini in cucina e preferenze alimentari.",
+      "allowed": ["piatti preferiti", "cucinare a casa", "ristoranti", "spesa"],
+      "avoid": ["consigli nutrizionali rigidi", "disturbi alimentari", "dibattiti religiosi", "temi grafici"]
+    },
+    {
+      "id": "travel",
+      "title": "Organizzare un viaggio",
+      "goal": "Parla di viaggi, trasporti, luoghi da visitare e scelte pratiche.",
+      "allowed": ["destinazioni", "trasporti", "hotel o appartamenti", "piani di viaggio"],
+      "avoid": ["consigli legali o visti", "situazioni pericolose", "zone di guerra", "politica"]
+    },
+    {
+      "id": "coffee",
+      "title": "Ordinare un caffe",
+      "goal": "Esercita una breve scena al bar con richieste chiare e domande utili.",
+      "allowed": ["bevande", "dimensioni", "prezzi", "cosa ordinare"],
+      "avoid": ["alcol", "consigli medici", "conflitti", "notizie fuori tema"]
+    },
+    {
+      "id": "apartment",
+      "title": "Affittare un appartamento",
+      "goal": "Parla di esigenze abitative, caratteristiche della casa e domande per una visita.",
+      "allowed": ["zona", "affitto", "stanze", "mobili e utenze"],
+      "avoid": ["cause legali", "consigli sui contratti", "politica", "banche"]
+    },
+    {
+      "id": "interview",
+      "title": "Colloquio di lavoro",
+      "goal": "Esercita risposte chiare e sicure alle domande piu comuni del colloquio.",
+      "allowed": ["esperienza", "competenze", "punti di forza", "perche questo ruolo"],
+      "avoid": ["negoziazione dettagliata dello stipendio", "consigli su immigrazione", "politica", "dati riservati"]
+    },
+    {
+      "id": "office",
+      "title": "Ufficio e riunioni",
+      "goal": "Parla di compiti, riunioni, scadenze e comunicazione al lavoro.",
+      "allowed": ["aggiornamenti del team", "scadenze", "priorita", "piani per la riunione"],
+      "avoid": ["segreti aziendali", "pettegolezzi", "politica", "cause legali"]
+    },
+    {
+      "id": "movies",
+      "title": "Film e serie",
+      "goal": "Condividi opinioni su film e serie con esempi concreti.",
+      "allowed": ["generi", "scene preferite", "personaggi", "consigli"],
+      "avoid": ["violenza grafica", "scandali di celebrita", "politica", "spoiler senza avviso"]
+    }
+  ]
+}

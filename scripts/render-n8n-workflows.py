@@ -41,6 +41,8 @@ PROMPT_TEMPLATE_FILES = {
     "model_vocab_prompt": "model_vocab_prompt.md",
 }
 
+TOPIC_LIBRARY_FALLBACK = "en"
+
 COMMON_DETECTED_LANGUAGE_CODES = ("en", "de", "it", "uk", "ru")
 
 PLACEHOLDER_RE = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
@@ -145,6 +147,63 @@ def load_prompt_templates(prompts_dir: Path) -> Dict[str, str]:
     return templates
 
 
+def load_topic_templates(topics_dir: Path, base_language_code: str) -> List[Dict[str, Any]]:
+    code = normalize_language_code(base_language_code) or TOPIC_LIBRARY_FALLBACK
+    candidates = [topics_dir / f"{code}.json"]
+    if code != TOPIC_LIBRARY_FALLBACK:
+        candidates.append(topics_dir / f"{TOPIC_LIBRARY_FALLBACK}.json")
+
+    source_path: Optional[Path] = None
+    for path in candidates:
+        if path.exists():
+            source_path = path
+            break
+
+    if source_path is None:
+        raise ValueError(
+            f"Missing topic template file for base language {code!r} in {topics_dir}"
+        )
+
+    try:
+        data = json.loads(source_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid topic template JSON in {source_path}: {e}") from e
+
+    templates = data.get("templates")
+    if not isinstance(templates, list) or not templates:
+        raise ValueError(f"Topic template file has no templates: {source_path}")
+
+    out: List[Dict[str, Any]] = []
+    seen_ids: Set[str] = set()
+    for entry in templates:
+        if not isinstance(entry, dict):
+            raise ValueError(f"Topic template entries must be objects in {source_path}")
+        topic_id = str(entry.get("id") or "").strip().lower()
+        title = str(entry.get("title") or "").strip()
+        goal = str(entry.get("goal") or "").strip()
+        allowed = entry.get("allowed")
+        avoid = entry.get("avoid")
+        if not topic_id or not title or not goal:
+            raise ValueError(f"Topic template is missing id/title/goal in {source_path}")
+        if topic_id in seen_ids:
+            raise ValueError(f"Duplicate topic template id {topic_id!r} in {source_path}")
+        if not isinstance(allowed, list) or not all(isinstance(x, str) and x.strip() for x in allowed):
+            raise ValueError(f"Topic template {topic_id!r} has invalid allowed list in {source_path}")
+        if not isinstance(avoid, list) or not all(isinstance(x, str) and x.strip() for x in avoid):
+            raise ValueError(f"Topic template {topic_id!r} has invalid avoid list in {source_path}")
+        seen_ids.add(topic_id)
+        out.append(
+            {
+                "id": topic_id,
+                "title": title,
+                "goal": goal,
+                "allowed": [str(x).strip() for x in allowed],
+                "avoid": [str(x).strip() for x in avoid],
+            }
+        )
+    return out
+
+
 def render_template_strict(template: str, context: Dict[str, str], *, template_name: str) -> str:
     def repl(match: re.Match[str]) -> str:
         key = match.group(1)
@@ -201,6 +260,7 @@ def compose_locale_with_generated_prompts(
     locale: Dict[str, Any],
     prompt_templates: Dict[str, str],
     prompt_context: Dict[str, str],
+    topic_templates: List[Dict[str, Any]],
     *,
     bot_key: str,
 ) -> Dict[str, Any]:
@@ -289,6 +349,80 @@ def compose_locale_with_generated_prompts(
         current = merged.get(key)
         if not isinstance(current, str) or not current.strip():
             merged[key] = default_value
+
+    if base_language_code == "de":
+        topic_defaults = {
+            "msg_private_only": "Dieser Bot funktioniert nur im privaten Chat.",
+            "topic_menu_title": "Waehle ein Gesprächsthema 👇",
+            "topic_menu_current_none": "Aktuelles Thema: keines aktiv.",
+            "topic_menu_current_prefix": "Aktuelles Thema: ",
+            "topic_private_only": "Themen funktionieren nur im privaten Chat mit dem Bot.",
+            "topic_btn_change": "Aendern",
+            "topic_btn_clear": "Thema loeschen",
+            "topic_card_title_prefix": "📌 Thema: ",
+            "topic_card_goal_prefix": "Ziel: ",
+            "topic_allowed_prefix": "Erlaubt: ",
+            "topic_avoid_prefix": "Vermeiden: ",
+            "topic_card_rules_line": "Ich bleibe bei diesem Thema. Zum Wechseln nutze /topic.",
+            "topic_clear_done": "Thema entfernt. Mit /topic kannst du ein neues waehlen.",
+        }
+    elif base_language_code == "it":
+        topic_defaults = {
+            "msg_private_only": "Questo bot funziona solo nella chat privata.",
+            "topic_menu_title": "Scegli un argomento 👇",
+            "topic_menu_current_none": "Argomento attuale: nessuno attivo.",
+            "topic_menu_current_prefix": "Argomento attuale: ",
+            "topic_private_only": "Gli argomenti funzionano solo nella chat privata con il bot.",
+            "topic_btn_change": "Cambia",
+            "topic_btn_clear": "Rimuovi argomento",
+            "topic_card_title_prefix": "📌 Argomento: ",
+            "topic_card_goal_prefix": "Obiettivo: ",
+            "topic_allowed_prefix": "Consentito: ",
+            "topic_avoid_prefix": "Evita: ",
+            "topic_card_rules_line": "Resto su questo argomento. Per cambiarlo usa /topic.",
+            "topic_clear_done": "Argomento rimosso. Usa /topic per sceglierne un altro.",
+        }
+    elif base_language_code == "uk":
+        topic_defaults = {
+            "msg_private_only": "Цей бот працює лише в приватному чаті.",
+            "topic_menu_title": "Обери тему розмови 👇",
+            "topic_menu_current_none": "Поточна тема: зараз не активна.",
+            "topic_menu_current_prefix": "Поточна тема: ",
+            "topic_private_only": "Теми працюють лише в приватному чаті з ботом.",
+            "topic_btn_change": "Змінити",
+            "topic_btn_clear": "Прибрати тему",
+            "topic_card_title_prefix": "📌 Тема: ",
+            "topic_card_goal_prefix": "Мета: ",
+            "topic_allowed_prefix": "Можна: ",
+            "topic_avoid_prefix": "Уникати: ",
+            "topic_card_rules_line": "Я триматимуся цієї теми. Щоб змінити її, використай /topic.",
+            "topic_clear_done": "Тему прибрано. Командою /topic можна обрати нову.",
+        }
+    else:
+        topic_defaults = {
+            "msg_private_only": "This bot works only in a private chat.",
+            "topic_menu_title": "Choose a conversation topic 👇",
+            "topic_menu_current_none": "Current topic: none active.",
+            "topic_menu_current_prefix": "Current topic: ",
+            "topic_private_only": "Topics work only in a private chat with the bot.",
+            "topic_btn_change": "Change",
+            "topic_btn_clear": "Clear topic",
+            "topic_card_title_prefix": "📌 Topic: ",
+            "topic_card_goal_prefix": "Goal: ",
+            "topic_allowed_prefix": "Allowed: ",
+            "topic_avoid_prefix": "Avoid: ",
+            "topic_card_rules_line": "I'll stay on this topic. To switch, use /topic.",
+            "topic_clear_done": "Topic cleared. Use /topic to choose a new one.",
+        }
+
+    for key, default_value in topic_defaults.items():
+        current = merged.get(key)
+        if not isinstance(current, str) or not current.strip():
+            merged[key] = default_value
+
+    merged["topic_templates_json"] = json.dumps(
+        {"templates": topic_templates}, ensure_ascii=False
+    )
 
     deprecated_present = [k for k in PROMPT_KEYS if k in merged]
     if deprecated_present:
@@ -626,12 +760,14 @@ def main() -> int:
     parser.add_argument("--output", default="deploy/workflows/.rendered", help="Directory to write rendered workflows")
     parser.add_argument("--bots", default="deploy/bots", help="Directory with per-bot JSON configs (enables multi-bot mode if present)")
     parser.add_argument("--prompts", default="deploy/prompts", help="Directory with prompt template files")
+    parser.add_argument("--topics", default="deploy/topics", help="Directory with shared topic template files")
     args = parser.parse_args()
 
     input_dir = resolve_path(args.input)
     output_dir = resolve_path(args.output)
     bots_dir = resolve_path(args.bots)
     prompts_dir = resolve_path(args.prompts)
+    topics_dir = resolve_path(args.topics)
 
     if not input_dir.exists():
         print(f"Input directory not found: {input_dir}", file=sys.stderr)
@@ -703,10 +839,16 @@ def main() -> int:
             base_language_code=base,
             target_language_code=learn,
         )
+        try:
+            topic_templates = load_topic_templates(topics_dir, base)
+        except ValueError as e:
+            print(str(e), file=sys.stderr)
+            return 1
         full_locale = compose_locale_with_generated_prompts(
             locale=locale,
             prompt_templates=prompt_templates,
             prompt_context=prompt_context,
+            topic_templates=topic_templates,
             bot_key=bot_key,
         )
 

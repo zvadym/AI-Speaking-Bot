@@ -373,7 +373,7 @@ CREATE TABLE public.action_events (
     properties jsonb DEFAULT '{}'::jsonb NOT NULL,
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT action_events_action_type_check CHECK ((action_type = ANY (ARRAY['start'::text, 'profile_set_level'::text, 'first_voice_sent'::text, 'first_answer_delivered'::text, 'paywall_shown'::text, 'purchase_success'::text, 'day1_return'::text])))
+    CONSTRAINT action_events_action_type_check CHECK ((action_type = ANY (ARRAY['start'::text, 'profile_set_level'::text, 'first_voice_sent'::text, 'first_answer_delivered'::text, 'paywall_shown'::text, 'purchase_success'::text, 'day1_return'::text, 'topic_set'::text, 'topic_message_sent'::text, 'topic_clear'::text])))
 );
 
 
@@ -408,6 +408,11 @@ CREATE TABLE public.user_bots (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     text_voice_nudge_sent boolean DEFAULT false NOT NULL,
+    topic_enabled boolean DEFAULT false NOT NULL,
+    topic_template_id text,
+    topic_pinned_message_id bigint,
+    topic_pack_json jsonb,
+    topic_updated_at timestamp with time zone,
     CONSTRAINT user_bots_level_check CHECK ((level = ANY (ARRAY['a1'::text, 'a2'::text, 'b1'::text, 'b2'::text, 'c1'::text]))),
     CONSTRAINT user_bots_reply_mode_check CHECK ((reply_mode = ANY (ARRAY['text'::text, 'voice'::text])))
 );
@@ -1614,4 +1619,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260302120000'),
     ('20260302153000'),
     ('20260303110000'),
-    ('20260304100000');
+    ('20260304100000'),
+    ('20260304130000'),
+    ('20260304143000');

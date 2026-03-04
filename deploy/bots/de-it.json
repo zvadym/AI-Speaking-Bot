@@ -140,6 +140,10 @@
         "description": "Streak und XP prüfen"
       },
       {
+        "command": "topic",
+        "description": "Gespraechsthema waehlen"
+      },
+      {
         "command": "feedback",
         "description": "Feedback senden"
       },

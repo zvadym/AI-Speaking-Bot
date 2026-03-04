@@ -7,6 +7,7 @@ Inputs:
 - level: A1, A2, B1, B2, C1
 - user_message: user's previous message (may be empty)
 - assistant_reply: assistant reply in target language
+- pinned topic context may be included before the task
 
 Goal:
 Prepare a compact pack of answer options for the user's NEXT reply to the assistant's final question.
@@ -25,6 +26,7 @@ Rules:
   - text (target language phrase)
   - translation_base ({{base_language_label}} translation)
 - Keep all variants on-topic with user_message + assistant_reply.
+- If a `PINNED TOPIC` block is present, keep all variants aligned with that pinned topic instead of drifting to side details.
 - Variants must be from the USER perspective (first person where appropriate).
 - Do not use labels, numbering, quotes, or meta text.
 - If assistant_reply has no clear question, return empty strings for question/question_base and all variant fields, and an empty useful_phrases array.

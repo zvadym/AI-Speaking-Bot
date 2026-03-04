@@ -140,6 +140,10 @@
         "description": "Check your streak and XP"
       },
       {
+        "command": "topic",
+        "description": "Choose a conversation topic"
+      },
+      {
         "command": "feedback",
         "description": "Send feedback"
       },
