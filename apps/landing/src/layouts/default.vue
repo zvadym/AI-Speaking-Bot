@@ -12,7 +12,7 @@
 import { computed, watchEffect } from 'vue';
 import SiteHeader from '~/components/SiteHeader.vue';
 import SiteFooter from '~/components/SiteFooter.vue';
-import { stripLocalePrefix, useI18n } from '~/i18n.js';
+import { getLocaleDirection, stripLocalePrefix, useI18n } from '~/i18n.js';
 import { persistLandingStartPayloadFromQuery } from '~/lib/telegram.js';
 
 const route = useRoute();
@@ -30,6 +30,7 @@ watchEffect(() => {
 useHead(() => ({
   htmlAttrs: {
     lang: locale.value,
+    dir: getLocaleDirection(locale.value),
     class: isHome.value ? 'snap-home' : undefined
   }
 }));

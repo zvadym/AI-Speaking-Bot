@@ -250,7 +250,8 @@
     "uk": "Ukrainian",
     "it": "Italian",
     "tr": "Turkish",
-    "hi": "Hindi"
+    "hi": "Hindi",
+    "ar": "Arabic"
   },
   "languageName": {
     "en": "English",
@@ -263,6 +264,7 @@
     "pt": "Portuguese",
     "fr": "French",
     "tr": "Turkish",
-    "hi": "Hindi"
+    "hi": "Hindi",
+    "ar": "Arabic"
   }
 }

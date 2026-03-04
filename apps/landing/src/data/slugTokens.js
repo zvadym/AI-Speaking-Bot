@@ -1,4 +1,4 @@
-export const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it', 'tr', 'hi'];
+export const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it', 'tr', 'hi', 'ar'];
 
 export const LANGUAGE_SLUG_TOKENS = {
   en: {
@@ -80,6 +80,17 @@ export const LANGUAGE_SLUG_TOKENS = {
     pl: 'polish',
     es: 'spanish',
     fr: 'french'
+  },
+  ar: {
+    en: 'ingliziyya',
+    de: 'almaniyya',
+    it: 'italiyya',
+    uk: 'ukraniyya',
+    ru: 'rusiyya',
+    pl: 'bulandiyya',
+    es: 'isbaniyya',
+    fr: 'faransiyya',
+    pt: 'burtughaliyya'
   }
 };
 
@@ -115,6 +126,10 @@ export const HUB_TOPIC_SLUG_TOKENS = {
   hi: {
     speaking: 'speaking-practice',
     interview: 'interview-prep'
+  },
+  ar: {
+    speaking: 'mumarasat-al-muhadatha',
+    interview: 'tahdir-al-muqabala'
   }
 };
 
@@ -139,6 +154,7 @@ function normalizeLocaleForSlugs(input) {
   if (raw.startsWith('it')) return 'it';
   if (raw.startsWith('tr')) return 'tr';
   if (raw.startsWith('hi')) return 'hi';
+  if (raw.startsWith('ar')) return 'ar';
   return 'en';
 }
 

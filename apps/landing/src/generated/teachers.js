@@ -15,7 +15,8 @@ export const teachers = [
       "uk": "lina-anhliyska-teacher",
       "it": "lina-inglese-teacher",
       "tr": "lina-ingilizce-teacher",
-      "hi": "lina-angrezi-teacher"
+      "hi": "lina-angrezi-teacher",
+      "ar": "lina-ingliziyya-teacher"
     },
     "botKey": "de-en",
     "baseLanguage": "de",
@@ -61,7 +62,8 @@ export const teachers = [
       "uk": "mila-ispanska-teacher",
       "it": "mila-spagnolo-teacher",
       "tr": "mila-ispanyolca-teacher",
-      "hi": "mila-spanish-teacher"
+      "hi": "mila-spanish-teacher",
+      "ar": "mila-isbaniyya-teacher"
     },
     "botKey": "de-es",
     "baseLanguage": "de",
@@ -107,7 +109,8 @@ export const teachers = [
       "uk": "giulia-italiyska-teacher",
       "it": "giulia-italiano-teacher",
       "tr": "giulia-italyanca-teacher",
-      "hi": "giulia-italvi-teacher"
+      "hi": "giulia-italvi-teacher",
+      "ar": "giulia-italiyya-teacher"
     },
     "botKey": "de-it",
     "baseLanguage": "de",
@@ -153,7 +156,8 @@ export const teachers = [
       "uk": "john-nimetska-teacher",
       "it": "john-tedesco-teacher",
       "tr": "john-almanca-teacher",
-      "hi": "john-german-teacher"
+      "hi": "john-german-teacher",
+      "ar": "john-almaniyya-teacher"
     },
     "botKey": "en-de",
     "baseLanguage": "en",
@@ -198,7 +202,8 @@ export const teachers = [
       "uk": "mateo-ispanska-teacher",
       "it": "mateo-spagnolo-teacher",
       "tr": "mateo-ispanyolca-teacher",
-      "hi": "mateo-spanish-teacher"
+      "hi": "mateo-spanish-teacher",
+      "ar": "mateo-isbaniyya-teacher"
     },
     "botKey": "en-es",
     "baseLanguage": "en",
@@ -243,7 +248,8 @@ export const teachers = [
       "uk": "emma-italiyska-teacher",
       "it": "emma-italiano-teacher",
       "tr": "emma-italyanca-teacher",
-      "hi": "emma-italvi-teacher"
+      "hi": "emma-italvi-teacher",
+      "ar": "emma-italiyya-teacher"
     },
     "botKey": "en-it",
     "baseLanguage": "en",
@@ -288,7 +294,8 @@ export const teachers = [
       "uk": "greta-nimetska-teacher",
       "it": "greta-tedesco-teacher",
       "tr": "greta-almanca-teacher",
-      "hi": "greta-german-teacher"
+      "hi": "greta-german-teacher",
+      "ar": "greta-almaniyya-teacher"
     },
     "botKey": "it-de",
     "baseLanguage": "it",
@@ -333,7 +340,8 @@ export const teachers = [
       "uk": "luca-anhliyska-teacher",
       "it": "luca-inglese-teacher",
       "tr": "luca-ingilizce-teacher",
-      "hi": "luca-angrezi-teacher"
+      "hi": "luca-angrezi-teacher",
+      "ar": "luca-ingliziyya-teacher"
     },
     "botKey": "it-en",
     "baseLanguage": "it",
@@ -378,7 +386,8 @@ export const teachers = [
       "uk": "uk-de-nimetska-teacher",
       "it": "uk-de-tedesco-teacher",
       "tr": "uk-de-almanca-teacher",
-      "hi": "uk-de-german-teacher"
+      "hi": "uk-de-german-teacher",
+      "ar": "uk-de-almaniyya-teacher"
     },
     "botKey": "uk-de",
     "baseLanguage": "uk",
@@ -423,7 +432,8 @@ export const teachers = [
       "uk": "uk-en-anhliyska-teacher",
       "it": "uk-en-inglese-teacher",
       "tr": "uk-en-ingilizce-teacher",
-      "hi": "uk-en-angrezi-teacher"
+      "hi": "uk-en-angrezi-teacher",
+      "ar": "uk-en-ingliziyya-teacher"
     },
     "botKey": "uk-en",
     "baseLanguage": "uk",
@@ -468,7 +478,8 @@ export const teachers = [
       "uk": "uk-es-ispanska-teacher",
       "it": "uk-es-spagnolo-teacher",
       "tr": "uk-es-ispanyolca-teacher",
-      "hi": "uk-es-spanish-teacher"
+      "hi": "uk-es-spanish-teacher",
+      "ar": "uk-es-isbaniyya-teacher"
     },
     "botKey": "uk-es",
     "baseLanguage": "uk",
@@ -513,7 +524,8 @@ export const teachers = [
       "uk": "uk-pl-polska-teacher",
       "it": "uk-pl-polacco-teacher",
       "tr": "uk-pl-lehce-teacher",
-      "hi": "uk-pl-polish-teacher"
+      "hi": "uk-pl-polish-teacher",
+      "ar": "uk-pl-bulandiyya-teacher"
     },
     "botKey": "uk-pl",
     "baseLanguage": "uk",

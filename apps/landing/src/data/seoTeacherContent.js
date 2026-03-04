@@ -109,6 +109,15 @@ const LANGUAGE_FORMS = {
     pl: { display: 'पोलिश' },
     pt: { display: 'पुर्तगाली' },
     uk: { display: 'यूक्रेनी' }
+  },
+  ar: {
+    en: { display: 'الإنجليزية' },
+    de: { display: 'الألمانية' },
+    es: { display: 'الإسبانية' },
+    it: { display: 'الإيطالية' },
+    pl: { display: 'البولندية' },
+    pt: { display: 'البرتغالية' },
+    uk: { display: 'الأوكرانية' }
   }
 };
 
@@ -640,6 +649,28 @@ function buildHindiContent(teacher, languageForm) {
   };
 }
 
+function buildArabicContent(teacher, languageForm) {
+  const teacherName = getTeacherName(teacher, 'ar') || getTeacherName(teacher, 'en') || 'المعلم';
+  const targetLanguage = languageForm.display || 'الإنجليزية';
+  const base = buildEnglishContent(teacher, languageForm);
+
+  return {
+    ...base,
+    metaTitle: `ممارسة التحدث باللغة ${targetLanguage} على Telegram مع ${teacherName} | AI Language School`,
+    metaDescription: `تدرّب على التحدث باللغة ${targetLanguage} على Telegram مع تصحيحات فورية وصياغة أكثر طبيعية ودروس يومية قصيرة. ابدأ خلال دقيقة مع ${teacherName}.`,
+    h1: `ممارسة التحدث باللغة ${targetLanguage} على Telegram مع ${teacherName}`,
+    heroLead: `تدرّب على محادثات حقيقية باللغة ${targetLanguage} مباشرة داخل Telegram. أرسل رسالة صوتية قصيرة، وسيعود ${teacherName} بنسخة مصححة وأكثر طبيعية يمكنك استخدامها فوراً.`,
+    heroOutcome: `طوّر طلاقة عملية للعمل والمقابلات والسفر والحياة اليومية مع ردود أسرع ونطق أوضح وتردد أقل.`,
+    howTitle: 'كيف يعمل',
+    forWhoTitle: 'لمن هذا مناسب',
+    dialoguesTitle: 'مثال على الحوار',
+    dialoguesIntro: 'مثال قصير وواقعي. رسالة صوتية -> رد أفضل -> شرح القاعدة -> خيارات للرسالة التالية.',
+    deepDiveTitle: `كيف تبني طلاقة حقيقية في ${targetLanguage} عبر Telegram`,
+    faqTitle: 'الأسئلة الشائعة',
+    otherTeachersTitle: 'اختر معلماً آخر'
+  };
+}
+
 export function getTeacherSeoContent(teacher, localeInput) {
   const locale = normalizeLocale(localeInput) || 'en';
   const languageForm = getLanguageForm(locale, teacher?.learningLanguage);
@@ -651,5 +682,6 @@ export function getTeacherSeoContent(teacher, localeInput) {
   if (locale === 'it') return buildItalianContent(teacher, languageForm);
   if (locale === 'tr') return buildTurkishContent(teacher, languageForm);
   if (locale === 'hi') return buildHindiContent(teacher, languageForm);
+  if (locale === 'ar') return buildArabicContent(teacher, languageForm);
   return buildEnglishContent(teacher, languageForm);
 }

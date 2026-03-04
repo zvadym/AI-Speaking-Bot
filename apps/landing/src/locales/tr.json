@@ -250,7 +250,8 @@
     "uk": "Ukraynaca",
     "it": "İtalyanca",
     "tr": "Türkçe",
-    "hi": "Hintçe"
+    "hi": "Hintçe",
+    "ar": "Arapça"
   },
   "languageName": {
     "en": "İngilizce",
@@ -263,6 +264,7 @@
     "pt": "Portekizce",
     "fr": "Fransızca",
     "tr": "Türkçe",
-    "hi": "Hintçe"
+    "hi": "Hintçe",
+    "ar": "Arapça"
   }
 }
