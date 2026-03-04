@@ -128,6 +128,63 @@
                 </datalist>
               </label>
             </div>
+
+            <div class="row exclude-users-row">
+              <label class="field grow">
+                <span>Exclude users (local)</span>
+                <input
+                  v-model.trim="excludeSearch"
+                  type="text"
+                  inputmode="text"
+                  autocomplete="off"
+                  placeholder="@username or chat_id"
+                  :disabled="loading"
+                  @keydown.enter.prevent="addExcludedFromSearch"
+                />
+                <small class="hint">Affects analytics charts and totals on this device only.</small>
+              </label>
+
+              <div class="actions">
+                <button class="btn" type="button" :disabled="loading || excludedUsers.length === 0" @click="clearExcludedUsers">
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div v-if="excludedUsers.length" class="chip-row">
+              <button
+                v-for="u in excludedUsers"
+                :key="u.chat_id"
+                class="exclude-chip"
+                type="button"
+                :disabled="loading"
+                @click="removeExcludedUser(u.chat_id)"
+              >
+                <span>{{ excludedUserLabel(u) }}</span>
+                <span aria-hidden="true" class="exclude-chip-x">×</span>
+              </button>
+            </div>
+
+            <div v-if="excludeLookupError" class="hint error">
+              {{ excludeLookupError }}
+            </div>
+
+            <div v-if="excludeSuggestions.length" class="exclude-suggestions">
+              <button
+                v-for="u in excludeSuggestions"
+                :key="u.chat_id"
+                class="exclude-suggestion"
+                type="button"
+                :disabled="loading"
+                @click="addExcludedUser(u)"
+              >
+                <div class="exclude-suggestion-main">
+                  <strong>{{ excludedUserLabel(u) }}</strong>
+                  <span class="exclude-suggestion-meta"><code>{{ u.chat_id }}</code></span>
+                </div>
+                <span class="exclude-suggestion-action">Add</span>
+              </button>
+            </div>
           </section>
 
           <div class="row">
@@ -136,6 +193,7 @@
               <div class="query-chip-row">
                 <span class="query-chip">{{ activeRangeWindow }}</span>
                 <span v-if="payload.trim()" class="query-chip subtle">Payload: {{ payload.trim() }}</span>
+                <span v-if="excludedUsers.length" class="query-chip subtle">Excluded: {{ fmt(excludedUsers.length) }}</span>
               </div>
             </label>
           </div>
@@ -1187,6 +1245,11 @@ const toDate = ref(defaultTo);
 const rangePreset = ref('last_30_days');
 const payload = ref('');
 const payloadOptions = ref([]);
+const EXCLUDED_USERS_LS_KEY = 'admin_dashboard_excluded_users_v1';
+const excludeSearch = ref('');
+const excludeSuggestions = ref([]);
+const excludeLookupError = ref('');
+const excludedUsers = ref([]);
 const feedbackFromDate = ref(defaultFrom);
 const feedbackToDate = ref(defaultTo);
 const feedbackKind = ref('any');
@@ -1740,6 +1803,137 @@ function query() {
     to: toExclusiveBoundaryYmd(effectiveToDate.value),
     payload: payload.value.trim() ? payload.value.trim() : undefined
   };
+}
+
+const excludedChatIds = computed(() =>
+  (Array.isArray(excludedUsers.value) ? excludedUsers.value : [])
+    .map((u) => String(u?.chat_id ?? '').trim())
+    .filter(Boolean)
+);
+
+function analyticsQuery() {
+  const base = query();
+  const exclude = excludedChatIds.value.length ? excludedChatIds.value.join(',') : undefined;
+  return { ...base, exclude_chat_ids: exclude };
+}
+
+function safeParseJson(raw, fallback) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+function loadExcludedUsersFromStorage() {
+  if (typeof localStorage === 'undefined') return;
+  const raw = localStorage.getItem(EXCLUDED_USERS_LS_KEY);
+  if (!raw) return;
+
+  const parsed = safeParseJson(raw, []);
+  if (!Array.isArray(parsed)) return;
+
+  const next = [];
+  const seen = new Set();
+  for (const item of parsed) {
+    const chatId = String(item?.chat_id ?? '').trim();
+    if (!chatId || seen.has(chatId)) continue;
+    seen.add(chatId);
+    next.push({
+      chat_id: chatId,
+      username: item?.username ? String(item.username).replace(/^@/, '').trim() : '',
+      first_name: item?.first_name ? String(item.first_name).trim() : ''
+    });
+  }
+  excludedUsers.value = next.slice(0, 50);
+}
+
+function saveExcludedUsersToStorage() {
+  if (typeof localStorage === 'undefined') return;
+  const payload = (Array.isArray(excludedUsers.value) ? excludedUsers.value : []).map((u) => ({
+    chat_id: String(u?.chat_id ?? '').trim(),
+    username: u?.username ? String(u.username).replace(/^@/, '').trim() : '',
+    first_name: u?.first_name ? String(u.first_name).trim() : ''
+  }));
+  try {
+    localStorage.setItem(EXCLUDED_USERS_LS_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore quota issues
+  }
+}
+
+function excludedUserLabel(u) {
+  const username = (u?.username ?? '').toString().replace(/^@/, '').trim();
+  if (username) return `@${username}`;
+  const name = (u?.first_name ?? '').toString().trim();
+  if (name) return name;
+  const chatId = String(u?.chat_id ?? '').trim();
+  return chatId ? `chat_id ${chatId}` : 'user';
+}
+
+function normalizeChatIdCandidate(raw) {
+  const s = String(raw ?? '').trim();
+  if (!s) return '';
+  if (!/^\d{4,20}$/.test(s)) return '';
+  return s;
+}
+
+function addExcludedUser(user) {
+  const chatId = String(user?.chat_id ?? '').trim();
+  if (!chatId) return;
+  if (excludedUsers.value.some((u) => String(u?.chat_id ?? '').trim() === chatId)) return;
+
+  excludedUsers.value = [
+    ...excludedUsers.value,
+    {
+      chat_id: chatId,
+      username: user?.username ? String(user.username).replace(/^@/, '').trim() : '',
+      first_name: user?.first_name ? String(user.first_name).trim() : ''
+    }
+  ].slice(0, 50);
+
+  saveExcludedUsersToStorage();
+  excludeSearch.value = '';
+  excludeSuggestions.value = [];
+  excludeLookupError.value = '';
+
+  refreshAnalytics();
+}
+
+function removeExcludedUser(chatIdRaw) {
+  const chatId = String(chatIdRaw ?? '').trim();
+  if (!chatId) return;
+  excludedUsers.value = excludedUsers.value.filter((u) => String(u?.chat_id ?? '').trim() !== chatId);
+  saveExcludedUsersToStorage();
+  excludeLookupError.value = '';
+  excludeSuggestions.value = [];
+  refreshAnalytics();
+}
+
+function clearExcludedUsers() {
+  excludedUsers.value = [];
+  saveExcludedUsersToStorage();
+  excludeLookupError.value = '';
+  excludeSuggestions.value = [];
+  refreshAnalytics();
+}
+
+function addExcludedFromSearch() {
+  const raw = excludeSearch.value.trim();
+  if (!raw) return;
+
+  const numeric = normalizeChatIdCandidate(raw.replace(/^chat_id\s+/i, ''));
+  if (numeric) {
+    addExcludedUser({ chat_id: numeric });
+    return;
+  }
+
+  const normalized = raw.replace(/^@/, '').trim().toLowerCase();
+  if (!normalized) return;
+  const exact = excludeSuggestions.value.find(
+    (u) => (u?.username ?? '').toString().replace(/^@/, '').trim().toLowerCase() === normalized
+  );
+  if (exact) addExcludedUser(exact);
 }
 
 function feedbackQuery() {
@@ -2301,7 +2495,7 @@ async function refreshAnalytics() {
   loading.value = true;
   errorText.value = '';
   try {
-    const q = query();
+    const q = analyticsQuery();
     const headers = adminHeaders();
     const [
       summary,
@@ -2330,7 +2524,7 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/free-users-insights', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload }, headers }),
+      apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload, exclude_chat_ids: q.exclude_chat_ids }, headers }),
       apiJson(props.apiBase, '/admin/metrics/user-streaks', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
     ]);
@@ -2417,6 +2611,48 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
     usersError.value = `Failed to load users: ${msg}`;
   } finally {
     usersLoading.value = false;
+  }
+}
+
+let excludeLookupTimer = null;
+let excludeLookupRequestId = 0;
+
+async function refreshExcludeSuggestions() {
+  excludeLookupError.value = '';
+  const raw = excludeSearch.value.trim();
+  if (!raw) {
+    excludeSuggestions.value = [];
+    return;
+  }
+  const q = raw.replace(/^@/, '');
+  const chatId = normalizeChatIdCandidate(q);
+  if (!chatId && q.trim().length < 2) {
+    excludeSuggestions.value = [];
+    return;
+  }
+  if (!password.value) {
+    excludeSuggestions.value = [];
+    return;
+  }
+
+  const requestId = ++excludeLookupRequestId;
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, '/admin/users/search', {
+      query: { q, limit: 8 },
+      headers
+    });
+
+    if (requestId !== excludeLookupRequestId) return;
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const excluded = new Set(excludedChatIds.value);
+    excludeSuggestions.value = items.filter((u) => !excluded.has(String(u?.chat_id ?? '').trim()));
+  } catch (err) {
+    if (requestId !== excludeLookupRequestId) return;
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    excludeLookupError.value = `User lookup failed: ${msg}`;
+    excludeSuggestions.value = [];
   }
 }
 
@@ -2541,7 +2777,19 @@ function usersPrevPage() {
 }
 
 onMounted(() => {
+  loadExcludedUsersFromStorage();
   // No auto-fetch until password is provided.
+});
+
+watch(excludeSearch, () => {
+  if (excludeLookupTimer) {
+    window.clearTimeout(excludeLookupTimer);
+    excludeLookupTimer = null;
+  }
+  excludeLookupTimer = window.setTimeout(() => {
+    refreshExcludeSuggestions();
+    excludeLookupTimer = null;
+  }, 250);
 });
 
 watch(
@@ -2633,6 +2881,10 @@ onBeforeUnmount(() => {
   if (previewTimer) {
     window.clearTimeout(previewTimer);
     previewTimer = null;
+  }
+  if (excludeLookupTimer) {
+    window.clearTimeout(excludeLookupTimer);
+    excludeLookupTimer = null;
   }
   stopCampaignPolling();
 });
@@ -2966,6 +3218,96 @@ h1 {
   flex-wrap: wrap;
   gap: 12px;
   align-items: end;
+}
+
+.exclude-users-row {
+  align-items: end;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.exclude-chip {
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.exclude-chip:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(59, 130, 246, 0.22);
+}
+
+.exclude-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.exclude-chip-x {
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.exclude-suggestions {
+  display: grid;
+  gap: 8px;
+}
+
+.exclude-suggestion {
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.66);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.exclude-suggestion:hover {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(59, 130, 246, 0.22);
+  box-shadow: 0 12px 28px rgba(20, 18, 16, 0.10);
+}
+
+.exclude-suggestion:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.exclude-suggestion-main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.exclude-suggestion-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.exclude-suggestion-action {
+  font-size: 12px;
+  font-weight: 750;
+  color: rgba(31, 107, 99, 0.9);
+  white-space: nowrap;
 }
 
 .field {

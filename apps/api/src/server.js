@@ -860,6 +860,25 @@ function parseUtcBoundary(raw, fallbackDate) {
   return d;
 }
 
+function parseChatIdList(raw) {
+  const value = (raw ?? '').toString().trim();
+  if (!value) return [];
+
+  const parts = value.split(/[\s,]+/g);
+  const seen = new Set();
+  const out = [];
+  for (const part of parts) {
+    const s = (part ?? '').toString().trim();
+    if (!s) continue;
+    if (!/^\d{4,20}$/.test(s)) continue;
+    if (seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+    if (out.length >= 200) break;
+  }
+  return out;
+}
+
 function parseAdminRange(req) {
   const now = new Date();
   const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -875,7 +894,9 @@ function parseAdminRange(req) {
   const payloadRaw = (req.query.payload ?? '').toString().trim();
   const payload = payloadRaw ? payloadRaw.slice(0, 200) : null;
 
-  return { ok: true, from, to, payload };
+  const excludeChatIds = parseChatIdList(req.query.exclude_chat_ids ?? req.query.excludeChatIds);
+
+  return { ok: true, from, to, payload, excludeChatIds };
 }
 
 function safeActionProperties(raw) {
@@ -1822,9 +1843,11 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH filtered AS (
      SELECT
+       chat_id,
        created_at,
        COALESCE(is_active, true) AS is_active,
        CASE
@@ -1836,6 +1859,7 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
          END AS effective_tier
        FROM users
        WHERE ($1::text IS NULL OR acquisition_start_payload = $1)
+         AND ($2::bigint[] IS NULL OR chat_id <> ALL($2::bigint[]))
      )
      SELECT
        COUNT(*)::int AS total_users_all_time,
@@ -1843,13 +1867,13 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
        SUM((NOT is_active)::int)::int AS inactive_users_all_time,
        SUM((effective_tier = 'plus')::int)::int AS plus_users_all_time,
        SUM((effective_tier = 'pro')::int)::int AS pro_users_all_time,
-       COUNT(*) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS total_users_in_range,
-       SUM((is_active)::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS active_users_in_range,
-       SUM((NOT is_active)::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS inactive_users_in_range,
-       SUM((effective_tier = 'plus')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS plus_users_in_range,
-       SUM((effective_tier = 'pro')::int) FILTER (WHERE created_at >= $2::timestamptz AND created_at < $3::timestamptz)::int AS pro_users_in_range
+       COUNT(*) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS total_users_in_range,
+       SUM((is_active)::int) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS active_users_in_range,
+       SUM((NOT is_active)::int) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS inactive_users_in_range,
+       SUM((effective_tier = 'plus')::int) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS plus_users_in_range,
+       SUM((effective_tier = 'pro')::int) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS pro_users_in_range
      FROM filtered`,
-    [range.payload, range.from.toISOString(), range.to.toISOString()]
+    [range.payload, excludeChatIds, range.from.toISOString(), range.to.toISOString()]
   );
 
   return res.json({
@@ -1877,6 +1901,7 @@ app.get('/admin/metrics/new-users-by-day', requireAdmin, async (req, res) => {
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -1896,13 +1921,14 @@ app.get('/admin/metrics/new-users-by-day', requireAdmin, async (req, res) => {
        WHERE u.created_at >= (SELECT from_ts FROM params)
          AND u.created_at < (SELECT to_ts FROM params)
          AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
        GROUP BY 1
      )
      SELECT d.day_utc::text AS day, COALESCE(c.count, 0)::int AS count
      FROM days d
      LEFT JOIN counts c USING (day_utc)
      ORDER BY d.day_utc ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
   );
 
   return res.json({
@@ -1919,6 +1945,7 @@ app.get('/admin/metrics/new-users-by-day-by-bot', requireAdmin, async (req, res)
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -1938,6 +1965,7 @@ app.get('/admin/metrics/new-users-by-day-by-bot', requireAdmin, async (req, res)
        WHERE u.created_at >= (SELECT from_ts FROM params)
          AND u.created_at < (SELECT to_ts FROM params)
          AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
      ),
      first_bot AS (
        SELECT
@@ -1969,7 +1997,7 @@ app.get('/admin/metrics/new-users-by-day-by-bot', requireAdmin, async (req, res)
      CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots
      LEFT JOIN counts c ON c.day_utc = d.day_utc AND c.bot_key = bots.bot_key
      ORDER BY d.day_utc ASC, bots.bot_key ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
   );
 
   return res.json({
@@ -1986,6 +2014,7 @@ app.get('/admin/metrics/new-paid-by-day', requireAdmin, async (req, res) => {
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -2001,6 +2030,7 @@ app.get('/admin/metrics/new-paid-by-day', requireAdmin, async (req, res) => {
        SELECT chat_id, plan_started_at, plan_started_tier
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
      ),
      counts AS (
        SELECT
@@ -2022,7 +2052,7 @@ app.get('/admin/metrics/new-paid-by-day', requireAdmin, async (req, res) => {
      LEFT JOIN counts c USING (day_utc)
      GROUP BY d.day_utc
      ORDER BY d.day_utc ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
   );
 
   return res.json({
@@ -2039,6 +2069,7 @@ app.get('/admin/metrics/active-users-by-day', requireAdmin, async (req, res) => 
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -2054,6 +2085,7 @@ app.get('/admin/metrics/active-users-by-day', requireAdmin, async (req, res) => 
        SELECT chat_id
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
      ),
      counts AS (
        SELECT
@@ -2069,7 +2101,7 @@ app.get('/admin/metrics/active-users-by-day', requireAdmin, async (req, res) => 
      FROM days d
      LEFT JOIN counts c USING (day_utc)
      ORDER BY d.day_utc ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
   );
 
   return res.json({
@@ -2086,6 +2118,7 @@ app.get('/admin/metrics/user-streaks', requireAdmin, async (req, res) => {
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -2094,6 +2127,7 @@ app.get('/admin/metrics/user-streaks', requireAdmin, async (req, res) => {
        SELECT chat_id
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
      ),
      activity_days AS (
        SELECT DISTINCT activity.chat_id, activity.day_utc
@@ -2144,7 +2178,7 @@ app.get('/admin/metrics/user-streaks', requireAdmin, async (req, res) => {
      FROM max_streaks
      GROUP BY streak_days
      ORDER BY streak_days ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
   );
 
   return res.json({
@@ -2161,6 +2195,7 @@ app.get('/admin/metrics/active-users-by-day-by-bot', requireAdmin, async (req, r
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -2176,6 +2211,7 @@ app.get('/admin/metrics/active-users-by-day-by-bot', requireAdmin, async (req, r
        SELECT chat_id
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
      ),
      counts AS (
        SELECT
@@ -2196,7 +2232,7 @@ app.get('/admin/metrics/active-users-by-day-by-bot', requireAdmin, async (req, r
      CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots
      LEFT JOIN counts c ON c.day_utc = d.day_utc AND c.bot_key = bots.bot_key
      ORDER BY d.day_utc ASC, bots.bot_key ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
   );
 
   return res.json({
@@ -2213,6 +2249,7 @@ app.get('/admin/metrics/inactive-users-by-day', requireAdmin, async (req, res) =
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -2234,13 +2271,14 @@ app.get('/admin/metrics/inactive-users-by-day', requireAdmin, async (req, res) =
          AND u.inactive_at >= (SELECT from_ts FROM params)
          AND u.inactive_at < (SELECT to_ts FROM params)
          AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
        GROUP BY 1
      )
      SELECT d.day_utc::text AS day, COALESCE(c.count, 0)::int AS count
      FROM days d
      LEFT JOIN counts c USING (day_utc)
      ORDER BY d.day_utc ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
   );
 
   return res.json({
@@ -2257,6 +2295,7 @@ app.get('/admin/metrics/usage-seconds-by-day', requireAdmin, async (req, res) =>
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -2272,6 +2311,7 @@ app.get('/admin/metrics/usage-seconds-by-day', requireAdmin, async (req, res) =>
        SELECT chat_id
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
      ),
      sums AS (
        SELECT
@@ -2292,7 +2332,7 @@ app.get('/admin/metrics/usage-seconds-by-day', requireAdmin, async (req, res) =>
      LEFT JOIN sums s USING (day_utc)
      GROUP BY d.day_utc
      ORDER BY d.day_utc ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
   );
 
   return res.json({
@@ -2309,7 +2349,8 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
-  const params = [range.from.toISOString(), range.to.toISOString(), range.payload];
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+  const params = [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds];
 
   const [totalsRes, usageBucketsRes, messageBucketsRes] = await Promise.all([
     pool.query(
@@ -2320,6 +2361,7 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
          SELECT u.chat_id
          FROM users u
          WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
+           AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
            AND COALESCE(u.is_active, true) = true
            AND CASE
              WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
@@ -2375,6 +2417,7 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
          SELECT u.chat_id
          FROM users u
          WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
+           AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
            AND COALESCE(u.is_active, true) = true
            AND CASE
              WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
@@ -2430,6 +2473,7 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
          SELECT u.chat_id
          FROM users u
          WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
+           AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
            AND COALESCE(u.is_active, true) = true
            AND CASE
              WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
@@ -2500,6 +2544,7 @@ app.get('/admin/metrics/active-users-by-hour', requireAdmin, async (req, res) =>
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -2511,6 +2556,7 @@ app.get('/admin/metrics/active-users-by-hour', requireAdmin, async (req, res) =>
        SELECT chat_id
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
      ),
      counts AS (
        SELECT
@@ -2528,7 +2574,7 @@ app.get('/admin/metrics/active-users-by-hour', requireAdmin, async (req, res) =>
      FROM hours h
      LEFT JOIN counts c USING (hour_utc)
      ORDER BY h.hour_utc ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
   );
 
   return res.json({
@@ -2547,6 +2593,8 @@ app.get('/admin/metrics/active-users-by-hour-today', requireAdmin, async (req, r
   const to = new Date(from.getTime() + DAY_MS);
   const payloadRaw = (req.query.payload ?? '').toString().trim();
   const payload = payloadRaw ? payloadRaw.slice(0, 200) : null;
+  const excludeChatIds = parseChatIdList(req.query.exclude_chat_ids ?? req.query.excludeChatIds);
+  const excludeChatIdsParam = excludeChatIds.length ? excludeChatIds : null;
 
   const { rows } = await pool.query(
     `WITH params AS (
@@ -2559,6 +2607,7 @@ app.get('/admin/metrics/active-users-by-hour-today', requireAdmin, async (req, r
        SELECT chat_id
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
      ),
      voice_stats AS (
        SELECT
@@ -2592,7 +2641,7 @@ app.get('/admin/metrics/active-users-by-hour-today', requireAdmin, async (req, r
      LEFT JOIN voice_stats vs USING (hour_utc)
      LEFT JOIN message_stats ms USING (hour_utc)
      ORDER BY h.hour_utc ASC`,
-    [from.toISOString(), to.toISOString(), payload]
+    [from.toISOString(), to.toISOString(), payload, excludeChatIdsParam]
   );
 
   return res.json({
@@ -2621,16 +2670,18 @@ app.get('/admin/metrics/acquisition-payloads', requireAdmin, async (req, res) =>
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `SELECT acquisition_start_payload AS payload, COUNT(*)::int AS users
        FROM users
       WHERE acquisition_start_payload IS NOT NULL
         AND created_at >= $1::timestamptz
         AND created_at < $2::timestamptz
+        AND ($3::bigint[] IS NULL OR chat_id <> ALL($3::bigint[]))
       GROUP BY acquisition_start_payload
       ORDER BY users DESC
       LIMIT 80`,
-    [range.from.toISOString(), range.to.toISOString()]
+    [range.from.toISOString(), range.to.toISOString(), excludeChatIds]
   );
 
   return res.json({
@@ -2646,6 +2697,7 @@ app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH params AS (
        SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
@@ -2661,6 +2713,7 @@ app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
        SELECT chat_id
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
      ),
      counts AS (
        SELECT
@@ -2671,7 +2724,7 @@ app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
        JOIN filtered_users u ON u.chat_id = e.chat_id
        WHERE e.occurred_at >= (SELECT from_ts FROM params)
          AND e.occurred_at < (SELECT to_ts FROM params)
-         AND e.action_type = ANY($4::text[])
+         AND e.action_type = ANY($5::text[])
        GROUP BY 1, 2
      )
      SELECT
@@ -2687,7 +2740,7 @@ app.get('/admin/metrics/actions-by-day', requireAdmin, async (req, res) => {
      LEFT JOIN counts c USING (day_utc)
      GROUP BY d.day_utc
      ORDER BY d.day_utc ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload, ACTION_EVENT_TYPES]
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, ACTION_EVENT_TYPES]
   );
 
   return res.json({
@@ -2704,14 +2757,16 @@ app.get('/admin/metrics/action-totals', requireAdmin, async (req, res) => {
   if (!range.ok) return res.status(400).json({ error: range.error });
   res.set('Cache-Control', 'no-store');
 
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const { rows } = await pool.query(
     `WITH filtered_users AS (
        SELECT chat_id, created_at
        FROM users
        WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
      ),
      action_types AS (
-       SELECT unnest($4::text[]) AS action_type
+       SELECT unnest($5::text[]) AS action_type
      ),
      counts AS (
        SELECT
@@ -2730,7 +2785,7 @@ app.get('/admin/metrics/action-totals', requireAdmin, async (req, res) => {
        JOIN filtered_users u ON u.chat_id = e.chat_id
        WHERE e.occurred_at >= $1::timestamptz
          AND e.occurred_at < $2::timestamptz
-         AND e.action_type = ANY($4::text[])
+         AND e.action_type = ANY($5::text[])
          AND e.action_type <> 'start'
        GROUP BY e.action_type
      )
@@ -2739,8 +2794,8 @@ app.get('/admin/metrics/action-totals', requireAdmin, async (req, res) => {
        COALESCE(c.count, 0)::int AS count
      FROM action_types a
      LEFT JOIN counts c ON c.action_type = a.action_type
-     ORDER BY array_position($4::text[], a.action_type) ASC`,
-    [range.from.toISOString(), range.to.toISOString(), range.payload, ACTION_EVENT_TYPES]
+     ORDER BY array_position($5::text[], a.action_type) ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, ACTION_EVENT_TYPES]
   );
 
   return res.json({
@@ -3324,6 +3379,61 @@ app.post('/admin/feedbacks/:id/reply', requireAdmin, async (req, res) => {
       inactive_reason: inactiveReason || null
     });
   }
+});
+
+app.get('/admin/users/search', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+
+  const raw = (req.query.q ?? '').toString().trim();
+  const q = raw.replace(/^@/, '').slice(0, 80);
+  const limit = clampInteger(req.query.limit, { min: 1, max: 50, fallback: 10 });
+
+  if (!q) {
+    return res.json({ q: '', items: [] });
+  }
+
+  const chatId = /^\d{4,20}$/.test(q) ? q : null;
+
+  const { rows } = await pool.query(
+    `WITH matches AS (
+       SELECT
+         u.chat_id,
+         u.username,
+         u.first_name,
+         COALESCE(ub.bot_key, '') AS bot_key,
+         COALESCE(ub.last_seen_at, u.updated_at) AS last_seen_at
+       FROM users u
+       LEFT JOIN LATERAL (
+         SELECT
+           b.bot_key,
+           b.last_seen_at
+         FROM user_bots b
+         WHERE b.chat_id = u.chat_id
+         ORDER BY COALESCE(b.last_seen_at, b.updated_at, b.created_at) DESC, b.bot_key ASC
+         LIMIT 1
+       ) ub ON true
+       WHERE (
+         ($1::bigint IS NOT NULL AND u.chat_id = $1::bigint)
+         OR u.username ILIKE ('%' || $2::text || '%')
+         OR u.first_name ILIKE ('%' || $2::text || '%')
+         OR u.chat_id::text ILIKE ('%' || $2::text || '%')
+       )
+     )
+     SELECT
+       chat_id,
+       username,
+       first_name,
+       NULLIF(bot_key, '') AS bot_key
+     FROM matches
+     ORDER BY
+       (chat_id = $1::bigint) DESC,
+       last_seen_at DESC NULLS LAST,
+       chat_id DESC
+     LIMIT $3::int`,
+    [chatId, q, limit]
+  );
+
+  return res.json({ q, items: rows || [] });
 });
 
 app.get('/admin/users', requireAdmin, async (req, res) => {
