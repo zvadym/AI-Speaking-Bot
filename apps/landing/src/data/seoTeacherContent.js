@@ -118,6 +118,15 @@ const LANGUAGE_FORMS = {
     pl: { display: 'البولندية' },
     pt: { display: 'البرتغالية' },
     uk: { display: 'الأوكرانية' }
+  },
+  id: {
+    en: { display: 'Inggris' },
+    de: { display: 'Jerman' },
+    es: { display: 'Spanyol' },
+    it: { display: 'Italia' },
+    pl: { display: 'Polandia' },
+    pt: { display: 'Portugis' },
+    uk: { display: 'Ukraina' }
   }
 };
 
@@ -671,6 +680,28 @@ function buildArabicContent(teacher, languageForm) {
   };
 }
 
+function buildIndonesianContent(teacher, languageForm) {
+  const teacherName = getTeacherName(teacher, 'id') || getTeacherName(teacher, 'en') || 'guru';
+  const targetLanguage = languageForm.display || 'Inggris';
+  const base = buildEnglishContent(teacher, languageForm);
+
+  return {
+    ...base,
+    metaTitle: `Latihan speaking ${targetLanguage} di Telegram dengan ${teacherName} | AI Language School`,
+    metaDescription: `Latihan speaking ${targetLanguage} di Telegram dengan koreksi instan, phrasing yang lebih natural, dan micro-lesson harian. Mulai dalam satu menit bersama ${teacherName}.`,
+    h1: `Latihan speaking ${targetLanguage} di Telegram dengan ${teacherName}`,
+    heroLead: `Latih percakapan ${targetLanguage} nyata langsung di Telegram. Kirim voice message singkat, lalu ${teacherName} akan membalas dengan versi yang dikoreksi dan lebih natural untuk langsung kamu pakai.`,
+    heroOutcome: `Bangun kefasihan yang praktis untuk kerja, interview, perjalanan, dan kehidupan sehari-hari dengan respons yang lebih cepat, pelafalan yang lebih jelas, dan lebih sedikit ragu.`,
+    howTitle: 'Cara kerjanya',
+    forWhoTitle: 'Cocok untuk siapa',
+    dialoguesTitle: 'Contoh dialog',
+    dialoguesIntro: 'Contoh chat singkat dan realistis. Voice message -> jawaban yang lebih baik -> penjelasan aturan -> opsi pesan berikutnya.',
+    deepDiveTitle: `Cara membangun kefasihan ${targetLanguage} yang nyata lewat Telegram`,
+    faqTitle: 'FAQ',
+    otherTeachersTitle: 'Pilih guru lain'
+  };
+}
+
 export function getTeacherSeoContent(teacher, localeInput) {
   const locale = normalizeLocale(localeInput) || 'en';
   const languageForm = getLanguageForm(locale, teacher?.learningLanguage);
@@ -683,5 +714,6 @@ export function getTeacherSeoContent(teacher, localeInput) {
   if (locale === 'tr') return buildTurkishContent(teacher, languageForm);
   if (locale === 'hi') return buildHindiContent(teacher, languageForm);
   if (locale === 'ar') return buildArabicContent(teacher, languageForm);
+  if (locale === 'id') return buildIndonesianContent(teacher, languageForm);
   return buildEnglishContent(teacher, languageForm);
 }

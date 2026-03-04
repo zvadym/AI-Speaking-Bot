@@ -9,11 +9,12 @@ import it from './locales/it.json';
 import tr from './locales/tr.json';
 import hi from './locales/hi.json';
 import ar from './locales/ar.json';
+import id from './locales/id.json';
 
 const STORAGE_KEY = 'landing_ui_locale';
 
-const messages = { en, de, es, pt, uk, it, tr, hi, ar };
-export const supportedLocales = ['en', 'de', 'es', 'pt', 'uk', 'it', 'tr', 'hi', 'ar'];
+const messages = { en, de, es, pt, uk, it, tr, hi, ar, id };
+export const supportedLocales = ['en', 'de', 'es', 'pt', 'uk', 'it', 'tr', 'hi', 'ar', 'id'];
 export const rtlLocales = ['ar'];
 
 export function normalizeLocale(input) {
@@ -26,6 +27,7 @@ export function normalizeLocale(input) {
   if (raw === 'tr' || raw === 'tr-tr' || raw.startsWith('tr-')) return 'tr';
   if (raw === 'hi' || raw === 'hi-in' || raw.startsWith('hi-')) return 'hi';
   if (raw === 'ar' || raw === 'ar-ar' || raw.startsWith('ar-')) return 'ar';
+  if (raw === 'id' || raw === 'id-id' || raw.startsWith('id-')) return 'id';
   if (raw === 'en' || raw.startsWith('en-')) return 'en';
   return '';
 }

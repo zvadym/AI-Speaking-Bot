@@ -251,7 +251,8 @@
     "it": "Italiano",
     "tr": "Turco",
     "hi": "Hindi",
-    "ar": "Arabo"
+    "ar": "Arabo",
+    "id": "Indonesiano"
   },
   "languageName": {
     "en": "Inglese",
@@ -265,6 +266,7 @@
     "fr": "Francese",
     "tr": "Turco",
     "hi": "Hindi",
-    "ar": "Arabo"
+    "ar": "Arabo",
+    "id": "Indonesiano"
   }
 }

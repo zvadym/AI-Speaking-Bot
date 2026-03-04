@@ -1,0 +1,272 @@
+{
+  "nav": {
+    "home": "Beranda",
+    "features": "Fitur",
+    "how": "Cara kerja",
+    "teachers": "Guru",
+    "pricing": "Harga",
+    "faq": "FAQ",
+    "blog": "Blog",
+    "menu": "Menu",
+    "about": "Tentang",
+    "contact": "Kontak"
+  },
+  "cta": {
+    "start": "Lihat guru",
+    "try": "COBA",
+    "tryNow": "Coba di Telegram",
+    "openTelegram": "Buka di Telegram",
+    "close": "Tutup",
+    "viewProfile": "Lihat profil",
+    "allTeachers": "Semua guru",
+    "backToTeachers": "Kembali ke guru"
+  },
+  "home": {
+    "headline": "Belajar dengan berbicara.",
+    "seoTitle": "AI Language School | Bot belajar bahasa voice-first di Telegram",
+    "seoDescription": "Latihan speaking di Telegram dengan tutor bahasa AI. Kirim voice atau text, dapatkan koreksi instan, phrasing yang lebih natural, dukungan terjemahan, dan follow-up prompts.",
+    "subhead": "Latihan speaking di Telegram dengan tutor AI: kirim voice atau text, dapatkan koreksi instan, dan lanjutkan percakapan dengan saran langkah berikutnya yang berguna.",
+    "tryModalTitle": "Pilih guru",
+    "tryModalSubhead": "Pilih guru untuk membuka chat Telegram mereka.",
+    "meetTeachers": "Lihat guru",
+    "chat": {
+      "you": "Kamu",
+      "bot": "Bot guru",
+      "tip": "Perbaikan",
+      "youMsg": "Aku ingin berbicara bahasa Inggris dengan lebih percaya diri, tapi aku tidak yakin harus mengatakan apa.",
+      "botMsg": "Bagus, ceritakan harimu dalam 5 kalimat. Aku akan membantu supaya terdengar lebih natural.",
+      "tipMsg": "Coba: “Aku ingin latihan speaking setiap hari, bahkan 10 menit saja membantu.”"
+    },
+    "chatDemo": {
+      "you": "Kamu",
+      "bot": "Bot guru",
+      "userAudio": "Pesan suara",
+      "transcriptLabel": "Transkrip",
+      "botAudio": "Balasan suara",
+      "botTranscriptLabel": "Transkrip guru",
+      "statusListening": "Oke, sedang mendengarkan",
+      "statusPreparing": "Menyiapkan balasan",
+      "translateAction": "Terjemahkan",
+      "translateLoading": "Sedang menerjemahkan...",
+      "translationHeader": "Terjemahanku:",
+      "followUpAction": "Lalu harus bilang apa?",
+      "followUpLoading": "Menyiapkan opsi...",
+      "explanationTitle": "Penjelasan",
+      "explanationExample": {
+        "wrong": "Hello Lesja, how are you?",
+        "right": "Hello Lesja, how are you doing?",
+        "ruleLabel": "Aturan: pilihan kata",
+        "ruleText": "Gunakan “doing” saat kamu menanyakan bagaimana perasaan seseorang saat ini. Tetap sederhana dan natural."
+      },
+      "explanationBlocks": [
+        {
+          "title": "Balasan natural",
+          "body": "Buat singkat, beri satu detail yang konkret, dan akhiri dengan pertanyaan agar chat terus berjalan."
+        },
+        {
+          "title": "Pilihan kata",
+          "body": "Gunakan kata kerja yang sederhana dan angka yang spesifik: “improved”, “reduced”, “by 12%”."
+        },
+        {
+          "title": "Langkah berikutnya",
+          "body": "Kalau kamu belum yakin harus bilang apa, pilih varian paling sederhana di bawah dan kirim sebagai pesan berikutnya."
+        }
+      ],
+      "followUpTitle": "Petunjuk lanjutan",
+      "hintsIntro": "Berikut beberapa opsi untuk balasanmu berikutnya:",
+      "questionLabel": "Pertanyaan",
+      "simpleLabel": "Varian sederhana",
+      "conversationalLabel": "Varian percakapan",
+      "advancedLabel": "Varian lanjutan",
+      "phrasesLabel": "Frasa berguna"
+    },
+    "teachersTitle": "Guru",
+    "teachersDesc": "Setiap guru punya gaya, bahasa, dan fokus yang berbeda.",
+    "featuredTeachersTitle": "Kenalan dengan para guru",
+    "featuredTeachersSubhead": "Pilih gaya guru yang cocok dengan tujuanmu dan mulai latihan di Telegram.",
+    "featuredTeachersCta": "Lihat semua guru",
+    "featuresTitle": "Fitur",
+    "featuresSubhead": "Tools voice-first yang menjaga percakapan tetap mengalir.",
+    "featureCards": {
+      "voice": {
+        "tag": "Voice",
+        "title": "Pesan suara",
+        "desc": "Berbicara dengan natural lewat audio. Bot akan mentranskripsikan pesanmu dan membalas dengan panduan sesuai konteks."
+      },
+      "translation": {
+        "tag": "Terjemahan",
+        "title": "Terjemahan",
+        "desc": "Dapatkan dukungan terjemahan cepat saat dibutuhkan, supaya kamu tetap dalam flow dan tidak macet."
+      },
+      "followUp": {
+        "tag": "Follow-up",
+        "title": "Follow-up",
+        "desc": "Setelah setiap jawaban, dapatkan ide balasan berikutnya yang berguna agar percakapan tetap aktif dan natural."
+      },
+      "memory": {
+        "tag": "Memori",
+        "title": "Memori",
+        "desc": "Bot mengingat konteks percakapanmu, jadi latihan terasa berkelanjutan dan makin personal seiring waktu."
+      }
+    },
+    "howTitle": "Cara kerja",
+    "steps": {
+      "oneTitle": "Pilih guru dan level",
+      "oneDesc": "Pilih guru untuk pasangan bahasamu dan atur levelmu dari A1 sampai C1.",
+      "twoTitle": "Kirim voice atau text singkat",
+      "twoDesc": "Berbicara secara natural di Telegram. Bot mentranskripsikan voice, membaca konteks, dan menyiapkan balasan yang tepat sasaran.",
+      "threeTitle": "Dapatkan koreksi yang bisa langsung dipakai",
+      "threeDesc": "Dapatkan versi yang lebih baik, feedback berbasis aturan yang jelas, dukungan terjemahan, dan follow-up hints untuk balasan berikutnya."
+    },
+    "whyWorksTitle": "Kenapa ini efektif",
+    "whyWorksSubhead": "Repetisi kecil tapi sering lebih kuat daripada rencana yang sempurna. Latihan di chat yang familiar dan bangun momentum.",
+    "whyWorksItems": {
+      "noScheduling": {
+        "title": "Tanpa jadwal",
+        "desc": "Latihan asynchronous berarti kamu bisa berlatih saat benar-benar punya waktu."
+      },
+      "telegram": {
+        "title": "Latihan di Telegram",
+        "desc": "Flow chat yang sederhana mengurangi friction, jadi kamu bisa latihan lebih konsisten."
+      },
+      "reusableCorrections": {
+        "title": "Koreksi yang bisa dipakai lagi",
+        "desc": "Dapatkan versi yang lebih rapi dan natural yang bisa langsung kamu ulang."
+      }
+    }
+  },
+  "pricing": {
+    "title": "Harga",
+    "subhead": "Mulai gratis. Upgrade saat kamu ingin waktu latihan lebih banyak.",
+    "perMonth": "bulan",
+    "perYear": "tahun",
+    "freePrice": "Gratis",
+    "annualNote": "{total}/tahun ({perMonth}/bulan).",
+    "billingSwitch": {
+      "label": "Interval penagihan",
+      "monthly": "Bulanan",
+      "annually": "Tahunan",
+      "save": "Hemat {save}%"
+    },
+    "ctaTry": "Coba di Telegram",
+    "ctaChooseTeacher": "Coba di Telegram",
+    "tiers": {
+      "free": {
+        "name": "Free",
+        "desc": "Coba formatnya dan rasakan sendiri.",
+        "features": "20 pesan||Voice atau text||Koreksi instan"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "Untuk progres yang serius.",
+        "features": "Jendela latihan harian yang lebih panjang||Voice atau text||Lebih banyak repetisi, habit lebih cepat"
+      }
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "subhead": "Bacaan singkat dan praktis tentang speaking practice dan menembus language barrier.",
+    "read": "Baca",
+    "backToBlog": "Kembali ke blog",
+    "readingMinutes": "{n} menit baca"
+  },
+  "about": {
+    "title": "Tentang",
+    "p1": "Kami membangun AI Language School karena kami ingin cara yang lebih sederhana untuk latihan speaking, tanpa jadwal, tanpa panggilan yang canggung, dan tanpa takut dihakimi.",
+    "p2": "Telegram selalu ada bersamamu. Bot bergaya guru selalu siap. Dan beberapa menit latihan nyata setiap hari lebih kuat daripada rencana sempurna yang tidak pernah dimulai.",
+    "bullets": {
+      "one": "Latihan dalam format chat yang familiar",
+      "two": "Dapatkan koreksi yang lembut dan phrasing yang lebih baik",
+      "three": "Bangun habit speaking harian"
+    }
+  },
+  "faq": {
+    "title": "FAQ",
+    "subhead": "Semua yang perlu kamu tahu sebelum mulai latihan.",
+    "items": [
+      {
+        "q": "Bagaimana cara kerja bot belajar bahasa di Telegram?",
+        "a": "Kamu mengirim voice atau text singkat di Telegram, bot menganalisisnya, lalu kamu mendapat balasan yang sudah dikoreksi dan lebih natural plus feedback yang praktis."
+      },
+      {
+        "q": "Apakah bot menyesuaikan dengan level bahasaku?",
+        "a": "Ya. Kamu bisa memilih levelmu (A1, A2, B1, B2, C1), dan kedalaman koreksi akan menyesuaikan supaya feedback tetap berguna dan tidak terasa berlebihan."
+      },
+      {
+        "q": "Bisakah aku latihan tanpa booking live lessons?",
+        "a": "Ya. Latihan sepenuhnya asynchronous di Telegram, jadi kamu bisa berlatih kapan pun punya waktu senggang."
+      },
+      {
+        "q": "Bisakah aku mendapat translation dan saran balasan?",
+        "a": "Ya. Setiap response bisa menyertakan dukungan translation dan opsi follow-up hint untuk membantumu menjawab lebih cepat dan menjaga percakapan tetap jalan."
+      },
+      {
+        "q": "Apakah bot mengingat progresku?",
+        "a": "Ya. Bot menyimpan level dan konteks percakapanmu, jadi latihan terasa makin personal dari waktu ke waktu."
+      },
+      {
+        "q": "Apakah ada free plan?",
+        "a": "Ya. Kamu bisa mulai dengan free plan dan upgrade saat ingin volume latihan mingguan yang lebih besar."
+      }
+    ]
+  },
+  "contact": {
+    "title": "Kontak",
+    "subhead": "Untuk feedback, gunakan bot langsung di Telegram.",
+    "stepOpenBot": "Buka botmu di Telegram.",
+    "stepTypeCommand": "Ketik",
+    "stepSend": "Kirim feedback sebagai text atau audio."
+  },
+  "teachers": {
+    "title": "Guru",
+    "subhead": "Lihat guru dan mulai pelajaran berikutnya di Telegram.",
+    "baseLanguageLabel": "Bahasa dasar",
+    "baseTeachersHeading": "Guru yang berbahasa {language}",
+    "baseTeachersSubhead": "Belajar {targets} dengan guru yang menjelaskan dalam {language}.",
+    "baseTeachersSubheadFallback": "Latihan dengan guru yang menjelaskan dalam {language}.",
+    "showMoreTeachers": "Tampilkan lebih banyak",
+    "showLessTeachers": "Tampilkan lebih sedikit",
+    "empty": "Belum ada guru yang tersedia."
+  },
+  "teacher": {
+    "teachesPrefix": "Mengajar",
+    "baseLanguagePrefix": "Menjelaskan dalam",
+    "stylePrefix": "Gaya"
+  },
+  "teacherProfile": {
+    "dialogueLearnerLabel": "Pelajar",
+    "dialogueTeacherLabel": "Guru"
+  },
+  "notFound": {
+    "title": "Halaman tidak ditemukan",
+    "desc": "Coba halaman beranda."
+  },
+  "language": {
+    "label": "Bahasa",
+    "en": "Inggris",
+    "de": "Jerman",
+    "es": "Spanyol",
+    "pt": "Portugis",
+    "uk": "Ukraina",
+    "it": "Italia",
+    "tr": "Turki",
+    "hi": "Hindi",
+    "ar": "Arab",
+    "id": "Indonesia"
+  },
+  "languageName": {
+    "en": "Inggris",
+    "de": "Jerman",
+    "uk": "Ukraina",
+    "it": "Italia",
+    "ru": "Rusia",
+    "pl": "Polandia",
+    "es": "Spanyol",
+    "pt": "Portugis",
+    "fr": "Prancis",
+    "tr": "Turki",
+    "hi": "Hindi",
+    "ar": "Arab",
+    "id": "Indonesia"
+  }
+}
