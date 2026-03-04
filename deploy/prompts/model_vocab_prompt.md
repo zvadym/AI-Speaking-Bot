@@ -31,7 +31,12 @@ For each item:
   - Only for German separable verbs. Return ONLY the prefix (e.g., "an", "auf"), without hyphen.
   - If not separable / not German / not applicable: empty string.
 - translation_base: translate the word into the base language (base_language_code).
-- transcription: IPA transcription in the target language. Return IPA without surrounding slashes.
+- transcription: IPA transcription for the same dictionary/display form used in the vocab list, not for the original surface form.
+  - For verbs: transcribe the infinitive.
+  - For nouns: transcribe the singular lemma (without the article).
+  - For adjectives/adverbs: transcribe the base form / lemma.
+  - Example (German): if surface is "klaren" but the displayed item is adjective lemma "klar", transcription must be for "klar", not "klaren".
+  - Return IPA without surrounding slashes.
 
 Output:
 - Return ONLY valid JSON, matching this shape exactly:
