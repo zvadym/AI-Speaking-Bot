@@ -3580,7 +3580,9 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
     'effective_tier',
     'is_active',
     'last_seen_at',
-    'streak_days'
+    'streak_days',
+    'xp_total',
+    'level'
   ]);
   const sortKey = sortKeyAllow.has(sortKeyRaw) ? sortKeyRaw : 'created_at';
 
@@ -3593,7 +3595,9 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
     effective_tier: `effective_tier`,
     is_active: `COALESCE(u.is_active, true)`,
     last_seen_at: `last_seen_at`,
-    streak_days: `COALESCE(ms.streak_days, 0)`
+    streak_days: `COALESCE(ms.streak_days, 0)`,
+    xp_total: `COALESCE(xp.xp_total, 0)`,
+    level: `FLOOR(COALESCE(xp.xp_total, 0) / 200.0)::int + 1`
   };
   const orderExpr = orderByMap[sortKey] || orderByMap.created_at;
 
@@ -3667,6 +3671,14 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
            MAX(streak_days)::int AS streak_days
          FROM streaks
          GROUP BY chat_id
+       ),
+       xp AS (
+         SELECT
+           up.chat_id,
+           COALESCE(SUM(up.xp_total), 0)::int AS xp_total
+         FROM user_progress up
+         JOIN filtered_users u ON u.chat_id = up.chat_id
+         GROUP BY up.chat_id
        )
        SELECT
          u.chat_id,
@@ -3686,7 +3698,9 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
              THEN u.plan_tier
            ELSE 'free'
          END AS effective_tier,
-         COALESCE(ms.streak_days, 0) AS streak_days
+         COALESCE(ms.streak_days, 0) AS streak_days,
+         COALESCE(xp.xp_total, 0) AS xp_total,
+         FLOOR(COALESCE(xp.xp_total, 0) / 200.0)::int + 1 AS level
        FROM filtered_users u
        LEFT JOIN LATERAL (
          SELECT
@@ -3698,6 +3712,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
          LIMIT 1
        ) ub ON true
        LEFT JOIN max_streaks ms ON ms.chat_id = u.chat_id
+       LEFT JOIN xp ON xp.chat_id = u.chat_id
        ORDER BY ${orderExpr} ${sortDir} NULLS LAST, u.chat_id DESC
        LIMIT $4::int
        OFFSET $5::int`,

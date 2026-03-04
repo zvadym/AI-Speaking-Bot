@@ -666,6 +666,18 @@
                     <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('streak_days') }}</span>
                   </button>
                 </th>
+                <th class="num">
+                  <button class="sort" type="button" @click="toggleUsersSort('level')">
+                    Level
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('level') }}</span>
+                  </button>
+                </th>
+                <th class="num">
+                  <button class="sort" type="button" @click="toggleUsersSort('xp_total')">
+                    XP
+                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('xp_total') }}</span>
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -679,6 +691,8 @@
                 <td>{{ row.is_active ? 'yes' : 'no' }}</td>
                 <td>{{ row.last_seen_at ? formatFeedbackTime(row.last_seen_at) : '—' }}</td>
                 <td class="num">{{ fmt(row.streak_days || 0) }}</td>
+                <td class="num">{{ fmt(row.level || 1) }}</td>
+                <td class="num">{{ fmt(row.xp_total || 0) }}</td>
               </tr>
             </tbody>
           </table>
@@ -1454,7 +1468,7 @@ function toggleUsersSort(key) {
     usersSort.dir = usersSort.dir === 'asc' ? 'desc' : 'asc';
   } else {
     usersSort.key = key;
-    usersSort.dir = key === 'created_at' || key === 'last_seen_at' || key === 'streak_days' ? 'desc' : 'asc';
+    usersSort.dir = ['created_at', 'last_seen_at', 'streak_days', 'xp_total', 'level'].includes(key) ? 'desc' : 'asc';
   }
   usersOffset.value = 0;
   refreshUsersPage({ resetOffset: true });
@@ -1992,9 +2006,45 @@ function formatDurationCompact(v) {
   return minutes ? `${fmt(hours)}h ${fmt(minutes)}m` : `${fmt(hours)}h`;
 }
 
+function parseDateLike(raw) {
+  if (raw instanceof Date) return raw;
+  const s = String(raw ?? '').trim();
+  if (!s) return null;
+  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s) ? s.replace(' ', 'T') : s;
+  const d = new Date(normalized);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+const utcDateTimeFormat = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'short',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+  timeZone: 'UTC'
+});
+
+const utcDateTimeFormatWithSeconds = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'short',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+  timeZone: 'UTC'
+});
+
+function formatUtcDateTime(raw, { seconds = false } = {}) {
+  const d = parseDateLike(raw);
+  if (!d) return raw ? String(raw) : '—';
+  const formatted = (seconds ? utcDateTimeFormatWithSeconds : utcDateTimeFormat).format(d);
+  return `${formatted} UTC`;
+}
+
 function isoStampNow() {
-  const d = new Date();
-  return d.toISOString().replace('T', ' ').replace('Z', 'Z');
+  return formatUtcDateTime(new Date(), { seconds: true });
 }
 
 function formatLastActivity(raw) {
@@ -2009,9 +2059,9 @@ function formatLastActivity(raw) {
 }
 
 function formatFeedbackTime(raw) {
-  const d = new Date(raw);
-  if (!Number.isFinite(d.getTime())) return 'unknown time';
-  return d.toISOString().replace('T', ' ').replace('Z', 'Z');
+  const d = parseDateLike(raw);
+  if (!d) return 'unknown time';
+  return formatUtcDateTime(d, { seconds: false });
 }
 
 function displayTier(rawTier) {
@@ -3992,6 +4042,12 @@ h1 {
   border-bottom: 1px solid rgba(30, 26, 22, 0.08);
   text-align: left;
   white-space: nowrap;
+}
+
+.users-table th.num,
+.users-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .users-table th {
