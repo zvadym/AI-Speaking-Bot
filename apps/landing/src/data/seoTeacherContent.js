@@ -91,6 +91,15 @@ const LANGUAGE_FORMS = {
     pl: { display: 'polonês' },
     pt: { display: 'português' },
     uk: { display: 'ucraniano' }
+  },
+  tr: {
+    en: { display: 'İngilizce' },
+    de: { display: 'Almanca' },
+    es: { display: 'İspanyolca' },
+    it: { display: 'İtalyanca' },
+    pl: { display: 'Lehçe' },
+    pt: { display: 'Portekizce' },
+    uk: { display: 'Ukraynaca' }
   }
 };
 
@@ -578,6 +587,28 @@ function buildPortugueseContent(teacher, languageForm) {
   };
 }
 
+function buildTurkishContent(teacher, languageForm) {
+  const teacherName = getTeacherName(teacher, 'tr') || getTeacherName(teacher, 'en') || 'öğretmen';
+  const targetLanguage = languageForm.display || 'İngilizce';
+  const base = buildEnglishContent(teacher, languageForm);
+
+  return {
+    ...base,
+    metaTitle: `${teacherName} ile Telegram'da ${targetLanguage} konuşma pratiği | AI Language School`,
+    metaDescription: `Telegram'da ${targetLanguage} konuşma pratiği yapın: anlık düzeltmeler, daha doğal ifadeler ve günlük mikro derslerle ${teacherName} ile bir dakikada başlayın.`,
+    h1: `${teacherName} ile Telegram'da ${targetLanguage} konuşma pratiği`,
+    heroLead: `Telegram içinde gerçek ${targetLanguage} konuşmalarını pratik yapın. Kısa bir sesli mesaj gönderin; ${teacherName} size anında düzeltilmiş ve daha doğal bir versiyonla dönsün.`,
+    heroOutcome: `İş, mülakat, seyahat ve günlük hayatta daha hızlı cevaplar, daha net telaffuz ve daha az çekinmeyle akıcı konuşun.`,
+    howTitle: 'Nasıl çalışır',
+    forWhoTitle: 'Kimler için uygun',
+    dialoguesTitle: 'Diyalog örneği',
+    dialoguesIntro: 'Kısa ve gerçekçi bir sohbet örneği. Sesli mesaj -> daha doğal cevap -> kural açıklaması -> sonraki mesaj seçenekleri.',
+    deepDiveTitle: `Telegram ile gerçek ${targetLanguage} akıcılığı nasıl gelişir`,
+    faqTitle: 'SSS',
+    otherTeachersTitle: 'Başka bir öğretmen seç'
+  };
+}
+
 export function getTeacherSeoContent(teacher, localeInput) {
   const locale = normalizeLocale(localeInput) || 'en';
   const languageForm = getLanguageForm(locale, teacher?.learningLanguage);
@@ -587,5 +618,6 @@ export function getTeacherSeoContent(teacher, localeInput) {
   if (locale === 'pt') return buildPortugueseContent(teacher, languageForm);
   if (locale === 'uk') return buildUkrainianContent(teacher, languageForm);
   if (locale === 'it') return buildItalianContent(teacher, languageForm);
+  if (locale === 'tr') return buildTurkishContent(teacher, languageForm);
   return buildEnglishContent(teacher, languageForm);
 }

@@ -248,7 +248,8 @@
     "es": "Spanisch",
     "pt": "Portugiesisch",
     "uk": "Ukrainisch",
-    "it": "Italienisch"
+    "it": "Italienisch",
+    "tr": "Türkisch"
   },
   "languageName": {
     "en": "Englisch",
@@ -259,6 +260,7 @@
     "pl": "Polnisch",
     "es": "Spanisch",
     "pt": "Portugiesisch",
-    "fr": "Französisch"
+    "fr": "Französisch",
+    "tr": "Türkisch"
   }
 }

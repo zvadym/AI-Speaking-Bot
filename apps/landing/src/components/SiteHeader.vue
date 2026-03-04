@@ -146,7 +146,8 @@ const LOCALE_FLAGS = {
   es: '🇪🇸',
   pt: '🇵🇹',
   uk: '🇺🇦',
-  it: '🇮🇹'
+  it: '🇮🇹',
+  tr: '🇹🇷'
 };
 
 const routeSuffix = computed(() => stripLocalePrefix(route.path || '/'));

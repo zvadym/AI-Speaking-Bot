@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const DEFAULT_SITE_URL = 'https://ai-language-school.online';
-const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it'];
+const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it', 'tr'];
 
 function normalizeSlug(input: unknown) {
   return String(input ?? '').trim();

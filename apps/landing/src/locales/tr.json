@@ -1,0 +1,266 @@
+{
+  "nav": {
+    "home": "Ana sayfa",
+    "features": "Özellikler",
+    "how": "Nasıl çalışır",
+    "teachers": "Öğretmenler",
+    "pricing": "Fiyatlandırma",
+    "faq": "SSS",
+    "blog": "Blog",
+    "menu": "Menü",
+    "about": "Hakkımızda",
+    "contact": "İletişim"
+  },
+  "cta": {
+    "start": "Öğretmenleri incele",
+    "try": "DENE",
+    "tryNow": "Telegram'da dene",
+    "openTelegram": "Telegram'da aç",
+    "close": "Kapat",
+    "viewProfile": "Profili gör",
+    "allTeachers": "Tüm öğretmenler",
+    "backToTeachers": "Öğretmenlere dön"
+  },
+  "home": {
+    "headline": "Konuşarak öğren.",
+    "seoTitle": "AI Language School | Telegram'da konuşma odaklı dil öğrenme botu",
+    "seoDescription": "Telegram'da bir AI dil öğretmeniyle konuşma pratiği yapın. Sesli ya da yazılı mesaj gönderin; anında düzeltmeler, daha doğal ifadeler, çeviri desteği ve devam soruları alın.",
+    "subhead": "Telegram'da bir AI öğretmenle konuşma pratiği yapın: sesli ya da yazılı mesaj gönderin, anında düzeltmeler alın ve faydalı sonraki adım önerileriyle konuşmayı sürdürün.",
+    "tryModalTitle": "Bir öğretmen seç",
+    "tryModalSubhead": "Telegram sohbetini açmak için bir öğretmen seç.",
+    "meetTeachers": "Öğretmenleri gör",
+    "chat": {
+      "you": "Sen",
+      "bot": "Öğretmen botu",
+      "tip": "Düzeltme",
+      "youMsg": "İngilizceyi daha güvenli konuşmak istiyorum ama ne söyleyeceğimi bilmiyorum.",
+      "botMsg": "Harika, bana gününün nasıl geçtiğini 5 cümlede anlat. Daha doğal konuşmana yardım edeceğim.",
+      "tipMsg": "Şunu deneyin: \"Her gün konuşma pratiği yapmak istiyorum; 10 dakika bile fayda sağlar.\""
+    },
+    "chatDemo": {
+      "you": "Sen",
+      "bot": "Öğretmen botu",
+      "userAudio": "Sesli mesaj",
+      "transcriptLabel": "Metin dökümü",
+      "botAudio": "Sesli yanıt",
+      "botTranscriptLabel": "Öğretmen metni",
+      "statusListening": "Tamam, dinliyorum",
+      "statusPreparing": "Yanıt hazırlanıyor",
+      "translateAction": "Çevir",
+      "translateLoading": "Çevriliyor...",
+      "translationHeader": "Çevirim:",
+      "followUpAction": "Sonra ne söylemeli?",
+      "followUpLoading": "Seçenekler hazırlanıyor...",
+      "explanationTitle": "Açıklama",
+      "explanationExample": {
+        "wrong": "Hello Lesja, how are you?",
+        "right": "Hello Lesja, how are you doing?",
+        "ruleLabel": "Kural: kelime seçimi",
+        "ruleText": "Birinin o anda nasıl hissettiğini sorarken \"doing\" kullanılır. Basit ve doğal tut."
+      },
+      "explanationBlocks": [
+        {
+          "title": "Doğal yanıt",
+          "body": "Kısa tut, tek bir somut detay ver ve sohbeti devam ettirmek için bir soruyla bitir."
+        },
+        {
+          "title": "Kelime seçimi",
+          "body": "Basit fiiller ve net sayılar kullan: \"improved\", \"reduced\", \"by 12%\"."
+        },
+        {
+          "title": "Sonraki adım",
+          "body": "Ne diyeceğinden emin değilsen, aşağıdaki en basit seçeneği seçip bir sonraki mesaj olarak gönder."
+        }
+      ],
+      "followUpTitle": "Devam ipuçları",
+      "hintsIntro": "Bir sonraki yanıtın için birkaç seçenek:",
+      "questionLabel": "Soru",
+      "simpleLabel": "Basit sürüm",
+      "conversationalLabel": "Sohbet sürümü",
+      "advancedLabel": "İleri seviye sürüm",
+      "phrasesLabel": "Faydalı ifadeler"
+    },
+    "teachersTitle": "Öğretmenler",
+    "teachersDesc": "Her öğretmenin kendi stili, dilleri ve odak alanı vardır.",
+    "featuredTeachersTitle": "Öğretmenlerle tanış",
+    "featuredTeachersSubhead": "Hedeflerine uyan öğretmen stilini seç ve Telegram'da pratik yapmaya başla.",
+    "featuredTeachersCta": "Tüm öğretmenleri gör",
+    "featuresTitle": "Özellikler",
+    "featuresSubhead": "Konuşmayı akışta tutan voice-first araçlar.",
+    "featureCards": {
+      "voice": {
+        "tag": "Ses",
+        "title": "Sesli mesajlar",
+        "desc": "Doğal bir şekilde sesli mesaj gönder. Bot mesajını metne çevirir ve bağlama uygun yönlendirme ile yanıt verir."
+      },
+      "translation": {
+        "tag": "Çeviri",
+        "title": "Çeviri",
+        "desc": "İhtiyacın olduğunda hızlı çeviri desteği al, böylece takılmak yerine akışta kal."
+      },
+      "followUp": {
+        "tag": "Devam",
+        "title": "Devam önerileri",
+        "desc": "Her cevaptan sonra konuşmayı aktif ve doğal tutmak için bir sonraki mesaja dair yararlı fikirler al."
+      },
+      "memory": {
+        "tag": "Hafıza",
+        "title": "Hafıza",
+        "desc": "Bot sohbet bağlamını hatırlar; böylece pratik sürekli ve kişiselleştirilmiş hissedilir."
+      }
+    },
+    "howTitle": "Nasıl çalışır",
+    "steps": {
+      "oneTitle": "Bir öğretmen ve seviye seç",
+      "oneDesc": "Dil eşleşmen için bir öğretmen seç ve seviyeni A1'den C1'e kadar ayarla.",
+      "twoTitle": "Kısa bir sesli ya da yazılı mesaj gönder",
+      "twoDesc": "Telegram'da doğal bir şekilde konuş. Bot sesi yazıya döker, bağlamı okur ve hedefli bir yanıt hazırlar.",
+      "threeTitle": "Hemen kullanabileceğin düzeltmeler al",
+      "threeDesc": "Daha iyi bir versiyon, net kural bazlı geri bildirim, çeviri desteği ve bir sonraki cevabın için ipuçları al."
+    },
+    "whyWorksTitle": "Neden işe yarıyor",
+    "whyWorksSubhead": "Küçük ve sık tekrarlar mükemmel planlardan daha etkilidir. Alışık olmadığın bir ders yerine alışık olduğun bir sohbette pratik yap ve ivme kazan.",
+    "whyWorksItems": {
+      "noScheduling": {
+        "title": "Randevu yok",
+        "desc": "Asenkron pratik, gerçekten vaktin olduğunda çalışmana imkan tanır."
+      },
+      "telegram": {
+        "title": "Telegram'da pratik",
+        "desc": "Basit sohbet akışı sürtünmeyi azaltır, böylece daha düzenli pratik yaparsın."
+      },
+      "reusableCorrections": {
+        "title": "Yeniden kullanılabilir düzeltmeler",
+        "desc": "Hemen tekrar edebileceğin daha temiz ve daha doğal bir versiyon al."
+      }
+    }
+  },
+  "pricing": {
+    "title": "Fiyatlandırma",
+    "subhead": "Ücretsiz başla. Daha fazla pratik süresi istediğinde yükseltebilirsin.",
+    "perMonth": "ay",
+    "perYear": "yıl",
+    "freePrice": "Ücretsiz",
+    "annualNote": "{total}/yıl ({perMonth}/ay).",
+    "billingSwitch": {
+      "label": "Faturalandırma aralığı",
+      "monthly": "Aylık",
+      "annually": "Yıllık",
+      "save": "%{save} tasarruf et"
+    },
+    "ctaTry": "Telegram'da dene",
+    "ctaChooseTeacher": "Telegram'da dene",
+    "tiers": {
+      "free": {
+        "name": "Free",
+        "desc": "Formatı dene ve nasıl hissettirdiğini gör.",
+        "features": "20 mesaj||Ses veya yazı||Anında düzeltmeler"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "Ciddi ilerleme için.",
+        "features": "Daha uzun günlük pratik pencereleri||Ses veya yazı||Daha fazla tekrar, daha hızlı alışkanlık"
+      }
+    }
+  },
+  "blog": {
+    "title": "Blog",
+    "subhead": "Konuşma pratiği ve dil bariyerini aşma hakkında kısa ve pratik yazılar.",
+    "read": "Oku",
+    "backToBlog": "Bloga dön",
+    "readingMinutes": "{n} dk okuma"
+  },
+  "about": {
+    "title": "Hakkımızda",
+    "p1": "AI Language School'u kurduk çünkü konuşma pratiği yapmanın daha basit bir yolunu istedik: program ayarlamadan, rahatsız edici görüşmeler olmadan ve yargılanma korkusu yaşamadan.",
+    "p2": "Telegram her zaman yanında. Öğretmen tarzı bir bot her zaman hazır. Ve her gün yapılan birkaç dakikalık gerçek pratik, hiç başlamadığın mükemmel plandan daha iyidir.",
+    "bullets": {
+      "one": "Alışık olduğun sohbet formatında pratik yap",
+      "two": "Nazik düzeltmeler ve daha iyi ifadeler al",
+      "three": "Günlük konuşma alışkanlığı oluştur"
+    }
+  },
+  "faq": {
+    "title": "SSS",
+    "subhead": "Pratik yapmaya başlamadan önce bilmen gereken her şey.",
+    "items": [
+      {
+        "q": "Telegram dil öğrenme botu nasıl çalışır?",
+        "a": "Telegram'da kısa bir sesli ya da yazılı mesaj gönderirsin, bot bunu analiz eder ve düzeltilmiş, daha doğal bir cevapla birlikte pratik geri bildirim sunar."
+      },
+      {
+        "q": "Dil seviyeme uyum sağlıyor mu?",
+        "a": "Evet. Seviyeni (A1, A2, B1, B2, C1) seçebilirsin; düzeltme derinliği faydalı olacak şekilde uyarlanır ve bunaltıcı olmaz."
+      },
+      {
+        "q": "Canlı ders rezerve etmeden pratik yapabilir miyim?",
+        "a": "Evet. Pratik tamamen Telegram'da asenkron ilerler; müsait olduğun anda çalışabilirsin."
+      },
+      {
+        "q": "Çeviri ve cevap önerileri alabilir miyim?",
+        "a": "Evet. Her cevapta çeviri desteği ve konuşmayı sürdürmene yardım eden devam önerileri bulunabilir."
+      },
+      {
+        "q": "Bot ilerlememi hatırlıyor mu?",
+        "a": "Evet. Bot seviyeni ve sohbet bağlamını tutar; böylece pratik zamanla kişiselleştirilmiş olur."
+      },
+      {
+        "q": "Ücretsiz plan var mı?",
+        "a": "Evet. Ücretsiz planla başlayabilir, haftalık daha fazla pratik hacmi istediğinde yükseltebilirsin."
+      }
+    ]
+  },
+  "contact": {
+    "title": "İletişim",
+    "subhead": "Geri bildirim için botu doğrudan Telegram'da kullan.",
+    "stepOpenBot": "Botunu Telegram'da aç.",
+    "stepTypeCommand": "Şunu yaz",
+    "stepSend": "Geri bildirimini yazı ya da sesli mesaj olarak gönder."
+  },
+  "teachers": {
+    "title": "Öğretmenler",
+    "subhead": "Öğretmenleri incele ve bir sonraki dersine Telegram'da başla.",
+    "baseLanguageLabel": "Ana dil",
+    "baseTeachersHeading": "Ana dili {language} olan öğretmenler",
+    "baseTeachersSubhead": "{language} dilinde açıklama yapan öğretmenlerle {targets} öğren.",
+    "baseTeachersSubheadFallback": "{language} dilinde açıklama yapan öğretmenlerle pratik yap.",
+    "showMoreTeachers": "Daha fazla göster",
+    "showLessTeachers": "Daha az göster",
+    "empty": "Henüz uygun öğretmen yok."
+  },
+  "teacher": {
+    "teachesPrefix": "Öğretir",
+    "baseLanguagePrefix": "Şu dilde açıklar",
+    "stylePrefix": "Stil"
+  },
+  "teacherProfile": {
+    "dialogueLearnerLabel": "Öğrenci",
+    "dialogueTeacherLabel": "Öğretmen"
+  },
+  "notFound": {
+    "title": "Sayfa bulunamadı",
+    "desc": "Ana sayfayı dene."
+  },
+  "language": {
+    "label": "Dil",
+    "en": "İngilizce",
+    "de": "Almanca",
+    "es": "İspanyolca",
+    "pt": "Portekizce",
+    "uk": "Ukraynaca",
+    "it": "İtalyanca",
+    "tr": "Türkçe"
+  },
+  "languageName": {
+    "en": "İngilizce",
+    "de": "Almanca",
+    "uk": "Ukraynaca",
+    "it": "İtalyanca",
+    "ru": "Rusça",
+    "pl": "Lehçe",
+    "es": "İspanyolca",
+    "pt": "Portekizce",
+    "fr": "Fransızca",
+    "tr": "Türkçe"
+  }
+}

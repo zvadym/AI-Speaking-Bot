@@ -1,6 +1,6 @@
 import scenarioConfig from './chat-demo-scenarios.json';
 
-const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it'];
+const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it', 'tr'];
 const FALLBACK_SCENARIO_ID = 'jobInterview';
 const FALLBACK_LOCALE = 'en';
 
@@ -15,6 +15,7 @@ function normalizeLocale(input) {
   if (raw === 'es' || raw.startsWith('es-')) return 'es';
   if (raw === 'pt' || raw === 'pt-br' || raw === 'pt-pt' || raw.startsWith('pt-')) return 'pt';
   if (raw === 'it' || raw.startsWith('it-')) return 'it';
+  if (raw === 'tr' || raw === 'tr-tr' || raw.startsWith('tr-')) return 'tr';
   if (raw === 'en' || raw.startsWith('en-')) return 'en';
   return FALLBACK_LOCALE;
 }

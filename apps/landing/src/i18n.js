@@ -6,11 +6,12 @@ import es from './locales/es.json';
 import pt from './locales/pt.json';
 import uk from './locales/uk.json';
 import it from './locales/it.json';
+import tr from './locales/tr.json';
 
 const STORAGE_KEY = 'landing_ui_locale';
 
-const messages = { en, de, es, pt, uk, it };
-export const supportedLocales = ['en', 'de', 'es', 'pt', 'uk', 'it'];
+const messages = { en, de, es, pt, uk, it, tr };
+export const supportedLocales = ['en', 'de', 'es', 'pt', 'uk', 'it', 'tr'];
 
 export function normalizeLocale(input) {
   const raw = (input || '').toString().trim().toLowerCase();
@@ -19,6 +20,7 @@ export function normalizeLocale(input) {
   if (raw === 'es' || raw.startsWith('es-')) return 'es';
   if (raw === 'pt' || raw === 'pt-br' || raw === 'pt-pt' || raw.startsWith('pt-')) return 'pt';
   if (raw === 'it' || raw.startsWith('it-')) return 'it';
+  if (raw === 'tr' || raw === 'tr-tr' || raw.startsWith('tr-')) return 'tr';
   if (raw === 'en' || raw.startsWith('en-')) return 'en';
   return '';
 }
