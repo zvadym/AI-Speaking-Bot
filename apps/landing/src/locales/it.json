@@ -249,7 +249,8 @@
     "pt": "Portoghese",
     "uk": "Ucraino",
     "it": "Italiano",
-    "tr": "Turco"
+    "tr": "Turco",
+    "hi": "Hindi"
   },
   "languageName": {
     "en": "Inglese",
@@ -261,6 +262,7 @@
     "es": "Spagnolo",
     "pt": "Portoghese",
     "fr": "Francese",
-    "tr": "Turco"
+    "tr": "Turco",
+    "hi": "Hindi"
   }
 }

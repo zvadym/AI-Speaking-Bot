@@ -1,0 +1,268 @@
+{
+  "nav": {
+    "home": "होम",
+    "features": "फ़ीचर्स",
+    "how": "यह कैसे काम करता है",
+    "teachers": "शिक्षक",
+    "pricing": "प्राइसिंग",
+    "faq": "FAQ",
+    "blog": "ब्लॉग",
+    "menu": "मेन्यू",
+    "about": "हमारे बारे में",
+    "contact": "संपर्क"
+  },
+  "cta": {
+    "start": "शिक्षक देखें",
+    "try": "TRY",
+    "tryNow": "Telegram में आज़माएँ",
+    "openTelegram": "Telegram में खोलें",
+    "close": "बंद करें",
+    "viewProfile": "प्रोफ़ाइल देखें",
+    "allTeachers": "सभी शिक्षक",
+    "backToTeachers": "शिक्षकों पर वापस जाएँ"
+  },
+  "home": {
+    "headline": "बोलकर सीखें।",
+    "seoTitle": "AI Language School | Telegram में voice-first language learning bot",
+    "seoDescription": "Telegram में AI language tutor के साथ speaking practice करें। Voice या text भेजें, instant corrections, natural phrasing, translation support और follow-up prompts पाएँ।",
+    "subhead": "Telegram में AI tutor के साथ speaking practice करें: voice या text भेजें, instant corrections पाएँ और useful next-step prompts के साथ conversation को जारी रखें।",
+    "tryModalTitle": "एक शिक्षक चुनें",
+    "tryModalSubhead": "Telegram chat खोलने के लिए एक शिक्षक चुनें।",
+    "meetTeachers": "शिक्षक देखें",
+    "chat": {
+      "you": "आप",
+      "bot": "शिक्षक bot",
+      "tip": "सुधार",
+      "youMsg": "मैं अंग्रेज़ी ज़्यादा confidence के साथ बोलना चाहता/चाहती हूँ, लेकिन मुझे समझ नहीं आता कि क्या कहूँ।",
+      "botMsg": "बहुत बढ़िया, अपने दिन के बारे में 5 वाक्यों में बताइए। मैं आपको ज़्यादा natural sounding बनने में मदद करूँगा।",
+      "tipMsg": "यह try करें: “मैं हर दिन speaking practice करना चाहता/चाहती हूँ, 10 मिनट भी मदद करते हैं।”"
+    },
+    "chatDemo": {
+      "you": "आप",
+      "bot": "शिक्षक bot",
+      "userAudio": "Voice message",
+      "transcriptLabel": "Transcript",
+      "botAudio": "Voice reply",
+      "botTranscriptLabel": "शिक्षक transcript",
+      "statusListening": "ठीक है, सुन रहा हूँ",
+      "statusPreparing": "Reply तैयार हो रही है",
+      "translateAction": "अनुवाद करें",
+      "translateLoading": "अनुवाद हो रहा है...",
+      "translationHeader": "मेरा अनुवाद:",
+      "followUpAction": "अगला क्या कहें?",
+      "followUpLoading": "Options तैयार हो रहे हैं...",
+      "explanationTitle": "समझाइश",
+      "explanationExample": {
+        "wrong": "Hello Lesja, how are you?",
+        "right": "Hello Lesja, how are you doing?",
+        "ruleLabel": "Rule: word choice",
+        "ruleText": "जब आप पूछते हैं कि कोई अभी कैसा महसूस कर रहा है, तो “doing” ज़्यादा natural लगता है। इसे simple रखें।"
+      },
+      "explanationBlocks": [
+        {
+          "title": "Natural reply",
+          "body": "इसे छोटा रखें, एक concrete detail दें और chat को आगे बढ़ाने के लिए question पर खत्म करें।"
+        },
+        {
+          "title": "Word choice",
+          "body": "Simple verbs और specific numbers इस्तेमाल करें: “improved”, “reduced”, “by 12%”."
+        },
+        {
+          "title": "Next step",
+          "body": "अगर आपको समझ नहीं आ रहा कि क्या कहना है, तो नीचे वाला सबसे simple variant चुनें और उसे अगला message भेजें।"
+        }
+      ],
+      "followUpTitle": "Follow-up hints",
+      "hintsIntro": "आपके अगले reply के लिए कुछ options:",
+      "questionLabel": "Question",
+      "simpleLabel": "Simple variant",
+      "conversationalLabel": "Conversational variant",
+      "advancedLabel": "Advanced variant",
+      "phrasesLabel": "Useful phrases"
+    },
+    "teachersTitle": "शिक्षक",
+    "teachersDesc": "हर शिक्षक का अपना style, languages और focus होता है।",
+    "featuredTeachersTitle": "शिक्षकों से मिलें",
+    "featuredTeachersSubhead": "अपने goals से मेल खाने वाला teacher style चुनें और Telegram में practice शुरू करें।",
+    "featuredTeachersCta": "सभी शिक्षक देखें",
+    "featuresTitle": "फ़ीचर्स",
+    "featuresSubhead": "Voice-first tools जो conversation को flow में रखते हैं।",
+    "featureCards": {
+      "voice": {
+        "tag": "Voice",
+        "title": "Voice messages",
+        "desc": "Audio में natural तरीके से बोलें। Bot आपका message transcribe करता है और context-aware guidance के साथ जवाब देता है।"
+      },
+      "translation": {
+        "tag": "Translate",
+        "title": "Translation",
+        "desc": "जब भी ज़रूरत हो fast translation support पाएँ, ताकि आप अटकने के बजाय flow में रहें।"
+      },
+      "followUp": {
+        "tag": "Follow-up",
+        "title": "Follow-up",
+        "desc": "हर answer के बाद useful next-reply ideas पाएँ, ताकि conversation active और natural रहे।"
+      },
+      "memory": {
+        "tag": "Memory",
+        "title": "Memory",
+        "desc": "Bot आपकी conversation context याद रखता है, ताकि आपकी practice समय के साथ continuous और personalized लगे।"
+      }
+    },
+    "howTitle": "यह कैसे काम करता है",
+    "steps": {
+      "oneTitle": "एक शिक्षक और level चुनें",
+      "oneDesc": "अपने language pair के लिए शिक्षक चुनें और अपना level A1 से C1 तक सेट करें।",
+      "twoTitle": "एक छोटा voice या text message भेजें",
+      "twoDesc": "Telegram में natural तरीके से बोलें। Bot voice को transcribe करता है, context पढ़ता है और targeted reply तैयार करता है।",
+      "threeTitle": "ऐसे corrections पाएँ जिन्हें आप तुरंत इस्तेमाल कर सकें",
+      "threeDesc": "एक better version, clear rule-based feedback, translation support और आपके अगले reply के लिए follow-up hints पाएँ।"
+    },
+    "whyWorksTitle": "यह क्यों काम करता है",
+    "whyWorksSubhead": "छोटे लेकिन frequent reps perfect plans से बेहतर होते हैं। Familiar chat में practice करें और momentum बनाएँ।",
+    "whyWorksItems": {
+      "noScheduling": {
+        "title": "कोई scheduling नहीं",
+        "desc": "Asynchronous practice का मतलब है कि आप तब train कर सकते हैं जब आपके पास सच में समय हो।"
+      },
+      "telegram": {
+        "title": "Telegram में practice",
+        "desc": "Simple chat flow friction कम करता है, इसलिए आप ज़्यादा consistently practice करते हैं।"
+      },
+      "reusableCorrections": {
+        "title": "ऐसे corrections जिन्हें फिर से इस्तेमाल किया जा सके",
+        "desc": "एक cleaner, ज़्यादा natural version पाएँ जिसे आप तुरंत दोहरा सकें।"
+      }
+    }
+  },
+  "pricing": {
+    "title": "प्राइसिंग",
+    "subhead": "Free में शुरू करें। जब आपको ज़्यादा practice time चाहिए हो, तब upgrade करें।",
+    "perMonth": "माह",
+    "perYear": "साल",
+    "freePrice": "मुफ़्त",
+    "annualNote": "{total}/साल ({perMonth}/माह)।",
+    "billingSwitch": {
+      "label": "Billing interval",
+      "monthly": "मासिक",
+      "annually": "वार्षिक",
+      "save": "{save}% बचाएँ"
+    },
+    "ctaTry": "Telegram में आज़माएँ",
+    "ctaChooseTeacher": "Telegram में आज़माएँ",
+    "tiers": {
+      "free": {
+        "name": "Free",
+        "desc": "Format को try करें और देखें कि कैसा लगता है।",
+        "features": "20 messages||Voice या text||Instant corrections"
+      },
+      "pro": {
+        "name": "Pro",
+        "desc": "Serious progress के लिए।",
+        "features": "लंबी daily practice windows||Voice या text||ज़्यादा reps, तेज habit"
+      }
+    }
+  },
+  "blog": {
+    "title": "ब्लॉग",
+    "subhead": "Speaking practice और language barrier तोड़ने पर short, practical पढ़ाई।",
+    "read": "पढ़ें",
+    "backToBlog": "ब्लॉग पर वापस जाएँ",
+    "readingMinutes": "{n} मिनट पढ़ाई"
+  },
+  "about": {
+    "title": "हमारे बारे में",
+    "p1": "हमने AI Language School इसलिए बनाया क्योंकि हम speaking practice का एक सरल तरीका चाहते थे, बिना schedules, awkward calls या judged महसूस किए।",
+    "p2": "Telegram हमेशा आपके साथ है। Teacher-style bot हमेशा तैयार है। और रोज़ की कुछ मिनट real practice उस perfect plan से बेहतर है जिसे आप कभी शुरू नहीं करते।",
+    "bullets": {
+      "one": "Familiar chat format में practice करें",
+      "two": "Gentle corrections और better phrasing पाएँ",
+      "three": "Daily speaking habit बनाएँ"
+    }
+  },
+  "faq": {
+    "title": "FAQ",
+    "subhead": "Practice शुरू करने से पहले जानने लायक सब कुछ।",
+    "items": [
+      {
+        "q": "Telegram language learning bot कैसे काम करता है?",
+        "a": "आप Telegram में एक छोटा voice या text message भेजते हैं, bot उसे analyze करता है और आपको corrected, more natural reply के साथ practical feedback देता है।"
+      },
+      {
+        "q": "क्या यह मेरे language level के हिसाब से adapt करता है?",
+        "a": "हाँ। आप अपना level (A1, A2, B1, B2, C1) चुन सकते हैं, और correction depth उसी के हिसाब से adjust होती है ताकि feedback useful रहे और overwhelming न लगे।"
+      },
+      {
+        "q": "क्या मैं live lessons book किए बिना practice कर सकता/सकती हूँ?",
+        "a": "हाँ। Practice पूरी तरह Telegram में asynchronous है, इसलिए जब भी free moment मिले आप train कर सकते हैं।"
+      },
+      {
+        "q": "क्या मुझे translation और reply suggestions मिल सकते हैं?",
+        "a": "हाँ। हर response में translation support और follow-up hint options हो सकते हैं ताकि आप जल्दी जवाब दें और conversation जारी रखें।"
+      },
+      {
+        "q": "क्या bot मेरी progress याद रखता है?",
+        "a": "हाँ। Bot आपका level और conversation context रखता है, इसलिए समय के साथ practice personalized रहती है।"
+      },
+      {
+        "q": "क्या free plan है?",
+        "a": "हाँ। आप free plan से शुरू कर सकते हैं और जब आपको ज़्यादा weekly practice volume चाहिए हो तब upgrade कर सकते हैं।"
+      }
+    ]
+  },
+  "contact": {
+    "title": "संपर्क",
+    "subhead": "Feedback के लिए bot को सीधे Telegram में इस्तेमाल करें।",
+    "stepOpenBot": "अपने bot को Telegram में खोलें।",
+    "stepTypeCommand": "टाइप करें",
+    "stepSend": "अपना feedback text या audio के रूप में भेजें।"
+  },
+  "teachers": {
+    "title": "शिक्षक",
+    "subhead": "शिक्षकों को देखें और Telegram में अपनी अगली lesson शुरू करें।",
+    "baseLanguageLabel": "Base language",
+    "baseTeachersHeading": "{language} बोलने वाले शिक्षक",
+    "baseTeachersSubhead": "{language} में समझाने वाले शिक्षकों के साथ {targets} सीखें।",
+    "baseTeachersSubheadFallback": "{language} में समझाने वाले शिक्षकों के साथ practice करें।",
+    "showMoreTeachers": "और दिखाएँ",
+    "showLessTeachers": "कम दिखाएँ",
+    "empty": "अभी कोई शिक्षक उपलब्ध नहीं है।"
+  },
+  "teacher": {
+    "teachesPrefix": "पढ़ाते हैं",
+    "baseLanguagePrefix": "इस भाषा में समझाते हैं",
+    "stylePrefix": "स्टाइल"
+  },
+  "teacherProfile": {
+    "dialogueLearnerLabel": "Learner",
+    "dialogueTeacherLabel": "Teacher"
+  },
+  "notFound": {
+    "title": "पेज नहीं मिला",
+    "desc": "होम पेज आज़माएँ।"
+  },
+  "language": {
+    "label": "भाषा",
+    "en": "अंग्रेज़ी",
+    "de": "जर्मन",
+    "es": "स्पेनिश",
+    "pt": "पुर्तगाली",
+    "uk": "यूक्रेनी",
+    "it": "इतालवी",
+    "tr": "तुर्की",
+    "hi": "हिंदी"
+  },
+  "languageName": {
+    "en": "अंग्रेज़ी",
+    "de": "जर्मन",
+    "uk": "यूक्रेनी",
+    "it": "इतालवी",
+    "ru": "रूसी",
+    "pl": "पोलिश",
+    "es": "स्पेनिश",
+    "pt": "पुर्तगाली",
+    "fr": "फ़्रेंच",
+    "tr": "तुर्की",
+    "hi": "हिंदी"
+  }
+}

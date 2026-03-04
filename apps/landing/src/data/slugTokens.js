@@ -1,4 +1,4 @@
-export const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it', 'tr'];
+export const SUPPORTED_LOCALES = ['en', 'de', 'es', 'pt', 'uk', 'it', 'tr', 'hi'];
 
 export const LANGUAGE_SLUG_TOKENS = {
   en: {
@@ -70,6 +70,16 @@ export const LANGUAGE_SLUG_TOKENS = {
     pl: 'lehce',
     es: 'ispanyolca',
     fr: 'fransizca'
+  },
+  hi: {
+    en: 'angrezi',
+    de: 'german',
+    it: 'italvi',
+    uk: 'ukrainian',
+    ru: 'russian',
+    pl: 'polish',
+    es: 'spanish',
+    fr: 'french'
   }
 };
 
@@ -101,6 +111,10 @@ export const HUB_TOPIC_SLUG_TOKENS = {
   tr: {
     speaking: 'konusma-pratigi',
     interview: 'is-gorusmesi'
+  },
+  hi: {
+    speaking: 'speaking-practice',
+    interview: 'interview-prep'
   }
 };
 
@@ -124,6 +138,7 @@ function normalizeLocaleForSlugs(input) {
   if (raw.startsWith('uk') || raw.startsWith('ua')) return 'uk';
   if (raw.startsWith('it')) return 'it';
   if (raw.startsWith('tr')) return 'tr';
+  if (raw.startsWith('hi')) return 'hi';
   return 'en';
 }
 

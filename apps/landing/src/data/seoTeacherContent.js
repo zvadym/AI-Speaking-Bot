@@ -100,6 +100,15 @@ const LANGUAGE_FORMS = {
     pl: { display: 'Lehçe' },
     pt: { display: 'Portekizce' },
     uk: { display: 'Ukraynaca' }
+  },
+  hi: {
+    en: { display: 'अंग्रेज़ी' },
+    de: { display: 'जर्मन' },
+    es: { display: 'स्पेनिश' },
+    it: { display: 'इतालवी' },
+    pl: { display: 'पोलिश' },
+    pt: { display: 'पुर्तगाली' },
+    uk: { display: 'यूक्रेनी' }
   }
 };
 
@@ -609,6 +618,28 @@ function buildTurkishContent(teacher, languageForm) {
   };
 }
 
+function buildHindiContent(teacher, languageForm) {
+  const teacherName = getTeacherName(teacher, 'hi') || getTeacherName(teacher, 'en') || 'शिक्षक';
+  const targetLanguage = languageForm.display || 'अंग्रेज़ी';
+  const base = buildEnglishContent(teacher, languageForm);
+
+  return {
+    ...base,
+    metaTitle: `${teacherName} के साथ Telegram पर ${targetLanguage} बोलने की प्रैक्टिस | AI Language School`,
+    metaDescription: `Telegram पर ${targetLanguage} बोलने की प्रैक्टिस करें: तुरंत corrections, ज्यादा natural phrasing, और daily micro-lessons के साथ ${teacherName} के जरिए एक मिनट में शुरू करें।`,
+    h1: `${teacherName} के साथ Telegram पर ${targetLanguage} बोलने की प्रैक्टिस`,
+    heroLead: `Telegram के अंदर real ${targetLanguage} conversations की प्रैक्टिस करें। एक छोटा voice message भेजें, और ${teacherName} आपको तुरंत corrected और ज्यादा natural version भेजेगा।`,
+    heroOutcome: `काम, interviews, travel और daily life में faster replies, clearer pronunciation और कम hesitation के साथ ज्यादा fluently बोलें।`,
+    howTitle: 'यह कैसे काम करता है',
+    forWhoTitle: 'यह किन लोगों के लिए है',
+    dialoguesTitle: 'डायलॉग उदाहरण',
+    dialoguesIntro: 'एक छोटा और realistic chat example। Voice message -> बेहतर reply -> rule explanation -> अगला message option।',
+    deepDiveTitle: `Telegram के साथ real ${targetLanguage} fluency कैसे बनती है`,
+    faqTitle: 'अक्सर पूछे जाने वाले सवाल',
+    otherTeachersTitle: 'दूसरे शिक्षक चुनें'
+  };
+}
+
 export function getTeacherSeoContent(teacher, localeInput) {
   const locale = normalizeLocale(localeInput) || 'en';
   const languageForm = getLanguageForm(locale, teacher?.learningLanguage);
@@ -619,5 +650,6 @@ export function getTeacherSeoContent(teacher, localeInput) {
   if (locale === 'uk') return buildUkrainianContent(teacher, languageForm);
   if (locale === 'it') return buildItalianContent(teacher, languageForm);
   if (locale === 'tr') return buildTurkishContent(teacher, languageForm);
+  if (locale === 'hi') return buildHindiContent(teacher, languageForm);
   return buildEnglishContent(teacher, languageForm);
 }
