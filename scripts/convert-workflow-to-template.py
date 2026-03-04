@@ -226,6 +226,44 @@ def normalize_start_loader(converted: Dict[str, Any], template: Dict[str, Any]) 
     return changed
 
 
+def normalize_locale_nodes_to_placeholders(
+    converted: Dict[str, Any], node_names: Tuple[str, ...] = ("Set Locale", "Digest Locale")
+) -> int:
+    changed = 0
+    for node_name in node_names:
+        node = find_node_by_name(converted, node_name)
+        if not isinstance(node, dict):
+            continue
+        params = node.get("parameters")
+        if not isinstance(params, dict):
+            continue
+        assignments = (((params.get("assignments") or {}).get("assignments")) or [])
+        if not isinstance(assignments, list):
+            continue
+
+        for item in assignments:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name") or "").strip()
+            if not name:
+                continue
+            placeholder = f"{{{{{name}}}}}"
+            if item.get("type") == "array":
+                desired_value: Any = [placeholder]
+                desired_type = "array"
+            else:
+                desired_value = placeholder
+                desired_type = "string"
+
+            if item.get("value") != desired_value:
+                item["value"] = desired_value
+                changed += 1
+            if item.get("type") != desired_type:
+                item["type"] = desired_type
+                changed += 1
+    return changed
+
+
 def confirm(prompt: str) -> bool:
     return input(f"{prompt} [y/N]: ").strip().lower() in {"y", "yes"}
 
@@ -281,6 +319,7 @@ def main() -> int:
     changes.append(("webhookId restored from template", restore_webhook_ids(converted, template)))
     if target_name == "ai-bot":
         changes.append(("Start loader normalized", normalize_start_loader(converted, template)))
+        changes.append(("Locale nodes normalized to placeholders", normalize_locale_nodes_to_placeholders(converted)))
 
     print("\nConversion summary:")
     print(f"  source: {source_file}")
