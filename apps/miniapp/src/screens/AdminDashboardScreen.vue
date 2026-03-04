@@ -454,6 +454,29 @@
           ]"
         />
       </section>
+
+      <section class="charts-grid">
+        <AdminChart
+          title="XP distribution"
+          subtitle="Total XP per user (sum across bots). Buckets are inclusive."
+          kind="bar"
+          x-labels="all"
+          :data="xpDistributionSeries"
+          :series="[{ key: 'users', label: 'Users', color: 'rgba(103, 78, 167, 0.88)' }]"
+        />
+
+        <AdminChart
+          title="Daily XP earned"
+          subtitle="UTC. Total XP awarded per day (right axis: users earning XP)."
+          kind="line"
+          x-labels="all"
+          :data="xpEarnedByDaySeries"
+          :series="[
+            { key: 'xp', label: 'XP', color: 'rgba(31, 107, 99, 0.9)', type: 'line' },
+            { key: 'users', label: 'Users', color: 'rgba(199, 90, 36, 0.58)', type: 'bar', yAxisId: 'y1' }
+          ]"
+        />
+      </section>
     </template>
 
     <template v-else-if="activeTab === 'users'">
@@ -1352,6 +1375,8 @@ const freeUsersMessageBuckets = ref([]);
 const activeUsersByHourSeries = ref([]);
 const activeUsersByHourTodaySeries = ref([]);
 const userStreakSeries = ref([]);
+const xpDistributionSeries = ref([]);
+const xpEarnedByDaySeries = ref([]);
 const activeUsersByHourCombinedSeries = computed(() => {
   const merged = new Map();
 
@@ -2511,6 +2536,8 @@ async function refreshAnalytics() {
       byHour,
       byHourToday,
       userStreaks,
+      xpDistribution,
+      xpEarnedByDay,
       payloads
     ] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
@@ -2526,6 +2553,8 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload, exclude_chat_ids: q.exclude_chat_ids }, headers }),
       apiJson(props.apiBase, '/admin/metrics/user-streaks', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/xp-distribution', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/xp-earned-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
     ]);
 
@@ -2547,6 +2576,8 @@ async function refreshAnalytics() {
     activeUsersByHourSeries.value = Array.isArray(byHour?.series) ? byHour.series : [];
     activeUsersByHourTodaySeries.value = Array.isArray(byHourToday?.series) ? byHourToday.series : [];
     userStreakSeries.value = Array.isArray(userStreaks?.series) ? userStreaks.series : [];
+    xpDistributionSeries.value = Array.isArray(xpDistribution?.series) ? xpDistribution.series : [];
+    xpEarnedByDaySeries.value = Array.isArray(xpEarnedByDay?.series) ? xpEarnedByDay.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
     // Users list is loaded in the Users tab (separate request).
     

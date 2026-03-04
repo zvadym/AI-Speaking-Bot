@@ -2344,6 +2344,130 @@ app.get('/admin/metrics/usage-seconds-by-day', requireAdmin, async (req, res) =>
   });
 });
 
+app.get('/admin/metrics/xp-earned-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
+     ),
+     earned AS (
+       SELECT
+         date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+         SUM(e.xp_delta)::bigint AS xp,
+         COUNT(DISTINCT e.chat_id)::int AS users
+       FROM xp_events e
+       JOIN filtered_users u ON u.chat_id = e.chat_id
+       WHERE e.occurred_at >= (SELECT from_ts FROM params)
+         AND e.occurred_at < (SELECT to_ts FROM params)
+       GROUP BY 1
+     )
+     SELECT
+       d.day_utc::text AS day,
+       COALESCE(er.xp, 0)::bigint AS xp,
+       COALESCE(er.users, 0)::int AS users
+     FROM days d
+     LEFT JOIN earned er USING (day_utc)
+     ORDER BY d.day_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
+app.get('/admin/metrics/xp-distribution', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+  const { rows } = await pool.query(
+    `WITH filtered_users AS (
+       SELECT chat_id
+       FROM users
+       WHERE ($1::text IS NULL OR acquisition_start_payload = $1)
+         AND ($2::bigint[] IS NULL OR chat_id <> ALL($2::bigint[]))
+     ),
+     per_user AS (
+       SELECT
+         u.chat_id,
+         COALESCE(SUM(up.xp_total), 0)::int AS xp_total
+       FROM filtered_users u
+       LEFT JOIN user_progress up ON up.chat_id = u.chat_id
+       GROUP BY u.chat_id
+     ),
+     labeled AS (
+       SELECT
+         CASE
+           WHEN xp_total <= 49 THEN '0–49'
+           WHEN xp_total <= 99 THEN '50–99'
+           WHEN xp_total <= 199 THEN '100–199'
+           WHEN xp_total <= 499 THEN '200–499'
+           WHEN xp_total <= 999 THEN '500–999'
+           WHEN xp_total <= 1999 THEN '1k–1.9k'
+           WHEN xp_total <= 4999 THEN '2k–4.9k'
+           WHEN xp_total <= 9999 THEN '5k–9.9k'
+           ELSE '10k+'
+         END AS bucket,
+         COUNT(*)::int AS users
+       FROM per_user
+       GROUP BY 1
+     ),
+     buckets AS (
+       SELECT *
+       FROM (
+         VALUES
+           (1, '0–49'),
+           (2, '50–99'),
+           (3, '100–199'),
+           (4, '200–499'),
+           (5, '500–999'),
+           (6, '1k–1.9k'),
+           (7, '2k–4.9k'),
+           (8, '5k–9.9k'),
+           (9, '10k+')
+       ) AS b(ord, bucket)
+     )
+     SELECT
+       b.bucket AS day,
+       COALESCE(l.users, 0)::int AS users
+     FROM buckets b
+     LEFT JOIN labeled l ON l.bucket = b.bucket
+     ORDER BY b.ord ASC`,
+    [range.payload, excludeChatIds]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
 app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
