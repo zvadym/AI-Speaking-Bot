@@ -62,7 +62,7 @@
     "msg_next_step": "Schick mir jetzt eine kurze Sprachnachricht (1–2 Sätze) 🎙️ Ich korrigiere und erkläre alles klar und freundlich 🙂",
     "lang_saved_prefix": "Perfekt! Wir üben ",
     "lang_label_de": "Deutsch 🇩🇪",
-    "lang_label_en": "English 🇬🇧",
+    "lang_label_en": "Englisch 🇬🇧",
     "reply_mode_saved_prefix": "Alles klar! Ich antworte ",
     "reply_mode_voice": "🎧 als Sprachnachricht",
     "reply_mode_text": "💬 als Text",
@@ -102,9 +102,9 @@
     "starter_btn_intro": "Über dich",
     "starter_btn_day": "Dein Tag",
     "starter_btn_weekend": "Wochenendpläne",
-    "starter_question_intro": "Can you introduce yourself in 2-3 sentences?",
-    "starter_question_day": "How was your day today? Tell me 1-2 things.",
-    "starter_question_weekend": "What are your plans for the weekend?",
+    "starter_question_intro": "Kannst du dich in 2-3 Sätzen vorstellen?",
+    "starter_question_day": "Wie war dein Tag heute? Erzähl mir 1-2 Dinge.",
+    "starter_question_weekend": "Was sind deine Pläne fürs Wochenende?",
     "xp_title": "<b>🔥 Dein Fortschritt</b>",
     "xp_streak_label": "Streak",
     "xp_best_label": "Bester Streak",
@@ -118,8 +118,8 @@
   },
   "telegram_presentation": {
     "name": "Lina 🇩🇪→🇬🇧 Englisch-Tutorin",
-    "description": "English for daily life, travel, and real conversations 🇬🇧. Clear and gentle feedback.\nhttps://ai-language-school.online/de",
-    "short_description": "English for daily life, travel, and real conversations 🇬🇧. Clear and gentle feedback.",
+    "description": "Englisch für Alltag, Reisen und echte Gespräche 🇬🇧. Klare, sanfte Korrekturen.\nhttps://ai-language-school.online/de",
+    "short_description": "Englisch für Alltag, Reisen und echte Gespräche 🇬🇧. Klare, sanfte Korrekturen.",
     "commands": [
       {
         "command": "start",

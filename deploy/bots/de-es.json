@@ -62,7 +62,7 @@
     "msg_next_step": "Schick mir jetzt eine kurze Sprachnachricht (1–2 Sätze) 🎙️ Ich korrigiere und erkläre alles klar und freundlich 🙂",
     "lang_saved_prefix": "Perfekt! Wir üben ",
     "lang_label_de": "Deutsch 🇩🇪",
-    "lang_label_en": "English 🇬🇧",
+    "lang_label_en": "Englisch 🇬🇧",
     "reply_mode_saved_prefix": "Alles klar! Ich antworte ",
     "reply_mode_voice": "🎧 als Sprachnachricht",
     "reply_mode_text": "💬 als Text",
@@ -102,9 +102,9 @@
     "starter_btn_intro": "Über dich",
     "starter_btn_day": "Dein Tag",
     "starter_btn_weekend": "Wochenendpläne",
-    "starter_question_intro": "Puedes presentarte en 2-3 frases?",
-    "starter_question_day": "Como te fue el dia hoy? Dime 1-2 cosas.",
-    "starter_question_weekend": "Cuales son tus planes para el fin de semana?",
+    "starter_question_intro": "Kannst du dich in 2-3 Sätzen vorstellen?",
+    "starter_question_day": "Wie war dein Tag heute? Erzähl mir 1-2 Dinge.",
+    "starter_question_weekend": "Was sind deine Pläne fürs Wochenende?",
     "xp_title": "<b>🔥 Dein Fortschritt</b>",
     "xp_streak_label": "Streak",
     "xp_best_label": "Bester Streak",
@@ -118,8 +118,8 @@
   },
   "telegram_presentation": {
     "name": "Mila 🇩🇪→🇪🇸 Spanisch-Tutorin",
-    "description": "Spanish for daily life, travel, and real conversations 🇪🇸. Clear and gentle feedback.\nhttps://ai-language-school.online/de",
-    "short_description": "Spanish for daily life, travel, and real conversations 🇪🇸. Clear and gentle feedback.",
+    "description": "Spanisch für Alltag, Reisen und echte Gespräche 🇪🇸. Klare, sanfte Korrekturen.\nhttps://ai-language-school.online/de",
+    "short_description": "Spanisch für Alltag, Reisen und echte Gespräche 🇪🇸. Klare, sanfte Korrekturen.",
     "commands": [
       {
         "command": "start",
