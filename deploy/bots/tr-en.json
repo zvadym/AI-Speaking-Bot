@@ -107,7 +107,8 @@
     "xp_coming_soon": "XP yakında geliyor.",
     "xp_digest_prefix": "İlerlemen:",
     "topic_btn_set_inline": "🧭 Konu belirle",
-    "topic_btn_manage_inline": "🎯 Konuyu değiştir/iptal et"
+    "topic_btn_manage_inline": "🎯 Konuyu değiştir/iptal et",
+    "onboarding_start_practice_text": "Hadi şimdi pratiğe başlayalım ✨ Bana sesli ya da yazılı bir mesaj gönderebilir veya aşağıdaki düğmeden bir konu seçebilirsin."
   },
   "telegram_presentation": {
     "name": "Ece 🇹🇷→🇬🇧 İngilizce öğretmeni",

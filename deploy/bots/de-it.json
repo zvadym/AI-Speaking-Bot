@@ -107,7 +107,8 @@
     "xp_coming_soon": "XP kommt bald.",
     "xp_digest_prefix": "Dein Fortschritt:",
     "topic_btn_set_inline": "🧭 Thema setzen",
-    "topic_btn_manage_inline": "🎯 Thema ändern/entfernen"
+    "topic_btn_manage_inline": "🎯 Thema ändern/entfernen",
+    "onboarding_start_practice_text": "Lass uns jetzt mit dem Üben starten ✨ Du kannst mir eine Sprach- oder Textnachricht senden oder mit dem Button unten ein Thema wählen."
   },
   "telegram_presentation": {
     "name": "Giulia 🇩🇪→🇮🇹 Italienisch-Tutor",

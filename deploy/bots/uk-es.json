@@ -108,7 +108,8 @@
     "xp_coming_soon": "XP скоро зʼявиться.",
     "xp_digest_prefix": "Твій прогрес:",
     "topic_btn_set_inline": "🧭 Обрати тему",
-    "topic_btn_manage_inline": "🎯 Змінити/прибрати тему"
+    "topic_btn_manage_inline": "🎯 Змінити/прибрати тему",
+    "onboarding_start_practice_text": "Почнімо практику ✨ Ти можеш надіслати мені голосове або текстове повідомлення чи обрати тему кнопкою нижче."
   },
   "telegram_presentation": {
     "name": "Соломія 🇺🇦→🇪🇸 репетитор іспанської",

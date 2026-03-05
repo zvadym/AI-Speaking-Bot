@@ -107,7 +107,8 @@
     "xp_coming_soon": "ميزة XP قريبًا.",
     "xp_digest_prefix": "تقدّمك:",
     "topic_btn_set_inline": "🧭 تحديد الموضوع",
-    "topic_btn_manage_inline": "🎯 تغيير/إلغاء الموضوع"
+    "topic_btn_manage_inline": "🎯 تغيير/إلغاء الموضوع",
+    "onboarding_start_practice_text": "لنبدأ التدريب الآن ✨ يمكنك إرسال رسالة صوتية أو نصية، أو اختيار موضوع من الزر أدناه."
   },
   "telegram_presentation": {
     "name": "Nour 🇸🇦→🇬🇧 معلمة إنجليزية",

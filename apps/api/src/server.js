@@ -4796,6 +4796,8 @@ app.post('/me/target-lang', requireAuth, async (req, res) => {
        bot_key,
        level,
        onboarding_state,
+       onboarding_level_done,
+       onboarding_voice_done,
        reply_mode,
        tts_voice,
        first_seen_at,
@@ -4803,12 +4805,14 @@ app.post('/me/target-lang', requireAuth, async (req, res) => {
        is_active,
        updated_at
      )
-     SELECT $1, $2, 'b1', 'await_level', 'text', 'marin', NOW(), NOW(), true, NOW()
+     SELECT $1, $2, 'b1', 'await_level', false, false, 'text', 'marin', NOW(), NOW(), true, NOW()
      FROM users u
      WHERE u.chat_id = $1
      ON CONFLICT (chat_id, bot_key)
      DO UPDATE SET
        onboarding_state = 'await_level',
+       onboarding_level_done = false,
+       onboarding_voice_done = false,
        last_seen_at = NOW(),
        is_active = true,
        updated_at = NOW()`,
@@ -4841,6 +4845,8 @@ app.post('/me/level', requireAuth, async (req, res) => {
        bot_key,
        level,
        onboarding_state,
+       onboarding_level_done,
+       onboarding_voice_done,
        reply_mode,
        tts_voice,
        first_seen_at,
@@ -4848,13 +4854,17 @@ app.post('/me/level', requireAuth, async (req, res) => {
        is_active,
        updated_at
      )
-     SELECT $1, $2, $3, 'ready', 'text', 'marin', NOW(), NOW(), true, NOW()
+     SELECT $1, $2, $3, 'ready', true, true, 'text', 'marin', NOW(), NOW(), true, NOW()
      FROM users u
      WHERE u.chat_id = $1
      ON CONFLICT (chat_id, bot_key)
      DO UPDATE SET
        level = EXCLUDED.level,
-       onboarding_state = 'ready',
+       onboarding_level_done = true,
+       onboarding_state = CASE
+         WHEN COALESCE(user_bots.onboarding_voice_done, true) THEN 'ready'
+         ELSE 'await_voice'
+       END,
        last_seen_at = NOW(),
        is_active = true,
        updated_at = NOW()`,
@@ -5444,6 +5454,8 @@ async function upsertUser(user, { botKey = null } = {}) {
        bot_key,
        level,
        onboarding_state,
+       onboarding_level_done,
+       onboarding_voice_done,
        reply_mode,
        tts_voice,
        first_seen_at,
@@ -5451,7 +5463,7 @@ async function upsertUser(user, { botKey = null } = {}) {
        is_active,
        updated_at
      )
-     VALUES ($1, $2, 'b1', 'ready', 'text', 'marin', NOW(), NOW(), true, NOW())
+     VALUES ($1, $2, 'b1', 'ready', true, true, 'text', 'marin', NOW(), NOW(), true, NOW())
      ON CONFLICT (chat_id, bot_key)
      DO UPDATE SET
        last_seen_at = NOW(),

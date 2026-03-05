@@ -413,6 +413,8 @@ CREATE TABLE public.user_bots (
     topic_pinned_message_id bigint,
     topic_pack_json jsonb,
     topic_updated_at timestamp with time zone,
+    onboarding_level_done boolean DEFAULT true NOT NULL,
+    onboarding_voice_done boolean DEFAULT true NOT NULL,
     CONSTRAINT user_bots_level_check CHECK ((level = ANY (ARRAY['a1'::text, 'a2'::text, 'b1'::text, 'b2'::text, 'c1'::text]))),
     CONSTRAINT user_bots_reply_mode_check CHECK ((reply_mode = ANY (ARRAY['text'::text, 'voice'::text])))
 );
@@ -1632,4 +1634,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260304130000'),
     ('20260304143000'),
     ('20260304150000'),
-    ('20260304170000');
+    ('20260304170000'),
+    ('20260305100000');

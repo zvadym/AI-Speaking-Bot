@@ -107,7 +107,8 @@
     "xp_coming_soon": "XP is coming soon.",
     "xp_digest_prefix": "Your progress:",
     "topic_btn_set_inline": "🧭 Set topic",
-    "topic_btn_manage_inline": "🎯 Change/cancel topic"
+    "topic_btn_manage_inline": "🎯 Change/cancel topic",
+    "onboarding_start_practice_text": "Now let's start practicing ✨ You can send me a voice or text message, or choose a topic with the button below."
   },
   "telegram_presentation": {
     "name": "Emma 🇬🇧→🇮🇹 Italian tutor",

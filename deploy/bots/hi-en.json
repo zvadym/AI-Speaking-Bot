@@ -107,7 +107,8 @@
     "xp_coming_soon": "XP जल्द आ रहा है।",
     "xp_digest_prefix": "आपकी प्रगति:",
     "topic_btn_set_inline": "🧭 विषय चुनें",
-    "topic_btn_manage_inline": "🎯 विषय बदलें/रद्द करें"
+    "topic_btn_manage_inline": "🎯 विषय बदलें/रद्द करें",
+    "onboarding_start_practice_text": "चलो अब अभ्यास शुरू करते हैं ✨ आप मुझे वॉइस या टेक्स्ट मैसेज भेज सकते हैं, या नीचे दिए गए बटन से कोई विषय चुन सकते हैं।"
   },
   "telegram_presentation": {
     "name": "Riya 🇮🇳→🇬🇧 अंग्रेज़ी शिक्षिका",
