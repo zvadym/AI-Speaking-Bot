@@ -3,6 +3,54 @@
 
 export const teachers = [
   {
+    "slug": "ar-en",
+    "teacherKey": "ar-en",
+    "legacyPairSlug": "ar-en",
+    "teacherSlugBase": "nour",
+    "publicSlugs": {
+      "en": "nour-english-teacher",
+      "de": "nour-englisch-teacher",
+      "es": "nour-ingles-teacher",
+      "pt": "nour-ingles-teacher",
+      "uk": "nour-anhliyska-teacher",
+      "it": "nour-inglese-teacher",
+      "tr": "nour-ingilizce-teacher",
+      "hi": "nour-angrezi-teacher",
+      "ar": "nour-ingliziyya-teacher",
+      "id": "nour-inggris-teacher"
+    },
+    "botKey": "ar-en",
+    "baseLanguage": "ar",
+    "learningLanguage": "en",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/thumbnail/ar-en.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/ar-en.avif",
+      "webp": "/teachers/thumbnail/ar-en.webp",
+      "png": "/teachers/thumbnail/ar-en.png"
+    },
+    "displayName": {
+      "uk": "Nour",
+      "en": "Nour",
+      "it": "Nour"
+    },
+    "taglines": {
+      "uk": "الإنجليزية للحياة اليومية والسفر والمحادثات الواقعية 🇬🇧. تصحيح واضح ولطيف.",
+      "en": "English for daily life, travel, and real conversations 🇬🇧. Clear and gentle feedback.",
+      "it": "Inglese per vita quotidiana, viaggi e conversazioni reali 🇬🇧. Correzioni chiare e delicate.",
+      "ar": "الإنجليزية للحياة اليومية والسفر والمحادثات الواقعية 🇬🇧. تصحيح واضح ولطيف."
+    },
+    "styleTags": [
+      "friendly",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/NourArEnBot",
+    "canonicalLocale": "ar",
+    "canonicalSlug": "nour-ingliziyya-teacher",
+    "canonicalPath": "/ar/teachers/nour-ingliziyya-teacher"
+  },
+  {
     "slug": "de-en",
     "teacherKey": "de-en",
     "legacyPairSlug": "de-en",
@@ -288,6 +336,54 @@ export const teachers = [
     "canonicalPath": "/en/teachers/emma-italian-teacher"
   },
   {
+    "slug": "hi-en",
+    "teacherKey": "hi-en",
+    "legacyPairSlug": "hi-en",
+    "teacherSlugBase": "riya",
+    "publicSlugs": {
+      "en": "riya-english-teacher",
+      "de": "riya-englisch-teacher",
+      "es": "riya-ingles-teacher",
+      "pt": "riya-ingles-teacher",
+      "uk": "riya-anhliyska-teacher",
+      "it": "riya-inglese-teacher",
+      "tr": "riya-ingilizce-teacher",
+      "hi": "riya-angrezi-teacher",
+      "ar": "riya-ingliziyya-teacher",
+      "id": "riya-inggris-teacher"
+    },
+    "botKey": "hi-en",
+    "baseLanguage": "hi",
+    "learningLanguage": "en",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/thumbnail/hi-en.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/hi-en.avif",
+      "webp": "/teachers/thumbnail/hi-en.webp",
+      "png": "/teachers/thumbnail/hi-en.png"
+    },
+    "displayName": {
+      "uk": "Riya",
+      "en": "Riya",
+      "it": "Riya"
+    },
+    "taglines": {
+      "uk": "रोज़मर्रा की ज़िंदगी, यात्रा और असली बातचीत के लिए अंग्रेज़ी 🇬🇧। स्पष्ट और नरम फीडबैक।",
+      "en": "English for daily life, travel, and real conversations 🇬🇧. Clear and gentle feedback.",
+      "it": "Inglese per vita quotidiana, viaggi e conversazioni reali 🇬🇧. Correzioni chiare e delicate.",
+      "hi": "रोज़मर्रा की ज़िंदगी, यात्रा और असली बातचीत के लिए अंग्रेज़ी 🇬🇧। स्पष्ट और नरम फीडबैक।"
+    },
+    "styleTags": [
+      "friendly",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/RiyaHiEnBot",
+    "canonicalLocale": "hi",
+    "canonicalSlug": "riya-angrezi-teacher",
+    "canonicalPath": "/hi/teachers/riya-angrezi-teacher"
+  },
+  {
     "slug": "it-de",
     "teacherKey": "it-de",
     "legacyPairSlug": "it-de",
@@ -380,6 +476,54 @@ export const teachers = [
     "canonicalLocale": "it",
     "canonicalSlug": "luca-inglese-teacher",
     "canonicalPath": "/it/teachers/luca-inglese-teacher"
+  },
+  {
+    "slug": "tr-en",
+    "teacherKey": "tr-en",
+    "legacyPairSlug": "tr-en",
+    "teacherSlugBase": "ece",
+    "publicSlugs": {
+      "en": "ece-english-teacher",
+      "de": "ece-englisch-teacher",
+      "es": "ece-ingles-teacher",
+      "pt": "ece-ingles-teacher",
+      "uk": "ece-anhliyska-teacher",
+      "it": "ece-inglese-teacher",
+      "tr": "ece-ingilizce-teacher",
+      "hi": "ece-angrezi-teacher",
+      "ar": "ece-ingliziyya-teacher",
+      "id": "ece-inggris-teacher"
+    },
+    "botKey": "tr-en",
+    "baseLanguage": "tr",
+    "learningLanguage": "en",
+    "avatarEmoji": "👩‍🏫",
+    "avatarImage": "/teachers/thumbnail/tr-en.png",
+    "avatarSources": {
+      "avif": "/teachers/thumbnail/tr-en.avif",
+      "webp": "/teachers/thumbnail/tr-en.webp",
+      "png": "/teachers/thumbnail/tr-en.png"
+    },
+    "displayName": {
+      "uk": "Ece",
+      "en": "Ece",
+      "it": "Ece"
+    },
+    "taglines": {
+      "uk": "Günlük hayat, seyahat ve gerçek konuşmalar için İngilizce 🇬🇧. Net ve nazik geri bildirim.",
+      "en": "English for daily life, travel, and real conversations 🇬🇧. Clear and gentle feedback.",
+      "it": "Inglese per vita quotidiana, viaggi e conversazioni reali 🇬🇧. Correzioni chiare e delicate.",
+      "tr": "Günlük hayat, seyahat ve gerçek konuşmalar için İngilizce 🇬🇧. Net ve nazik geri bildirim."
+    },
+    "styleTags": [
+      "friendly",
+      "structured",
+      "conversation-first"
+    ],
+    "telegramUrl": "https://t.me/EceTrEnBot",
+    "canonicalLocale": "tr",
+    "canonicalSlug": "ece-ingilizce-teacher",
+    "canonicalPath": "/tr/teachers/ece-ingilizce-teacher"
   },
   {
     "slug": "uk-de",
