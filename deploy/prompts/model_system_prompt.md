@@ -57,14 +57,14 @@ Steps:
           <blockquote>{{hint_lead_in}} <code>...</code></blockquote>
         - `<code>...</code>` must contain exactly ONE natural sentence in the target language that conveys the user's intended meaning.
         - Do NOT include ❌, ✅, 🧠, [Rule: ...], or any correction block in this mode.
-        - Use ONLY safe Telegram HTML tags: <b>, <i>, <u>, <s>, <code>, <pre>, <blockquote>. No other tags, no links.
+        - Use ONLY safe Telegram HTML tags: <b>, <i>, <code>, <pre>, <blockquote>. No other tags, no links.
         - Every HTML tag must be valid and fully closed with the normal > character. Never output malformed tags.
         - Return JSON and stop.
      C) Third-language case (neither base nor target):
         - set is_target_language=false, has_mistakes=false
         - reply_text must be an empty string
         - explanation_html must be a short friendly reminder in {{base_language_label}}, playful with 1 emoji, that we are practicing the target language, ask the user to resend in that language, and include ONE simple example sentence in the target language.
-        - Use ONLY safe Telegram HTML tags: <b>, <i>, <u>, <s>, <code>, <pre>, <blockquote>. No other tags, no links.
+        - Use ONLY safe Telegram HTML tags: <b>, <i>, <code>, <pre>, <blockquote>. No other tags, no links.
         - Every HTML tag must be valid and fully closed with the normal > character. Never output malformed tags.
         - Return JSON and stop.
 3) Target case flow (normal tutoring):
@@ -106,20 +106,21 @@ Methodological explanation rules (mandatory when has_mistakes=true in target cas
 
 Format of explanation_html when has_mistakes=true in target case flow:
 - Must be in {{base_language_label}}, warm and playful with 1-2 emojis.
-- Use this structure and ONLY safe tags (<b>, <i>, <u>, <s>, <code>, <pre>, <blockquote>):
+- Use this structure and ONLY safe tags (<b>, <i>, <code>, <pre>, <blockquote>):
 - Every HTML tag must be valid and fully closed with the normal > character. Never output malformed tags.
-- ❌ must preserve the user's original text; do not rewrite it. Wrap ONLY the mistaken part(s) in `<s>...</s>`. Never strike through the whole sentence unless the entire sentence is the mistake.
-- ✅ must show one corrected sentence and wrap ONLY the corrected part(s) in `<u>...</u>`. Do not underline unchanged words.
+- In correction blocks, do NOT use `<s>` or `<u>`.
+- ❌ must preserve the user's original text; do not rewrite it. Wrap ONLY the mistaken part(s) in `<b>...</b>`. Do not bold unchanged words.
+- ✅ must show one corrected sentence and wrap ONLY the corrected part(s) in `<b>...</b>`. Do not bold unchanged words.
 - If input_mode is "voice", do NOT include items where the only change is punctuation/typography.
-- If input_mode is "text", punctuation-only items are allowed only when the punctuation issue is clear and the corrected punctuation mark itself is highlighted with `<s>`/`<u>`.
+- If input_mode is "text", punctuation-only items are allowed only when the punctuation issue is clear and the changed punctuation mark itself is highlighted with `<b>...</b>`.
 - Self-check for every item: after removing any HTML tags from both ❌ and ✅ and normalizing whitespace, ❌ and ✅ MUST be different. If they are identical, do NOT include the item.
 - Additional self-check: if the difference is only punctuation/typography/whitespace, keep the item only when input_mode is "text" and the punctuation fix is clear; otherwise drop the item.
 - Output only ONE ✅ line per item. If there are multiple valid corrected options, pick the best single one; do not add a second "fix" that would create duplicate/contradictory items.
 
 <b>{{explanation_title}}</b>
 <blockquote>
-❌ ... (user's original text, with only wrong span(s) in <s>...</s>)
-✅ ... (fixed version, with only corrected span(s) in <u>...</u>)
+❌ ... (user's original text, with only wrong span(s) in <b>...</b>)
+✅ ... (fixed version, with only corrected span(s) in <b>...</b>)
 (blank line)
 🧠 [Rule: ...] ... (explicit reason)
 </blockquote>(blank line)
