@@ -50,7 +50,7 @@
     "hints_intro": "Hier sind ein paar Sätze, die du als Nächstes sagen kannst:",
     "hints_empty": "Für diese Nachricht habe ich noch keine Vorschläge vorbereitet. Versuch es mit der nächsten Antwort.",
     "choose_level_text": "Wähle dein Niveau 👇",
-    "hi_message_text": "Hi! Lass uns einen 30-Sekunden-Sprechtest machen 👋\nSende eine kurze Sprach- oder Textnachricht (1–2 Sätze), und ich antworte mit:\n✅ Transkript\n✅ Korrekturen + kurzer Erklärung\n✅ was du als Nächstes sagen kannst\nBereit? 👇",
+    "hi_message_text": "Hi! Lass uns einen 30-Sekunden-Sprechtest machen 👋\nSchick eine kurze Sprach- oder Textnachricht (1–2 Sätze), und ich antworte mit:\n✅ Transkript\n✅ Korrekturen + kurzer Erklärung\n✅ was du als Nächstes sagen kannst\n\nIch habe dein Standardniveau auf B1 gesetzt.\nWillst du es ändern? Tippe auf den Button unten 👇",
     "choose_voice_mode_text": "Wie möchtest du meine Antworten erhalten: Sprache oder Text? 🎧💬",
     "voice_mode_text": "💬 Text",
     "voice_mode_voice": "🎧 Stimme",
@@ -87,7 +87,7 @@
     "stats_footer": "Details und Abo-Verwaltung findest du in der Mini-App unten.",
     "btn_open_miniapp": "Mini-App öffnen",
     "msg_limit_reached": "Ich würde gern weiter mit dir üben, aber dein Wochenlimit ist schon erreicht 😔\\nWenn du weitermachen willst, öffne das Abo in der Mini-App mit dem Button unten ✨\\nDeinen Abo-Status siehst du mit /stats.",
-    "msg_tts_limit_reached": "Du hast das Wochenlimit für meine Sprachantworten erreicht 😔 Prüfe /stats oder ändere den Modus mit /voice.",
+    "msg_tts_limit_reached": "Du hast das Wochenlimit für meine Sprachantworten erreicht 😔 Prüfe /stats.",
     "btn_open_subscription": "💎 Abo öffnen",
     "msg_too_short": "Ich habe leider nichts gehört 😭 Versuch bitte eine etwas längere Sprachnachricht.",
     "user_text_prefix_multiline": "📝 Dein Text:\\n",
@@ -112,12 +112,14 @@
     "onboarding_btn_start_voice": "🎙️ Mit Sprache starten",
     "onboarding_btn_start_text": "✍️ Mit Text starten",
     "onboarding_btn_show_example": "👀 Beispiel zeigen",
-    "onboarding_example_text": "Beispiel:\nDu: \"Yesterday I go to office and meet my friend.\"\nIch:\n✅ Yesterday I went to the office and met my friend.\n💡 Kurz: Für abgeschlossene Handlungen nutze die Vergangenheit.\n\nJetzt bist du dran 🙂 Sende 1–2 kurze Sätze.",
+    "onboarding_example_text": "Beispiel (Alltag):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: Kollokation] Man sagt “go to work” (ohne “my”).\n\nJetzt bist du dran 🙂 Sende 1–2 kurze Sätze.",
     "onboarding_voice_cta_text": "Super. Sende jetzt eine kurze Sprachnachricht (1–2 Sätze) 🎙️",
     "onboarding_text_cta_text": "Super. Sende jetzt eine kurze Textnachricht (1–2 Sätze) ✍️",
     "onboarding_complete_intro": "Dein Onboarding-Profil ist gespeichert:",
-    "onboarding_complete_change_hint": "Du kannst das jederzeit mit /level und /voice ändern.",
-    "onboarding_complete_daily_hint": "Regelmäßigkeit ist entscheidend: Schon 10 Minuten pro Tag bringen spürbaren Fortschritt."
+    "onboarding_complete_change_hint": "Dein Niveau kannst du jederzeit mit /level ändern.",
+    "onboarding_complete_daily_hint": "Regelmäßigkeit ist entscheidend: Schon 10 Minuten pro Tag bringen spürbaren Fortschritt.",
+    "onboarding_btn_change_level": "🎯 Hier klicken, um Niveau zu ändern",
+    "onboarding_showcase_no_mistakes_text": "Sehr gut, hier sind keine Fehler 👏\nWenn du sehen willst, wie ich korrigiere, schreibe absichtlich einen falschen Satz.\nZum Beispiel:\n❌ Yesterday I go to work by bus."
   },
   "telegram_presentation": {
     "name": "Mila 🇩🇪→🇪🇸 Spanisch-Tutorin",
@@ -131,10 +133,6 @@
       {
         "command": "level",
         "description": "Sprachniveau festlegen"
-      },
-      {
-        "command": "voice",
-        "description": "Sprach- oder Textantworten wählen"
       },
       {
         "command": "stats",

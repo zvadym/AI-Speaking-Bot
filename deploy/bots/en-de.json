@@ -50,7 +50,7 @@
     "hints_intro": "Here are a few options you can say next:",
     "hints_empty": "I don’t have suggestions for this message yet. Try with the next reply.",
     "choose_level_text": "Choose your level 👇",
-    "hi_message_text": "Hi! Let’s do a 30-second speaking test 👋\nSend one short voice or text message (1–2 sentences), and I’ll reply with:\n✅ transcript\n✅ corrections + short explanation\n✅ what to say next\nReady? 👇",
+    "hi_message_text": "Hi! Let’s do a 30-second speaking test 👋\nSend one short voice or text message (1–2 sentences), and I’ll reply with:\n✅ transcript\n✅ corrections + short explanation\n✅ what to say next\n\nI set your default level to B1.\nWant to change it? Tap the button below 👇",
     "choose_voice_mode_text": "How would you like to receive my replies: voice or text? 🎧💬",
     "voice_mode_text": "💬 Text",
     "voice_mode_voice": "🎧 Voice",
@@ -87,7 +87,7 @@
     "stats_footer": "Details and subscription management are available in the mini-app below.",
     "btn_open_miniapp": "Open mini-app",
     "msg_limit_reached": "I’d love to keep practicing with you, but you’ve already reached the free plan lifetime limit 😔\\nTo continue, open the subscription in the mini-app with the button below ✨\\n⬇️⬇️⬇️",
-    "msg_tts_limit_reached": "You’ve reached the weekly limit for my voice replies 😔 Check /stats or change mode with /voice.",
+    "msg_tts_limit_reached": "You’ve reached the weekly limit for my voice replies 😔 Check /stats.",
     "btn_open_subscription": "💎 Open subscription",
     "msg_too_short": "I couldn’t hear anything 😭 Please try a slightly longer voice message.",
     "user_text_prefix_multiline": "📝 Your text:\\n",
@@ -112,12 +112,14 @@
     "onboarding_btn_start_voice": "🎙️ Start with voice",
     "onboarding_btn_start_text": "✍️ Start with text",
     "onboarding_btn_show_example": "👀 Show example",
-    "onboarding_example_text": "Example:\nYou: \"Yesterday I go to office and meet my friend.\"\nMe:\n✅ Yesterday I went to the office and met my friend.\n💡 Quick tip: use past tense for completed actions.\n\nNow it’s your turn 🙂 Send 1–2 short sentences.",
+    "onboarding_example_text": "Example (daily routine):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] We say “go to work” (without “my”).\n\nNow it’s your turn 🙂 Send 1–2 short sentences.",
     "onboarding_voice_cta_text": "Great. Send a short voice message (1–2 sentences) 🎙️",
     "onboarding_text_cta_text": "Great. Send a short text message (1–2 sentences) ✍️",
     "onboarding_complete_intro": "Your onboarding profile is saved:",
-    "onboarding_complete_change_hint": "You can change these anytime with /level and /voice.",
-    "onboarding_complete_daily_hint": "Daily consistency matters most: even 10 minutes every day builds fluency."
+    "onboarding_complete_change_hint": "You can change your level anytime with /level.",
+    "onboarding_complete_daily_hint": "Daily consistency matters most: even 10 minutes every day builds fluency.",
+    "onboarding_btn_change_level": "🎯 Click here to change level",
+    "onboarding_showcase_no_mistakes_text": "Very good, no mistakes here 👏\nIf you want to see how I fix mistakes, send something intentionally wrong.\nFor example:\n❌ Yesterday I go to work by bus."
   },
   "telegram_presentation": {
     "name": "John 🇬🇧→🇩🇪 German tutor",
@@ -131,10 +133,6 @@
       {
         "command": "level",
         "description": "Set your language level"
-      },
-      {
-        "command": "voice",
-        "description": "Choose voice or text replies"
       },
       {
         "command": "stats",

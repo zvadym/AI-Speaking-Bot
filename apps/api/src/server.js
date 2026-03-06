@@ -4860,13 +4860,14 @@ app.post('/me/target-lang', requireAuth, async (req, res) => {
   const targetBotKey = botKeyFromTargetLang(raw) || normalizeBotKey(env.defaultBotKey) || 'uk-de';
 
   const { rowCount } = await pool.query(
-    `INSERT INTO user_bots (
+     `INSERT INTO user_bots (
        chat_id,
        bot_key,
        level,
        onboarding_state,
        onboarding_level_done,
        onboarding_voice_done,
+       onboarding_showcase_sent,
        reply_mode,
        tts_voice,
        first_seen_at,
@@ -4874,14 +4875,15 @@ app.post('/me/target-lang', requireAuth, async (req, res) => {
        is_active,
        updated_at
      )
-     SELECT $1, $2, 'b1', 'await_level', false, false, 'text', 'marin', NOW(), NOW(), true, NOW()
+     SELECT $1, $2, 'b1', 'ready', true, true, false, 'voice', 'marin', NOW(), NOW(), true, NOW()
      FROM users u
      WHERE u.chat_id = $1
      ON CONFLICT (chat_id, bot_key)
      DO UPDATE SET
-       onboarding_state = 'await_level',
-       onboarding_level_done = false,
-       onboarding_voice_done = false,
+       onboarding_state = 'ready',
+       onboarding_level_done = true,
+       onboarding_voice_done = true,
+       onboarding_showcase_sent = false,
        last_seen_at = NOW(),
        is_active = true,
        updated_at = NOW()`,

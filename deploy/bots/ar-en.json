@@ -50,7 +50,7 @@
     "hints_intro": "إليك بعض الخيارات التي يمكنك قولها بعد ذلك:",
     "hints_empty": "لا توجد لدي اقتراحات لهذه الرسالة بعد. جرّب مع الرد التالي.",
     "choose_level_text": "اختر مستواك 👇",
-    "hi_message_text": "مرحبًا! لنقم باختبار محادثة مدته 30 ثانية 👋\nأرسل رسالة صوتية أو نصية قصيرة (1–2 جملة)، وسأرسل لك فورًا:\n✅ تفريغًا نصيًا\n✅ تصحيحات + شرحًا قصيرًا\n✅ ماذا تقول بعد ذلك\nجاهز/جاهزة؟ 👇",
+    "hi_message_text": "مرحبًا! لنقم باختبار محادثة لمدة 30 ثانية 👋\nأرسل رسالة صوتية أو نصية قصيرة (1–2 جملة)، وسأرد بـ:\n✅ تفريغ النص\n✅ تصحيحات + شرح قصير\n✅ ماذا تقول بعد ذلك\n\nضبطت مستواك الافتراضي على B1.\nهل تريد تغييره؟ اضغط الزر أدناه 👇",
     "choose_voice_mode_text": "كيف تفضّل أن تصلك ردودي: صوتية أم نصية؟ 🎧💬",
     "voice_mode_text": "💬 نص",
     "voice_mode_voice": "🎧 صوت",
@@ -87,7 +87,7 @@
     "stats_footer": "تفاصيل الاشتراك وإدارته متاحة في التطبيق المصغّر أدناه.",
     "btn_open_miniapp": "فتح التطبيق المصغّر",
     "msg_limit_reached": "أرغب بمتابعة التدريب معك، لكنك وصلت إلى الحد الأسبوعي 😔\\nللمتابعة، افتح الاشتراك في التطبيق المصغّر عبر الزر أدناه ✨\\nيمكنك التحقق من حالة اشتراكك عبر /stats.",
-    "msg_tts_limit_reached": "وصلت إلى الحد الأسبوعي للردود الصوتية 😔 راجع /stats أو غيّر الوضع عبر /voice.",
+    "msg_tts_limit_reached": "وصلت إلى الحد الأسبوعي للردود الصوتية 😔 راجع /stats.",
     "btn_open_subscription": "💎 فتح الاشتراك",
     "msg_too_short": "لم أسمع شيئًا 😭 حاول إرسال رسالة صوتية أطول قليلًا.",
     "user_text_prefix_multiline": "📝 نصك:\\n",
@@ -112,12 +112,14 @@
     "onboarding_btn_start_voice": "🎙️ ابدأ بالصوت",
     "onboarding_btn_start_text": "✍️ ابدأ بالنص",
     "onboarding_btn_show_example": "👀 عرض مثال",
-    "onboarding_example_text": "مثال:\nأنت: \"Yesterday I go to office and meet my friend.\"\nأنا:\n✅ Yesterday I went to the office and met my friend.\n💡 ملاحظة سريعة: استخدم الماضي للأفعال المكتملة.\n\nدورك الآن 🙂 أرسل 1–2 جملة قصيرة.",
+    "onboarding_example_text": "مثال (روتين يومي):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] نقول “go to work” بدون “my”.\n\nالآن دورك 🙂 أرسل 1–2 جملة قصيرة.",
     "onboarding_voice_cta_text": "ممتاز. أرسل رسالة صوتية قصيرة (1–2 جملة) 🎙️",
     "onboarding_text_cta_text": "ممتاز. أرسل رسالة نصية قصيرة (1–2 جملة) ✍️",
     "onboarding_complete_intro": "تم حفظ ملف الإعدادات الأولية:",
-    "onboarding_complete_change_hint": "يمكنك التغيير في أي وقت عبر /level و /voice.",
-    "onboarding_complete_daily_hint": "الاستمرارية اليومية هي الأهم: حتى 10 دقائق يوميًا تصنع فرقًا واضحًا."
+    "onboarding_complete_change_hint": "يمكنك تغيير المستوى في أي وقت عبر /level.",
+    "onboarding_complete_daily_hint": "الاستمرارية اليومية هي الأهم: حتى 10 دقائق يوميًا تصنع فرقًا واضحًا.",
+    "onboarding_btn_change_level": "🎯 اضغط هنا لتغيير المستوى",
+    "onboarding_showcase_no_mistakes_text": "ممتاز، لا توجد أخطاء هنا 👏\nإذا أردت أن ترى كيف أصحّح الأخطاء، اكتب جملة خاطئة عمدًا.\nمثال:\n❌ Yesterday I go to work by bus."
   },
   "telegram_presentation": {
     "name": "Nour 🇸🇦→🇬🇧 معلمة إنجليزية",
@@ -131,10 +133,6 @@
       {
         "command": "level",
         "description": "تحديد مستوى اللغة"
-      },
-      {
-        "command": "voice",
-        "description": "اختيار الرد الصوتي أو النصي"
       },
       {
         "command": "stats",

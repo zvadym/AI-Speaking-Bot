@@ -50,7 +50,7 @@
     "hints_intro": "Sonraki mesajında söyleyebileceğin birkaç seçenek:",
     "hints_empty": "Bu mesaj için henüz önerim yok. Bir sonraki yanıtta tekrar dene.",
     "choose_level_text": "Seviyeni seç 👇",
-    "hi_message_text": "Merhaba! 30 saniyelik bir konuşma testi yapalım 👋\nKısa bir sesli ya da yazılı mesaj gönder (1–2 cümle), ben de hemen şunları vereyim:\n✅ transkript\n✅ düzeltmeler + kısa açıklama\n✅ sonra ne söyleyebilirsin\nHazır mısın? 👇",
+    "hi_message_text": "Merhaba! 30 saniyelik bir konuşma testi yapalım 👋\n1–2 cümlelik kısa bir sesli ya da yazılı mesaj gönder, ben de şunlarla cevap vereyim:\n✅ transkript\n✅ düzeltmeler + kısa açıklama\n✅ sırada ne söyleyebileceğin\n\nVarsayılan seviyeni B1 olarak ayarladım.\nDeğiştirmek ister misin? Aşağıdaki düğmeye dokun 👇",
     "choose_voice_mode_text": "Yanıtlarımı nasıl almak istersin: sesli mi metin mi? 🎧💬",
     "voice_mode_text": "💬 Metin",
     "voice_mode_voice": "🎧 Ses",
@@ -87,7 +87,7 @@
     "stats_footer": "Detaylar ve abonelik yönetimi aşağıdaki mini uygulamada mevcut.",
     "btn_open_miniapp": "Mini uygulamayı aç",
     "msg_limit_reached": "Seninle pratik yapmaya devam etmek isterdim, ama haftalık limitin doldu 😔\\nDevam etmek için aşağıdaki butonla mini uygulamada aboneliği aç ✨\\nAbonelik durumunu /stats ile kontrol edebilirsin.",
-    "msg_tts_limit_reached": "Sesli yanıtlarım için haftalık limite ulaştın 😔 /stats ile kontrol et veya /voice ile modu değiştir.",
+    "msg_tts_limit_reached": "Sesli yanıtlarım için haftalık limite ulaştın 😔 /stats ile kontrol et.",
     "btn_open_subscription": "💎 Aboneliği aç",
     "msg_too_short": "Hiçbir şey duyamadım 😭 Lütfen biraz daha uzun bir sesli mesaj gönder.",
     "user_text_prefix_multiline": "📝 Senin metnin:\\n",
@@ -112,12 +112,14 @@
     "onboarding_btn_start_voice": "🎙️ Sesle başla",
     "onboarding_btn_start_text": "✍️ Metinle başla",
     "onboarding_btn_show_example": "👀 Örnek göster",
-    "onboarding_example_text": "Örnek:\nSen: \"Yesterday I go to office and meet my friend.\"\nBen:\n✅ Yesterday I went to the office and met my friend.\n💡 Kısa not: bitmiş eylemler için geçmiş zaman kullan.\n\nŞimdi sıra sende 🙂 1–2 kısa cümle gönder.",
+    "onboarding_example_text": "Örnek (günlük rutin):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] “go to work” deriz (\"my\" olmadan).\n\nŞimdi sıra sende 🙂 1–2 kısa cümle gönder.",
     "onboarding_voice_cta_text": "Harika. Kısa bir sesli mesaj gönder (1–2 cümle) 🎙️",
     "onboarding_text_cta_text": "Harika. Kısa bir metin gönder (1–2 cümle) ✍️",
     "onboarding_complete_intro": "Onboarding profilin kaydedildi:",
-    "onboarding_complete_change_hint": "Bunları istediğin zaman /level ve /voice ile değiştirebilirsin.",
-    "onboarding_complete_daily_hint": "En önemlisi günlük istikrar: her gün 10 dakika bile akıcılığı belirgin şekilde artırır."
+    "onboarding_complete_change_hint": "Seviyeni istediğin zaman /level ile değiştirebilirsin.",
+    "onboarding_complete_daily_hint": "En önemlisi günlük istikrar: her gün 10 dakika bile akıcılığı belirgin şekilde artırır.",
+    "onboarding_btn_change_level": "🎯 Seviyeyi değiştirmek için tıkla",
+    "onboarding_showcase_no_mistakes_text": "Çok iyi, burada hata yok 👏\nHataları nasıl düzelttiğimi görmek istersen bilerek hatalı bir cümle yaz.\nÖrneğin:\n❌ Yesterday I go to work by bus."
   },
   "telegram_presentation": {
     "name": "Ece 🇹🇷→🇬🇧 İngilizce öğretmeni",
@@ -131,10 +133,6 @@
       {
         "command": "level",
         "description": "Dil seviyeni ayarla"
-      },
-      {
-        "command": "voice",
-        "description": "Sesli veya metin yanıt seç"
       },
       {
         "command": "stats",

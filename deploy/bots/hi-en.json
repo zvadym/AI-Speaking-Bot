@@ -50,7 +50,7 @@
     "hints_intro": "अगली बार आप ये विकल्प कह सकते हैं:",
     "hints_empty": "इस संदेश के लिए अभी सुझाव नहीं हैं। अगली प्रतिक्रिया के साथ फिर कोशिश करें।",
     "choose_level_text": "अपना स्तर चुनें 👇",
-    "hi_message_text": "नमस्ते! चलो 30-सेकंड का स्पीकिंग टेस्ट करें 👋\n1 छोटा वॉइस या टेक्स्ट मैसेज भेजें (1–2 वाक्य), और मैं तुरंत दूँगी:\n✅ ट्रांसक्रिप्ट\n✅ सुधार + छोटा एक्सप्लेनेशन\n✅ आगे क्या कहना है\nतैयार? 👇",
+    "hi_message_text": "नमस्ते! चलो 30-सेकंड का speaking test करते हैं 👋\n1–2 वाक्यों का छोटा वॉइस या टेक्स्ट मैसेज भेजें, और मैं जवाब दूँगा:\n✅ ट्रांसक्रिप्ट\n✅ सुधार + छोटा explanation\n✅ आगे क्या कहना है\n\nमैंने आपका default level B1 सेट किया है।\nबदलना है? नीचे वाला बटन दबाएँ 👇",
     "choose_voice_mode_text": "आप मेरी प्रतिक्रियाएँ कैसे पाना चाहेंगे: आवाज़ या टेक्स्ट? 🎧💬",
     "voice_mode_text": "💬 टेक्स्ट",
     "voice_mode_voice": "🎧 आवाज़",
@@ -87,7 +87,7 @@
     "stats_footer": "विवरण और सदस्यता प्रबंधन नीचे मिनी-ऐप में उपलब्ध है।",
     "btn_open_miniapp": "मिनी-ऐप खोलें",
     "msg_limit_reached": "मैं आपके साथ अभ्यास जारी रखना चाहती हूँ, लेकिन आपकी साप्ताहिक सीमा पूरी हो गई है 😔\\nजारी रखने के लिए नीचे दिए बटन से मिनी-ऐप में सदस्यता खोलें ✨\\nआप /stats से सदस्यता स्थिति देख सकते हैं।",
-    "msg_tts_limit_reached": "मेरे वॉइस जवाबों की साप्ताहिक सीमा पूरी हो गई है 😔 /stats देखें या /voice से मोड बदलें।",
+    "msg_tts_limit_reached": "मेरे वॉइस जवाबों की साप्ताहिक सीमा पूरी हो गई है 😔 /stats देखें।",
     "btn_open_subscription": "💎 सदस्यता खोलें",
     "msg_too_short": "मुझे कुछ सुनाई नहीं दिया 😭 कृपया थोड़ा लंबा वॉइस मैसेज भेजें।",
     "user_text_prefix_multiline": "📝 आपका टेक्स्ट:\\n",
@@ -112,12 +112,14 @@
     "onboarding_btn_start_voice": "🎙️ वॉइस से शुरू करें",
     "onboarding_btn_start_text": "✍️ टेक्स्ट से शुरू करें",
     "onboarding_btn_show_example": "👀 उदाहरण देखें",
-    "onboarding_example_text": "उदाहरण:\nआप: \"Yesterday I go to office and meet my friend.\"\nमैं:\n✅ Yesterday I went to the office and met my friend.\n💡 छोटा टिप: पूरी हो चुकी action के लिए past tense इस्तेमाल करें।\n\nअब आपकी बारी 🙂 1–2 छोटे वाक्य भेजें।",
+    "onboarding_example_text": "उदाहरण (daily routine):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] हम “go to work” कहते हैं, “my” नहीं लगाते।\n\nअब आपकी बारी 🙂 1–2 छोटे वाक्य भेजें।",
     "onboarding_voice_cta_text": "बहुत बढ़िया। 1 छोटा वॉइस मैसेज भेजें (1–2 वाक्य) 🎙️",
     "onboarding_text_cta_text": "बहुत बढ़िया। 1 छोटा टेक्स्ट मैसेज भेजें (1–2 वाक्य) ✍️",
     "onboarding_complete_intro": "आपकी ऑनबोर्डिंग प्रोफ़ाइल सेव हो गई है:",
-    "onboarding_complete_change_hint": "आप इसे कभी भी /level और /voice से बदल सकते हैं।",
-    "onboarding_complete_daily_hint": "रोज़ की निरंतरता सबसे ज़रूरी है: हर दिन सिर्फ 10 मिनट भी फ़्लुएंसी बढ़ाते हैं।"
+    "onboarding_complete_change_hint": "आप अपना level कभी भी /level से बदल सकते हैं।",
+    "onboarding_complete_daily_hint": "रोज़ की निरंतरता सबसे ज़रूरी है: हर दिन सिर्फ 10 मिनट भी फ़्लुएंसी बढ़ाते हैं।",
+    "onboarding_btn_change_level": "🎯 लेवल बदलने के लिए यहाँ दबाएँ",
+    "onboarding_showcase_no_mistakes_text": "बहुत बढ़िया, इसमें कोई गलती नहीं है 👏\nअगर आप देखना चाहते हैं कि मैं गलतियाँ कैसे ठीक करता हूँ, तो जानबूझकर गलत वाक्य लिखें।\nउदाहरण:\n❌ Yesterday I go to work by bus."
   },
   "telegram_presentation": {
     "name": "Riya 🇮🇳→🇬🇧 अंग्रेज़ी शिक्षिका",
@@ -131,10 +133,6 @@
       {
         "command": "level",
         "description": "भाषा स्तर सेट करें"
-      },
-      {
-        "command": "voice",
-        "description": "आवाज़ या टेक्स्ट जवाब चुनें"
       },
       {
         "command": "stats",

@@ -86,7 +86,7 @@
     "stats_footer": "Dettagli e gestione abbonamento nella mini-app qui sotto.",
     "btn_open_miniapp": "Apri mini-app",
     "msg_limit_reached": "Mi allenerò volentieri ancora con te, ma questa settimana hai già raggiunto il limite 😔\nPer continuare, apri l'abbonamento nella mini-app con il pulsante qui sotto ✨\nPuoi controllare lo stato con /stats.",
-    "msg_tts_limit_reached": "Hai raggiunto il limite settimanale delle mie risposte vocali 😔 Controlla /stats oppure cambia modalità con /voice.",
+    "msg_tts_limit_reached": "Hai raggiunto il limite settimanale delle mie risposte vocali 😔 Controlla /stats.",
     "btn_open_subscription": "💎 Apri abbonamento",
     "msg_too_short": "Non ho sentito nulla 😭 Prova con un messaggio vocale un po' più lungo.",
     "user_text_prefix_multiline": "📝 Il tuo testo:\n",
@@ -94,7 +94,7 @@
     "msg_feedback_prompt": "Grazie! Scrivimi il tuo feedback in testo oppure invia un messaggio vocale 🎙️",
     "msg_feedback_thanks": "Grazie! Ho ricevuto il tuo feedback 💛",
     "msg_feedback_needs_text_or_voice": "Per favore invia il feedback in testo o con un messaggio vocale 🎙️",
-    "hi_message_text": "Ciao! Facciamo un test di conversazione da 30 secondi 👋\nInvia un breve messaggio vocale o di testo (1–2 frasi) e ti risponderò con:\n✅ trascrizione\n✅ correzioni + breve spiegazione\n✅ cosa dire dopo\nPronta/o? 👇",
+    "hi_message_text": "Ciao! Facciamo un test di conversazione da 30 secondi 👋\nInvia un breve messaggio vocale o testuale (1–2 frasi) e ti risponderò con:\n✅ trascrizione\n✅ correzioni + spiegazione breve\n✅ cosa dire dopo\n\nHo impostato il tuo livello predefinito su B1.\nVuoi cambiarlo? Tocca il pulsante qui sotto 👇",
     "level_label_beginner": "Principiante (A1-A2)",
     "level_label_conversational": "Intermedio (B1-B2)",
     "level_label_advanced": "Avanzato (C1+)",
@@ -112,12 +112,14 @@
     "onboarding_btn_start_voice": "🎙️ Inizia con voce",
     "onboarding_btn_start_text": "✍️ Inizia con testo",
     "onboarding_btn_show_example": "👀 Mostra esempio",
-    "onboarding_example_text": "Esempio:\nTu: \"Yesterday I go to office and meet my friend.\"\nIo:\n✅ Yesterday I went to the office and met my friend.\n💡 Tip rapido: per azioni concluse usa il passato.\n\nOra tocca a te 🙂 Invia 1–2 frasi brevi.",
+    "onboarding_example_text": "Esempio (routine quotidiana):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] Si dice “go to work” (senza “my”).\n\nOra tocca a te 🙂 Invia 1–2 frasi brevi.",
     "onboarding_voice_cta_text": "Perfetto. Invia un breve vocale (1–2 frasi) 🎙️",
     "onboarding_text_cta_text": "Perfetto. Invia un breve testo (1–2 frasi) ✍️",
     "onboarding_complete_intro": "Il tuo profilo di onboarding è salvato:",
-    "onboarding_complete_change_hint": "Puoi modificarlo in qualsiasi momento con /level e /voice.",
-    "onboarding_complete_daily_hint": "La costanza quotidiana conta più di tutto: anche 10 minuti al giorno fanno la differenza."
+    "onboarding_complete_change_hint": "Puoi cambiare livello in qualsiasi momento con /level.",
+    "onboarding_complete_daily_hint": "La costanza quotidiana conta più di tutto: anche 10 minuti al giorno fanno la differenza.",
+    "onboarding_btn_change_level": "🎯 Clicca qui per cambiare livello",
+    "onboarding_showcase_no_mistakes_text": "Molto bene, qui non ci sono errori 👏\nSe vuoi vedere come correggo gli errori, scrivi una frase volutamente sbagliata.\nPer esempio:\n❌ Yesterday I go to work by bus."
   },
   "telegram_presentation": {
     "name": "Luca 🇮🇹→🇬🇧 tutor di inglese",
@@ -131,10 +133,6 @@
       {
         "command": "level",
         "description": "Imposta il tuo livello"
-      },
-      {
-        "command": "voice",
-        "description": "Scegli risposte vocali o testuali"
       },
       {
         "command": "stats",
