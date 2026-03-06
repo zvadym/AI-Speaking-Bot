@@ -50,7 +50,7 @@
     "hints_intro": "अगली बार आप ये विकल्प कह सकते हैं:",
     "hints_empty": "इस संदेश के लिए अभी सुझाव नहीं हैं। अगली प्रतिक्रिया के साथ फिर कोशिश करें।",
     "choose_level_text": "अपना स्तर चुनें 👇",
-    "hi_message_text": "नमस्ते! मैं Riya हूँ, AI Language School में आपकी ट्यूटर 🙂\nआओ अंग्रेज़ी का अभ्यास करें: 1-2 वाक्य का वॉइस मैसेज भेजें 🎙️ और मैं नरम सुधारों के साथ जवाब दूँगी।\n🌐 https://ai-language-school.online/hi",
+    "hi_message_text": "नमस्ते! चलो 30-सेकंड का स्पीकिंग टेस्ट करें 👋\n1 छोटा वॉइस या टेक्स्ट मैसेज भेजें (1–2 वाक्य), और मैं तुरंत दूँगी:\n✅ ट्रांसक्रिप्ट\n✅ सुधार + छोटा एक्सप्लेनेशन\n✅ आगे क्या कहना है\nतैयार? 👇",
     "choose_voice_mode_text": "आप मेरी प्रतिक्रियाएँ कैसे पाना चाहेंगे: आवाज़ या टेक्स्ट? 🎧💬",
     "voice_mode_text": "💬 टेक्स्ट",
     "voice_mode_voice": "🎧 आवाज़",
@@ -108,7 +108,13 @@
     "xp_digest_prefix": "आपकी प्रगति:",
     "topic_btn_set_inline": "🧭 विषय चुनें",
     "topic_btn_manage_inline": "🎯 विषय बदलें/रद्द करें",
-    "onboarding_start_practice_text": "चलो अब अभ्यास शुरू करते हैं ✨ आप मुझे वॉइस या टेक्स्ट मैसेज भेज सकते हैं, या नीचे दिए गए बटन से कोई विषय चुन सकते हैं।"
+    "onboarding_start_practice_text": "शानदार शुरुआत ✨ क्या आप कोई topic चुनना चाहेंगे या फ्री में जारी रखें? आप कभी भी voice या text भेज सकते हैं।",
+    "onboarding_btn_start_voice": "🎙️ वॉइस से शुरू करें",
+    "onboarding_btn_start_text": "✍️ टेक्स्ट से शुरू करें",
+    "onboarding_btn_show_example": "👀 उदाहरण देखें",
+    "onboarding_example_text": "उदाहरण:\nआप: \"Yesterday I go to office and meet my friend.\"\nमैं:\n✅ Yesterday I went to the office and met my friend.\n💡 छोटा टिप: पूरी हो चुकी action के लिए past tense इस्तेमाल करें।\n\nअब आपकी बारी 🙂 1–2 छोटे वाक्य भेजें।",
+    "onboarding_voice_cta_text": "बहुत बढ़िया। 1 छोटा वॉइस मैसेज भेजें (1–2 वाक्य) 🎙️",
+    "onboarding_text_cta_text": "बहुत बढ़िया। 1 छोटा टेक्स्ट मैसेज भेजें (1–2 वाक्य) ✍️"
   },
   "telegram_presentation": {
     "name": "Riya 🇮🇳→🇬🇧 अंग्रेज़ी शिक्षिका",

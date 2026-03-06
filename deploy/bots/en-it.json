@@ -50,7 +50,7 @@
     "hints_intro": "Here are a few options you can say next:",
     "hints_empty": "I don’t have suggestions for this message yet. Try with the next reply.",
     "choose_level_text": "Choose your level 👇",
-    "hi_message_text": "Hi! I’m Emma, your tutor at AI Language School 🙂\nPractice Italian with me: send a 1–2 sentence voice message 🎙️ and I’ll reply with gentle corrections.\n🌐 https://ai-language-school.online/en",
+    "hi_message_text": "Hi! Let’s do a 30-second speaking test 👋\nSend one short voice or text message (1–2 sentences), and I’ll reply with:\n✅ transcript\n✅ corrections + short explanation\n✅ what to say next\nReady? 👇",
     "choose_voice_mode_text": "How would you like to receive my replies: voice or text? 🎧💬",
     "voice_mode_text": "💬 Text",
     "voice_mode_voice": "🎧 Voice",
@@ -108,7 +108,13 @@
     "xp_digest_prefix": "Your progress:",
     "topic_btn_set_inline": "🧭 Set topic",
     "topic_btn_manage_inline": "🎯 Change/cancel topic",
-    "onboarding_start_practice_text": "Now let's start practicing ✨ You can send me a voice or text message, or choose a topic with the button below."
+    "onboarding_start_practice_text": "Great start ✨ Want to choose a topic, or continue freely? You can send a voice or text message anytime.",
+    "onboarding_btn_start_voice": "🎙️ Start with voice",
+    "onboarding_btn_start_text": "✍️ Start with text",
+    "onboarding_btn_show_example": "👀 Show example",
+    "onboarding_example_text": "Example:\nYou: \"Yesterday I go to office and meet my friend.\"\nMe:\n✅ Yesterday I went to the office and met my friend.\n💡 Quick tip: use past tense for completed actions.\n\nNow it’s your turn 🙂 Send 1–2 short sentences.",
+    "onboarding_voice_cta_text": "Great. Send a short voice message (1–2 sentences) 🎙️",
+    "onboarding_text_cta_text": "Great. Send a short text message (1–2 sentences) ✍️"
   },
   "telegram_presentation": {
     "name": "Emma 🇬🇧→🇮🇹 Italian tutor",

@@ -50,7 +50,7 @@
     "hints_intro": "Hier sind ein paar Sätze, die du als Nächstes sagen kannst:",
     "hints_empty": "Für diese Nachricht habe ich noch keine Vorschläge vorbereitet. Versuch es mit der nächsten Antwort.",
     "choose_level_text": "Wähle dein Niveau 👇",
-    "hi_message_text": "Hallo! Ich bin Giulia, deine Tutorin bei AI Language School 🙂\nWir üben Italienisch: Schick mir 1–2 Sätze als Sprachnachricht 🎙️, ich korrigiere sanft.\n🌐 https://ai-language-school.online/de",
+    "hi_message_text": "Hi! Lass uns einen 30-Sekunden-Sprechtest machen 👋\nSende eine kurze Sprach- oder Textnachricht (1–2 Sätze), und ich antworte mit:\n✅ Transkript\n✅ Korrekturen + kurzer Erklärung\n✅ was du als Nächstes sagen kannst\nBereit? 👇",
     "choose_voice_mode_text": "Wie möchtest du meine Antworten erhalten: Sprache oder Text? 🎧💬",
     "voice_mode_text": "💬 Text",
     "voice_mode_voice": "🎧 Stimme",
@@ -108,7 +108,13 @@
     "xp_digest_prefix": "Dein Fortschritt:",
     "topic_btn_set_inline": "🧭 Thema setzen",
     "topic_btn_manage_inline": "🎯 Thema ändern/entfernen",
-    "onboarding_start_practice_text": "Lass uns jetzt mit dem Üben starten ✨ Du kannst mir eine Sprach- oder Textnachricht senden oder mit dem Button unten ein Thema wählen."
+    "onboarding_start_practice_text": "Starker Start ✨ Möchtest du ein Thema wählen oder frei weitermachen? Du kannst jederzeit Sprache oder Text senden.",
+    "onboarding_btn_start_voice": "🎙️ Mit Sprache starten",
+    "onboarding_btn_start_text": "✍️ Mit Text starten",
+    "onboarding_btn_show_example": "👀 Beispiel zeigen",
+    "onboarding_example_text": "Beispiel:\nDu: \"Yesterday I go to office and meet my friend.\"\nIch:\n✅ Yesterday I went to the office and met my friend.\n💡 Kurz: Für abgeschlossene Handlungen nutze die Vergangenheit.\n\nJetzt bist du dran 🙂 Sende 1–2 kurze Sätze.",
+    "onboarding_voice_cta_text": "Super. Sende jetzt eine kurze Sprachnachricht (1–2 Sätze) 🎙️",
+    "onboarding_text_cta_text": "Super. Sende jetzt eine kurze Textnachricht (1–2 Sätze) ✍️"
   },
   "telegram_presentation": {
     "name": "Giulia 🇩🇪→🇮🇹 Italienisch-Tutor",

@@ -94,7 +94,7 @@
     "msg_feedback_prompt": "Grazie! Scrivimi il tuo feedback in testo oppure invia un messaggio vocale 🎙️",
     "msg_feedback_thanks": "Grazie! Ho ricevuto il tuo feedback 💛",
     "msg_feedback_needs_text_or_voice": "Per favore invia il feedback in testo o con un messaggio vocale 🎙️",
-    "hi_message_text": "Ciao! Sono Luca, il tuo tutor di AI Language School 🙂\nQui pratichiamo l'inglese: mandami un vocale di 1–2 frasi 🎙️ e ti correggo con delicatezza.\n🌐 https://ai-language-school.online/it",
+    "hi_message_text": "Ciao! Facciamo un test di conversazione da 30 secondi 👋\nInvia un breve messaggio vocale o di testo (1–2 frasi) e ti risponderò con:\n✅ trascrizione\n✅ correzioni + breve spiegazione\n✅ cosa dire dopo\nPronta/o? 👇",
     "level_label_beginner": "Principiante (A1-A2)",
     "level_label_conversational": "Intermedio (B1-B2)",
     "level_label_advanced": "Avanzato (C1+)",
@@ -108,7 +108,13 @@
     "xp_digest_prefix": "I tuoi progressi:",
     "topic_btn_set_inline": "🧭 Scegli argomento",
     "topic_btn_manage_inline": "🎯 Cambia/rimuovi argomento",
-    "onboarding_start_practice_text": "Iniziamo a fare pratica ✨ Puoi inviarmi un messaggio vocale o di testo, oppure scegliere un tema con il pulsante qui sotto."
+    "onboarding_start_practice_text": "Ottimo inizio ✨ Vuoi scegliere un tema o continuare liberamente? Puoi inviare voce o testo in qualsiasi momento.",
+    "onboarding_btn_start_voice": "🎙️ Inizia con voce",
+    "onboarding_btn_start_text": "✍️ Inizia con testo",
+    "onboarding_btn_show_example": "👀 Mostra esempio",
+    "onboarding_example_text": "Esempio:\nTu: \"Yesterday I go to office and meet my friend.\"\nIo:\n✅ Yesterday I went to the office and met my friend.\n💡 Tip rapido: per azioni concluse usa il passato.\n\nOra tocca a te 🙂 Invia 1–2 frasi brevi.",
+    "onboarding_voice_cta_text": "Perfetto. Invia un breve vocale (1–2 frasi) 🎙️",
+    "onboarding_text_cta_text": "Perfetto. Invia un breve testo (1–2 frasi) ✍️"
   },
   "telegram_presentation": {
     "name": "Luca 🇮🇹→🇬🇧 tutor di inglese",

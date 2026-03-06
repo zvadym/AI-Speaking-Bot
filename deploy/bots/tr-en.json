@@ -50,7 +50,7 @@
     "hints_intro": "Sonraki mesajında söyleyebileceğin birkaç seçenek:",
     "hints_empty": "Bu mesaj için henüz önerim yok. Bir sonraki yanıtta tekrar dene.",
     "choose_level_text": "Seviyeni seç 👇",
-    "hi_message_text": "Merhaba! Ben Ece, AI Language School'da öğretmeninim 🙂\nBenimle İngilizce pratik yap: 1-2 cümlelik bir sesli mesaj gönder 🎙️, sana nazik düzeltmelerle döneyim.\n🌐 https://ai-language-school.online/tr",
+    "hi_message_text": "Merhaba! 30 saniyelik bir konuşma testi yapalım 👋\nKısa bir sesli ya da yazılı mesaj gönder (1–2 cümle), ben de hemen şunları vereyim:\n✅ transkript\n✅ düzeltmeler + kısa açıklama\n✅ sonra ne söyleyebilirsin\nHazır mısın? 👇",
     "choose_voice_mode_text": "Yanıtlarımı nasıl almak istersin: sesli mi metin mi? 🎧💬",
     "voice_mode_text": "💬 Metin",
     "voice_mode_voice": "🎧 Ses",
@@ -108,7 +108,13 @@
     "xp_digest_prefix": "İlerlemen:",
     "topic_btn_set_inline": "🧭 Konu belirle",
     "topic_btn_manage_inline": "🎯 Konuyu değiştir/iptal et",
-    "onboarding_start_practice_text": "Hadi şimdi pratiğe başlayalım ✨ Bana sesli ya da yazılı bir mesaj gönderebilir veya aşağıdaki düğmeden bir konu seçebilirsin."
+    "onboarding_start_practice_text": "Güzel başlangıç ✨ Konu seçmek ister misin, yoksa serbest devam mı? İstediğin zaman sesli ya da yazılı mesaj gönderebilirsin.",
+    "onboarding_btn_start_voice": "🎙️ Sesle başla",
+    "onboarding_btn_start_text": "✍️ Metinle başla",
+    "onboarding_btn_show_example": "👀 Örnek göster",
+    "onboarding_example_text": "Örnek:\nSen: \"Yesterday I go to office and meet my friend.\"\nBen:\n✅ Yesterday I went to the office and met my friend.\n💡 Kısa not: bitmiş eylemler için geçmiş zaman kullan.\n\nŞimdi sıra sende 🙂 1–2 kısa cümle gönder.",
+    "onboarding_voice_cta_text": "Harika. Kısa bir sesli mesaj gönder (1–2 cümle) 🎙️",
+    "onboarding_text_cta_text": "Harika. Kısa bir metin gönder (1–2 cümle) ✍️"
   },
   "telegram_presentation": {
     "name": "Ece 🇹🇷→🇬🇧 İngilizce öğretmeni",
