@@ -114,7 +114,10 @@
     "onboarding_btn_show_example": "👀 عرض مثال",
     "onboarding_example_text": "مثال:\nأنت: \"Yesterday I go to office and meet my friend.\"\nأنا:\n✅ Yesterday I went to the office and met my friend.\n💡 ملاحظة سريعة: استخدم الماضي للأفعال المكتملة.\n\nدورك الآن 🙂 أرسل 1–2 جملة قصيرة.",
     "onboarding_voice_cta_text": "ممتاز. أرسل رسالة صوتية قصيرة (1–2 جملة) 🎙️",
-    "onboarding_text_cta_text": "ممتاز. أرسل رسالة نصية قصيرة (1–2 جملة) ✍️"
+    "onboarding_text_cta_text": "ممتاز. أرسل رسالة نصية قصيرة (1–2 جملة) ✍️",
+    "onboarding_complete_intro": "تم حفظ ملف الإعدادات الأولية:",
+    "onboarding_complete_change_hint": "يمكنك التغيير في أي وقت عبر /level و /voice.",
+    "onboarding_complete_daily_hint": "الاستمرارية اليومية هي الأهم: حتى 10 دقائق يوميًا تصنع فرقًا واضحًا."
   },
   "telegram_presentation": {
     "name": "Nour 🇸🇦→🇬🇧 معلمة إنجليزية",

@@ -114,7 +114,10 @@
     "onboarding_btn_show_example": "👀 Beispiel zeigen",
     "onboarding_example_text": "Beispiel:\nDu: \"Yesterday I go to office and meet my friend.\"\nIch:\n✅ Yesterday I went to the office and met my friend.\n💡 Kurz: Für abgeschlossene Handlungen nutze die Vergangenheit.\n\nJetzt bist du dran 🙂 Sende 1–2 kurze Sätze.",
     "onboarding_voice_cta_text": "Super. Sende jetzt eine kurze Sprachnachricht (1–2 Sätze) 🎙️",
-    "onboarding_text_cta_text": "Super. Sende jetzt eine kurze Textnachricht (1–2 Sätze) ✍️"
+    "onboarding_text_cta_text": "Super. Sende jetzt eine kurze Textnachricht (1–2 Sätze) ✍️",
+    "onboarding_complete_intro": "Dein Onboarding-Profil ist gespeichert:",
+    "onboarding_complete_change_hint": "Du kannst das jederzeit mit /level und /voice ändern.",
+    "onboarding_complete_daily_hint": "Regelmäßigkeit ist entscheidend: Schon 10 Minuten pro Tag bringen spürbaren Fortschritt."
   },
   "telegram_presentation": {
     "name": "Mila 🇩🇪→🇪🇸 Spanisch-Tutorin",

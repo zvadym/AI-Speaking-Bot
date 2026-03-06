@@ -114,7 +114,10 @@
     "onboarding_btn_show_example": "👀 उदाहरण देखें",
     "onboarding_example_text": "उदाहरण:\nआप: \"Yesterday I go to office and meet my friend.\"\nमैं:\n✅ Yesterday I went to the office and met my friend.\n💡 छोटा टिप: पूरी हो चुकी action के लिए past tense इस्तेमाल करें।\n\nअब आपकी बारी 🙂 1–2 छोटे वाक्य भेजें।",
     "onboarding_voice_cta_text": "बहुत बढ़िया। 1 छोटा वॉइस मैसेज भेजें (1–2 वाक्य) 🎙️",
-    "onboarding_text_cta_text": "बहुत बढ़िया। 1 छोटा टेक्स्ट मैसेज भेजें (1–2 वाक्य) ✍️"
+    "onboarding_text_cta_text": "बहुत बढ़िया। 1 छोटा टेक्स्ट मैसेज भेजें (1–2 वाक्य) ✍️",
+    "onboarding_complete_intro": "आपकी ऑनबोर्डिंग प्रोफ़ाइल सेव हो गई है:",
+    "onboarding_complete_change_hint": "आप इसे कभी भी /level और /voice से बदल सकते हैं।",
+    "onboarding_complete_daily_hint": "रोज़ की निरंतरता सबसे ज़रूरी है: हर दिन सिर्फ 10 मिनट भी फ़्लुएंसी बढ़ाते हैं।"
   },
   "telegram_presentation": {
     "name": "Riya 🇮🇳→🇬🇧 अंग्रेज़ी शिक्षिका",

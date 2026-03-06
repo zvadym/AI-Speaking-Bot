@@ -114,7 +114,10 @@
     "onboarding_btn_show_example": "👀 Показати приклад",
     "onboarding_example_text": "Приклад:\nТи: \"Yesterday I go to office and meet my friend.\"\nЯ:\n✅ Yesterday I went to the office and met my friend.\n💡 Коротко: для завершених дій використовуй минулий час.\n\nТвоя черга 🙂 Надішли 1–2 короткі речення.",
     "onboarding_voice_cta_text": "Супер. Надішли коротке голосове (1–2 речення) 🎙️",
-    "onboarding_text_cta_text": "Супер. Надішли короткий текст (1–2 речення) ✍️"
+    "onboarding_text_cta_text": "Супер. Надішли короткий текст (1–2 речення) ✍️",
+    "onboarding_complete_intro": "Профіль онбордингу збережено:",
+    "onboarding_complete_change_hint": "Змінити можна будь-коли командами /level та /voice.",
+    "onboarding_complete_daily_hint": "Щоденна практика найважливіша: навіть 10 хвилин щодня дають помітний прогрес."
   },
   "telegram_presentation": {
     "name": "Леся 🇺🇦→🇩🇪 репетитор німецької",

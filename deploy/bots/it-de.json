@@ -114,7 +114,10 @@
     "onboarding_btn_show_example": "👀 Mostra esempio",
     "onboarding_example_text": "Esempio:\nTu: \"Yesterday I go to office and meet my friend.\"\nIo:\n✅ Yesterday I went to the office and met my friend.\n💡 Tip rapido: per azioni concluse usa il passato.\n\nOra tocca a te 🙂 Invia 1–2 frasi brevi.",
     "onboarding_voice_cta_text": "Perfetto. Invia un breve vocale (1–2 frasi) 🎙️",
-    "onboarding_text_cta_text": "Perfetto. Invia un breve testo (1–2 frasi) ✍️"
+    "onboarding_text_cta_text": "Perfetto. Invia un breve testo (1–2 frasi) ✍️",
+    "onboarding_complete_intro": "Il tuo profilo di onboarding è salvato:",
+    "onboarding_complete_change_hint": "Puoi modificarlo in qualsiasi momento con /level e /voice.",
+    "onboarding_complete_daily_hint": "La costanza quotidiana conta più di tutto: anche 10 minuti al giorno fanno la differenza."
   },
   "telegram_presentation": {
     "name": "Greta 🇮🇹→🇩🇪 tutor di tedesco",
