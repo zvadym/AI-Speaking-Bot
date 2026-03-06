@@ -620,6 +620,8 @@
         </div>
 
         <p class="hint" v-if="usersLoading && !usersRows.length">Loading users…</p>
+        <p class="error" v-if="userDeleteError">{{ userDeleteError }}</p>
+        <p class="hint" v-else-if="userDeleteInfo">{{ userDeleteInfo }}</p>
 
         <div class="users-table-wrap" v-if="usersRows.length">
           <table class="users-table">
@@ -691,6 +693,7 @@
                     <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('xp_total') }}</span>
                   </button>
                 </th>
+                <th class="actions">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -706,6 +709,11 @@
                 <td class="num">{{ fmt(row.streak_days || 0) }}</td>
                 <td class="num">{{ fmt(row.level || 1) }}</td>
                 <td class="num">{{ fmt(row.xp_total || 0) }}</td>
+                <td class="actions">
+                  <button class="btn danger users-delete-btn" type="button" :disabled="!password || usersLoading || Boolean(userDeleteBusyId)" @click="deleteUserCompletely(row)">
+                    {{ userDeleteBusyId === String(row.chat_id) ? 'Deleting…' : 'Delete' }}
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1508,6 +1516,9 @@ const usersLimit = ref(50);
 const usersLoading = ref(false);
 const usersError = ref('');
 const usersUpdatedAt = ref('');
+const userDeleteBusyId = ref('');
+const userDeleteError = ref('');
+const userDeleteInfo = ref('');
 const usersSort = reactive({
   key: 'created_at',
   dir: 'desc' // 'asc' | 'desc'
@@ -2343,6 +2354,14 @@ function displayTier(rawTier) {
   return 'pro';
 }
 
+function userDirectoryLabel(row) {
+  const username = (row?.username ?? '').toString().trim();
+  if (username) return `@${username}`;
+  const firstName = (row?.first_name ?? '').toString().trim();
+  if (firstName) return firstName;
+  return 'user';
+}
+
 function actionLabel(rawAction) {
   const action = (rawAction || '').toString().trim();
   if (action === 'first_voice_sent') return 'first voice or text sent';
@@ -2989,6 +3008,43 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
   }
 }
 
+async function deleteUserCompletely(row) {
+  const chatId = String(row?.chat_id ?? '').trim();
+  if (!chatId) return;
+  if (!password.value) {
+    userDeleteError.value = 'Enter admin password first.';
+    return;
+  }
+  if (userDeleteBusyId.value) return;
+
+  const label = userDirectoryLabel(row);
+  const confirmDelete = window.confirm(
+    `Delete ${label} (${chatId}) permanently?\n\nThis removes the user across all bots, messages, feedback, settings, usage, XP, and payments. This cannot be undone.`
+  );
+  if (!confirmDelete) return;
+
+  userDeleteBusyId.value = chatId;
+  userDeleteError.value = '';
+  userDeleteInfo.value = '';
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, '/admin/users/delete', {
+      method: 'POST',
+      headers,
+      body: { chatId }
+    });
+    const deletedTotal = Number(data?.deleted_total || 0);
+    userDeleteInfo.value = `Deleted ${chatId}. Removed ${fmt(deletedTotal)} records.`;
+    await refreshUsersPage();
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    userDeleteError.value = `Delete failed: ${msg}`;
+  } finally {
+    userDeleteBusyId.value = '';
+  }
+}
+
 let excludeLookupTimer = null;
 let excludeLookupRequestId = 0;
 
@@ -3125,6 +3181,9 @@ function clearPassword() {
   usersOffset.value = 0;
   usersError.value = '';
   usersUpdatedAt.value = '';
+  userDeleteBusyId.value = '';
+  userDeleteError.value = '';
+  userDeleteInfo.value = '';
   freeUserTotals.value = {
     free_users_all_time: 0,
     free_users_with_voice_in_range: 0,
@@ -4344,6 +4403,11 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
+.users-table th.actions,
+.users-table td.actions {
+  text-align: right;
+}
+
 .users-table th {
   position: sticky;
   top: 0;
@@ -4363,6 +4427,10 @@ h1 {
 
 .users-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.users-delete-btn {
+  min-inline-size: 86px;
 }
 
 @media (max-width: 820px) {

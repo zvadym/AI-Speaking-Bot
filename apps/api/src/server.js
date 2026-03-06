@@ -3664,6 +3664,12 @@ function parseAdminFeedbackThreadTarget(body = {}) {
   return { ok: true, chatId, botKey };
 }
 
+function parseAdminChatIdTarget(body = {}) {
+  const chatId = Number(body?.chatId ?? body?.chat_id);
+  if (!Number.isFinite(chatId)) return { ok: false, error: 'bad_chat_id' };
+  return { ok: true, chatId };
+}
+
 app.post('/admin/feedbacks/thread/archive', requireAdmin, async (req, res) => {
   res.set('Cache-Control', 'no-store');
   const target = parseAdminFeedbackThreadTarget(req.body || {});
@@ -3967,6 +3973,69 @@ app.get('/admin/users/search', requireAdmin, async (req, res) => {
   );
 
   return res.json({ q, items: rows || [] });
+});
+
+app.post('/admin/users/delete', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const target = parseAdminChatIdTarget(req.body || {});
+  if (!target.ok) return res.status(400).json({ error: target.error });
+
+  const client = await pool.connect();
+  const deleted = {};
+  try {
+    await client.query('BEGIN');
+
+    // Keep the user row for last, so all dependent/chat history data is cleared first.
+    const deleteTableByChatId = async (tableName) => {
+      const result = await client.query(
+        `DELETE FROM ${tableName}
+         WHERE chat_id = $1::bigint`,
+        [target.chatId]
+      );
+      deleted[tableName] = result.rowCount || 0;
+    };
+
+    await deleteTableByChatId('action_events');
+    await deleteTableByChatId('broadcast_recipients');
+    await deleteTableByChatId('feedback_replies');
+    await deleteTableByChatId('feedback');
+    await deleteTableByChatId('feedback_threads');
+    await deleteTableByChatId('loader_flags');
+    await deleteTableByChatId('messages');
+    await deleteTableByChatId('payments');
+    await deleteTableByChatId('pending_feedback');
+    await deleteTableByChatId('usage_hourly');
+    await deleteTableByChatId('usage_week');
+    await deleteTableByChatId('voice_usage_events');
+    await deleteTableByChatId('xp_events');
+    await deleteTableByChatId('user_progress');
+    await deleteTableByChatId('user_summaries');
+    await deleteTableByChatId('user_bots');
+    await deleteTableByChatId('users');
+
+    const deletedTotal = Object.values(deleted).reduce((sum, value) => sum + Number(value || 0), 0);
+    if (deletedTotal <= 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'user_not_found' });
+    }
+
+    await client.query('COMMIT');
+    return res.json({
+      ok: true,
+      chat_id: target.chatId,
+      deleted_total: deletedTotal,
+      deleted
+    });
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      // ignore rollback errors
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
 });
 
 app.get('/admin/users', requireAdmin, async (req, res) => {
