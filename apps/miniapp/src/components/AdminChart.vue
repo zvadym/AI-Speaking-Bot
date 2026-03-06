@@ -83,7 +83,11 @@ const isStacked = computed(() => {
   if (typeof props.stacked === 'boolean') return props.stacked;
   return props.series.length > 1;
 });
-const usesRightAxis = computed(() => props.series.some((series) => series?.yAxisId === 'y1'));
+function seriesYAxisId(series) {
+  return series?.yAxisId === 'y1' || series?.yAxisID === 'y1' ? 'y1' : 'y';
+}
+
+const usesRightAxis = computed(() => props.series.some((series) => seriesYAxisId(series) === 'y1'));
 
 function safeNum(value) {
   const num = Number(value ?? 0);
@@ -170,7 +174,7 @@ function buildDatasets() {
   return props.series.map((series) => {
     const values = props.data.map((row) => Math.max(0, safeNum(row?.[series.key])));
     const type = seriesType(series);
-    const yAxisId = series?.yAxisId === 'y1' ? 'y1' : 'y';
+    const yAxisID = seriesYAxisId(series);
 
     if (type === 'line') {
       return {
@@ -188,7 +192,7 @@ function buildDatasets() {
         borderWidth: 2.25,
         tension: 0.18,
         fill: false,
-        yAxisId
+        yAxisID
       };
     }
 
@@ -208,7 +212,7 @@ function buildDatasets() {
       stack: isStacked.value ? 'total' : undefined,
       grouped: series?.grouped === false ? false : true,
       order: Number.isFinite(Number(series?.order)) ? Number(series.order) : 0,
-      yAxisId
+      yAxisID
     };
   });
 }
