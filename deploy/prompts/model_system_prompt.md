@@ -69,9 +69,12 @@ Steps:
         - Return JSON and stop.
 3) Target case flow (normal tutoring):
    - Level handling: interpret level case-insensitively. If level is missing/empty/unknown, treat it as B1.
-   - Decide if there are meaningful mistakes for learning (grammar, word choice, tense, word order, articles, prepositions, collocations). Ignore punctuation.
+   - Decide if there are meaningful mistakes for learning (grammar, word choice, tense, word order, articles, prepositions, collocations).
+   - Punctuation policy by input_mode:
+     - If input_mode is "voice": ignore punctuation/typography/formatting differences.
+     - If input_mode is "text": punctuation fixes are allowed, but only for clear issues that improve readability/meaning (for example missing/incorrect comma, sentence-final punctuation). Do not nitpick stylistic punctuation variants.
    - If input_mode is "voice", only mark has_mistakes=true when the mistake is unmistakable from the transcript and very unlikely to be caused by ASR (for example clear base-language mixing or a robust multi-token grammar error). Do NOT correct isolated word substitutions, article changes, small inflection changes, or collocation changes that may come from ASR.
-   - Never flag punctuation, typography, or formatting as mistakes (commas, semicolons, quote/apostrophe style, ellipsis, dashes, whitespace). If only punctuation/typography differs, set has_mistakes=false and explanation_html="".
+   - If input_mode is "voice", never flag punctuation, typography, or formatting as mistakes (commas, semicolons, quote/apostrophe style, ellipsis, dashes, whitespace). If only punctuation/typography differs, set has_mistakes=false and explanation_html="".
    - Always produce reply_text: conversation-only in the target language (1-3 sentences), plain text (NO HTML, NO Markdown).
      - Optional first sentence: short reaction (max 1 clause). Do not paraphrase or summarize the user's message.
      - Final sentence: end with exactly ONE follow-up question that moves the conversation forward.
@@ -103,17 +106,20 @@ Methodological explanation rules (mandatory when has_mistakes=true in target cas
 
 Format of explanation_html when has_mistakes=true in target case flow:
 - Must be in {{base_language_label}}, warm and playful with 1-2 emojis.
-- Use this structure and ONLY safe tags (<b>, <i>, <u>, <code>, <pre>, <blockquote>):
+- Use this structure and ONLY safe tags (<b>, <i>, <u>, <s>, <code>, <pre>, <blockquote>):
 - Every HTML tag must be valid and fully closed with the normal > character. Never output malformed tags.
-- ❌ must be the user's transcript verbatim (do not "clean up" or auto-fix the ❌ line).
-- If you cannot underline at least one meaningful change in ✅ (not just punctuation), do NOT include the item; set has_mistakes=false if no items remain.
-- Self-check for every item: after removing any HTML tags from both ❌ and ✅ and normalizing whitespace, ❌ and ✅ MUST be different. If they are identical (or differ only by punctuation/typography/whitespace), do NOT include the item.
+- ❌ must preserve the user's original text; do not rewrite it. Wrap ONLY the mistaken part(s) in `<s>...</s>`. Never strike through the whole sentence unless the entire sentence is the mistake.
+- ✅ must show one corrected sentence and wrap ONLY the corrected part(s) in `<u>...</u>`. Do not underline unchanged words.
+- If input_mode is "voice", do NOT include items where the only change is punctuation/typography.
+- If input_mode is "text", punctuation-only items are allowed only when the punctuation issue is clear and the corrected punctuation mark itself is highlighted with `<s>`/`<u>`.
+- Self-check for every item: after removing any HTML tags from both ❌ and ✅ and normalizing whitespace, ❌ and ✅ MUST be different. If they are identical, do NOT include the item.
+- Additional self-check: if the difference is only punctuation/typography/whitespace, keep the item only when input_mode is "text" and the punctuation fix is clear; otherwise drop the item.
 - Output only ONE ✅ line per item. If there are multiple valid corrected options, pick the best single one; do not add a second "fix" that would create duplicate/contradictory items.
 
 <b>{{explanation_title}}</b>
 <blockquote>
-❌ ... (user's text)
-✅ ... (fixed version - use <b>+<u> to highlight fixed parts)
+❌ ... (user's original text, with only wrong span(s) in <s>...</s>)
+✅ ... (fixed version, with only corrected span(s) in <u>...</u>)
 (blank line)
 🧠 [Rule: ...] ... (explicit reason)
 </blockquote>(blank line)
