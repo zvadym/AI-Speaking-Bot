@@ -65,76 +65,25 @@ const sizeStyle = computed(() => ({
   height: `${props.size}px`
 }));
 
-function getLanguageBadgeTheme(languageCode) {
+function getLanguageFlag(languageCode) {
   const code = (languageCode || '').toString().trim().toLowerCase();
-
-  if (code === 'de') {
-    return {
-      background: 'linear-gradient(to bottom, #000 0 33%, #dd0000 33% 66%, #ffce00 66% 100%)',
-      color: '#ffffff'
-    };
-  }
-
-  if (code === 'it') {
-    return {
-      background: 'linear-gradient(to right, #009246 0 33%, #ffffff 33% 66%, #ce2b37 66% 100%)',
-      color: '#0f172a'
-    };
-  }
-
-  if (code === 'es') {
-    return {
-      background: 'linear-gradient(to bottom, #aa151b 0 25%, #f1bf00 25% 75%, #aa151b 75% 100%)',
-      color: '#0f172a'
-    };
-  }
-
-  if (code === 'pt') {
-    return {
-      background: 'linear-gradient(to right, #006600 0 40%, #ff0000 40% 100%)',
-      color: '#ffffff'
-    };
-  }
-
-  if (code === 'fr') {
-    return {
-      background: 'linear-gradient(to right, #0055a4 0 33%, #ffffff 33% 66%, #ef4135 66% 100%)',
-      color: '#0f172a'
-    };
-  }
-
-  if (code === 'uk' || code === 'ua') {
-    return {
-      background: 'linear-gradient(to bottom, #005bbb 0 50%, #ffd500 50% 100%)',
-      color: '#0f172a'
-    };
-  }
-
-  if (code === 'pl') {
-    return {
-      background: 'linear-gradient(to bottom, #ffffff 0 50%, #dc143c 50% 100%)',
-      color: '#0f172a'
-    };
-  }
-
-  if (code === 'ru') {
-    return {
-      background: 'linear-gradient(to bottom, #ffffff 0 33%, #0039a6 33% 66%, #d52b1e 66% 100%)',
-      color: '#0f172a'
-    };
-  }
-
-  if (code === 'en') {
-    return {
-      background: 'linear-gradient(135deg, #1d4ed8 0%, #1d4ed8 50%, #dc2626 50%, #dc2626 100%)',
-      color: '#ffffff'
-    };
-  }
-
-  return {
-    background: 'var(--surface)',
-    color: 'var(--fg)'
+  const flagsByLanguage = {
+    ar: '🇸🇦',
+    de: '🇩🇪',
+    en: '🇬🇧',
+    es: '🇪🇸',
+    fr: '🇫🇷',
+    hi: '🇮🇳',
+    id: '🇮🇩',
+    it: '🇮🇹',
+    pl: '🇵🇱',
+    pt: '🇵🇹',
+    ru: '🇷🇺',
+    tr: '🇹🇷',
+    ua: '🇺🇦',
+    uk: '🇺🇦'
   };
+  return flagsByLanguage[code] || '🏳️';
 }
 
 const learningLanguage = computed(() => (props.teacher?.learningLanguage || '').toString().trim().toLowerCase());
@@ -146,29 +95,26 @@ const languageBadge = computed(() => {
   const ariaLabel = t(`languageName.${code}`);
   const label = ariaLabel && ariaLabel !== `languageName.${code}` ? ariaLabel : code.toUpperCase();
   return {
-    text: code.toUpperCase(),
-    ariaLabel: label,
-    ...getLanguageBadgeTheme(code)
+    text: getLanguageFlag(code),
+    ariaLabel: label
   };
 });
 
 const languageBadgeSize = computed(() => {
   const size = Number(props.size) || 56;
-  // ~2x previous sizing (keeps it readable at a glance on cards and profile hero)
-  return Math.round(Math.min(56, Math.max(36, size * 0.66)));
+  const baseSize = Math.round(Math.min(56, Math.max(36, size * 0.66)));
+  return Math.max(24, Math.round(baseSize * 0.85));
 });
 
 const languageBadgeStyle = computed(() => {
   if (!languageBadge.value) return {};
   const size = languageBadgeSize.value;
-  const fontSize = Math.max(11, Math.round(size * 0.34));
+  const fontSize = Math.max(11, Math.round(size * 0.64));
 
   return {
     width: `${size}px`,
     height: `${size}px`,
-    fontSize: `${fontSize}px`,
-    background: languageBadge.value.background,
-    color: languageBadge.value.color
+    fontSize: `${fontSize}px`
   };
 });
 
@@ -204,13 +150,13 @@ function onImgError() {
   place-items: center;
   font-weight: 900;
   line-height: 1;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   user-select: none;
+  background: var(--bg);
   border: 2px solid var(--bg);
   box-shadow:
     0 10px 18px color-mix(in srgb, var(--fg) 14%, transparent),
     0 0 0 1px color-mix(in srgb, var(--fg) 12%, transparent);
-  text-shadow: 0 1px 1px color-mix(in srgb, #000 40%, transparent);
 }
 
 .avatar-img {
