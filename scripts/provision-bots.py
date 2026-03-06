@@ -684,7 +684,7 @@ def configure_bot_via_api(
                 "DRY-RUN: setMyName",
                 "DRY-RUN: setMyDescription",
                 "DRY-RUN: setMyShortDescription",
-                "DRY-RUN: setMyCommands",
+                "DRY-RUN: setMyCommands(scope=all_private_chats)",
                 "DRY-RUN: setChatMenuButton",
             ]
         )
@@ -715,8 +715,14 @@ def configure_bot_via_api(
     )
     steps.append("setMyShortDescription")
 
-    client.call_json("setMyCommands", {"commands": presentation["commands"]})
-    steps.append("setMyCommands")
+    client.call_json(
+        "setMyCommands",
+        {
+            "scope": {"type": "all_private_chats"},
+            "commands": presentation["commands"],
+        },
+    )
+    steps.append("setMyCommands(scope=all_private_chats)")
 
     client.call_json(
         "setChatMenuButton",

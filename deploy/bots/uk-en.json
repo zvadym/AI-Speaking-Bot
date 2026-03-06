@@ -111,7 +111,7 @@
     "onboarding_btn_start_voice": "🎙️ Почати голосом",
     "onboarding_btn_start_text": "✍️ Почати текстом",
     "onboarding_btn_show_example": "👀 Показати приклад",
-    "onboarding_example_text": "Приклад (щоденна рутина):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] Кажемо “go to work” без “my”.\n\nТвоя черга 🙂 Надішли 1–2 короткі речення.",
+    "onboarding_example_text": "Приклад 1 (дорога на роботу):\n❌ Even on Monday, I go to <s>my work</s> with half-closed eyes.\n✅ Even on Monday, I go <b><u>to work</u></b> with half-closed eyes.\n🧠 Правило: Кажемо <b><u>go to work</u></b> без \"my\".\n\nПриклад 2 (робота з дому):\n❌ On Fridays, I <s>work in home</s> in pajamas during meetings.\n✅ On Fridays, I <b><u>work from home</u></b> in pajamas during meetings.\n🧠 Правило: Для дистанційної роботи кажемо <b><u>work from home</u></b>, а не \"in home\".\n\nТвоя черга 🙂 Надішли 1–2 короткі речення.",
     "onboarding_voice_cta_text": "Супер. Надішли коротке голосове (1–2 речення) 🎙️",
     "onboarding_text_cta_text": "Супер. Надішли короткий текст (1–2 речення) ✍️",
     "onboarding_complete_intro": "Профіль онбордингу збережено:",

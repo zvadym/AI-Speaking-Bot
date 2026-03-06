@@ -112,7 +112,7 @@
     "onboarding_btn_start_voice": "🎙️ Start with voice",
     "onboarding_btn_start_text": "✍️ Start with text",
     "onboarding_btn_show_example": "👀 Show example",
-    "onboarding_example_text": "Example (daily routine):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] We say “go to work” (without “my”).\n\nNow it’s your turn 🙂 Send 1–2 short sentences.",
+    "onboarding_example_text": "Example 1 (commute):\n❌ Even on Monday, I go to <s>my work</s> with half-closed eyes.\n✅ Even on Monday, I go <b><u>to work</u></b> with half-closed eyes.\n🧠 Rule: We say <b><u>go to work</u></b> without \"my\".\n\nExample 2 (remote work):\n❌ On Fridays, I <s>work in home</s> in pajamas during meetings.\n✅ On Fridays, I <b><u>work from home</u></b> in pajamas during meetings.\n🧠 Rule: For remote work, we say <b><u>work from home</u></b>, not \"in home\".\n\nNow it's your turn 🙂 Send 1–2 short sentences.",
     "onboarding_voice_cta_text": "Great. Send a short voice message (1–2 sentences) 🎙️",
     "onboarding_text_cta_text": "Great. Send a short text message (1–2 sentences) ✍️",
     "onboarding_complete_intro": "Your onboarding profile is saved:",

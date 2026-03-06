@@ -112,7 +112,7 @@
     "onboarding_btn_start_voice": "🎙️ Mit Sprache starten",
     "onboarding_btn_start_text": "✍️ Mit Text starten",
     "onboarding_btn_show_example": "👀 Beispiel zeigen",
-    "onboarding_example_text": "Beispiel (Alltag):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: Kollokation] Man sagt “go to work” (ohne “my”).\n\nJetzt bist du dran 🙂 Sende 1–2 kurze Sätze.",
+    "onboarding_example_text": "Beispiel 1 (Arbeitsweg):\n❌ Even on Monday, I go to <s>my work</s> with half-closed eyes.\n✅ Even on Monday, I go <b><u>to work</u></b> with half-closed eyes.\n🧠 Regel: Man sagt <b><u>go to work</u></b> ohne \"my\".\n\nBeispiel 2 (Homeoffice):\n❌ On Fridays, I <s>work in home</s> in pajamas during meetings.\n✅ On Fridays, I <b><u>work from home</u></b> in pajamas during meetings.\n🧠 Regel: Für Remote-Arbeit sagt man <b><u>work from home</u></b>, nicht \"in home\".\n\nJetzt bist du dran 🙂 Sende 1–2 kurze Sätze.",
     "onboarding_voice_cta_text": "Super. Sende jetzt eine kurze Sprachnachricht (1–2 Sätze) 🎙️",
     "onboarding_text_cta_text": "Super. Sende jetzt eine kurze Textnachricht (1–2 Sätze) ✍️",
     "onboarding_complete_intro": "Dein Onboarding-Profil ist gespeichert:",

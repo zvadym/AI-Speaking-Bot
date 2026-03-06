@@ -112,7 +112,7 @@
     "onboarding_btn_start_voice": "🎙️ ابدأ بالصوت",
     "onboarding_btn_start_text": "✍️ ابدأ بالنص",
     "onboarding_btn_show_example": "👀 عرض مثال",
-    "onboarding_example_text": "مثال (روتين يومي):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] نقول “go to work” بدون “my”.\n\nالآن دورك 🙂 أرسل 1–2 جملة قصيرة.",
+    "onboarding_example_text": "مثال 1 (الذهاب إلى العمل):\n❌ Even on Monday, I go to <s>my work</s> with half-closed eyes.\n✅ Even on Monday, I go <b><u>to work</u></b> with half-closed eyes.\n🧠 القاعدة: نقول <b><u>go to work</u></b> بدون \"my\".\n\nمثال 2 (العمل من المنزل):\n❌ On Fridays, I <s>work in home</s> in pajamas during meetings.\n✅ On Fridays, I <b><u>work from home</u></b> in pajamas during meetings.\n🧠 القاعدة: للعمل عن بُعد نقول <b><u>work from home</u></b> وليس \"in home\".\n\nالآن دورك 🙂 أرسل 1–2 جملة قصيرة.",
     "onboarding_voice_cta_text": "ممتاز. أرسل رسالة صوتية قصيرة (1–2 جملة) 🎙️",
     "onboarding_text_cta_text": "ممتاز. أرسل رسالة نصية قصيرة (1–2 جملة) ✍️",
     "onboarding_complete_intro": "تم حفظ ملف الإعدادات الأولية:",

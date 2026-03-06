@@ -112,7 +112,7 @@
     "onboarding_btn_start_voice": "🎙️ वॉइस से शुरू करें",
     "onboarding_btn_start_text": "✍️ टेक्स्ट से शुरू करें",
     "onboarding_btn_show_example": "👀 उदाहरण देखें",
-    "onboarding_example_text": "उदाहरण (daily routine):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] हम “go to work” कहते हैं, “my” नहीं लगाते।\n\nअब आपकी बारी 🙂 1–2 छोटे वाक्य भेजें।",
+    "onboarding_example_text": "उदाहरण 1 (ऑफिस जाना):\n❌ Even on Monday, I go to <s>my work</s> with half-closed eyes.\n✅ Even on Monday, I go <b><u>to work</u></b> with half-closed eyes.\n🧠 नियम: हम \"my\" के बिना <b><u>go to work</u></b> कहते हैं।\n\nउदाहरण 2 (घर से काम):\n❌ On Fridays, I <s>work in home</s> in pajamas during meetings.\n✅ On Fridays, I <b><u>work from home</u></b> in pajamas during meetings.\n🧠 नियम: Remote work के लिए <b><u>work from home</u></b> कहते हैं, \"in home\" नहीं।\n\nअब आपकी बारी 🙂 1–2 छोटे वाक्य भेजें।",
     "onboarding_voice_cta_text": "बहुत बढ़िया। 1 छोटा वॉइस मैसेज भेजें (1–2 वाक्य) 🎙️",
     "onboarding_text_cta_text": "बहुत बढ़िया। 1 छोटा टेक्स्ट मैसेज भेजें (1–2 वाक्य) ✍️",
     "onboarding_complete_intro": "आपकी ऑनबोर्डिंग प्रोफ़ाइल सेव हो गई है:",

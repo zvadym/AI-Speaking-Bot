@@ -112,7 +112,7 @@
     "onboarding_btn_start_voice": "🎙️ Sesle başla",
     "onboarding_btn_start_text": "✍️ Metinle başla",
     "onboarding_btn_show_example": "👀 Örnek göster",
-    "onboarding_example_text": "Örnek (günlük rutin):\n❌ Every day I go to my work by bus.\n✅ Every day I go to work by bus.\n🧠 [Rule: collocation] “go to work” deriz (\"my\" olmadan).\n\nŞimdi sıra sende 🙂 1–2 kısa cümle gönder.",
+    "onboarding_example_text": "Ornek 1 (ise gidis):\n❌ Even on Monday, I go to <s>my work</s> with half-closed eyes.\n✅ Even on Monday, I go <b><u>to work</u></b> with half-closed eyes.\n🧠 Kural: \"my\" kullanmadan <b><u>go to work</u></b> deriz.\n\nOrnek 2 (evden calisma):\n❌ On Fridays, I <s>work in home</s> in pajamas during meetings.\n✅ On Fridays, I <b><u>work from home</u></b> in pajamas during meetings.\n🧠 Kural: Uzaktan calismada <b><u>work from home</u></b> deriz, \"in home\" demeyiz.\n\nSimdi sira sende 🙂 1–2 kisa cumle gonder.",
     "onboarding_voice_cta_text": "Harika. Kısa bir sesli mesaj gönder (1–2 cümle) 🎙️",
     "onboarding_text_cta_text": "Harika. Kısa bir metin gönder (1–2 cümle) ✍️",
     "onboarding_complete_intro": "Onboarding profilin kaydedildi:",
