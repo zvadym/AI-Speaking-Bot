@@ -119,7 +119,8 @@
     "onboarding_complete_change_hint": "يمكنك تغيير المستوى في أي وقت عبر /level.",
     "onboarding_complete_daily_hint": "الاستمرارية اليومية هي الأهم: حتى 10 دقائق يوميًا تصنع فرقًا واضحًا.",
     "onboarding_btn_change_level": "🎯 اضغط هنا لتغيير المستوى",
-    "onboarding_showcase_no_mistakes_text": "ممتاز، لا توجد أخطاء هنا 👏\nإذا أردت أن ترى كيف أصحّح الأخطاء، اكتب جملة خاطئة عمدًا.\nمثال:\n❌ Yesterday I go to work by bus."
+    "onboarding_showcase_no_mistakes_text": "ممتاز، لا توجد أخطاء هنا 👏\nإذا أردت أن ترى كيف أصحّح الأخطاء، اكتب جملة خاطئة عمدًا.\nمثال:\n❌ Yesterday I go to work by bus.",
+    "onboarding_complete_full_text": "تقدم رائع — ملفك جاهز 🚀\n\nهكذا يعمل نظامك:\n• المواضيع: اختر مسارات محادثة مركزة عبر /topic.\n• المستويات: غيّر الصعوبة في أي وقت عبر /level (A1–C1).\n• XP: كل ممارسة تمنحك XP.\n• مكافأة السلسلة: سلسلتك تزيد مكاسب XP.\n• الفتح: المزيد من XP يفتح ميزات وادوات متقدمة.\n\nالاوامر:\n• /topic\n• /level\n• /xp\n\nارسل رسالتك التالية للحفاظ على السلسلة 🔥\n\nتهانينا! اكتمل الاونبوردينغ."
   },
   "telegram_presentation": {
     "name": "Nour 🇸🇦→🇬🇧 معلمة إنجليزية",

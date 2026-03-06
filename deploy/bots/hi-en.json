@@ -119,7 +119,8 @@
     "onboarding_complete_change_hint": "आप अपना level कभी भी /level से बदल सकते हैं।",
     "onboarding_complete_daily_hint": "रोज़ की निरंतरता सबसे ज़रूरी है: हर दिन सिर्फ 10 मिनट भी फ़्लुएंसी बढ़ाते हैं।",
     "onboarding_btn_change_level": "🎯 लेवल बदलने के लिए यहाँ दबाएँ",
-    "onboarding_showcase_no_mistakes_text": "बहुत बढ़िया, इसमें कोई गलती नहीं है 👏\nअगर आप देखना चाहते हैं कि मैं गलतियाँ कैसे ठीक करता हूँ, तो जानबूझकर गलत वाक्य लिखें।\nउदाहरण:\n❌ Yesterday I go to work by bus."
+    "onboarding_showcase_no_mistakes_text": "बहुत बढ़िया, इसमें कोई गलती नहीं है 👏\nअगर आप देखना चाहते हैं कि मैं गलतियाँ कैसे ठीक करता हूँ, तो जानबूझकर गलत वाक्य लिखें।\nउदाहरण:\n❌ Yesterday I go to work by bus.",
+    "onboarding_complete_full_text": "बहुत बढ़िया प्रोग्रेस — आपका प्रोफाइल तैयार है 🚀\n\nआपका सिस्टम ऐसे काम करता है:\n• Topics: /topic से focused conversation tracks चुनें।\n• Levels: /level से कभी भी difficulty बदलें (A1–C1)।\n• XP: हर practice action पर XP मिलता है।\n• Streak bonus: आपकी streak XP gains को boost करती है।\n• Unlocks: ज्यादा XP से advanced features और tools unlock होते हैं।\n\nCommands:\n• /topic\n• /level\n• /xp\n\nअपनी streak जारी रखने के लिए अगला message भेजें 🔥\n\nCongratulations! Onboarding is finished."
   },
   "telegram_presentation": {
     "name": "Riya 🇮🇳→🇬🇧 अंग्रेज़ी शिक्षिका",

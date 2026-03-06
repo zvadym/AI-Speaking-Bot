@@ -119,7 +119,8 @@
     "onboarding_complete_change_hint": "Puoi cambiare livello in qualsiasi momento con /level.",
     "onboarding_complete_daily_hint": "La costanza quotidiana conta più di tutto: anche 10 minuti al giorno fanno la differenza.",
     "onboarding_btn_change_level": "🎯 Clicca qui per cambiare livello",
-    "onboarding_showcase_no_mistakes_text": "Molto bene, qui non ci sono errori 👏\nSe vuoi vedere come correggo gli errori, scrivi una frase volutamente sbagliata.\nPer esempio:\n❌ Yesterday I go to work by bus."
+    "onboarding_showcase_no_mistakes_text": "Molto bene, qui non ci sono errori 👏\nSe vuoi vedere come correggo gli errori, scrivi una frase volutamente sbagliata.\nPer esempio:\n❌ Yesterday I go to work by bus.",
+    "onboarding_complete_full_text": "Ottimo progresso — il tuo profilo è pronto 🚀\n\nCome funziona il tuo sistema:\n• Topic: scegli percorsi di conversazione mirati con /topic.\n• Livelli: cambia difficoltà in qualsiasi momento con /level (A1–C1).\n• XP: ogni azione di pratica assegna XP.\n• Bonus streak: la tua streak aumenta i guadagni XP.\n• Unlock: più XP sbloccano funzionalità e strumenti avanzati.\n\nComandi:\n• /topic\n• /level\n• /xp\n\nInvia il tuo prossimo messaggio per mantenere viva la streak 🔥\n\nCongratulazioni! L'onboarding è completato."
   },
   "telegram_presentation": {
     "name": "Greta 🇮🇹→🇩🇪 tutor di tedesco",

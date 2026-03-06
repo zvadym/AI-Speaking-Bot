@@ -266,7 +266,6 @@ async function getMeUserRow(chatIdRaw, botKeyRaw = null) {
          ub.bot_key,
          split_part(ub.bot_key, '-', 2) AS target_lang,
          ub.level,
-         ub.onboarding_state,
          ub.reply_mode,
          ub.tts_voice,
          u.plan_tier,
@@ -329,7 +328,6 @@ async function getMeUserRow(chatIdRaw, botKeyRaw = null) {
     teacher_tagline_it: botMeta?.teacher_tagline_it || botMeta?.teacher_tagline_en || botMeta?.teacher_tagline_uk || null,
     teacher_style_tags: botMeta?.teacher_style_tags || null,
     level: row.level || 'b1',
-    onboarding_state: row.onboarding_state || 'ready',
     reply_mode: row.reply_mode || 'text',
     tts_voice: row.tts_voice || 'marin'
   };
@@ -344,7 +342,6 @@ async function listUserBots(chatIdRaw) {
        ub.bot_key,
        split_part(ub.bot_key, '-', 2) AS target_lang,
        ub.level,
-       ub.onboarding_state,
        ub.reply_mode,
        ub.tts_voice,
        ub.is_active,
@@ -402,7 +399,6 @@ function listAvailableBotsForUser(userBots = []) {
       ...bot,
       is_connected: Boolean(linked),
       level: linked?.level || null,
-      onboarding_state: linked?.onboarding_state || null,
       reply_mode: linked?.reply_mode || null,
       tts_voice: linked?.tts_voice || null,
       is_active: linked?.is_active ?? null,
@@ -427,7 +423,6 @@ function listAvailableBotsForUser(userBots = []) {
       teacher_style_tags: row?.teacher_style_tags || null,
       is_connected: true,
       level: row?.level || null,
-      onboarding_state: row?.onboarding_state || null,
       reply_mode: row?.reply_mode || null,
       tts_voice: row?.tts_voice || null,
       is_active: row?.is_active ?? null,
@@ -4876,10 +4871,6 @@ app.post('/me/target-lang', requireAuth, async (req, res) => {
        chat_id,
        bot_key,
        level,
-       onboarding_state,
-       onboarding_level_done,
-       onboarding_voice_done,
-       onboarding_showcase_sent,
        reply_mode,
        tts_voice,
        first_seen_at,
@@ -4887,15 +4878,11 @@ app.post('/me/target-lang', requireAuth, async (req, res) => {
        is_active,
        updated_at
      )
-     SELECT $1, $2, 'b1', 'ready', true, true, false, 'voice', 'marin', NOW(), NOW(), true, NOW()
+     SELECT $1, $2, 'b1', 'voice', 'marin', NOW(), NOW(), true, NOW()
      FROM users u
      WHERE u.chat_id = $1
      ON CONFLICT (chat_id, bot_key)
      DO UPDATE SET
-       onboarding_state = 'ready',
-       onboarding_level_done = true,
-       onboarding_voice_done = true,
-       onboarding_showcase_sent = false,
        last_seen_at = NOW(),
        is_active = true,
        updated_at = NOW()`,
@@ -4927,9 +4914,6 @@ app.post('/me/level', requireAuth, async (req, res) => {
        chat_id,
        bot_key,
        level,
-       onboarding_state,
-       onboarding_level_done,
-       onboarding_voice_done,
        reply_mode,
        tts_voice,
        first_seen_at,
@@ -4937,17 +4921,12 @@ app.post('/me/level', requireAuth, async (req, res) => {
        is_active,
        updated_at
      )
-     SELECT $1, $2, $3, 'ready', true, true, 'text', 'marin', NOW(), NOW(), true, NOW()
+     SELECT $1, $2, $3, 'text', 'marin', NOW(), NOW(), true, NOW()
      FROM users u
      WHERE u.chat_id = $1
      ON CONFLICT (chat_id, bot_key)
      DO UPDATE SET
        level = EXCLUDED.level,
-       onboarding_level_done = true,
-       onboarding_state = CASE
-         WHEN COALESCE(user_bots.onboarding_voice_done, true) THEN 'ready'
-         ELSE 'await_voice'
-       END,
        last_seen_at = NOW(),
        is_active = true,
        updated_at = NOW()`,
@@ -5536,9 +5515,6 @@ async function upsertUser(user, { botKey = null } = {}) {
        chat_id,
        bot_key,
        level,
-       onboarding_state,
-       onboarding_level_done,
-       onboarding_voice_done,
        reply_mode,
        tts_voice,
        first_seen_at,
@@ -5546,7 +5522,7 @@ async function upsertUser(user, { botKey = null } = {}) {
        is_active,
        updated_at
      )
-     VALUES ($1, $2, 'b1', 'ready', true, true, 'text', 'marin', NOW(), NOW(), true, NOW())
+     VALUES ($1, $2, 'b1', 'text', 'marin', NOW(), NOW(), true, NOW())
      ON CONFLICT (chat_id, bot_key)
      DO UPDATE SET
        last_seen_at = NOW(),

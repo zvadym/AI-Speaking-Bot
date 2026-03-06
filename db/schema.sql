@@ -322,8 +322,7 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  IF (OLD.level IS DISTINCT FROM NEW.level)
-     OR (OLD.onboarding_state = 'await_level' AND NEW.onboarding_state = 'ready') THEN
+  IF OLD.level IS DISTINCT FROM NEW.level THEN
     INSERT INTO public.action_events (
       chat_id,
       bot_key,
@@ -342,9 +341,7 @@ BEGIN
       COALESCE(NEW.updated_at, NOW()),
       jsonb_build_object(
         'level', NEW.level,
-        'from_level', OLD.level,
-        'from_state', OLD.onboarding_state,
-        'to_state', NEW.onboarding_state
+        'from_level', OLD.level
       )
     )
     ON CONFLICT (idempotency_key) DO NOTHING;
@@ -401,7 +398,6 @@ CREATE TABLE public.user_bots (
     level text DEFAULT 'a1'::text NOT NULL,
     reply_mode text DEFAULT 'text'::text NOT NULL,
     tts_voice text DEFAULT 'marin'::text NOT NULL,
-    onboarding_state text DEFAULT 'ready'::text NOT NULL,
     first_seen_at timestamp with time zone DEFAULT now() NOT NULL,
     last_seen_at timestamp with time zone DEFAULT now() NOT NULL,
     is_active boolean DEFAULT true NOT NULL,
@@ -413,9 +409,9 @@ CREATE TABLE public.user_bots (
     topic_pinned_message_id bigint,
     topic_pack_json jsonb,
     topic_updated_at timestamp with time zone,
-    onboarding_level_done boolean DEFAULT true NOT NULL,
-    onboarding_voice_done boolean DEFAULT true NOT NULL,
     onboarding_showcase_sent boolean DEFAULT false NOT NULL,
+    onboarding_complete_prompt_sent_at timestamp with time zone,
+    onboarding_completed_at timestamp with time zone,
     CONSTRAINT user_bots_level_check CHECK ((level = ANY (ARRAY['a1'::text, 'a2'::text, 'b1'::text, 'b2'::text, 'c1'::text]))),
     CONSTRAINT user_bots_reply_mode_check CHECK ((reply_mode = ANY (ARRAY['text'::text, 'voice'::text])))
 );
@@ -1549,7 +1545,7 @@ CREATE TRIGGER trg_action_first_voice_sent_from_message AFTER INSERT ON public.m
 -- Name: user_bots trg_action_profile_set_level; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_action_profile_set_level AFTER UPDATE OF level, onboarding_state ON public.user_bots FOR EACH ROW EXECUTE FUNCTION public.log_profile_set_level_from_user_bot();
+CREATE TRIGGER trg_action_profile_set_level AFTER UPDATE OF level ON public.user_bots FOR EACH ROW EXECUTE FUNCTION public.log_profile_set_level_from_user_bot();
 
 
 --
@@ -1637,4 +1633,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260304150000'),
     ('20260304170000'),
     ('20260305100000'),
-    ('20260306110000');
+    ('20260306110000'),
+    ('20260306130000');
