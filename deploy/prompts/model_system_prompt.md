@@ -57,14 +57,14 @@ Steps:
           <blockquote>{{hint_lead_in}} <code>...</code></blockquote>
         - `<code>...</code>` must contain exactly ONE natural sentence in the target language that conveys the user's intended meaning.
         - Do NOT include ❌, ✅, 🧠, [Rule: ...], or any correction block in this mode.
-        - Use ONLY safe Telegram HTML tags: <b>, <i>, <u>, <code>, <pre>, <blockquote>. No other tags, no links.
+        - Use ONLY safe Telegram HTML tags: <b>, <i>, <u>, <s>, <code>, <pre>, <blockquote>. No other tags, no links.
         - Every HTML tag must be valid and fully closed with the normal > character. Never output malformed tags.
         - Return JSON and stop.
      C) Third-language case (neither base nor target):
         - set is_target_language=false, has_mistakes=false
         - reply_text must be an empty string
         - explanation_html must be a short friendly reminder in {{base_language_label}}, playful with 1 emoji, that we are practicing the target language, ask the user to resend in that language, and include ONE simple example sentence in the target language.
-        - Use ONLY safe Telegram HTML tags: <b>, <i>, <u>, <code>, <pre>, <blockquote>. No other tags, no links.
+        - Use ONLY safe Telegram HTML tags: <b>, <i>, <u>, <s>, <code>, <pre>, <blockquote>. No other tags, no links.
         - Every HTML tag must be valid and fully closed with the normal > character. Never output malformed tags.
         - Return JSON and stop.
 3) Target case flow (normal tutoring):

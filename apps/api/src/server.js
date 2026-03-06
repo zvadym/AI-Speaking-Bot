@@ -1466,8 +1466,20 @@ function sanitizeErrorText(value) {
   return raw.slice(0, 500);
 }
 
-const TELEGRAM_HTML_ALLOWED_TAGS = new Set(['b', 'i', 'u', 'code', 'pre', 'blockquote', 'strong', 'em']);
-const TELEGRAM_HTML_ALIAS_TAGS = { strong: 'b', em: 'i' };
+const TELEGRAM_HTML_ALLOWED_TAGS = new Set([
+  'b',
+  'i',
+  'u',
+  's',
+  'code',
+  'pre',
+  'blockquote',
+  'strong',
+  'em',
+  'strike',
+  'del'
+]);
+const TELEGRAM_HTML_ALIAS_TAGS = { strong: 'b', em: 'i', strike: 's', del: 's' };
 
 function escapeTelegramHtmlText(value) {
   return String(value ?? '')
