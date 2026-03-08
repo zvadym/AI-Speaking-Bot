@@ -510,7 +510,6 @@ CREATE TABLE public.users (
     acquisition_start_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     plan_started_tier text,
-    is_active boolean DEFAULT true NOT NULL,
     inactive_reason text,
     inactive_at timestamp with time zone,
     last_delivery_error text,
@@ -1409,13 +1408,6 @@ CREATE INDEX idx_users_inactive_at ON public.users USING btree (inactive_at) WHE
 
 
 --
--- Name: idx_users_is_active; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_users_is_active ON public.users USING btree (is_active);
-
-
---
 -- Name: idx_users_pending_plan_effective_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1634,4 +1626,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260304170000'),
     ('20260305100000'),
     ('20260306110000'),
-    ('20260306130000');
+    ('20260306130000'),
+    ('20260307220402');

@@ -69,6 +69,116 @@ DEFAULT_COMMANDS_BY_BASE = {
     ],
 }
 
+LANGUAGE_FLAG_BY_CODE = {
+    "ar": "🇸🇦",
+    "de": "🇩🇪",
+    "en": "🇬🇧",
+    "es": "🇪🇸",
+    "hi": "🇮🇳",
+    "it": "🇮🇹",
+    "pl": "🇵🇱",
+    "pt": "🇵🇹",
+    "tr": "🇹🇷",
+    "uk": "🇺🇦",
+}
+
+LOCALIZED_TARGET_LANGUAGE_BY_BASE = {
+    "en": {
+        "ar": "Arabic",
+        "de": "German",
+        "en": "English",
+        "es": "Spanish",
+        "hi": "Hindi",
+        "it": "Italian",
+        "pl": "Polish",
+        "pt": "Portuguese",
+        "tr": "Turkish",
+        "uk": "Ukrainian",
+    },
+    "uk": {
+        "ar": "арабської",
+        "de": "німецької",
+        "en": "англійської",
+        "es": "іспанської",
+        "hi": "гінді",
+        "it": "італійської",
+        "pl": "польської",
+        "pt": "португальської",
+        "tr": "турецької",
+        "uk": "української",
+    },
+    "de": {
+        "ar": "Arabisch",
+        "de": "Deutsch",
+        "en": "Englisch",
+        "es": "Spanisch",
+        "hi": "Hindi",
+        "it": "Italienisch",
+        "pl": "Polnisch",
+        "pt": "Portugiesisch",
+        "tr": "Türkisch",
+        "uk": "Ukrainisch",
+    },
+    "it": {
+        "ar": "arabo",
+        "de": "tedesco",
+        "en": "inglese",
+        "es": "spagnolo",
+        "hi": "hindi",
+        "it": "italiano",
+        "pl": "polacco",
+        "pt": "portoghese",
+        "tr": "turco",
+        "uk": "ucraino",
+    },
+    "tr": {
+        "ar": "Arapça",
+        "de": "Almanca",
+        "en": "İngilizce",
+        "es": "İspanyolca",
+        "hi": "Hintçe",
+        "it": "İtalyanca",
+        "pl": "Lehçe",
+        "pt": "Portekizce",
+        "tr": "Türkçe",
+        "uk": "Ukraynaca",
+    },
+    "hi": {
+        "ar": "अरबी",
+        "de": "जर्मन",
+        "en": "अंग्रेज़ी",
+        "es": "स्पेनिश",
+        "hi": "हिंदी",
+        "it": "इतालवी",
+        "pl": "पोलिश",
+        "pt": "पुर्तगाली",
+        "tr": "तुर्की",
+        "uk": "यूक्रेनी",
+    },
+    "ar": {
+        "ar": "العربية",
+        "de": "الألمانية",
+        "en": "الإنجليزية",
+        "es": "الإسبانية",
+        "hi": "الهندية",
+        "it": "الإيطالية",
+        "pl": "البولندية",
+        "pt": "البرتغالية",
+        "tr": "التركية",
+        "uk": "الأوكرانية",
+    },
+}
+
+PRACTICE_TEMPLATE_BY_BASE = {
+    "en": "{language} Practice",
+    "uk": "Практика {language}",
+    "de": "{language}-Praxis",
+    "it": "Pratica di {language}",
+    "tr": "{language} Pratiği",
+    "hi": "{language} प्रैक्टिस",
+    "ar": "ممارسة {language}",
+}
+
 REQUIRED_KEYS = [
     "bot_key",
     "base_language",
@@ -330,6 +440,46 @@ def localized_commands(base_language: str) -> List[Dict[str, str]]:
     return copy.deepcopy(source)
 
 
+def localized_practice_language(base_language: str, learning_language: str) -> str:
+    base = normalize_lang_code(base_language)
+    learn = normalize_lang_code(learning_language)
+    by_base = LOCALIZED_TARGET_LANGUAGE_BY_BASE.get(base, {})
+    if learn in by_base:
+        return by_base[learn]
+    fallback = LOCALIZED_TARGET_LANGUAGE_BY_BASE["en"].get(learn)
+    if fallback:
+        return fallback
+    return learn.upper() if learn else "LANGUAGE"
+
+
+def target_language_flag(learning_language: str) -> str:
+    return LANGUAGE_FLAG_BY_CODE.get(normalize_lang_code(learning_language), "🏳️")
+
+
+def localized_presentation_name(display_name: str, base_language: str, learning_language: str) -> str:
+    name = display_name.strip()
+    if not name:
+        return ""
+    language = localized_practice_language(base_language, learning_language)
+    template = PRACTICE_TEMPLATE_BY_BASE.get(
+        normalize_lang_code(base_language), PRACTICE_TEMPLATE_BY_BASE["en"]
+    )
+    practice_label = template.format(language=language)
+    return f"{name} {target_language_flag(learning_language)} | AI | {practice_label}"
+
+
+def expected_presentation_name(config: Dict[str, Any]) -> Optional[str]:
+    display_name = str(config.get("bot_name") or "").strip()
+    if not display_name:
+        return None
+    base_language = str(config.get("base_language") or "").strip()
+    learning_language = str(config.get("learning_language") or "").strip()
+    if not base_language or not learning_language:
+        return None
+    expected = localized_presentation_name(display_name, base_language, learning_language)
+    return expected or None
+
+
 def validate_payload(config: Dict[str, Any]) -> None:
     missing = [key for key in REQUIRED_KEYS if key not in config or config.get(key) in (None, "")]
     if missing:
@@ -390,6 +540,8 @@ def validate_presentation_section(
     repo_root: Path,
     require_photo_exists: bool,
     normalize_menu_url: bool,
+    expected_name: Optional[str] = None,
+    normalize_name: bool = True,
     fallback_username: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], List[str]]:
     if not isinstance(presentation, dict):
@@ -409,6 +561,17 @@ def validate_presentation_section(
     changes: List[str] = []
 
     name = str(normalized.get("name") or "").strip()
+    expected = str(expected_name or "").strip()
+    if expected and name != expected:
+        if normalize_name:
+            name = expected
+            changes.append(
+                f"Normalized {PRESENTATION_SECTION}.name to '{expected}'"
+            )
+        else:
+            raise BotProvisioningError(
+                f"{PRESENTATION_SECTION}.name must equal '{expected}'"
+            )
     if len(name) < int(limits["name_min"]) or len(name) > int(limits["name_max"]):
         raise BotProvisioningError(
             f"{PRESENTATION_SECTION}.name length must be {limits['name_min']}..{limits['name_max']}"
@@ -888,7 +1051,11 @@ def build_bot_config(template: Dict[str, Any], intake: Dict[str, Any], miniapp_u
     menu_text = localized_menu_text(base)
 
     presentation = {
-        "name": str(config.get("bot_name") or intake["bot_key"]),
+        "name": localized_presentation_name(
+            str(config.get("bot_name") or intake["bot_key"]),
+            str(config.get("base_language") or intake["base_language"]),
+            str(config.get("learning_language") or intake["learning_language"]),
+        ),
         "description": clamp(description_with_link, 512),
         "short_description": clamp(description, 120),
         "commands": localized_commands(base),
@@ -966,6 +1133,7 @@ def run_apply(args: argparse.Namespace) -> int:
                 repo_root=repo_root,
                 require_photo_exists=True,
                 normalize_menu_url=True,
+                expected_name=expected_presentation_name(config),
                 fallback_username=config.get("username")
                 or parse_username_from_url(str(config.get("telegram_url") or "")),
             )
@@ -1084,6 +1252,7 @@ def run_sync(args: argparse.Namespace) -> int:
                 repo_root=repo_root,
                 require_photo_exists=True,
                 normalize_menu_url=True,
+                expected_name=expected_presentation_name(config),
                 fallback_username=config.get("username")
                 or parse_username_from_url(str(config.get("telegram_url") or "")),
             )
@@ -1184,6 +1353,7 @@ def run_interactive(args: argparse.Namespace) -> int:
                 repo_root=repo_root,
                 require_photo_exists=False,
                 normalize_menu_url=True,
+                expected_name=expected_presentation_name(config),
                 fallback_username=config.get("username")
                 or parse_username_from_url(str(config.get("telegram_url") or "")),
             )

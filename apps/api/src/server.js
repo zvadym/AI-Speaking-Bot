@@ -1265,8 +1265,7 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         END AS effective_tier
       FROM users u
       INNER JOIN user_bots ub ON ub.chat_id = u.chat_id
-      WHERE COALESCE(u.is_active, true) = true
-        AND COALESCE(ub.is_active, true) = true
+      WHERE COALESCE(ub.is_active, true) = true
     ),
     activity_days AS (
       SELECT DISTINCT activity.chat_id, activity.day_utc
@@ -1577,8 +1576,7 @@ async function updateUserDeliveryState(chatId, { status, lastError, inactiveReas
 
     await pool.query(
       `UPDATE users
-          SET is_active = true,
-              inactive_reason = NULL,
+          SET inactive_reason = NULL,
               inactive_at = NULL,
               last_delivery_error = NULL,
               updated_at = NOW()
@@ -1610,15 +1608,14 @@ async function updateUserDeliveryState(chatId, { status, lastError, inactiveReas
          ) AS has_active_bot
        )
        UPDATE users u
-          SET is_active = a.has_active_bot,
-              inactive_reason = CASE
+          SET inactive_reason = CASE
                 WHEN a.has_active_bot THEN NULL
                 ELSE $2
               END,
               inactive_at = CASE
                 WHEN a.has_active_bot THEN NULL
-                WHEN COALESCE(u.is_active, true) THEN NOW()
-                ELSE COALESCE(u.inactive_at, NOW())
+                WHEN u.inactive_at IS NULL THEN NOW()
+                ELSE u.inactive_at
               END,
               last_delivery_error = $3,
               updated_at = NOW()
@@ -1635,7 +1632,12 @@ async function updateUserDeliveryState(chatId, { status, lastError, inactiveReas
           SET last_delivery_error = $2,
               updated_at = NOW()
         WHERE chat_id = $1
-          AND COALESCE(is_active, true) = true`,
+          AND EXISTS (
+            SELECT 1
+            FROM user_bots ub
+            WHERE ub.chat_id = users.chat_id
+              AND COALESCE(ub.is_active, true) = true
+          )`,
       [chatId, lastError]
     );
   }
@@ -2045,7 +2047,12 @@ app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
      SELECT
        chat_id,
        created_at,
-       COALESCE(is_active, true) AS is_active,
+       EXISTS (
+         SELECT 1
+         FROM user_bots ub
+         WHERE ub.chat_id = users.chat_id
+           AND COALESCE(ub.is_active, true) = true
+       ) AS is_active,
        CASE
          WHEN override_plan_tier IS NOT NULL AND override_expires_at IS NOT NULL AND NOW() < override_expires_at
            THEN override_plan_tier
@@ -2462,8 +2469,13 @@ app.get('/admin/metrics/inactive-users-by-day', requireAdmin, async (req, res) =
          date_trunc('day', u.inactive_at AT TIME ZONE 'UTC')::date AS day_utc,
          COUNT(*)::int AS count
        FROM users u, params
-       WHERE COALESCE(u.is_active, true) = false
-         AND u.inactive_at IS NOT NULL
+       WHERE u.inactive_at IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1
+           FROM user_bots ub
+           WHERE ub.chat_id = u.chat_id
+             AND COALESCE(ub.is_active, true) = true
+         )
          AND u.inactive_at >= (SELECT from_ts FROM params)
          AND u.inactive_at < (SELECT to_ts FROM params)
          AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
@@ -2682,7 +2694,12 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
          FROM users u
          WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
            AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
-           AND COALESCE(u.is_active, true) = true
+           AND EXISTS (
+             SELECT 1
+             FROM user_bots ub
+             WHERE ub.chat_id = u.chat_id
+               AND COALESCE(ub.is_active, true) = true
+           )
            AND CASE
              WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
                THEN u.override_plan_tier
@@ -2738,7 +2755,12 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
          FROM users u
          WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
            AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
-           AND COALESCE(u.is_active, true) = true
+           AND EXISTS (
+             SELECT 1
+             FROM user_bots ub
+             WHERE ub.chat_id = u.chat_id
+               AND COALESCE(ub.is_active, true) = true
+           )
            AND CASE
              WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
                THEN u.override_plan_tier
@@ -2794,7 +2816,12 @@ app.get('/admin/metrics/free-users-insights', requireAdmin, async (req, res) => 
          FROM users u
          WHERE ($3::text IS NULL OR u.acquisition_start_payload = $3)
            AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
-           AND COALESCE(u.is_active, true) = true
+           AND EXISTS (
+             SELECT 1
+             FROM user_bots ub
+             WHERE ub.chat_id = u.chat_id
+               AND COALESCE(ub.is_active, true) = true
+           )
            AND CASE
              WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
                THEN u.override_plan_tier
@@ -4078,7 +4105,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
     first_name: `LOWER(u.first_name)`,
     bot_key: `ub.bot_key`,
     effective_tier: `effective_tier`,
-    is_active: `COALESCE(u.is_active, true)`,
+    is_active: `is_active`,
     last_seen_at: `last_seen_at`,
     streak_days: `COALESCE(ms.streak_days, 0)`,
     xp_total: `COALESCE(xp.xp_total, 0)`,
@@ -4104,7 +4131,6 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
            u.first_name,
            u.created_at,
            u.updated_at,
-           u.is_active,
            u.plan_tier,
            u.plan_expires_at,
            u.override_plan_tier,
@@ -4164,6 +4190,14 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
          FROM user_progress up
          JOIN filtered_users u ON u.chat_id = up.chat_id
          GROUP BY up.chat_id
+       ),
+       user_activity AS (
+         SELECT
+           ub.chat_id,
+           BOOL_OR(COALESCE(ub.is_active, true)) AS is_active
+         FROM user_bots ub
+         JOIN filtered_users u ON u.chat_id = ub.chat_id
+         GROUP BY ub.chat_id
        )
        SELECT
          u.chat_id,
@@ -4172,7 +4206,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
          ub.bot_key,
          u.created_at,
          COALESCE(ub.last_seen_at, u.updated_at) AS last_seen_at,
-         COALESCE(u.is_active, true) AS is_active,
+         COALESCE(ua.is_active, false) AS is_active,
          CASE
            WHEN u.override_plan_tier IS NOT NULL
              AND u.override_expires_at IS NOT NULL
@@ -4198,6 +4232,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
        ) ub ON true
        LEFT JOIN max_streaks ms ON ms.chat_id = u.chat_id
        LEFT JOIN xp ON xp.chat_id = u.chat_id
+       LEFT JOIN user_activity ua ON ua.chat_id = u.chat_id
        ORDER BY ${orderExpr} ${sortDir} NULLS LAST, u.chat_id DESC
        LIMIT $4::int
        OFFSET $5::int`,
@@ -5495,12 +5530,11 @@ async function upsertUser(user, { botKey = null } = {}) {
   const botKeyForContext = normalizedBotKey || normalizeBotKey(env.defaultBotKey);
 
   await pool.query(
-    `INSERT INTO users (chat_id, username, first_name, is_active, inactive_reason, inactive_at, last_delivery_error)
-     VALUES ($1, $2, $3, true, NULL, NULL, NULL)
+    `INSERT INTO users (chat_id, username, first_name, inactive_reason, inactive_at, last_delivery_error)
+     VALUES ($1, $2, $3, NULL, NULL, NULL)
      ON CONFLICT (chat_id) DO UPDATE SET
        username = EXCLUDED.username,
        first_name = EXCLUDED.first_name,
-       is_active = true,
        inactive_reason = NULL,
        inactive_at = NULL,
        last_delivery_error = NULL,
