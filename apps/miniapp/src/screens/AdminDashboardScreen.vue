@@ -427,11 +427,34 @@
 
         <AdminChart
           title="Onboarding funnel"
-          subtitle="Grouped comparison across the current query, previous calendar month, and previous week."
+          subtitle="Current query with stage counts and % of start."
           kind="bar"
           x-labels="all"
           :stacked="false"
-          :data="actionFunnelSeries"
+          :axis-formats="{ y1: 'percent' }"
+          :data="actionFunnelOverallSeries"
+          :series="actionFunnelChartSeries"
+        />
+
+        <AdminChart
+          title="Onboarding funnel: last month"
+          subtitle="Previous calendar month with the current payload and exclusion filters."
+          kind="bar"
+          x-labels="all"
+          :stacked="false"
+          :axis-formats="{ y1: 'percent' }"
+          :data="actionFunnelLastMonthSeries"
+          :series="actionFunnelChartSeries"
+        />
+
+        <AdminChart
+          title="Onboarding funnel: last week"
+          subtitle="Previous Monday through Sunday with the current payload and exclusion filters."
+          kind="bar"
+          x-labels="all"
+          :stacked="false"
+          :axis-formats="{ y1: 'percent' }"
+          :data="actionFunnelLastWeekSeries"
           :series="actionFunnelChartSeries"
         />
 
@@ -1415,7 +1438,9 @@ const newUsersByBotSeriesConfig = ref([]);
 const newPaidSeries = ref([]);
 const actionEventsSeries = ref([]);
 const actionTotalsSeries = ref([]);
-const actionFunnelSeries = ref([]);
+const actionFunnelOverallSeries = ref([]);
+const actionFunnelLastMonthSeries = ref([]);
+const actionFunnelLastWeekSeries = ref([]);
 const topicUsageSeries = ref([]);
 const topicUsageSeriesConfig = ref([]);
 const activeUsersByBotSeries = ref([]);
@@ -1495,28 +1520,21 @@ const actionFunnelStageMeta = {
 };
 const actionFunnelChartSeries = [
   {
-    key: 'overall',
-    label: 'Overall',
-    color: 'rgba(38, 84, 124, 0.9)',
-    barPercentage: 0.68,
-    categoryPercentage: 0.72,
-    maxBarThickness: 28
-  },
-  {
-    key: 'last_month',
-    label: 'Last month',
-    color: 'rgba(181, 116, 31, 0.88)',
-    barPercentage: 0.68,
-    categoryPercentage: 0.72,
-    maxBarThickness: 28
-  },
-  {
-    key: 'last_week',
-    label: 'Last week',
-    color: 'rgba(31, 107, 99, 0.88)',
+    key: 'count',
+    label: 'Users',
+    color: 'rgba(38, 84, 124, 0.88)',
+    colorKey: 'barColor',
     barPercentage: 0.64,
-    categoryPercentage: 0.72,
-    maxBarThickness: 28
+    categoryPercentage: 0.78,
+    maxBarThickness: 42
+  },
+  {
+    key: 'pct',
+    label: '% of start',
+    color: 'rgba(31, 107, 99, 0.96)',
+    type: 'line',
+    yAxisId: 'y1',
+    format: 'percent'
   }
 ];
 const topicSeriesPalette = [
@@ -2408,17 +2426,18 @@ function analyticsQueryForRange(range) {
   };
 }
 
-function buildActionFunnelComparisonSeries(seriesByWindow) {
-  const stageOrder = ['start', 'first_message', 'onboarding_complete', 'free_limit_half', 'paywall_shown'];
-  return stageOrder.map((stageKey) => {
-    const meta = actionFunnelStageMeta[stageKey];
-    return {
-      day: meta?.label || actionLabel(stageKey),
-      overall: Number(seriesByWindow.overall.get(stageKey)?.count || 0),
-      last_month: Number(seriesByWindow.lastMonth.get(stageKey)?.count || 0),
-      last_week: Number(seriesByWindow.lastWeek.get(stageKey)?.count || 0)
-    };
-  });
+function actionFunnelColor(rawAction) {
+  const action = (rawAction || '').toString().trim();
+  return actionFunnelStageMeta[action]?.color || 'rgba(87, 60, 127, 0.86)';
+}
+
+function buildActionFunnelSeries(rawSeries) {
+  return (Array.isArray(rawSeries) ? rawSeries : []).map((row) => ({
+    day: actionFunnelStageMeta[String(row?.action || '').trim()]?.label || actionLabel(row?.action),
+    count: Number(row?.count || 0),
+    pct: Number(row?.pct || 0),
+    barColor: actionFunnelColor(row?.action)
+  }));
 }
 
 function topicLabel(rawTopicId) {
@@ -2982,11 +3001,9 @@ async function refreshAnalytics() {
           count: Number(row?.count || 0)
         }))
       : [];
-    actionFunnelSeries.value = buildActionFunnelComparisonSeries({
-      overall: new Map((Array.isArray(actionFunnelOverall?.series) ? actionFunnelOverall.series : []).map((row) => [String(row?.action || '').trim(), row])),
-      lastMonth: new Map((Array.isArray(actionFunnelLastMonth?.series) ? actionFunnelLastMonth.series : []).map((row) => [String(row?.action || '').trim(), row])),
-      lastWeek: new Map((Array.isArray(actionFunnelLastWeek?.series) ? actionFunnelLastWeek.series : []).map((row) => [String(row?.action || '').trim(), row]))
-    });
+    actionFunnelOverallSeries.value = buildActionFunnelSeries(actionFunnelOverall?.series);
+    actionFunnelLastMonthSeries.value = buildActionFunnelSeries(actionFunnelLastMonth?.series);
+    actionFunnelLastWeekSeries.value = buildActionFunnelSeries(actionFunnelLastWeek?.series);
     const topicsByDayRawRows = Array.isArray(topicsByDay?.series) ? topicsByDay.series : [];
     const { chartData: topicChartData, seriesConfig: topicChartConfig } = transformByTopicData(topicsByDayRawRows);
     topicUsageSeries.value = topicChartData;
