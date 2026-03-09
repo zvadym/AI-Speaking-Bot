@@ -120,7 +120,14 @@
     "onboarding_complete_daily_hint": "Daily consistency matters most: even 10 minutes every day builds fluency.",
     "onboarding_btn_change_level": "🎯 Click here to change level",
     "onboarding_showcase_no_mistakes_text": "Very good, no mistakes here 👏\nIf you want to see how I fix mistakes, send something intentionally wrong.\nFor example:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Awesome progress — your profile is ready 🚀\n\nHow your system works:\n• Topics: choose focused conversation tracks with /topic.\n• Levels: switch difficulty anytime with /level (A1–C1).\n• XP: every practice action earns XP.\n• Streak bonus: your streak boosts XP gains.\n• Unlocks: more XP opens advanced features and tools.\n\nCommands:\n• /topic\n• /level\n• /xp\n\nSend your next message to keep the streak alive 🔥\n\nCongratulations! Onboarding is finished."
+    "onboarding_complete_full_text": "Awesome progress — your profile is ready 🚀\n\nHow your system works:\n• Topics: choose focused conversation tracks with /topic.\n• Levels: switch difficulty anytime with /level (A1–C1).\n• XP: every practice action earns XP.\n• Streak bonus: your streak boosts XP gains.\n• Unlocks: more XP opens advanced features and tools.\n\nCommands:\n• /topic\n• /level\n• /xp\n\nSend your next message to keep the streak alive 🔥\n\nCongratulations! Onboarding is finished.",
+    "keyboard_btn_level_prefix": "Level",
+    "keyboard_btn_topic_prefix": "Topic",
+    "keyboard_btn_topic_none": "Free chat",
+    "keyboard_btn_voice_prefix": "Voice",
+    "keyboard_btn_voice_text": "Text",
+    "keyboard_btn_voice_voice": "Voice",
+    "keyboard_btn_xp_prefix": "XP"
   },
   "telegram_presentation": {
     "name": "John 🇬🇧→🇩🇪 German tutor",
@@ -134,6 +141,10 @@
       {
         "command": "level",
         "description": "Set your language level"
+      },
+      {
+        "command": "voice",
+        "description": "Set voice/text reply mode"
       },
       {
         "command": "stats",

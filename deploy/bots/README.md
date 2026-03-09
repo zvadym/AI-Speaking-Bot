@@ -68,6 +68,20 @@ The field contract lives in:
 
 It defines required fields, length limits, regex, and Telegram method mapping.
 
+## Locale Keys For Bottom Keyboard
+
+The workflow also reads these `locale` keys to build the persistent bottom keyboard labels:
+
+- `keyboard_btn_level_prefix`
+- `keyboard_btn_topic_prefix`
+- `keyboard_btn_topic_none`
+- `keyboard_btn_voice_prefix`
+- `keyboard_btn_voice_text`
+- `keyboard_btn_voice_voice`
+- `keyboard_btn_xp_prefix`
+
+They should be localized in the bot's base language and kept short because Telegram reply-keyboard buttons have limited horizontal space.
+
 ## Two-Step Workflow
 
 ### 1) Validate / normalize bot files
