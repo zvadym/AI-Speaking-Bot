@@ -66,7 +66,7 @@ function requireAdmin(req, res, next) {
 
 function requireScheduledTasks(req, res, next) {
   if (!env.scheduledTasksSecret) {
-    return res.status(404).json({ error: 'not_found' });
+    return next();
   }
 
   const provided = (req.headers['x-scheduled-tasks-secret'] || '').toString();
