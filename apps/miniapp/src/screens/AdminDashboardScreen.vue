@@ -427,11 +427,10 @@
 
         <AdminChart
           title="Onboarding funnel"
-          subtitle="Current milestone flow for users who started in the selected range."
+          subtitle="Grouped comparison across the current query, previous calendar month, and previous week."
           kind="bar"
           x-labels="all"
           :stacked="false"
-          :axis-formats="{ y1: 'percent' }"
           :data="actionFunnelSeries"
           :series="actionFunnelChartSeries"
         />
@@ -1496,21 +1495,28 @@ const actionFunnelStageMeta = {
 };
 const actionFunnelChartSeries = [
   {
-    key: 'count',
-    label: 'Users',
-    color: 'rgba(38, 84, 124, 0.88)',
-    colorKey: 'barColor',
-    barPercentage: 0.64,
-    categoryPercentage: 0.78,
-    maxBarThickness: 42
+    key: 'overall',
+    label: 'Overall',
+    color: 'rgba(38, 84, 124, 0.9)',
+    barPercentage: 0.68,
+    categoryPercentage: 0.72,
+    maxBarThickness: 28
   },
   {
-    key: 'pct',
-    label: '% of start',
-    color: 'rgba(31, 107, 99, 0.96)',
-    type: 'line',
-    yAxisId: 'y1',
-    format: 'percent'
+    key: 'last_month',
+    label: 'Last month',
+    color: 'rgba(181, 116, 31, 0.88)',
+    barPercentage: 0.68,
+    categoryPercentage: 0.72,
+    maxBarThickness: 28
+  },
+  {
+    key: 'last_week',
+    label: 'Last week',
+    color: 'rgba(31, 107, 99, 0.88)',
+    barPercentage: 0.64,
+    categoryPercentage: 0.72,
+    maxBarThickness: 28
   }
 ];
 const topicSeriesPalette = [
@@ -2392,14 +2398,27 @@ function actionLabel(rawAction) {
   return action.replaceAll('_', ' ');
 }
 
-function actionFunnelLabel(rawAction) {
-  const action = (rawAction || '').toString().trim();
-  return actionFunnelStageMeta[action]?.label || actionLabel(action);
+function analyticsQueryForRange(range) {
+  const exclude = excludedChatIds.value.length ? excludedChatIds.value.join(',') : undefined;
+  return {
+    from: range.from,
+    to: toExclusiveBoundaryYmd(range.to),
+    payload: payload.value.trim() ? payload.value.trim() : undefined,
+    exclude_chat_ids: exclude
+  };
 }
 
-function actionFunnelColor(rawAction) {
-  const action = (rawAction || '').toString().trim();
-  return actionFunnelStageMeta[action]?.color || 'rgba(87, 60, 127, 0.86)';
+function buildActionFunnelComparisonSeries(seriesByWindow) {
+  const stageOrder = ['start', 'first_message', 'onboarding_complete', 'free_limit_half', 'paywall_shown'];
+  return stageOrder.map((stageKey) => {
+    const meta = actionFunnelStageMeta[stageKey];
+    return {
+      day: meta?.label || actionLabel(stageKey),
+      overall: Number(seriesByWindow.overall.get(stageKey)?.count || 0),
+      last_month: Number(seriesByWindow.lastMonth.get(stageKey)?.count || 0),
+      last_week: Number(seriesByWindow.lastWeek.get(stageKey)?.count || 0)
+    };
+  });
 }
 
 function topicLabel(rawTopicId) {
@@ -2903,6 +2922,11 @@ async function refreshAnalytics() {
   errorText.value = '';
   try {
     const q = analyticsQuery();
+    const funnelComparisonQueries = {
+      overall: q,
+      lastMonth: analyticsQueryForRange(rangeForPreset('last_month')),
+      lastWeek: analyticsQueryForRange(rangeForPreset('last_week'))
+    };
     const headers = adminHeaders();
     const [
       summary,
@@ -2911,7 +2935,9 @@ async function refreshAnalytics() {
       newPaid,
       actionEvents,
       actionTotals,
-      actionFunnel,
+      actionFunnelOverall,
+      actionFunnelLastMonth,
+      actionFunnelLastWeek,
       topicsByDay,
       activeUsersByBot,
       inactiveUsers,
@@ -2930,7 +2956,9 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/new-paid-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/actions-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.overall, headers }),
+      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.lastMonth, headers }),
+      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.lastWeek, headers }),
       apiJson(props.apiBase, '/admin/metrics/topics-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
@@ -2954,14 +2982,11 @@ async function refreshAnalytics() {
           count: Number(row?.count || 0)
         }))
       : [];
-    actionFunnelSeries.value = Array.isArray(actionFunnel?.series)
-      ? actionFunnel.series.map((row) => ({
-          day: actionFunnelLabel(row?.action),
-          count: Number(row?.count || 0),
-          pct: Number(row?.pct || 0),
-          barColor: actionFunnelColor(row?.action)
-        }))
-      : [];
+    actionFunnelSeries.value = buildActionFunnelComparisonSeries({
+      overall: new Map((Array.isArray(actionFunnelOverall?.series) ? actionFunnelOverall.series : []).map((row) => [String(row?.action || '').trim(), row])),
+      lastMonth: new Map((Array.isArray(actionFunnelLastMonth?.series) ? actionFunnelLastMonth.series : []).map((row) => [String(row?.action || '').trim(), row])),
+      lastWeek: new Map((Array.isArray(actionFunnelLastWeek?.series) ? actionFunnelLastWeek.series : []).map((row) => [String(row?.action || '').trim(), row]))
+    });
     const topicsByDayRawRows = Array.isArray(topicsByDay?.series) ? topicsByDay.series : [];
     const { chartData: topicChartData, seriesConfig: topicChartConfig } = transformByTopicData(topicsByDayRawRows);
     topicUsageSeries.value = topicChartData;
