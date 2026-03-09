@@ -383,7 +383,7 @@ def compose_locale_with_generated_prompts(
             "topic_card_goal_prefix": "Ziel: ",
             "topic_allowed_prefix": "Erlaubt: ",
             "topic_avoid_prefix": "Vermeiden: ",
-            "topic_card_rules_line": "Ich bleibe bei diesem Thema. Zum Wechseln nutze /topic.",
+            "topic_card_rules_line": "Ich bleibe bei diesem Thema. Zum Wechseln nutze die Themen-Schaltflaeche im unteren Menue.",
             "topic_clear_done": "Thema entfernt. Mit /topic kannst du ein neues waehlen.",
             "topic_auto_cleared_unpinned": "Thema beendet. Mit /topic kannst du ein neues waehlen.",
         }
@@ -402,7 +402,7 @@ def compose_locale_with_generated_prompts(
             "topic_card_goal_prefix": "Obiettivo: ",
             "topic_allowed_prefix": "Consentito: ",
             "topic_avoid_prefix": "Evita: ",
-            "topic_card_rules_line": "Resto su questo argomento. Per cambiarlo usa /topic.",
+            "topic_card_rules_line": "Resto su questo argomento. Per cambiarlo usa il pulsante argomento nel menu in basso.",
             "topic_clear_done": "Argomento rimosso. Usa /topic per sceglierne un altro.",
             "topic_auto_cleared_unpinned": "Argomento concluso. Usa /topic per sceglierne un altro.",
         }
@@ -421,7 +421,7 @@ def compose_locale_with_generated_prompts(
             "topic_card_goal_prefix": "Мета: ",
             "topic_allowed_prefix": "Можна: ",
             "topic_avoid_prefix": "Уникати: ",
-            "topic_card_rules_line": "Я триматимуся цієї теми. Щоб змінити її, використай /topic.",
+            "topic_card_rules_line": "Я триматимуся цієї теми. Щоб змінити її, скористайся кнопкою теми в нижньому меню.",
             "topic_clear_done": "Тему прибрано. Командою /topic можна обрати нову.",
             "topic_auto_cleared_unpinned": "Тему завершено. Командою /topic можна обрати нову.",
         }
@@ -440,7 +440,7 @@ def compose_locale_with_generated_prompts(
             "topic_card_goal_prefix": "Goal: ",
             "topic_allowed_prefix": "Allowed: ",
             "topic_avoid_prefix": "Avoid: ",
-            "topic_card_rules_line": "I'll stay on this topic. To switch, use /topic.",
+            "topic_card_rules_line": "I'll stay on this topic. To switch it, use the topic button in the bottom menu.",
             "topic_clear_done": "Topic cleared. Use /topic to choose a new one.",
             "topic_auto_cleared_unpinned": "Topic finished. Use /topic to choose a new one.",
         }
