@@ -339,7 +339,7 @@ async function getMeUserRow(chatIdRaw, botKeyRaw = null) {
     teacher_tagline_en: botMeta?.teacher_tagline_en || null,
     teacher_tagline_it: botMeta?.teacher_tagline_it || botMeta?.teacher_tagline_en || botMeta?.teacher_tagline_uk || null,
     teacher_style_tags: botMeta?.teacher_style_tags || null,
-    level: row.level || 'b1',
+    level: row.level || 'a1',
     reply_mode: row.reply_mode || 'text',
     tts_voice: row.tts_voice || 'marin'
   };
@@ -4994,7 +4994,7 @@ app.get('/me/dashboard', requireAuth, async (req, res) => {
       bot_name: user.bot_name || null,
       learning_language: user.learning_language || null,
       base_language: user.base_language || null,
-      level: user.level || 'b1',
+      level: user.level || 'a1',
       telegram_url: user.telegram_url || null,
       reply_mode: user.reply_mode || 'text',
       tts_voice: user.tts_voice || 'marin',
@@ -5158,7 +5158,7 @@ app.post('/me/target-lang', requireAuth, async (req, res) => {
        is_active,
        updated_at
      )
-     SELECT $1, $2, 'b1', 'voice', 'marin', NOW(), NOW(), true, NOW()
+     SELECT $1, $2, 'a1', 'voice', 'marin', NOW(), NOW(), true, NOW()
      FROM users u
      WHERE u.chat_id = $1
      ON CONFLICT (chat_id, bot_key)
@@ -5801,7 +5801,7 @@ async function upsertUser(user, { botKey = null } = {}) {
        is_active,
        updated_at
      )
-     VALUES ($1, $2, 'b1', 'text', 'marin', NOW(), NOW(), true, NOW())
+     VALUES ($1, $2, 'a1', 'text', 'marin', NOW(), NOW(), true, NOW())
      ON CONFLICT (chat_id, bot_key)
      DO UPDATE SET
        last_seen_at = NOW(),

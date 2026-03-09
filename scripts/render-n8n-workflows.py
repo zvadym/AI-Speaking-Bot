@@ -384,8 +384,8 @@ def compose_locale_with_generated_prompts(
             "topic_allowed_prefix": "Erlaubt: ",
             "topic_avoid_prefix": "Vermeiden: ",
             "topic_card_rules_line": "Ich bleibe bei diesem Thema. Zum Wechseln nutze die Themen-Schaltflaeche im unteren Menue.",
-            "topic_clear_done": "Thema entfernt. Mit /topic kannst du ein neues waehlen.",
-            "topic_auto_cleared_unpinned": "Thema beendet. Mit /topic kannst du ein neues waehlen.",
+            "topic_clear_done": "Thema entfernt. Ueber die Antwortbuttons unten kannst du ein neues waehlen.",
+            "topic_auto_cleared_unpinned": "Thema beendet. Ueber die Antwortbuttons unten kannst du ein neues waehlen.",
         }
     elif base_language_code == "it":
         topic_defaults = {
@@ -403,8 +403,8 @@ def compose_locale_with_generated_prompts(
             "topic_allowed_prefix": "Consentito: ",
             "topic_avoid_prefix": "Evita: ",
             "topic_card_rules_line": "Resto su questo argomento. Per cambiarlo usa il pulsante argomento nel menu in basso.",
-            "topic_clear_done": "Argomento rimosso. Usa /topic per sceglierne un altro.",
-            "topic_auto_cleared_unpinned": "Argomento concluso. Usa /topic per sceglierne un altro.",
+            "topic_clear_done": "Argomento rimosso. Puoi sceglierne un altro con i pulsanti di risposta in basso.",
+            "topic_auto_cleared_unpinned": "Argomento concluso. Puoi sceglierne un altro con i pulsanti di risposta in basso.",
         }
     elif base_language_code == "uk":
         topic_defaults = {
@@ -422,8 +422,8 @@ def compose_locale_with_generated_prompts(
             "topic_allowed_prefix": "Можна: ",
             "topic_avoid_prefix": "Уникати: ",
             "topic_card_rules_line": "Я триматимуся цієї теми. Щоб змінити її, скористайся кнопкою теми в нижньому меню.",
-            "topic_clear_done": "Тему прибрано. Командою /topic можна обрати нову.",
-            "topic_auto_cleared_unpinned": "Тему завершено. Командою /topic можна обрати нову.",
+            "topic_clear_done": "Тему прибрано. Нову можна обрати кнопками відповіді внизу.",
+            "topic_auto_cleared_unpinned": "Тему завершено. Нову можна обрати кнопками відповіді внизу.",
         }
     else:
         topic_defaults = {
@@ -441,8 +441,8 @@ def compose_locale_with_generated_prompts(
             "topic_allowed_prefix": "Allowed: ",
             "topic_avoid_prefix": "Avoid: ",
             "topic_card_rules_line": "I'll stay on this topic. To switch it, use the topic button in the bottom menu.",
-            "topic_clear_done": "Topic cleared. Use /topic to choose a new one.",
-            "topic_auto_cleared_unpinned": "Topic finished. Use /topic to choose a new one.",
+            "topic_clear_done": "Topic cleared. You can choose a new one with the reply buttons below.",
+            "topic_auto_cleared_unpinned": "Topic finished. You can choose a new one with the reply buttons below.",
         }
 
     for key, default_value in topic_defaults.items():

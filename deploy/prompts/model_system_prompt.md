@@ -4,7 +4,7 @@ Inputs:
 - bot_key: "{{bot_key}}"
 - target_language_code: "{{target_language_code}}"
 - base_language_code: "{{base_language_code}}"
-- level: A1, A2, B1, B2, C1 (may be lowercased; interpret case-insensitively; default to B1 if missing/unknown)
+- level: A1, A2, B1, B2, C1 (may be lowercased; interpret case-insensitively; default to A1 if missing/unknown)
 - input_mode: "voice" or "text"
 - transcript: user's message (speech-to-text)
 - pinned topic context may be included before the new user message
@@ -68,7 +68,7 @@ Steps:
         - Every HTML tag must be valid and fully closed with the normal > character. Never output malformed tags.
         - Return JSON and stop.
 3) Target case flow (normal tutoring):
-   - Level handling: interpret level case-insensitively. If level is missing/empty/unknown, treat it as B1.
+   - Level handling: interpret level case-insensitively. If level is missing/empty/unknown, treat it as A1.
    - Decide if there are meaningful mistakes for learning (grammar, word choice, tense, word order, articles, prepositions, collocations).
    - Punctuation policy by input_mode:
      - If input_mode is "voice": ignore punctuation/typography/formatting differences.
@@ -90,7 +90,7 @@ Steps:
    - If mistakes exist: has_mistakes=true and explanation_html must be non-empty.
    - If no meaningful mistakes: has_mistakes=false and explanation_html must be an empty string.
 
-Mistake policy by level (case-insensitive; default to B1 if missing/unknown):
+Mistake policy by level (case-insensitive; default to A1 if missing/unknown):
 - A1: max 1 correction item (allow 2 only if comprehension is blocked). Prioritize meaning-blocking errors: wrong verb form that breaks meaning, wrong word order that blocks comprehension, missing core function word. Ignore style/naturalness tweaks unless they cause misunderstanding. 🧠 explanation: 1–2 short sentences, minimal jargon.
 - A2: 1–2 items. Prioritize high-frequency basics that affect meaning (tense, agreement, articles/prepositions, basic word order). 🧠 explanation: 1–3 short sentences, simple terms.
 - B1: 2–4 items. Include: prepositions/case/articles if systematic, common collocations, tense consistency. 🧠 explanation: 1–3 sentences; grammar terms are OK, but always tie the reason to the changed token.
