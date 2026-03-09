@@ -64,6 +64,18 @@ function requireAdmin(req, res, next) {
   return next();
 }
 
+function requireScheduledTasks(req, res, next) {
+  if (!env.scheduledTasksSecret) {
+    return res.status(404).json({ error: 'not_found' });
+  }
+
+  const provided = (req.headers['x-scheduled-tasks-secret'] || '').toString();
+  if (!provided || !safeEqualString(provided, env.scheduledTasksSecret)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  return next();
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PURCHASE_ALLOWED_TIERS = new Set(['pro']);
 const PURCHASE_ALLOWED_BILLING_INTERVALS = new Set(['month', 'year']);
@@ -980,6 +992,13 @@ const BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW = 8;
 const BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN = 64;
 const BROADCAST_INLINE_KEYBOARD_MAX_CALLBACK_DATA_LEN = 64;
 const BROADCAST_INLINE_KEYBOARD_MAX_URL_LEN = 2048;
+const SCHEDULED_TASK_TYPES = new Set(['onboarding_complete']);
+const SCHEDULED_TASK_RESULT_STATUSES = new Set(['sent', 'failed']);
+const SCHEDULED_TASK_CLAIM_DEFAULT_LIMIT = 200;
+const SCHEDULED_TASK_CLAIM_MAX_LIMIT = 500;
+const SCHEDULED_TASK_CLAIM_TTL_MINUTES = 10;
+const SCHEDULED_TASK_ONBOARDING_IDLE_MINUTES = 2;
+const SCHEDULED_TASK_ONBOARDING_SCHEDULE_KEY = 'once';
 const broadcastInFlight = new Set();
 
 function normalizeBroadcastMediaFileIds(raw) {
@@ -1458,6 +1477,204 @@ function sanitizeErrorText(value) {
   const raw = (value ?? '').toString().trim();
   if (!raw) return null;
   return raw.slice(0, 500);
+}
+
+function normalizeScheduledTaskType(raw) {
+  const value = (raw ?? '').toString().trim().toLowerCase();
+  if (!value || !SCHEDULED_TASK_TYPES.has(value)) return null;
+  return value;
+}
+
+function normalizeScheduledTaskLimit(raw, fallback = SCHEDULED_TASK_CLAIM_DEFAULT_LIMIT) {
+  const value = Number(raw);
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value <= 0) return fallback;
+  return Math.min(value, SCHEDULED_TASK_CLAIM_MAX_LIMIT);
+}
+
+function normalizeScheduledTaskPayload(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return raw;
+}
+
+function normalizeScheduledTaskReportResults(raw) {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const out = [];
+  for (const entry of raw) {
+    const jobId = Number(entry?.job_id ?? entry?.jobId);
+    const status = (entry?.status ?? '').toString().trim().toLowerCase();
+    if (!Number.isFinite(jobId) || jobId <= 0) continue;
+    if (!SCHEDULED_TASK_RESULT_STATUSES.has(status)) continue;
+    const telegramMessageIdRaw = Number(entry?.telegram_message_id ?? entry?.telegramMessageId);
+    out.push({
+      jobId,
+      status,
+      error: sanitizeErrorText(entry?.error),
+      telegramMessageId: Number.isFinite(telegramMessageIdRaw) && telegramMessageIdRaw > 0
+        ? telegramMessageIdRaw
+        : null
+    });
+  }
+  return out.length ? out : null;
+}
+
+async function claimScheduledTaskDispatches(taskType, limit) {
+  if (taskType === 'onboarding_complete') {
+    return claimOnboardingCompleteDispatches(limit);
+  }
+  return [];
+}
+
+async function claimOnboardingCompleteDispatches(limit) {
+  const { rows } = await pool.query(
+    `WITH eligible AS (
+       SELECT
+         ub.chat_id,
+         ub.bot_key,
+         '{}'::jsonb AS payload_json,
+         last_user.created_at AS last_user_created_at
+       FROM user_bots ub
+       JOIN users u
+         ON u.chat_id = ub.chat_id
+       JOIN LATERAL (
+         SELECT m.created_at
+         FROM messages m
+         WHERE m.chat_id = ub.chat_id
+           AND m.bot_key = ub.bot_key
+           AND m.role = 'user'
+         ORDER BY m.id DESC
+         LIMIT 1
+       ) last_user ON true
+       WHERE COALESCE(ub.is_active, true) = true
+         AND ub.onboarding_complete_prompt_sent_at IS NULL
+         AND ub.onboarding_completed_at IS NULL
+         AND ($6::text = '' OR LOWER(COALESCE(u.username, '')) = $6::text)
+         AND last_user.created_at <= NOW() - ($1::int * interval '1 minute')
+       ORDER BY last_user.created_at ASC, ub.chat_id ASC, ub.bot_key ASC
+       LIMIT $2::int
+     ),
+     claimed AS (
+       INSERT INTO scheduled_task_dispatches (
+         task_type,
+         bot_key,
+         chat_id,
+         schedule_key,
+         status,
+         claimed_at,
+         claim_expires_at,
+         attempts,
+         last_error,
+         payload_json,
+         created_at,
+         updated_at
+       )
+       SELECT
+         $3::text,
+         e.bot_key,
+         e.chat_id,
+         $4::text,
+         'claimed'::text,
+         NOW(),
+         NOW() + ($5::int * interval '1 minute'),
+         1,
+         NULL,
+         e.payload_json,
+         NOW(),
+         NOW()
+       FROM eligible e
+       ON CONFLICT (task_type, bot_key, chat_id, schedule_key) DO UPDATE
+         SET status = 'claimed',
+             claimed_at = NOW(),
+             claim_expires_at = NOW() + ($5::int * interval '1 minute'),
+             attempts = scheduled_task_dispatches.attempts + 1,
+             last_error = NULL,
+             payload_json = EXCLUDED.payload_json,
+             updated_at = NOW()
+       WHERE scheduled_task_dispatches.status <> 'sent'
+         AND scheduled_task_dispatches.sent_at IS NULL
+         AND (
+           scheduled_task_dispatches.claim_expires_at IS NULL
+           OR scheduled_task_dispatches.claim_expires_at < NOW()
+         )
+       RETURNING
+         id AS job_id,
+         task_type,
+         bot_key,
+         chat_id,
+         payload_json AS payload
+     )
+     SELECT job_id, task_type, bot_key, chat_id, payload
+     FROM claimed
+     ORDER BY bot_key ASC, chat_id ASC`,
+    [
+      SCHEDULED_TASK_ONBOARDING_IDLE_MINUTES,
+      limit,
+      taskType,
+      SCHEDULED_TASK_ONBOARDING_SCHEDULE_KEY,
+      SCHEDULED_TASK_CLAIM_TTL_MINUTES,
+      env.scheduledTasksTestUsername || ''
+    ]
+  );
+
+  return rows.map((row) => ({
+    job_id: Number(row.job_id),
+    task_type: normalizeScheduledTaskType(row.task_type) || taskType,
+    bot_key: normalizeBotKey(row.bot_key),
+    chat_id: Number(row.chat_id),
+    payload: normalizeScheduledTaskPayload(row.payload)
+  }));
+}
+
+async function reportScheduledTaskDispatchResults(taskType, results) {
+  const client = await pool.connect();
+  let updatedCount = 0;
+  try {
+    await client.query('BEGIN');
+    for (const result of results) {
+      const { rows } = await client.query(
+        `UPDATE scheduled_task_dispatches
+            SET status = $3::text,
+                claim_expires_at = NULL,
+                last_error = $4::text,
+                telegram_message_id = CASE
+                  WHEN $5::bigint IS NOT NULL THEN $5::bigint
+                  ELSE telegram_message_id
+                END,
+                sent_at = CASE
+                  WHEN $3::text = 'sent' THEN COALESCE(sent_at, NOW())
+                  ELSE sent_at
+                END,
+                updated_at = NOW()
+          WHERE id = $1::bigint
+            AND task_type = $2::text
+            AND status <> 'sent'
+          RETURNING id, chat_id, bot_key, task_type, status`,
+        [result.jobId, taskType, result.status, result.error, result.telegramMessageId]
+      );
+      const dispatch = rows[0];
+      if (!dispatch) continue;
+
+      if (taskType === 'onboarding_complete' && result.status === 'sent') {
+        await client.query(
+          `UPDATE user_bots
+              SET onboarding_complete_prompt_sent_at = COALESCE(onboarding_complete_prompt_sent_at, NOW()),
+                  updated_at = NOW()
+            WHERE chat_id = $1::bigint
+              AND bot_key = $2::text
+              AND onboarding_complete_prompt_sent_at IS NULL`,
+          [dispatch.chat_id, dispatch.bot_key]
+        );
+      }
+
+      updatedCount += 1;
+    }
+    await client.query('COMMIT');
+    return { updatedCount };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 const TELEGRAM_HTML_ALLOWED_TAGS = new Set([
@@ -4566,6 +4783,34 @@ app.post('/internal/broadcasts/process', async (req, res) => {
 
   queueBroadcastCampaignProcessing(campaignId);
   return res.json({ ok: true, campaign_id: campaignId });
+});
+
+app.post('/internal/scheduled-tasks/claim', requireScheduledTasks, async (req, res) => {
+  const taskType = normalizeScheduledTaskType(req.body?.task_type ?? req.body?.taskType);
+  if (!taskType) {
+    return res.status(400).json({ error: 'bad_task_type' });
+  }
+
+  const limit = normalizeScheduledTaskLimit(req.body?.limit);
+  const jobs = await claimScheduledTaskDispatches(taskType, limit);
+  return res.json({ jobs });
+});
+
+app.post('/internal/scheduled-tasks/report', requireScheduledTasks, async (req, res) => {
+  const taskType = normalizeScheduledTaskType(req.body?.task_type ?? req.body?.taskType);
+  if (!taskType) {
+    return res.status(400).json({ error: 'bad_task_type' });
+  }
+
+  const rawResults = req.body?.results
+    ?? ((req.body?.job_id ?? req.body?.jobId) ? [req.body] : null);
+  const results = normalizeScheduledTaskReportResults(rawResults);
+  if (!results) {
+    return res.status(400).json({ error: 'bad_results' });
+  }
+
+  const report = await reportScheduledTaskDispatchResults(taskType, results);
+  return res.json({ ok: true, updated_count: report.updatedCount });
 });
 
 app.post('/auth/telegram', async (req, res) => {

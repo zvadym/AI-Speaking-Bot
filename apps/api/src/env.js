@@ -60,6 +60,12 @@ function optionalBoolean(name, fallback = false) {
   throw new Error(`Invalid boolean in env var: ${name}`);
 }
 
+function optionalUsername(name) {
+  const raw = (process.env[name] ?? '').toString().trim().toLowerCase();
+  if (!raw) return '';
+  return raw.replace(/^@+/, '').slice(0, 64);
+}
+
 const port = Number(process.env.API_PORT || 3000);
 const telegramInitDataMaxAgeSec = Number(process.env.TELEGRAM_INITDATA_MAX_AGE || 86400);
 const corsOrigins = (process.env.CORS_ORIGINS || '')
@@ -106,6 +112,8 @@ export const env = {
   adminDashboardPassword: process.env.ADMIN_DASHBOARD_PASSWORD || '',
   broadcastWebhookUrl: optionalUrl('BROADCAST_WEBHOOK_URL'),
   broadcastWebhookSecret: process.env.BROADCAST_WEBHOOK_SECRET || '',
+  scheduledTasksSecret: process.env.SCHEDULED_TASKS_SECRET || '',
+  scheduledTasksTestUsername: optionalUsername('SCHEDULED_TASKS_TEST_USERNAME'),
   broadcastMaxRecipients: optionalInteger('BROADCAST_MAX_RECIPIENTS', 2000, { min: 1, max: 100000 }),
   broadcastProcessBatchSize: optionalInteger('BROADCAST_PROCESS_BATCH_SIZE', 100, { min: 1, max: 1000 }),
   broadcastPerMessageDelayMs: optionalInteger('BROADCAST_PER_MESSAGE_DELAY_MS', 35, { min: 0, max: 5000 }),
