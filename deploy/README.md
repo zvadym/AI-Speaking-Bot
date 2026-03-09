@@ -92,9 +92,9 @@ docker compose -f docker-compose.yml up -d --force-recreate
 # (this overwrites existing workflows with same IDs)
 docker compose -f docker-compose.yml run -T --rm --no-deps n8n-import
 
-# activate imported workflows
+# publish imported workflows without restarting n8n
 COMPOSE_FILE=docker-compose.yml PROJECT=languagebot WORKFLOWS_DIR=workflows/.rendered \
-  bash ../scripts/activate-n8n-workflows.sh
+  STOP_N8N_BEFORE=false RESTART_N8N_AFTER=false bash ../scripts/activate-n8n-workflows.sh
 ```
 
 Note: n8n data is stored in `deploy/n8n-data` (bind‑mount). Ensure this directory exists and is persisted across deploys.
@@ -167,7 +167,7 @@ WHERE tier = 'pro'
   AND billing_interval = 'year';
 ```
 
-### 2.3 Restart n8n and re-import workflows (if workflow JSON changed)
+### 2.3 Re-import and publish n8n workflows live (if workflow JSON changed)
 
 ```bash
 cd /opt/ai-speaking-bot/deploy
@@ -183,18 +183,24 @@ docker compose -f docker-compose.yml up -d --force-recreate
 # (this overwrites existing workflows with same IDs)
 docker compose -f docker-compose.yml run -T --rm --no-deps n8n-import
 
-# activate imported workflows
+# publish imported workflows without restarting n8n
 COMPOSE_FILE=docker-compose.yml PROJECT=languagebot WORKFLOWS_DIR=workflows/.rendered \
-  bash ../scripts/activate-n8n-workflows.sh
+  STOP_N8N_BEFORE=false RESTART_N8N_AFTER=false bash ../scripts/activate-n8n-workflows.sh
 ```
 
 ## 3) Optional: Remote deploy from local machine
 
-Use `scripts/deploy-remote.sh` to SSH into the server, run `git pull`, migrations, restarts, and health checks.
+Use `scripts/deploy-remote.sh` to SSH into the server, run `git pull`, migrations, live n8n workflow import/publish, and health checks.
 Note: SSH access requires VPN to be connected.
 
 ```bash
 ./scripts/deploy-remote.sh
+```
+
+Add `--restart-all` when you explicitly want a full container restart and restart-based n8n workflow activation:
+
+```bash
+./scripts/deploy-remote.sh --restart-all
 ```
 
 Override defaults if needed:

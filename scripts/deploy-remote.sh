@@ -14,6 +14,7 @@ HEALTH_DELAY_SEC="${HEALTH_DELAY_SEC:-3}"
 HEALTH_TIMEOUT_SEC="${HEALTH_TIMEOUT_SEC:-5}"
 SKIP_HEALTHCHECKS="${SKIP_HEALTHCHECKS:-false}"
 SKIP_N8N="${SKIP_N8N:-false}"
+RESTART_ALL="${RESTART_ALL:-false}"
 
 # Override these when deploying to a new server before DNS is updated.
 # Set any of them to empty string to skip that check.
@@ -24,10 +25,11 @@ HEALTHCHECK_N8N_LOCAL_URL="${HEALTHCHECK_N8N_LOCAL_URL:-http://127.0.0.1:5678/}"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/deploy-remote.sh [--skip-n8n] [--help]
+Usage: scripts/deploy-remote.sh [--skip-n8n] [--restart-all] [--help]
 
 Options:
   --skip-n8n  Skip n8n workflow render/import/activation and n8n-specific health checks.
+  --restart-all  Force full service restart, including restart-based n8n workflow activation.
   --help      Show this help message.
 EOF
 }
@@ -47,6 +49,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_N8N="true"
       shift
       ;;
+    --restart-all)
+      RESTART_ALL="true"
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -64,6 +70,11 @@ if [[ "${SKIP_N8N}" != "true" && "${SKIP_N8N}" != "false" ]]; then
   exit 1
 fi
 
+if [[ "${RESTART_ALL}" != "true" && "${RESTART_ALL}" != "false" ]]; then
+  echo "Invalid RESTART_ALL=${RESTART_ALL} (expected: true|false)" >&2
+  exit 1
+fi
+
 ssh_cmd() {
   if [[ "${SSH_FORWARD_AGENT}" == "true" ]]; then
     ssh -A "$@"
@@ -77,7 +88,7 @@ ssh_cmd -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >
 
 log "🚀 Step 2/9: Run remote deploy commands"
 ssh_cmd "${DEPLOY_HOST}" \
-  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' SKIP_N8N='${SKIP_N8N}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' HEALTHCHECK_N8N_URL='${HEALTHCHECK_N8N_URL}' HEALTHCHECK_N8N_LOCAL_URL='${HEALTHCHECK_N8N_LOCAL_URL}' bash -se" <<'REMOTE'
+  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' SKIP_N8N='${SKIP_N8N}' RESTART_ALL='${RESTART_ALL}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' HEALTHCHECK_N8N_URL='${HEALTHCHECK_N8N_URL}' HEALTHCHECK_N8N_LOCAL_URL='${HEALTHCHECK_N8N_LOCAL_URL}' bash -se" <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
@@ -143,27 +154,44 @@ bash "${MIGRATE_SCRIPT}"
 if [[ "${SKIP_N8N}" == "true" ]]; then
   step "🐳 2.5/10: Build & restart api/miniapp/caddy only (--skip-n8n)"
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build api miniapp
-  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --no-deps api miniapp caddy
+  if [[ "${RESTART_ALL}" == "true" ]]; then
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --no-deps api miniapp caddy
+  else
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --no-deps api miniapp caddy
+  fi
 else
   step "🐳 2.5/10: Build & restart services"
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build
-  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --remove-orphans
+  if [[ "${RESTART_ALL}" == "true" ]]; then
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --remove-orphans
+  else
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --remove-orphans
+  fi
 fi
 
 if [[ "${SKIP_N8N}" == "true" ]]; then
   step "⏭️ 2.6/10: Skip n8n stop/import/activation (--skip-n8n)"
 else
-  step "🛑 2.6/10: Stop n8n (pre-import)"
-  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" stop n8n >/dev/null 2>&1 || true
+  if [[ "${RESTART_ALL}" == "true" ]]; then
+    step "🛑 2.6/10: Stop n8n (pre-import, --restart-all)"
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" stop n8n >/dev/null 2>&1 || true
 
-  step "🧹 2.7/10: Unpublish/deactivate ALL n8n workflows"
-  COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" STOP_N8N_BEFORE=false bash scripts/unpublish-all-n8n-workflows.sh
+    step "🧹 2.7/10: Unpublish/deactivate ALL n8n workflows (--restart-all)"
+    COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" STOP_N8N_BEFORE=false bash scripts/unpublish-all-n8n-workflows.sh
+  else
+    step "♻️ 2.6/10: Keep n8n running during workflow import/publish"
+  fi
 
   step "📦 2.8/10: Import n8n workflows"
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps n8n-import </dev/null
 
-  step "✅ 2.9/10: Activate n8n workflows"
-  COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" bash scripts/activate-n8n-workflows.sh
+  if [[ "${RESTART_ALL}" == "true" ]]; then
+    step "✅ 2.9/10: Activate n8n workflows with restart (--restart-all)"
+    COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" STOP_N8N_BEFORE=false RESTART_N8N_AFTER=true bash scripts/activate-n8n-workflows.sh
+  else
+    step "✅ 2.9/10: Publish n8n workflows live"
+    COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" STOP_N8N_BEFORE=false RESTART_N8N_AFTER=false bash scripts/activate-n8n-workflows.sh
+  fi
 fi
 
 step "✅ 2.10/10: Health checks"

@@ -6,6 +6,7 @@ PROJECT="${PROJECT:-languagebot}"
 WORKFLOWS_DIR="${WORKFLOWS_DIR:-deploy/workflows/.rendered}"
 export WORKFLOWS_DIR
 STOP_N8N_BEFORE="${STOP_N8N_BEFORE:-true}"
+RESTART_N8N_AFTER="${RESTART_N8N_AFTER:-false}"
 
 if [[ ! -d "${WORKFLOWS_DIR}" ]]; then
   echo "Missing workflows dir: ${WORKFLOWS_DIR}" >&2
@@ -127,6 +128,7 @@ if [[ ${#workflow_ids[@]} -gt 0 ]]; then
   # Single container: loop inside to avoid one container per workflow
   activate_cmd=""
   extra_args=""
+  requires_restart="false"
   if [[ "${has_publish}" == "true" ]]; then
     activate_cmd="publish:workflow"
   elif [[ -n "${has_activate}" ]]; then
@@ -134,11 +136,15 @@ if [[ ${#workflow_ids[@]} -gt 0 ]]; then
   elif [[ "${has_update}" == "true" ]]; then
     activate_cmd="update:workflow"
     extra_args="--active=true"
+    requires_restart="true"
   fi
   if ! dc run -T --rm --no-deps --entrypoint sh n8n -c 'for id in "$@"; do n8n '"${activate_cmd}"' --id="$id" '"${extra_args}"' || exit 1; done' sh "${workflow_ids[@]}" </dev/null; then
     echo "One or more workflows failed to activate." >&2
     dc start n8n >/dev/null 2>&1 || true
     exit 1
+  fi
+  if [[ "${requires_restart}" == "true" && "${RESTART_N8N_AFTER}" != "true" ]]; then
+    echo "Activation used update:workflow; restart n8n for active status changes to take effect." >&2
   fi
 fi
 
@@ -148,5 +154,9 @@ if [[ "${failed}" -ne 0 ]]; then
   exit 1
 fi
 
-# Ensure changes take effect (and n8n is running).
-dc restart n8n >/dev/null
+# Ensure requested restart occurs and n8n is running.
+if [[ "${RESTART_N8N_AFTER}" == "true" ]]; then
+  dc restart n8n >/dev/null
+elif [[ "${did_stop}" == "true" ]]; then
+  dc start n8n >/dev/null 2>&1 || true
+fi
