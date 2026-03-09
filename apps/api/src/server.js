@@ -1519,12 +1519,12 @@ function normalizeScheduledTaskReportResults(raw) {
 
 async function claimScheduledTaskDispatches(taskType, limit) {
   if (taskType === 'onboarding_complete') {
-    return claimOnboardingCompleteDispatches(limit);
+    return claimOnboardingCompleteDispatches(taskType, limit);
   }
   return [];
 }
 
-async function claimOnboardingCompleteDispatches(limit) {
+async function claimOnboardingCompleteDispatches(taskType, limit) {
   const { rows } = await pool.query(
     `WITH eligible AS (
        SELECT
