@@ -617,21 +617,107 @@ function buildPortugueseContent(teacher, languageForm) {
 function buildTurkishContent(teacher, languageForm) {
   const teacherName = getTeacherName(teacher, 'tr') || getTeacherName(teacher, 'en') || 'öğretmen';
   const targetLanguage = languageForm.display || 'İngilizce';
-  const base = buildEnglishContent(teacher, languageForm);
 
   return {
-    ...base,
     metaTitle: `${teacherName} ile Telegram'da ${targetLanguage} konuşma pratiği | AI Language School`,
-    metaDescription: `Telegram'da ${targetLanguage} konuşma pratiği yapın: anlık düzeltmeler, daha doğal ifadeler ve günlük mikro derslerle ${teacherName} ile bir dakikada başlayın.`,
+    metaDescription: `Telegram'da her gün ${targetLanguage} konuşma pratiği yapın: kısa sesli mesajlar gönderin, anında düzeltmeler alın, daha doğal kalıplar öğrenin ve ${teacherName} ile bir dakikada başlayın.`,
     h1: `Telegram'da ${targetLanguage} konuşma pratiği`,
-    heroLead: `Telegram içinde gerçek ${targetLanguage} konuşmalarını pratik yapın. Kısa bir sesli mesaj gönderin; ${teacherName} size anında düzeltilmiş ve daha doğal bir versiyonla dönsün.`,
-    heroOutcome: `İş, mülakat, seyahat ve günlük hayatta daha hızlı cevaplar, daha net telaffuz ve daha az çekinmeyle akıcı konuşun.`,
+    heroLead: `Telegram içinde gerçek ${targetLanguage} konuşmalarını pratik yapın. Kısa bir sesli mesaj gönderin; ${teacherName} size hemen düzeltilmiş ve daha doğal bir versiyon göndersin, siz de bunu bir sonraki mesajda tekrar kullanabilesiniz.`,
+    heroOutcome: `İş, mülakat, seyahat ve günlük hayatta daha hızlı yanıtlar, daha net telaffuz ve daha az çekinmeyle daha özgüvenli konuşun.`,
+    coreBullets: [
+      'Bir sonraki mesajda hemen yeniden kullanabileceğiniz net düzeltmeler ve daha güçlü alternatifler.',
+      'Telaffuz, akıcılık ve doğal ifade kurma konusunda doğrudan sohbet içinde pratik destek.',
+      'Telegram içinde 10–15 dakikalık günlük mikro pratik: yoğun programda bile sürdürülebilir ilerleme.'
+    ],
     howTitle: 'Nasıl çalışır',
+    howSteps: [
+      {
+        title: '1. Gerçek bir sesli mesaj gönder',
+        description: 'Günün, işin, planların ya da gerçek bir durum hakkında 1–2 cümle söyle. Kusursuz bir metin hazırlamana gerek yok; mevcut seviyende doğal konuşman yeterli.'
+      },
+      {
+        title: '2. Anında düzeltme ve daha iyi bir versiyon al',
+        description: `Aynı fikrin daha temiz, daha doğru ve daha doğal bir biçimini görürsün. ${teacherName}, neyi neden değiştirmen gerektiğini de kısa şekilde açıklar.`
+      },
+      {
+        title: '3. Diyaloğu sürdür ve alışkanlık oluştur',
+        description: 'Her yanıtın sonunda yeni bir soru ya da ipucu olur. Böylece tek cümlede kalmaz, her gün konuşma kasını biraz daha güçlendirirsin.'
+      }
+    ],
     forWhoTitle: 'Kimler için uygun',
+    forWhoIntro: `${teacherName}, sadece pasif çalışma değil, ${targetLanguage} konuşmada gerçek sonuç isteyen öğrenciler için tasarlandı.`,
+    forWhoItems: [
+      {
+        title: 'İş iletişimi',
+        description: 'Toplantı güncellemeleri, kısa aramalar, follow-up mesajları ve profesyonel yanıtlar üzerinde çalış; net ve doğal duyul.'
+      },
+      {
+        title: 'Mülakat hazırlığı',
+        description: 'Kendini tanıtma, deneyim, güçlü yönler, proje örnekleri ve yaygın mülakat soruları için kısa ama güçlü cevaplar kur.'
+      },
+      {
+        title: 'Seyahat ve yeni bir ülkeye taşınma',
+        description: 'Havalimanı, otel, kira, evrak, randevu ve günlük hizmet durumlarında işine yarayacak dili pratik et.'
+      },
+      {
+        title: 'Günlük yaşam',
+        description: 'Alışveriş, ulaşım, doktor, banka ve sıradan sohbetlerde hızlı ve anlaşılır tepki vermeyi öğren.'
+      }
+    ],
     dialoguesTitle: 'Diyalog örneği',
-    dialoguesIntro: 'Kısa ve gerçekçi bir sohbet örneği. Sesli mesaj -> daha doğal cevap -> kural açıklaması -> sonraki mesaj seçenekleri.',
+    dialoguesIntro: 'Kısa ve gerçekçi bir sohbet örneği. Sesli mesaj → daha iyi yanıt → kural açıklaması → bir sonraki mesaj için seçenekler.',
     deepDiveTitle: `Telegram ile gerçek ${targetLanguage} akıcılığı nasıl gelişir`,
+    deepDiveParagraphs: [
+      `Çoğu öğrenci kelime bilmediği için değil, doğru ifadeyi doğru anda yeterince hızlı kuramadığı için zorlanır. Telegram'daki kısa ama düzenli konuşma pratiği tam burada işe yarar. Baskının gerçekten hissedildiği yerde çalışırsın: kısa, hazırlıksız ve gerçek cevaplar.`,
+      `Bu yöntemin döngüsü nettir: konuş, düzeltme al, daha iyi cümleyi tekrar et, sonra devam et. 10–15 dakika içinde birkaç faydalı tekrar yaparsın. Bu tekrarlar zamanla çekinmeyi azaltır ve cümle akışını doğal hale getirir.`,
+      `Telegram formatının en büyük avantajı düşük sürtünmedir. Ders ayarlaman, arama planlaman ya da yeni bir uygulama açman gerekmez. Kısa boşluklarda bile pratik yapabilirsin. Uzun vadede akıcılığı asıl oluşturan şey de bu tutarlılıktır.`,
+      `Geri bildirimin kalitesi çok önemlidir. Sadece “bu daha iyi” demek yetmez. Somut alternatifler ve kısa, kural temelli açıklamalar aldığında neyin neden değiştiğini anlarsın. Böylece dil kalıplarını daha hızlı fark etmeye başlarsın.`,
+      `Bu format farklı seviyelerde işe yarar. Başlangıç seviyesindeysen kısa mesajlar ve tek bir düzeltme üzerinde kalabilirsin. Orta ya da ileri seviyedeysen daha uzun cevaplar, iş iletişimi, mülakat yapısı ve doğal collocation'lar üzerinde çalışabilirsin.`,
+      `${teacherName} ile ilerleme yolu nettir: konuş, düzeltme al, daha iyi cümleleri yeniden kullan ve her gün devam et. Birkaç hafta sonra genelde üç değişim görülür: daha az çekinme, daha temiz cümle akışı ve gerçek durumlarda daha hızlı tepki.`
+    ],
     faqTitle: 'SSS',
+    faqItems: [
+      {
+        question: `Bu gerçekten ${targetLanguage} konuşma pratiği mi, yoksa daha çok gramer mi?`,
+        answer: 'Ana odak konuşmadır. Gramer yalnızca gerçek diyalog içindeki pratik düzeltmeler olarak görünür.'
+      },
+      {
+        question: 'Her gün ne kadar zaman ayırmalıyım?',
+        answer: 'Günde 10–15 dakika ile başla. Uzun ama seyrek oturumlardan daha önemli olan şey düzenliliktir.'
+      },
+      {
+        question: 'Ders planlamam gerekiyor mu?',
+        answer: 'Hayır. Pratik tamamen Telegram içinde asenkron ilerler; istediğin uygun anda yapabilirsin.'
+      },
+      {
+        question: 'Başlangıç seviyesindekiler de kullanabilir mi?',
+        answer: 'Evet. Başlangıç seviyesindekiler kısa mesajlarla başlayabilir ve basit ama etkili düzeltmeler alabilir.'
+      },
+      {
+        question: 'Telaffuz için de geri bildirim geliyor mu?',
+        answer: 'Evet. Geri bildirim yalnızca metin düzeltmesi değil; telaffuz, akıcılık ve doğal ifade kurma desteği de içerir.'
+      },
+      {
+        question: 'Mülakat hazırlığı için faydalı mı?',
+        answer: 'Evet. Kendini tanıtma, deneyim, güçlü yönler ve follow-up yanıtları tekrar tekrar çalışabilirsin.'
+      },
+      {
+        question: 'Taşınma veya seyahat senaryolarını çalışabilir miyim?',
+        answer: 'Evet. Kira, randevu, ulaşım, otel, evrak ve günlük hizmetler gibi yaygın durumlar buna dahildir.'
+      },
+      {
+        question: 'Bunu sıradan chatbotlardan farklı yapan ne?',
+        answer: 'Bu format düzeltme odaklıdır: her yanıt bir sonraki konuşma denemeni daha güçlü hale getirir, sadece sohbet etmiş olmazsın.'
+      },
+      {
+        question: 'Sonra başka bir öğretmen seçebilir miyim?',
+        answer: 'Evet. İstediğin zaman öğretmenler listesini açıp başka bir öğretmen tarzına geçebilirsin.'
+      },
+      {
+        question: 'En hızlı ilerleme için ne yapmalıyım?',
+        answer: 'Her gün konuş, düzeltilmiş cümleleri yeniden kullan ve her follow-up sorusuna tam cümlelerle yanıt ver.'
+      }
+    ],
     otherTeachersTitle: 'Başka bir öğretmen seç'
   };
 }
@@ -639,21 +725,107 @@ function buildTurkishContent(teacher, languageForm) {
 function buildHindiContent(teacher, languageForm) {
   const teacherName = getTeacherName(teacher, 'hi') || getTeacherName(teacher, 'en') || 'शिक्षक';
   const targetLanguage = languageForm.display || 'अंग्रेज़ी';
-  const base = buildEnglishContent(teacher, languageForm);
 
   return {
-    ...base,
     metaTitle: `${teacherName} के साथ Telegram पर ${targetLanguage} बोलने की प्रैक्टिस | AI Language School`,
-    metaDescription: `Telegram पर ${targetLanguage} बोलने की प्रैक्टिस करें: तुरंत corrections, ज्यादा natural phrasing, और daily micro-lessons के साथ ${teacherName} के जरिए एक मिनट में शुरू करें।`,
+    metaDescription: `Telegram पर रोज़ ${targetLanguage} बोलने की प्रैक्टिस करें: छोटे वॉइस मैसेज भेजें, तुरंत सुधार पाएँ, अधिक स्वाभाविक वाक्य सीखें और ${teacherName} के साथ एक मिनट में शुरू करें।`,
     h1: `Telegram पर ${targetLanguage} बोलने की प्रैक्टिस`,
-    heroLead: `Telegram के अंदर real ${targetLanguage} conversations की प्रैक्टिस करें। एक छोटा voice message भेजें, और ${teacherName} आपको तुरंत corrected और ज्यादा natural version भेजेगा।`,
-    heroOutcome: `काम, interviews, travel और daily life में faster replies, clearer pronunciation और कम hesitation के साथ ज्यादा fluently बोलें।`,
+    heroLead: `Telegram के अंदर असली ${targetLanguage} बातचीत की प्रैक्टिस करें। एक छोटा वॉइस मैसेज भेजें, और ${teacherName} आपको तुरंत सुधरा हुआ और अधिक स्वाभाविक जवाब भेजेगा जिसे आप अगली बार सीधे इस्तेमाल कर सकें।`,
+    heroOutcome: `काम, इंटरव्यू, यात्रा और रोज़मर्रा की स्थितियों में तेज़ जवाब, साफ़ उच्चारण और कम झिझक के साथ ज़्यादा आत्मविश्वास से बोलें।`,
+    coreBullets: [
+      'तुरंत सुधार और ऐसे बेहतर विकल्प, जिन्हें आप अगली ही पंक्ति में दोहरा सकें।',
+      'उच्चारण, बोलने के प्रवाह और स्वाभाविक वाक्य-विन्यास पर व्यावहारिक मदद, सीधे चैट रूप में।',
+      'Telegram में 10–15 मिनट की छोटी दैनिक प्रैक्टिस, जिसे व्यस्त दिनचर्या में भी जारी रखना आसान है।'
+    ],
     howTitle: 'यह कैसे काम करता है',
+    howSteps: [
+      {
+        title: '1. असली वॉइस मैसेज भेजें',
+        description: 'अपने दिन, काम, योजना या किसी वास्तविक स्थिति के बारे में 1–2 वाक्य बोलें। स्क्रिप्ट लिखने की ज़रूरत नहीं है, बस अपने मौजूदा स्तर पर स्वाभाविक बोलें।'
+      },
+      {
+        title: '2. तुरंत सुधार और बेहतर रूप पाएँ',
+        description: `आपको उसी बात का अधिक साफ़, सही और स्वाभाविक रूप मिलता है। ${teacherName} संक्षेप में यह भी बताती हैं कि क्या बदलना है और क्यों।`
+      },
+      {
+        title: '3. बातचीत जारी रखें और आदत बनाएँ',
+        description: 'हर जवाब के अंत में अगला सवाल या संकेत होता है, ताकि आप एक वाक्य पर न रुकें। इसी तरह रोज़ बोलने की आदत बनती है।'
+      }
+    ],
     forWhoTitle: 'यह किन लोगों के लिए है',
+    forWhoIntro: `${teacherName} उन सीखने वालों के लिए है जिन्हें सिर्फ पढ़ाई नहीं, बल्कि ${targetLanguage} में असली बोलने के नतीजे चाहिए।`,
+    forWhoItems: [
+      {
+        title: 'काम की बातचीत',
+        description: 'मीटिंग अपडेट, छोटे कॉल, अगली प्रतिक्रिया और पेशेवर जवाबों की प्रैक्टिस करें, ताकि आप साफ़ और स्वाभाविक लगें।'
+      },
+      {
+        title: 'इंटरव्यू की तैयारी',
+        description: 'अपना परिचय, अनुभव, खूबियाँ, प्रोजेक्ट अनुभव और आम इंटरव्यू सवालों पर छोटे लेकिन मजबूत जवाब बनाइए।'
+      },
+      {
+        title: 'यात्रा और नए देश में बसना',
+        description: 'हवाई अड्डा, होटल, किराया, दस्तावेज़, अपॉइंटमेंट और रोज़मर्रा की सेवा स्थितियों के लिए उपयोगी भाषा की प्रैक्टिस करें।'
+      },
+      {
+        title: 'रोज़मर्रा का जीवन',
+        description: 'खरीदारी, यात्रा, डॉक्टर, बैंक और सामान्य बातचीत जैसी स्थितियों में जल्दी और साफ़ प्रतिक्रिया देना सीखें।'
+      }
+    ],
     dialoguesTitle: 'डायलॉग उदाहरण',
-    dialoguesIntro: 'एक छोटा और realistic chat example। Voice message -> बेहतर reply -> rule explanation -> अगला message option।',
-    deepDiveTitle: `Telegram के साथ real ${targetLanguage} fluency कैसे बनती है`,
+    dialoguesIntro: 'एक छोटा और यथार्थवादी चैट उदाहरण। वॉइस मैसेज → बेहतर जवाब → नियम की व्याख्या → अगला संदेश विकल्प।',
+    deepDiveTitle: `Telegram के साथ असली ${targetLanguage} धाराप्रवाह बोलना कैसे बनता है`,
+    deepDiveParagraphs: [
+      `ज़्यादातर सीखने वाले इसलिए नहीं अटकते कि उन्हें शब्द नहीं आते, बल्कि इसलिए कि सही वाक्य सही समय पर जल्दी नहीं बनता। यही वजह है कि Telegram पर छोटी, लगातार बोलने की प्रैक्टिस असरदार होती है। आप उसी जगह अभ्यास करते हैं जहाँ असली दबाव आता है: छोटी, बिना तैयारी वाली प्रतिक्रियाएँ।`,
+      `इस तरीके का क्रम सीधा है: बोलो, सुधार पाओ, बेहतर वाक्य दोहराओ, फिर आगे बोलो। 10–15 मिनट में आप कई उपयोगी दोहराव कर लेते हैं। यही अभ्यास धीरे-धीरे झिझक कम करता है और वाक्यों का स्वाभाविक प्रवाह बनाता है।`,
+      `Telegram रूप का सबसे बड़ा फायदा कम रुकावट है। आपको पाठ तय नहीं करना, कॉल तय नहीं करना और नया ऐप खोलना नहीं पड़ता। जब भी थोड़ा समय मिले, आप प्रैक्टिस कर सकते हैं। यही निरंतरता लंबे समय में धाराप्रवाह बोलना बनाती है।`,
+      `प्रतिक्रिया की गुणवत्ता बहुत मायने रखती है। सिर्फ “यह बेहतर लगता है” सुनना काफ़ी नहीं होता। जब आपको ठोस विकल्प और छोटे नियम-आधारित समझाव मिलते हैं, तब आप समझते हैं कि क्या बदला और क्यों बदला। इसी से भाषा के पैटर्न जल्दी पकड़ में आते हैं।`,
+      `यह तरीका अलग-अलग स्तरों पर काम करता है। अगर आप शुरुआती हैं, तो छोटे संदेश और एक समय में एक सुधार पर ध्यान दे सकते हैं। अगर आप मध्यम या उन्नत स्तर पर हैं, तो लंबे जवाब, काम की बातचीत, इंटरव्यू की संरचना और स्वाभाविक शब्द-समूहों की प्रैक्टिस कर सकते हैं।`,
+      `${teacherName} के साथ प्रगति का रास्ता साफ़ है: बोलें, सुधार पाएँ, बेहतर वाक्य फिर से इस्तेमाल करें और रोज़ दोहराएँ। कुछ हफ्तों में आम तौर पर तीन बदलाव दिखते हैं: कम झिझक, ज़्यादा साफ़ वाक्य प्रवाह और वास्तविक स्थितियों में तेज़ प्रतिक्रिया।`
+    ],
     faqTitle: 'अक्सर पूछे जाने वाले सवाल',
+    faqItems: [
+      {
+        question: `क्या यह सच में ${targetLanguage} बोलने की प्रैक्टिस है या सिर्फ व्याकरण?`,
+        answer: 'मुख्य फोकस बोलने पर है। व्याकरण केवल वास्तविक संवाद के अंदर व्यावहारिक सुधार के रूप में आती है।'
+      },
+      {
+        question: 'मुझे रोज़ कितना समय देना चाहिए?',
+        answer: '10–15 मिनट रोज़ से शुरू करें। लंबी लेकिन कभी-कभार होने वाली बैठकों से अधिक ज़रूरी निरंतरता है।'
+      },
+      {
+        question: 'क्या मुझे पाठ पहले से तय करने होंगे?',
+        answer: 'नहीं। प्रैक्टिस पूरी तरह Telegram में अपने समय के अनुसार होती है, इसलिए आप इसे जब चाहें तब कर सकते हैं।'
+      },
+      {
+        question: 'क्या शुरुआती सीखने वाले भी इसका उपयोग कर सकते हैं?',
+        answer: 'हाँ। शुरुआती सीखने वाले छोटे संदेश भेज सकते हैं और सरल, उपयोगी सुधारों से शुरुआत कर सकते हैं।'
+      },
+      {
+        question: 'क्या उच्चारण पर भी प्रतिक्रिया मिलती है?',
+        answer: 'हाँ। प्रतिक्रिया में उच्चारण, बोलने का प्रवाह और स्वाभाविक वाक्य-विन्यास तीनों शामिल होते हैं।'
+      },
+      {
+        question: 'क्या यह इंटरव्यू की तैयारी के लिए उपयोगी है?',
+        answer: 'हाँ। आप अपना परिचय, अनुभव, खूबियाँ और आगे के जवाबों की बार-बार प्रैक्टिस कर सकते हैं।'
+      },
+      {
+        question: 'क्या नए देश में बसने या यात्रा की स्थितियों की प्रैक्टिस कर सकता/सकती हूँ?',
+        answer: 'हाँ। आम स्थितियों में किराया, अपॉइंटमेंट, यात्रा, होटल, दस्तावेज़ और रोज़मर्रा की सेवाएँ शामिल हैं।'
+      },
+      {
+        question: 'यह सामान्य चैट बॉट्स से अलग कैसे है?',
+        answer: 'यह सुधार-आधारित तरीका है: हर जवाब आपको अगली बार बेहतर बोलने में मदद करता है, सिर्फ सामान्य चैट नहीं करता।'
+      },
+      {
+        question: 'क्या मैं बाद में दूसरा शिक्षक चुन सकता/सकती हूँ?',
+        answer: 'हाँ। आप कभी भी शिक्षकों की सूची खोलकर दूसरी शैली चुन सकते हैं।'
+      },
+      {
+        question: 'सबसे तेज़ प्रगति देखने का तरीका क्या है?',
+        answer: 'रोज़ बोलें, सुधरे हुए वाक्य दोहराएँ और हर अगला सवाल पूरे वाक्यों में जवाब दें।'
+      }
+    ],
     otherTeachersTitle: 'दूसरे शिक्षक चुनें'
   };
 }
@@ -661,21 +833,107 @@ function buildHindiContent(teacher, languageForm) {
 function buildArabicContent(teacher, languageForm) {
   const teacherName = getTeacherName(teacher, 'ar') || getTeacherName(teacher, 'en') || 'المعلم';
   const targetLanguage = languageForm.display || 'الإنجليزية';
-  const base = buildEnglishContent(teacher, languageForm);
 
   return {
-    ...base,
     metaTitle: `ممارسة التحدث باللغة ${targetLanguage} على Telegram مع ${teacherName} | AI Language School`,
-    metaDescription: `تدرّب على التحدث باللغة ${targetLanguage} على Telegram مع تصحيحات فورية وصياغة أكثر طبيعية ودروس يومية قصيرة. ابدأ خلال دقيقة مع ${teacherName}.`,
+    metaDescription: `تدرّب يومياً على التحدث باللغة ${targetLanguage} في Telegram: أرسل رسائل صوتية قصيرة، واحصل على تصحيحات فورية، وتعلّم صياغات أكثر طبيعية، وابدأ خلال دقيقة مع ${teacherName}.`,
     h1: `ممارسة التحدث باللغة ${targetLanguage} على Telegram`,
-    heroLead: `تدرّب على محادثات حقيقية باللغة ${targetLanguage} مباشرة داخل Telegram. أرسل رسالة صوتية قصيرة، وسيعود ${teacherName} بنسخة مصححة وأكثر طبيعية يمكنك استخدامها فوراً.`,
+    heroLead: `تدرّب على محادثات حقيقية باللغة ${targetLanguage} مباشرة داخل Telegram. أرسل رسالة صوتية قصيرة، وسيعود ${teacherName} بصياغة مصححة وأكثر طبيعية يمكنك إعادة استخدامها في رسالتك التالية فوراً.`,
     heroOutcome: `طوّر طلاقة عملية للعمل والمقابلات والسفر والحياة اليومية مع ردود أسرع ونطق أوضح وتردد أقل.`,
+    coreBullets: [
+      'تصحيحات فورية وبدائل أقوى يمكنك استخدامها مباشرة في رسالتك التالية.',
+      'دعم عملي للنطق والطلاقة والصياغة الطبيعية داخل نفس المحادثة.',
+      'ممارسة يومية قصيرة لمدة 10 إلى 15 دقيقة داخل Telegram، ويمكن الاستمرار عليها حتى مع جدول مزدحم.'
+    ],
     howTitle: 'كيف يعمل',
+    howSteps: [
+      {
+        title: '1. أرسل رسالة صوتية حقيقية',
+        description: 'قل جملة أو جملتين عن يومك أو عملك أو خططك أو موقف حقيقي تمر به. لا تحتاج إلى نص مثالي، فقط تكلّم بشكل طبيعي على مستواك الحالي.'
+      },
+      {
+        title: '2. احصل على تصحيح فوري وصياغة أفضل',
+        description: `سترى الفكرة نفسها بصياغة أوضح وأدق وأكثر طبيعية. ويشرح لك ${teacherName} باختصار ما الذي يجب تغييره ولماذا.`
+      },
+      {
+        title: '3. واصل الحوار وابنِ عادة يومية',
+        description: 'كل رد ينتهي بسؤال أو تلميح للخطوة التالية، حتى لا تتوقف عند جملة واحدة. بهذه الطريقة تتحول الممارسة إلى عادة يومية في التحدث.'
+      }
+    ],
     forWhoTitle: 'لمن هذا مناسب',
+    forWhoIntro: `${teacherName} مناسب للمتعلمين الذين يريدون نتائج حقيقية في التحدث باللغة ${targetLanguage}، لا مجرد دراسة نظرية صامتة.`,
+    forWhoItems: [
+      {
+        title: 'التواصل في العمل',
+        description: 'تدرّب على تحديثات الاجتماعات والمكالمات القصيرة ورسائل المتابعة والردود المهنية، حتى تبدو واضحاً وطبيعياً.'
+      },
+      {
+        title: 'التحضير للمقابلات',
+        description: 'ابنِ إجابات قصيرة وقوية للتعريف بنفسك، والخبرة، ونقاط القوة، وقصص المشاريع، والأسئلة الشائعة في المقابلات.'
+      },
+      {
+        title: 'السفر والانتقال إلى بلد جديد',
+        description: 'تدرّب على اللغة المفيدة في المطار والفندق والسكن والأوراق والمواعيد والمواقف اليومية مع الخدمات.'
+      },
+      {
+        title: 'الحياة اليومية',
+        description: 'تعلّم كيف ترد بسرعة ووضوح في مواقف مثل التسوق، والمواصلات، والطبيب، والبنك، والمحادثات العادية.'
+      }
+    ],
     dialoguesTitle: 'مثال على الحوار',
-    dialoguesIntro: 'مثال قصير وواقعي. رسالة صوتية -> رد أفضل -> شرح القاعدة -> خيارات للرسالة التالية.',
+    dialoguesIntro: 'مثال قصير وواقعي. رسالة صوتية → رد أفضل → شرح القاعدة → خيارات للرسالة التالية.',
     deepDiveTitle: `كيف تبني طلاقة حقيقية في ${targetLanguage} عبر Telegram`,
+    deepDiveParagraphs: [
+      `معظم المتعلمين لا يتعثرون لأنهم يفتقرون إلى الكلمات، بل لأنهم لا يستطيعون استحضار العبارة المناسبة بسرعة في اللحظة الحقيقية. وهنا تظهر فائدة الممارسة القصيرة والمتكررة داخل Telegram. أنت تتدرّب في المكان نفسه الذي يظهر فيه الضغط الحقيقي: ردود قصيرة وعفوية وغير مُحضّرة مسبقاً.`,
+      `طريقة العمل هنا واضحة: تتحدث، تحصل على تصحيح، تعيد استخدام الصياغة الأفضل، ثم تواصل. خلال 10 إلى 15 دقيقة فقط، يمكنك القيام بعدة دورات مفيدة. هذا التكرار المنتظم يقلل التردد تدريجياً ويجعل بناء الجملة أكثر سلاسة وطبيعية.`,
+      `أكبر ميزة في هذا التنسيق هي انخفاض الاحتكاك. لا تحتاج إلى حجز درس، ولا إلى تنسيق مكالمة، ولا إلى فتح تطبيق جديد. عندما تجد بضع دقائق فقط، يمكنك أن تتدرّب. وهذه الاستمرارية هي ما يصنع الطلاقة الفعلية على المدى الطويل.`,
+      `جودة الملاحظات مهمة جداً. لا يكفي أن يقال لك فقط: “هذا أفضل”. عندما تحصل على بدائل واضحة وشرح قصير مبني على القاعدة، تفهم ما الذي تغيّر ولماذا تغيّر. وهكذا تبدأ في ملاحظة الأنماط الطبيعية في اللغة بشكل أسرع.`,
+      `هذا الأسلوب يناسب المستويات المختلفة. إذا كنت مبتدئاً، يمكنك البدء برسائل قصيرة والتركيز على تصحيح واحد في كل مرة. وإذا كنت في مستوى متوسط أو متقدم، يمكنك التدرب على إجابات أطول، وتواصل العمل، وبنية المقابلات، والتراكيب الطبيعية الأكثر دقة.`,
+      `مع ${teacherName} يصبح مسار التقدم واضحاً: تحدث، احصل على التصحيح، أعد استخدام الصياغات الأفضل، وكرّر يومياً. وبعد عدة أسابيع يلاحظ المتعلمون عادة ثلاثة تغيّرات: تردد أقل، وتدفق أنظف في الجمل، وردود أسرع في المواقف الحقيقية.`
+    ],
     faqTitle: 'الأسئلة الشائعة',
+    faqItems: [
+      {
+        question: `هل هذه فعلاً ممارسة للتحدث باللغة ${targetLanguage} أم أنها تركّز أكثر على القواعد؟`,
+        answer: 'التركيز الأساسي هنا على التحدث. وتظهر القواعد فقط كتصحيح عملي داخل حوار حقيقي.'
+      },
+      {
+        question: 'كم من الوقت أحتاج كل يوم؟',
+        answer: 'ابدأ بـ 10 إلى 15 دقيقة يومياً. الاستمرارية أهم من الجلسات الطويلة المتباعدة.'
+      },
+      {
+        question: 'هل أحتاج إلى حجز دروس أو مواعيد؟',
+        answer: 'لا. الممارسة بالكامل غير متزامنة داخل Telegram، لذلك يمكنك التدرب في الوقت الذي يناسبك.'
+      },
+      {
+        question: 'هل يناسب المبتدئين أيضاً؟',
+        answer: 'نعم. يمكن للمبتدئين إرسال رسائل قصيرة جداً والحصول على تصحيحات بسيطة لكنها مؤثرة.'
+      },
+      {
+        question: 'هل أحصل أيضاً على ملاحظات حول النطق؟',
+        answer: 'نعم. الملاحظات تشمل النطق والطلاقة والصياغة الطبيعية، وليس فقط تصحيح النص.'
+      },
+      {
+        question: 'هل هو مفيد للتحضير للمقابلات؟',
+        answer: 'نعم. يمكنك التدرب على التعريف بنفسك، والخبرة، ونقاط القوة، وأسئلة المتابعة مرات متكررة حتى تصبح طبيعية.'
+      },
+      {
+        question: 'هل يمكنني التدرب على مواقف السفر أو الانتقال؟',
+        answer: 'نعم. تشمل المواقف الشائعة السكن، والمواعيد، والمواصلات، والفندق، والأوراق، والخدمات اليومية.'
+      },
+      {
+        question: 'ما الذي يجعله مختلفاً عن روبوتات الدردشة العامة؟',
+        answer: 'هذا التنسيق قائم على التصحيح الموجّه: كل رد يجعلك أقوى في محاولتك التالية للتحدث، وليس مجرد دردشة عابرة.'
+      },
+      {
+        question: 'هل يمكنني اختيار معلّم آخر لاحقاً؟',
+        answer: 'نعم. يمكنك في أي وقت فتح قائمة المعلمين واختيار أسلوب مختلف.'
+      },
+      {
+        question: 'ما أسرع طريقة لرؤية التقدم؟',
+        answer: 'تحدث كل يوم، وأعد استخدام الجمل المصححة، وأجب عن كل سؤال متابعة بجمل كاملة.'
+      }
+    ],
     otherTeachersTitle: 'اختر معلماً آخر'
   };
 }
