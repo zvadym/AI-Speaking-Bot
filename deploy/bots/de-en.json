@@ -120,7 +120,7 @@
     "onboarding_complete_daily_hint": "Regelmäßigkeit ist entscheidend: Schon 10 Minuten pro Tag bringen spürbaren Fortschritt.",
     "onboarding_btn_change_level": "🎯 Hier klicken, um Niveau zu ändern",
     "onboarding_showcase_no_mistakes_text": "Sehr gut, hier sind keine Fehler 👏\nWenn du sehen willst, wie ich korrigiere, schreibe absichtlich einen falschen Satz.\nZum Beispiel:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Starker Fortschritt — dein Profil ist bereit 🚀\n\nSo funktioniert dein System:\n• Themen: Wähle mit /topic gezielte Gesprächsthemen.\n• Niveau: Passe die Schwierigkeit jederzeit mit /level an (A1–C1).\n• XP: Jede Übung bringt XP.\n• Streak-Bonus: Dein Streak erhöht deine XP-Gewinne.\n• Freischaltungen: Mehr XP schaltet fortgeschrittene Features und Tools frei.\n\nBefehle:\n• /topic\n• /level\n• /xp\n\nSende jetzt deine nächste Nachricht, um den Streak am Leben zu halten 🔥\n\nGlückwunsch! Onboarding ist abgeschlossen.",
+    "onboarding_complete_full_text": "Starker Fortschritt — dein Profil ist bereit 🚀\n\nKurz das Wichtigste:\n• Nutze die Buttons unten im Chat, um Level und Voice jederzeit zu ändern.\n• XP wächst mit jeder Übung, und dein Streak gibt dir einen Extra-Boost.\n• In APP kannst du weitere Einstellungen ansehen, Feedback senden und andere Optionen verwalten.\n\nSende jetzt deine nächste Nachricht, um den Streak am Leben zu halten 🔥\n\nGlückwunsch! Onboarding ist abgeschlossen.",
     "keyboard_btn_level_prefix": "Level",
     "keyboard_btn_topic_prefix": "Thema",
     "keyboard_btn_topic_none": "Frei",

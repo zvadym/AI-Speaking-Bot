@@ -120,7 +120,7 @@
     "onboarding_complete_daily_hint": "En önemlisi günlük istikrar: her gün 10 dakika bile akıcılığı belirgin şekilde artırır.",
     "onboarding_btn_change_level": "🎯 Seviyeyi değiştirmek için tıkla",
     "onboarding_showcase_no_mistakes_text": "Çok iyi, burada hata yok 👏\nHataları nasıl düzelttiğimi görmek istersen bilerek hatalı bir cümle yaz.\nÖrneğin:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Harika ilerleme — profilin hazır 🚀\n\nSistemin nasıl çalışır:\n• Konular: /topic ile odaklı konuşma akışları seç.\n• Seviyeler: zorluğu istediğin an /level ile değiştir (A1–C1).\n• XP: her pratik aksiyonu XP kazandırır.\n• Seri bonusu: serin XP kazançlarını artırır.\n• Kilit açma: daha fazla XP, gelişmiş özellikler ve araçlar açar.\n\nKomutlar:\n• /topic\n• /level\n• /xp\n\nSeriyi sürdürmek için sonraki mesajını gönder 🔥\n\nTebrikler! Onboarding tamamlandı.",
+    "onboarding_complete_full_text": "Harika ilerleme — profilin hazır 🚀\n\nKısaca en önemli noktalar:\n• Sohbetin altındaki butonları kullanarak level ve voice ayarlarını istediğin zaman değiştirebilirsin.\n• XP pratik yaptıkça artar ve serin sana ekstra bonus verir.\n• APP içinde diğer ayarları görebilir, feedback gönderebilir ve başka seçenekleri yönetebilirsin.\n\nSeriyi sürdürmek için sonraki mesajını gönder 🔥\n\nTebrikler! Onboarding tamamlandı.",
     "keyboard_btn_level_prefix": "Seviye",
     "keyboard_btn_topic_prefix": "Konu",
     "keyboard_btn_topic_none": "Serbest",
