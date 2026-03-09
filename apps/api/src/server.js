@@ -3448,12 +3448,8 @@ app.get('/admin/metrics/action-funnel', requireAdmin, async (req, res) => {
 
   const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
   const funnelActionTypes = [
-    'profile_set_level',
     'first_voice_sent',
-    'first_answer_delivered',
-    'day1_return',
-    'paywall_shown',
-    'purchase_success'
+    'paywall_shown'
   ];
 
   const { rows } = await pool.query(
@@ -3467,92 +3463,81 @@ app.get('/admin/metrics/action-funnel', requireAdmin, async (req, res) => {
          AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
          AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
      ),
+     free_plan AS (
+       SELECT COALESCE(p.voice_seconds_limit, 0)::int AS limit_seconds
+       FROM plans p
+       WHERE p.tier = 'free'
+       LIMIT 1
+     ),
      per_user AS (
        SELECT
          c.chat_id,
          c.start_at,
-         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'profile_set_level') AS profile_set_level_at,
-         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'first_voice_sent') AS first_voice_sent_at,
-         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'first_answer_delivered') AS first_answer_delivered_at,
-         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'day1_return') AS day1_return_at,
-         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'paywall_shown') AS paywall_shown_at,
-         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'purchase_success') AS purchase_success_at
+         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'first_voice_sent') AS first_message_at,
+         onboarding.onboarding_complete_at,
+         COALESCE(usage.used_total, 0)::int AS used_total,
+         MIN(e.occurred_at) FILTER (WHERE e.action_type = 'paywall_shown') AS paywall_shown_at
        FROM cohort c
        LEFT JOIN action_events e
          ON e.chat_id = c.chat_id
         AND e.action_type = ANY($5::text[])
         AND e.occurred_at >= c.start_at
-       GROUP BY c.chat_id, c.start_at
+       LEFT JOIN LATERAL (
+         SELECT MIN(ub.onboarding_completed_at) AS onboarding_complete_at
+         FROM user_bots ub
+         WHERE ub.chat_id = c.chat_id
+           AND ub.onboarding_completed_at IS NOT NULL
+       ) onboarding ON true
+       LEFT JOIN LATERAL (
+         SELECT COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_total
+         FROM usage_hourly uh
+         WHERE uh.chat_id = c.chat_id
+       ) usage ON true
+       GROUP BY c.chat_id, c.start_at, onboarding.onboarding_complete_at, usage.used_total
      ),
      counts AS (
        SELECT
          COUNT(*)::int AS start_count,
-         SUM(CASE WHEN profile_set_level_at IS NOT NULL THEN 1 ELSE 0 END)::int AS profile_set_level_count,
          SUM(
            CASE
-             WHEN profile_set_level_at IS NOT NULL
-              AND first_voice_sent_at IS NOT NULL
-              AND first_voice_sent_at >= profile_set_level_at
+             WHEN first_message_at IS NOT NULL
                THEN 1
              ELSE 0
            END
-         )::int AS first_voice_sent_count,
+         )::int AS first_message_count,
          SUM(
            CASE
-             WHEN profile_set_level_at IS NOT NULL
-              AND first_voice_sent_at IS NOT NULL
-              AND first_voice_sent_at >= profile_set_level_at
-              AND first_answer_delivered_at IS NOT NULL
-              AND first_answer_delivered_at >= first_voice_sent_at
+             WHEN first_message_at IS NOT NULL
+              AND onboarding_complete_at IS NOT NULL
+              AND onboarding_complete_at >= first_message_at
                THEN 1
              ELSE 0
            END
-         )::int AS first_answer_delivered_count,
+         )::int AS onboarding_complete_count,
          SUM(
            CASE
-             WHEN profile_set_level_at IS NOT NULL
-              AND first_voice_sent_at IS NOT NULL
-              AND first_voice_sent_at >= profile_set_level_at
-              AND first_answer_delivered_at IS NOT NULL
-              AND first_answer_delivered_at >= first_voice_sent_at
-              AND day1_return_at IS NOT NULL
-              AND day1_return_at >= first_answer_delivered_at
+             WHEN first_message_at IS NOT NULL
+              AND onboarding_complete_at IS NOT NULL
+              AND onboarding_complete_at >= first_message_at
+              AND (SELECT limit_seconds FROM free_plan) > 0
+              AND used_total >= ((SELECT limit_seconds FROM free_plan)::numeric * 0.5)
                THEN 1
              ELSE 0
            END
-         )::int AS day1_return_count,
+         )::int AS free_limit_half_count,
          SUM(
            CASE
-             WHEN profile_set_level_at IS NOT NULL
-              AND first_voice_sent_at IS NOT NULL
-              AND first_voice_sent_at >= profile_set_level_at
-              AND first_answer_delivered_at IS NOT NULL
-              AND first_answer_delivered_at >= first_voice_sent_at
-              AND day1_return_at IS NOT NULL
-              AND day1_return_at >= first_answer_delivered_at
+             WHEN first_message_at IS NOT NULL
+              AND onboarding_complete_at IS NOT NULL
+              AND onboarding_complete_at >= first_message_at
+              AND (SELECT limit_seconds FROM free_plan) > 0
+              AND used_total >= ((SELECT limit_seconds FROM free_plan)::numeric * 0.5)
               AND paywall_shown_at IS NOT NULL
-              AND paywall_shown_at >= day1_return_at
+              AND paywall_shown_at >= onboarding_complete_at
                THEN 1
              ELSE 0
            END
-         )::int AS paywall_shown_count,
-         SUM(
-           CASE
-             WHEN profile_set_level_at IS NOT NULL
-              AND first_voice_sent_at IS NOT NULL
-              AND first_voice_sent_at >= profile_set_level_at
-              AND first_answer_delivered_at IS NOT NULL
-              AND first_answer_delivered_at >= first_voice_sent_at
-              AND day1_return_at IS NOT NULL
-              AND day1_return_at >= first_answer_delivered_at
-              AND paywall_shown_at IS NOT NULL
-              AND paywall_shown_at >= day1_return_at
-              AND purchase_success_at IS NOT NULL
-              AND purchase_success_at >= paywall_shown_at
-               THEN 1
-             ELSE 0
-           END
-         )::int AS purchase_success_count
+         )::int AS paywall_shown_count
        FROM per_user
      )
      SELECT * FROM counts`,
@@ -3561,12 +3546,10 @@ app.get('/admin/metrics/action-funnel', requireAdmin, async (req, res) => {
 
   const row = rows[0] || {};
   const startCount = Number(row.start_count || 0);
-  const profileSetLevelCount = Number(row.profile_set_level_count || 0);
-  const firstVoiceSentCount = Number(row.first_voice_sent_count || 0);
-  const firstAnswerDeliveredCount = Number(row.first_answer_delivered_count || 0);
-  const day1ReturnCount = Number(row.day1_return_count || 0);
+  const firstMessageCount = Number(row.first_message_count || 0);
+  const onboardingCompleteCount = Number(row.onboarding_complete_count || 0);
+  const freeLimitHalfCount = Number(row.free_limit_half_count || 0);
   const paywallShownCount = Number(row.paywall_shown_count || 0);
-  const purchaseSuccessCount = Number(row.purchase_success_count || 0);
 
   function pct(count) {
     if (!startCount) return 0;
@@ -3581,12 +3564,10 @@ app.get('/admin/metrics/action-funnel', requireAdmin, async (req, res) => {
     payload: range.payload,
     series: [
       { action: 'start', count: startCount, pct: startCount ? 100 : 0 },
-      { action: 'profile_set_level', count: profileSetLevelCount, pct: pct(profileSetLevelCount) },
-      { action: 'first_voice_sent', count: firstVoiceSentCount, pct: pct(firstVoiceSentCount) },
-      { action: 'first_answer_delivered', count: firstAnswerDeliveredCount, pct: pct(firstAnswerDeliveredCount) },
-      { action: 'day1_return', count: day1ReturnCount, pct: pct(day1ReturnCount) },
-      { action: 'paywall_shown', count: paywallShownCount, pct: pct(paywallShownCount) },
-      { action: 'purchase_success', count: purchaseSuccessCount, pct: pct(purchaseSuccessCount) }
+      { action: 'first_message', count: firstMessageCount, pct: pct(firstMessageCount) },
+      { action: 'onboarding_complete', count: onboardingCompleteCount, pct: pct(onboardingCompleteCount) },
+      { action: 'free_limit_half', count: freeLimitHalfCount, pct: pct(freeLimitHalfCount) },
+      { action: 'paywall_shown', count: paywallShownCount, pct: pct(paywallShownCount) }
     ]
   });
 });

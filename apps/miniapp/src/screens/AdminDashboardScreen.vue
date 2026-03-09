@@ -426,16 +426,14 @@
         />
 
         <AdminChart
-          title="Action funnel (sequential)"
-          subtitle="Start cohort = users created in selected range; steps can happen later."
+          title="Onboarding funnel"
+          subtitle="Current milestone flow for users who started in the selected range."
           kind="bar"
           x-labels="all"
           :stacked="false"
+          :axis-formats="{ y1: 'percent' }"
           :data="actionFunnelSeries"
-          :series="[
-            { key: 'count', label: 'Users', color: 'rgba(87, 60, 127, 0.86)' },
-            { key: 'pct', label: '% of start', color: 'rgba(31, 107, 99, 0.9)', type: 'line', yAxisId: 'y1' }
-          ]"
+          :series="actionFunnelChartSeries"
         />
 
         <AdminChart
@@ -1489,6 +1487,32 @@ const actionSeriesConfig = [
   { key: 'paywall_shown', label: 'paywall_shown', color: 'rgba(174, 43, 40, 0.86)' },
   { key: 'purchase_success', label: 'purchase_success', color: 'rgba(187, 64, 122, 0.88)' }
 ];
+const actionFunnelStageMeta = {
+  start: { label: 'Started', color: 'rgba(38, 84, 124, 0.88)' },
+  first_message: { label: 'First message', color: 'rgba(52, 118, 128, 0.88)' },
+  onboarding_complete: { label: 'Onboarding complete', color: 'rgba(92, 140, 86, 0.9)' },
+  free_limit_half: { label: '50% free limit', color: 'rgba(207, 150, 56, 0.9)' },
+  paywall_shown: { label: 'Paywall shown', color: 'rgba(174, 43, 40, 0.86)' }
+};
+const actionFunnelChartSeries = [
+  {
+    key: 'count',
+    label: 'Users',
+    color: 'rgba(38, 84, 124, 0.88)',
+    colorKey: 'barColor',
+    barPercentage: 0.64,
+    categoryPercentage: 0.78,
+    maxBarThickness: 42
+  },
+  {
+    key: 'pct',
+    label: '% of start',
+    color: 'rgba(31, 107, 99, 0.96)',
+    type: 'line',
+    yAxisId: 'y1',
+    format: 'percent'
+  }
+];
 const topicSeriesPalette = [
   'rgba(31, 107, 99, 0.88)',
   'rgba(199, 90, 36, 0.88)',
@@ -2368,6 +2392,16 @@ function actionLabel(rawAction) {
   return action.replaceAll('_', ' ');
 }
 
+function actionFunnelLabel(rawAction) {
+  const action = (rawAction || '').toString().trim();
+  return actionFunnelStageMeta[action]?.label || actionLabel(action);
+}
+
+function actionFunnelColor(rawAction) {
+  const action = (rawAction || '').toString().trim();
+  return actionFunnelStageMeta[action]?.color || 'rgba(87, 60, 127, 0.86)';
+}
+
 function topicLabel(rawTopicId) {
   return (rawTopicId || '').toString().trim().replaceAll('_', ' ');
 }
@@ -2922,9 +2956,10 @@ async function refreshAnalytics() {
       : [];
     actionFunnelSeries.value = Array.isArray(actionFunnel?.series)
       ? actionFunnel.series.map((row) => ({
-          day: actionLabel(row?.action),
+          day: actionFunnelLabel(row?.action),
           count: Number(row?.count || 0),
-          pct: Number(row?.pct || 0)
+          pct: Number(row?.pct || 0),
+          barColor: actionFunnelColor(row?.action)
         }))
       : [];
     const topicsByDayRawRows = Array.isArray(topicsByDay?.series) ? topicsByDay.series : [];

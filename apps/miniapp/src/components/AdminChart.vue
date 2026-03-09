@@ -63,6 +63,7 @@ const props = defineProps({
   data: { type: Array, default: () => [] },
   xLabels: { type: String, default: 'ends' },
   tooltip: { type: Boolean, default: true },
+  axisFormats: { type: Object, default: () => ({}) },
   series: {
     type: Array,
     default: () => [{ key: 'count', label: 'Count', color: 'rgba(199, 90, 36, 0.85)' }]
@@ -120,6 +121,15 @@ function formatNumber(n) {
   return numFmt.format(v);
 }
 
+function formatMetric(value, format) {
+  if (format === 'percent') return `${formatNumber(value)}%`;
+  return formatNumber(value);
+}
+
+function axisFormat(axisId) {
+  return props.axisFormats?.[axisId] || null;
+}
+
 function chartFontFamily() {
   if (typeof window === 'undefined') return 'Chivo, system-ui, sans-serif';
   const value = window.getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim();
@@ -175,6 +185,7 @@ function buildDatasets() {
     const values = props.data.map((row) => Math.max(0, safeNum(row?.[series.key])));
     const type = seriesType(series);
     const yAxisID = seriesYAxisId(series);
+    const valueFormat = series?.format || axisFormat(yAxisID);
 
     if (type === 'line') {
       return {
@@ -192,34 +203,40 @@ function buildDatasets() {
         borderWidth: 2.25,
         tension: 0.18,
         fill: false,
-        yAxisID
+        yAxisID,
+        valueFormat
       };
     }
+
+    const pointColors = series?.colorKey
+      ? props.data.map((row) => row?.[series.colorKey] || series.color)
+      : series.color;
 
     return {
       type: 'bar',
       label: series.label,
       data: values,
-      backgroundColor: series.color,
-      borderColor: series.color,
+      backgroundColor: pointColors,
+      borderColor: pointColors,
       borderWidth: 0,
       borderRadius: isStacked.value ? 0 : 8,
       borderSkipped: false,
       barPercentage: Number.isFinite(Number(series?.barPercentage)) ? Number(series.barPercentage) : 0.72,
       categoryPercentage: Number.isFinite(Number(series?.categoryPercentage)) ? Number(series.categoryPercentage) : 0.84,
       maxBarThickness: Number.isFinite(Number(series?.maxBarThickness)) ? Number(series.maxBarThickness) : 36,
-      hoverBackgroundColor: series.color,
+      hoverBackgroundColor: pointColors,
       stack: isStacked.value ? 'total' : undefined,
       grouped: series?.grouped === false ? false : true,
       order: Number.isFinite(Number(series?.order)) ? Number(series.order) : 0,
-      yAxisID
+      yAxisID,
+      valueFormat
     };
   });
 }
 
 function tooltipLabel(context) {
   const parsed = typeof context.parsed === 'object' ? context.parsed?.y : context.parsed;
-  return `${context.dataset.label}: ${formatNumber(parsed)}`;
+  return `${context.dataset.label}: ${formatMetric(parsed, context.dataset?.valueFormat)}`;
 }
 
 function buildOptions() {
@@ -267,6 +284,7 @@ function buildOptions() {
         },
         padding: 8,
         callback(value) {
+          if (axisFormat('y') === 'percent') return `${Math.round(safeNum(value))}%`;
           return formatCompact(value);
         }
       }
@@ -292,6 +310,7 @@ function buildOptions() {
         },
         padding: 8,
         callback(value) {
+          if (axisFormat('y1') === 'percent') return `${Math.round(safeNum(value))}%`;
           return formatCompact(value);
         }
       }
@@ -463,6 +482,7 @@ watch(
     () => props.title,
     () => props.tooltip,
     () => props.xLabels,
+    () => props.axisFormats,
     () => props.data,
     () => props.series,
     chartWidth
