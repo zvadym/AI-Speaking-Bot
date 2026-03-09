@@ -116,7 +116,7 @@
     "onboarding_voice_cta_text": "Super. Sende jetzt eine kurze Sprachnachricht (1–2 Sätze) 🎙️",
     "onboarding_text_cta_text": "Super. Sende jetzt eine kurze Textnachricht (1–2 Sätze) ✍️",
     "onboarding_showcase_no_mistakes_text": "Sehr gut, hier sind keine Fehler 👏\nWenn du sehen willst, wie ich korrigiere, schreibe absichtlich einen falschen Satz.\nZum Beispiel:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Starker Fortschritt — dein Profil ist bereit 🚀\n\nKurz das Wichtigste:\n• Dein Startniveau war A1. Du kannst es jederzeit mit den Antwortbuttons unten im Chat ändern.\n• Nutze die Buttons unten im Chat, um Level und Voice jederzeit zu ändern.\n• XP wächst mit jeder Übung, und dein Streak gibt dir einen Extra-Boost.\n• In APP kannst du weitere Einstellungen ansehen, Feedback senden und andere Optionen verwalten.\n\nSende jetzt deine nächste Nachricht, um den Streak am Leben zu halten 🔥\n\nGlückwunsch! Onboarding ist abgeschlossen.",
+    "onboarding_complete_full_text": "Starker Fortschritt — dein Profil ist bereit 🚀\n\nKurz das Wichtigste:\n• Dein Startniveau ist A1. Du kannst es jederzeit auf A1, A2, B1, B2 oder C1 ändern.\n• Mit den Buttons unter dem Chat kannst du jederzeit dein Sprachniveau und das Antwortformat wechseln: Sprache oder Text.\n• Du sammelst XP, wenn du übst. XP erhöhen dein XP-Level, und höhere XP-Level schalten nach und nach mehr Funktionen frei.\n• Dein Streak ist die Anzahl der Tage, an denen du hintereinander übst. Ein längerer Streak erhöht deinen XP-Multiplikator.\n• In der App kannst du weitere Einstellungen öffnen, Feedback senden und andere Optionen verwalten.\n\nSende jetzt deine nächste Nachricht, um deinen Streak fortzusetzen 🔥\n\nGlückwunsch! Onboarding ist abgeschlossen.",
     "keyboard_btn_level_prefix": "Level",
     "keyboard_btn_topic_prefix": "Thema",
     "keyboard_btn_topic_none": "Thema wählen",
@@ -170,7 +170,7 @@
       }
     ],
     "menu_button": {
-      "text": "Menü",
+      "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=de-it"
     },
     "username": "giulia_italienisch_lehrerin_bot"

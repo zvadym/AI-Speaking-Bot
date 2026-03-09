@@ -116,7 +116,7 @@
     "onboarding_voice_cta_text": "Great. Send a short voice message (1–2 sentences) 🎙️",
     "onboarding_text_cta_text": "Great. Send a short text message (1–2 sentences) ✍️",
     "onboarding_showcase_no_mistakes_text": "Very good, no mistakes here 👏\nIf you want to see how I fix mistakes, send something intentionally wrong.\nFor example:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Awesome progress — your profile is ready 🚀\n\nA few quick notes:\n• Your starting level was A1. You can change it anytime with the reply buttons below the chat.\n• Use the buttons below the chat to change level and voice anytime.\n• XP grows with practice, and your streak gives you an extra boost.\n• In APP, you can open more settings, send feedback, and manage other options.\n\nSend your next message to keep the streak alive 🔥\n\nCongratulations! Onboarding is finished.",
+    "onboarding_complete_full_text": "Awesome progress — your profile is ready 🚀\n\nA few quick notes:\n• Your starting level is A1. You can change it anytime to A1, A2, B1, B2, or C1.\n• Use the buttons below the chat to switch your language level and reply format anytime: voice or text.\n• You earn XP as you practice. XP raises your XP level, and higher XP levels unlock more features over time.\n• Your streak is the number of days you practice in a row. A longer streak increases your XP multiplier.\n• In the App, you can open more settings, send feedback, and manage other options.\n\nSend your next message to keep your streak going 🔥\n\nCongratulations! Onboarding is finished.",
     "keyboard_btn_level_prefix": "Level",
     "keyboard_btn_topic_prefix": "Topic",
     "keyboard_btn_topic_none": "Choose topic",
@@ -170,7 +170,7 @@
       }
     ],
     "menu_button": {
-      "text": "Menu",
+      "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=en-es"
     },
     "username": "language_en_es_bot"

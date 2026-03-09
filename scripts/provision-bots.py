@@ -24,10 +24,10 @@ DEFAULT_MINIAPP_URL_BASE = "https://learn-language-app.notarobot.dev"
 DEFAULT_CONTRACT_PATH = "deploy/bot-presentation.template.yaml"
 PRESENTATION_SECTION = "telegram_presentation"
 DEFAULT_MENU_TEXT_BY_BASE = {
-    "en": "Menu",
-    "uk": "Меню",
-    "it": "Menu",
-    "de": "Menü",
+    "en": "App",
+    "uk": "App",
+    "it": "App",
+    "de": "App",
 }
 
 DEFAULT_COMMANDS_BY_BASE = {
@@ -420,7 +420,7 @@ def website_url_for_base(base_language: str) -> str:
 
 
 def localized_menu_text(base_language: str) -> str:
-    return DEFAULT_MENU_TEXT_BY_BASE.get(base_language, "Menu")
+    return DEFAULT_MENU_TEXT_BY_BASE.get(base_language, "App")
 
 
 def with_website_url(description: str, base_language: str) -> str:

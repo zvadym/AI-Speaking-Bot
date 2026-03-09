@@ -116,7 +116,7 @@
     "onboarding_voice_cta_text": "बहुत बढ़िया। 1 छोटा वॉइस मैसेज भेजें (1–2 वाक्य) 🎙️",
     "onboarding_text_cta_text": "बहुत बढ़िया। 1 छोटा टेक्स्ट मैसेज भेजें (1–2 वाक्य) ✍️",
     "onboarding_showcase_no_mistakes_text": "बहुत बढ़िया, इसमें कोई गलती नहीं है 👏\nअगर आप देखना चाहते हैं कि मैं गलतियाँ कैसे ठीक करता हूँ, तो जानबूझकर गलत वाक्य लिखें।\nउदाहरण:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "बहुत बढ़िया प्रोग्रेस — आपका प्रोफाइल तैयार है 🚀\n\nमुख्य बातें:\n• आपका शुरुआती level A1 था। आप इसे चैट के नीचे reply buttons से कभी भी बदल सकते हैं।\n• चैट के नीचे वाले buttons का इस्तेमाल करके आप कभी भी level और voice बदल सकते हैं।\n• Practice के साथ XP बढ़ता है और आपकी streak extra boost देती है।\n• APP में आप दूसरे settings देख सकते हैं, feedback भेज सकते हैं और बाकी options manage कर सकते हैं।\n\nअपनी streak जारी रखने के लिए अगला message भेजें 🔥\n\nबधाई हो! Onboarding पूरा हो गया है।",
+    "onboarding_complete_full_text": "बहुत बढ़िया प्रोग्रेस — आपका प्रोफाइल तैयार है 🚀\n\nमुख्य बातें:\n• आपका शुरुआती level A1 है। आप इसे कभी भी A1, A2, B1, B2 या C1 में बदल सकते हैं।\n• चैट के नीचे वाले buttons से आप कभी भी अपना language level और reply format बदल सकते हैं: voice या text।\n• Practice करते समय आप XP कमाते हैं। XP आपका XP level बढ़ाता है, और higher XP levels के साथ समय के साथ ज़्यादा features unlock होते हैं।\n• आपकी streak उन दिनों की संख्या है जिनमें आप लगातार practice करते हैं। लंबी streak आपका XP multiplier बढ़ाती है।\n• App में आप दूसरे settings खोल सकते हैं, feedback भेज सकते हैं और बाकी options manage कर सकते हैं।\n\nअपनी streak जारी रखने के लिए अगला message भेजें 🔥\n\nबधाई हो! Onboarding पूरा हो गया है।",
     "keyboard_btn_level_prefix": "लेवल",
     "keyboard_btn_topic_prefix": "टॉपिक",
     "keyboard_btn_topic_none": "विषय चुनें",
@@ -170,7 +170,7 @@
       }
     ],
     "menu_button": {
-      "text": "मेनू",
+      "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=hi-en"
     },
     "username": "RiyaHiEnBot"

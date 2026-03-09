@@ -116,7 +116,7 @@
     "onboarding_voice_cta_text": "Harika. Kısa bir sesli mesaj gönder (1–2 cümle) 🎙️",
     "onboarding_text_cta_text": "Harika. Kısa bir metin gönder (1–2 cümle) ✍️",
     "onboarding_showcase_no_mistakes_text": "Çok iyi, burada hata yok 👏\nHataları nasıl düzelttiğimi görmek istersen bilerek hatalı bir cümle yaz.\nÖrneğin:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Harika ilerleme — profilin hazır 🚀\n\nKısaca en önemli noktalar:\n• Başlangıç seviyen A1'di. Bunu istediğin zaman sohbetin altındaki yanıt düğmeleriyle değiştirebilirsin.\n• Sohbetin altındaki butonları kullanarak level ve voice ayarlarını istediğin zaman değiştirebilirsin.\n• XP pratik yaptıkça artar ve serin sana ekstra bonus verir.\n• APP içinde diğer ayarları görebilir, feedback gönderebilir ve başka seçenekleri yönetebilirsin.\n\nSeriyi sürdürmek için sonraki mesajını gönder 🔥\n\nTebrikler! Onboarding tamamlandı.",
+    "onboarding_complete_full_text": "Harika ilerleme — profilin hazır 🚀\n\nKısaca en önemli noktalar:\n• Başlangıç seviyen A1. Bunu istediğin zaman A1, A2, B1, B2 veya C1 olarak değiştirebilirsin.\n• Sohbetin altındaki butonlarla dil seviyeni ve cevap formatını istediğin zaman değiştirebilirsin: ses veya metin.\n• Pratik yaptıkça XP kazanırsın. XP, XP seviyeni yükseltir ve daha yüksek XP seviyeleri zamanla daha fazla özelliğin kilidini açar.\n• Serin, art arda pratik yaptığın günlerin sayısıdır. Daha uzun bir seri XP çarpanını artırır.\n• App içinde diğer ayarları açabilir, feedback gönderebilir ve başka seçenekleri yönetebilirsin.\n\nSerini sürdürmek için sonraki mesajını gönder 🔥\n\nTebrikler! Onboarding tamamlandı.",
     "keyboard_btn_level_prefix": "Seviye",
     "keyboard_btn_topic_prefix": "Konu",
     "keyboard_btn_topic_none": "Konu seç",
@@ -170,7 +170,7 @@
       }
     ],
     "menu_button": {
-      "text": "Menü",
+      "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=tr-en"
     },
     "username": "EceTrEnBot"
