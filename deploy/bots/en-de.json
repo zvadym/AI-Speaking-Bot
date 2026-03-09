@@ -127,7 +127,13 @@
     "keyboard_btn_voice_prefix": "Voice",
     "keyboard_btn_voice_text": "Text",
     "keyboard_btn_voice_voice": "Voice",
-    "keyboard_btn_xp_prefix": "XP"
+    "keyboard_btn_xp_prefix": "XP",
+    "xp_today_title": "Today",
+    "xp_daily_cap_label": "Daily cap",
+    "xp_today_left_label": "Left today",
+    "xp_level_progress_label": "Level progress",
+    "xp_streak_bonus_label": "Streak bonus",
+    "xp_streak_bonus_pending": "Streak multiplier is not applied to awards yet."
   },
   "telegram_presentation": {
     "name": "John 🇬🇧→🇩🇪 German tutor",

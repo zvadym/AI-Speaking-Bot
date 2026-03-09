@@ -127,7 +127,13 @@
     "keyboard_btn_voice_prefix": "Ses",
     "keyboard_btn_voice_text": "Metin",
     "keyboard_btn_voice_voice": "Ses",
-    "keyboard_btn_xp_prefix": "XP"
+    "keyboard_btn_xp_prefix": "XP",
+    "xp_today_title": "Bugün",
+    "xp_daily_cap_label": "Günlük limit",
+    "xp_today_left_label": "Bugün kalan",
+    "xp_level_progress_label": "Seviye ilerlemesi",
+    "xp_streak_bonus_label": "Seri bonusu",
+    "xp_streak_bonus_pending": "Seri çarpanı henüz XP ödüllerine uygulanmıyor."
   },
   "telegram_presentation": {
     "name": "Ece 🇹🇷→🇬🇧 İngilizce öğretmeni",

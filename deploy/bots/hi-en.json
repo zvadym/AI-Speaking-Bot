@@ -127,7 +127,13 @@
     "keyboard_btn_voice_prefix": "वॉइस",
     "keyboard_btn_voice_text": "टेक्स्ट",
     "keyboard_btn_voice_voice": "वॉइस",
-    "keyboard_btn_xp_prefix": "XP"
+    "keyboard_btn_xp_prefix": "XP",
+    "xp_today_title": "आज",
+    "xp_daily_cap_label": "दैनिक सीमा",
+    "xp_today_left_label": "आज शेष",
+    "xp_level_progress_label": "लेवल प्रगति",
+    "xp_streak_bonus_label": "स्ट्रीक बोनस",
+    "xp_streak_bonus_pending": "स्ट्रीक मल्टिप्लायर अभी XP पर लागू नहीं होता।"
   },
   "telegram_presentation": {
     "name": "Riya 🇮🇳→🇬🇧 अंग्रेज़ी शिक्षिका",

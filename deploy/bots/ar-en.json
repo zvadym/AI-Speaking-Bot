@@ -127,7 +127,13 @@
     "keyboard_btn_voice_prefix": "الصوت",
     "keyboard_btn_voice_text": "نص",
     "keyboard_btn_voice_voice": "صوت",
-    "keyboard_btn_xp_prefix": "XP"
+    "keyboard_btn_xp_prefix": "XP",
+    "xp_today_title": "اليوم",
+    "xp_daily_cap_label": "الحد اليومي",
+    "xp_today_left_label": "المتبقي اليوم",
+    "xp_level_progress_label": "تقدم المستوى",
+    "xp_streak_bonus_label": "مكافأة السلسلة",
+    "xp_streak_bonus_pending": "مضاعف السلسلة لا يُطبّق على XP بعد."
   },
   "telegram_presentation": {
     "name": "Nour 🇸🇦→🇬🇧 معلمة إنجليزية",

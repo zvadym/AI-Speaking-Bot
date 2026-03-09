@@ -127,7 +127,13 @@
     "keyboard_btn_voice_prefix": "Stimme",
     "keyboard_btn_voice_text": "Text",
     "keyboard_btn_voice_voice": "Stimme",
-    "keyboard_btn_xp_prefix": "XP"
+    "keyboard_btn_xp_prefix": "XP",
+    "xp_today_title": "Heute",
+    "xp_daily_cap_label": "Tageslimit",
+    "xp_today_left_label": "Heute übrig",
+    "xp_level_progress_label": "Level-Fortschritt",
+    "xp_streak_bonus_label": "Streak-Bonus",
+    "xp_streak_bonus_pending": "Der Streak-Multiplikator wird aktuell noch nicht auf XP angewendet."
   },
   "telegram_presentation": {
     "name": "Mila 🇩🇪→🇪🇸 Spanisch-Tutorin",

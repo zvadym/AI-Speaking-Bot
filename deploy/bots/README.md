@@ -82,6 +82,15 @@ The workflow also reads these `locale` keys to build the persistent bottom keybo
 
 They should be localized in the bot's base language and kept short because Telegram reply-keyboard buttons have limited horizontal space.
 
+The `/xp` workflow also expects these `locale` keys for the expanded progress card:
+
+- `xp_today_title`
+- `xp_daily_cap_label`
+- `xp_today_left_label`
+- `xp_level_progress_label`
+- `xp_streak_bonus_label`
+- `xp_streak_bonus_pending`
+
 ## Two-Step Workflow
 
 ### 1) Validate / normalize bot files

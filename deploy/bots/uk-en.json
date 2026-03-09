@@ -126,7 +126,13 @@
     "keyboard_btn_voice_prefix": "Голос",
     "keyboard_btn_voice_text": "Текст",
     "keyboard_btn_voice_voice": "Голос",
-    "keyboard_btn_xp_prefix": "XP"
+    "keyboard_btn_xp_prefix": "XP",
+    "xp_today_title": "Сьогодні",
+    "xp_daily_cap_label": "Денний ліміт",
+    "xp_today_left_label": "Залишилось сьогодні",
+    "xp_level_progress_label": "Прогрес рівня",
+    "xp_streak_bonus_label": "Бонус за серію",
+    "xp_streak_bonus_pending": "Множник серії поки не застосовується до XP."
   },
   "telegram_presentation": {
     "name": "Джекі 🇺🇦→🇬🇧 репетитор англійської",
