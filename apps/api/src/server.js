@@ -1545,8 +1545,16 @@ async function claimOnboardingCompleteDispatches(taskType, limit) {
          LIMIT 1
        ) last_user ON true
        WHERE COALESCE(ub.is_active, true) = true
-         AND ub.onboarding_complete_prompt_sent_at IS NULL
-         AND ub.onboarding_completed_at IS NULL
+         AND NOT EXISTS (
+           SELECT 1
+           FROM scheduled_task_dispatches std
+           WHERE std.task_type = $3::text
+             AND std.schedule_key = $4::text
+             AND std.bot_key = ub.bot_key
+             AND std.chat_id = ub.chat_id
+             AND std.status = 'sent'
+             AND std.sent_at IS NOT NULL
+         )
          AND ($6::text = '' OR LOWER(COALESCE(u.username, '')) = $6::text)
          AND last_user.created_at <= NOW() - ($1::int * interval '1 minute')
        ORDER BY last_user.created_at ASC, ub.chat_id ASC, ub.bot_key ASC
@@ -1652,18 +1660,6 @@ async function reportScheduledTaskDispatchResults(taskType, results) {
       );
       const dispatch = rows[0];
       if (!dispatch) continue;
-
-      if (taskType === 'onboarding_complete' && result.status === 'sent') {
-        await client.query(
-          `UPDATE user_bots
-              SET onboarding_complete_prompt_sent_at = COALESCE(onboarding_complete_prompt_sent_at, NOW()),
-                  updated_at = NOW()
-            WHERE chat_id = $1::bigint
-              AND bot_key = $2::text
-              AND onboarding_complete_prompt_sent_at IS NULL`,
-          [dispatch.chat_id, dispatch.bot_key]
-        );
-      }
 
       updatedCount += 1;
     }
@@ -3483,10 +3479,12 @@ app.get('/admin/metrics/action-funnel', requireAdmin, async (req, res) => {
         AND e.action_type = ANY($5::text[])
         AND e.occurred_at >= c.start_at
        LEFT JOIN LATERAL (
-         SELECT MIN(ub.onboarding_completed_at) AS onboarding_complete_at
-         FROM user_bots ub
-         WHERE ub.chat_id = c.chat_id
-           AND ub.onboarding_completed_at IS NOT NULL
+         SELECT MIN(std.sent_at) AS onboarding_complete_at
+         FROM scheduled_task_dispatches std
+         WHERE std.chat_id = c.chat_id
+           AND std.task_type = 'onboarding_complete'
+           AND std.status = 'sent'
+           AND std.sent_at IS NOT NULL
        ) onboarding ON true
        LEFT JOIN LATERAL (
          SELECT COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_total
