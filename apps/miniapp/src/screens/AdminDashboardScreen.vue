@@ -1110,14 +1110,14 @@
               <div class="row">
                 <label class="field">
                   <span>Currency</span>
-                  <input
-                    v-model.trim="billingCreateDraft.currency"
-                    type="text"
-                    autocomplete="off"
-                    inputmode="text"
-                    maxlength="3"
-                    placeholder="eur"
-                  />
+                  <select v-model="billingCreateDraft.currency" :disabled="billingCurrencyLoading && !billingCurrencyOptions.length">
+                    <option value="">
+                      {{ billingCurrencyLoading && !billingCurrencyOptions.length ? 'Loading currencies…' : 'Select currency…' }}
+                    </option>
+                    <option v-for="option in billingCurrencyOptions" :key="option.code" :value="option.code">
+                      {{ billingCurrencyOptionLabel(option) }}
+                    </option>
+                  </select>
                 </label>
 
                 <label class="field">
@@ -1139,6 +1139,25 @@
                   />
                 </label>
               </div>
+              <div v-if="selectedBillingCreateCurrencyMeta" class="billing-summary billing-currency-preview">
+                <div class="billing-summary-line">
+                  <span class="hint">Symbol</span>
+                  <strong>{{ selectedBillingCreateCurrencyMeta.symbol }} · {{ selectedBillingCreateCurrencyMeta.code }}</strong>
+                </div>
+                <div class="billing-summary-line">
+                  <span class="hint">Formatting</span>
+                  <strong>{{ billingCurrencyRuleLabel(selectedBillingCreateCurrencyMeta) }}</strong>
+                </div>
+                <div class="billing-summary-line">
+                  <span class="hint">Example</span>
+                  <strong>{{ selectedBillingCreateCurrencyMeta.example_format }}</strong>
+                </div>
+                <div class="billing-summary-line">
+                  <span class="hint">Suggested for bases</span>
+                  <strong>{{ billingBaseLanguageListLabel(selectedBillingCreateCurrencyMeta.base_languages) }}</strong>
+                </div>
+              </div>
+              <p v-else-if="billingCurrencyError" class="hint error">Currency catalog unavailable: {{ billingCurrencyError }}</p>
               <div class="actions">
                 <button class="btn primary" type="button" :disabled="!canCreateBillingPrice || Boolean(billingMutationBusyId)" @click="createBillingPrice()">
                   {{ billingMutationMode === 'create' ? 'Creating…' : 'Create price' }}
@@ -1785,6 +1804,9 @@ const usersUpdatedAt = ref('');
 const userDeleteBusyId = ref('');
 const userDeleteError = ref('');
 const userDeleteInfo = ref('');
+const billingCurrencyCatalog = ref(null);
+const billingCurrencyLoading = ref(false);
+const billingCurrencyError = ref('');
 const billingProductId = ref('');
 const billingPrices = ref([]);
 const billingLoading = ref(false);
@@ -1823,6 +1845,22 @@ const activeStamp = computed(() => {
 const normalizedBillingCreateCurrency = computed(() => {
   const value = String(billingCreateDraft.currency || '').trim().toLowerCase();
   return /^[a-z]{3}$/.test(value) ? value : '';
+});
+
+const billingCurrencyDetails = computed(() => {
+  const details = billingCurrencyCatalog.value?.currency_details;
+  return details && typeof details === 'object' ? details : {};
+});
+
+const billingCurrencyOptions = computed(() => {
+  const options = billingCurrencyCatalog.value?.currency_options;
+  return Array.isArray(options) ? options : [];
+});
+
+const selectedBillingCreateCurrencyMeta = computed(() => {
+  const code = String(billingCreateDraft.currency || '').trim().toUpperCase();
+  if (!code) return null;
+  return billingCurrencyOptions.value.find((item) => item?.code === code) || billingCurrencyDetails.value[code] || null;
 });
 
 const billingCreateAmountCents = computed(() => {
@@ -2724,21 +2762,87 @@ function billingIntervalLabel(rawInterval) {
   return value || 'custom';
 }
 
+function billingCurrencyMeta(rawCurrency) {
+  const code = String(rawCurrency || '').trim().toUpperCase();
+  if (!code) return null;
+  return billingCurrencyDetails.value[code] || null;
+}
+
+function billingCurrencyBadge(rawCurrency) {
+  const code = String(rawCurrency || '').trim().toUpperCase();
+  if (!code) return '—';
+  const meta = billingCurrencyMeta(code);
+  const symbol = String(meta?.symbol || '').trim();
+  return symbol && symbol !== code ? `${symbol} ${code}` : code;
+}
+
+function formatBillingAmountMajor(rawAmountCents, rawCurrency) {
+  const amountCents = Number(rawAmountCents);
+  const currency = String(rawCurrency || '').trim().toUpperCase();
+  if (!Number.isFinite(amountCents) || !currency) return null;
+
+  const meta = billingCurrencyMeta(currency);
+  const minorUnit = Number.isFinite(Number(meta?.minor_unit)) ? Number(meta.minor_unit) : 2;
+  const locale = String(meta?.locale || '').trim() || 'en-US';
+  const divisor = 10 ** minorUnit;
+
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: minorUnit,
+      maximumFractionDigits: minorUnit
+    }).format(amountCents / divisor);
+  } catch {
+    return null;
+  }
+}
+
+function billingMinorUnitsLabel(rawAmountCents) {
+  const amountCents = Number(rawAmountCents);
+  if (!Number.isFinite(amountCents)) return '—';
+  return `${fmt(amountCents)} minor`;
+}
+
 function billingAmountLabel(row) {
   const currency = String(row?.currency || '').trim().toUpperCase();
   const amount = Number.isFinite(Number(row?.amount_cents)) ? Number(row.amount_cents) : null;
   if (!currency || amount === null) return '—';
-  return `${currency} ${fmt(amount)} minor`;
+  const formatted = formatBillingAmountMajor(amount, currency);
+  const minor = billingMinorUnitsLabel(amount);
+  return formatted ? `${formatted} · ${minor}` : `${currency} ${minor}`;
 }
 
 function billingPriceHeading(row) {
-  const currency = String(row?.currency || '').trim().toUpperCase() || '—';
+  const currency = billingCurrencyBadge(row?.currency);
   const interval = billingIntervalLabel(row?.billing_interval);
   return `${currency} · ${interval} · ${billingAmountLabel(row)}`;
 }
 
 function billingReplaceOptionLabel(row) {
-  return `${String(row?.currency || '').toUpperCase()} · ${billingIntervalLabel(row?.billing_interval)} · ${billingAmountLabel(row)} · ${row?.stripe_price_id || 'missing Stripe ID'}`;
+  return `${billingCurrencyBadge(row?.currency)} · ${billingIntervalLabel(row?.billing_interval)} · ${billingAmountLabel(row)} · ${row?.stripe_price_id || 'missing Stripe ID'}`;
+}
+
+function billingCurrencyOptionLabel(option) {
+  const code = String(option?.code || '').trim().toUpperCase();
+  if (!code) return 'Unknown currency';
+  const symbol = String(option?.symbol || '').trim();
+  const icon = symbol && symbol !== code ? `${symbol} ` : '';
+  const sample = String(option?.example_format || '').trim();
+  return `${icon}${code} · ${option?.name || code}${sample ? ` · ${sample}` : ''}`;
+}
+
+function billingCurrencyRuleLabel(option) {
+  if (!option) return '';
+  const placement = option?.symbol_position === 'suffix' ? 'symbol last' : 'symbol first';
+  const decimal = `decimals "${option?.decimal_separator || '.'}"`;
+  const groups = `groups "${option?.group_separator || ','}"`;
+  return `${placement} · ${decimal} · ${groups}`;
+}
+
+function billingBaseLanguageListLabel(baseLanguages) {
+  if (!Array.isArray(baseLanguages) || !baseLanguages.length) return 'general';
+  return baseLanguages.map((value) => String(value || '').trim().toUpperCase()).filter(Boolean).join(', ');
 }
 
 function billingStatusLabel(row) {
@@ -3471,6 +3575,21 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
   }
 }
 
+async function refreshBillingCurrencyCatalog() {
+  if (billingCurrencyLoading.value) return;
+  billingCurrencyLoading.value = true;
+  billingCurrencyError.value = '';
+  try {
+    const data = await apiJson(props.apiBase, '/public/billing/currencies');
+    billingCurrencyCatalog.value = data && typeof data === 'object' ? data : null;
+  } catch (err) {
+    console.error(err);
+    billingCurrencyError.value = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+  } finally {
+    billingCurrencyLoading.value = false;
+  }
+}
+
 async function refreshBillingPrices({ resetMessages = false } = {}) {
   if (!password.value) return;
   billingLoading.value = true;
@@ -3949,6 +4068,9 @@ watch(
 watch(
   () => activeTab.value,
   (tab) => {
+    if (tab === 'billing' && billingCurrencyOptions.value.length === 0 && !billingCurrencyLoading.value) {
+      refreshBillingCurrencyCatalog();
+    }
     if (tab === 'messaging' && password.value && botStats.value.length === 0) {
       refreshBotStats();
     }
