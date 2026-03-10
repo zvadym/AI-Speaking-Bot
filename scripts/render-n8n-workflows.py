@@ -690,7 +690,9 @@ def patch_settings_node(
 
 
 def patch_set_locale_node(
-    ai_data: Dict[str, Any], locale: Dict[str, Any], node_name: str = "Set Locale"
+    ai_data: Dict[str, Any],
+    locale: Dict[str, Any],
+    node_name: str = "Set Locale",
 ) -> None:
     node = find_node(ai_data, node_name)
     params = node.get("parameters", {})
@@ -898,17 +900,8 @@ def main() -> int:
         patch_webhook_ids_for_bot(loader, "loader-messages-rotator", bot_key)
 
         patch_settings_node(ai, bot_key, base, learn, bot_voice)
-        patch_settings_node(ai, bot_key, base, learn, bot_voice, node_name="Digest Settings")
-        onboarding_complete_locale = dict(full_locale)
-        onboarding_complete_locale["bot_key"] = bot_key
 
         patch_set_locale_node(ai, full_locale)
-        patch_set_locale_node(ai, full_locale, node_name="Digest Locale")
-        patch_set_locale_node(
-            ai,
-            onboarding_complete_locale,
-            node_name="Onboarding Complete Settings",
-        )
         patch_message_model_node(ai, base, learn)
         patch_start_loader(ai, loader_id, loader["name"], bot_key)
 
