@@ -9,6 +9,7 @@ import { verifyInitData } from './telegram.js';
 import { stripe } from './stripe.js';
 import { signSession, requireAuth } from './auth.js';
 import { loadBotConfigs } from './bot-configs.js';
+import { buildBillingCurrencyCatalog } from './billing-currencies.js';
 import { enqueueBroadcastCampaign as enqueueBroadcastCampaignJob } from './jobs.js';
 import { getApiBoss, stopApiBoss } from './queue.js';
 
@@ -43,6 +44,11 @@ app.use(express.json());
 
 app.get('/healthz', (req, res) => {
   res.json({ ok: true });
+});
+
+app.get('/public/billing/currencies', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  return res.json(buildBillingCurrencyCatalog(publicBotCatalog));
 });
 
 function safeEqualString(a, b) {
