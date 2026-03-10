@@ -66,6 +66,26 @@ function optionalUsername(name) {
   return raw.replace(/^@+/, '').slice(0, 64);
 }
 
+function optionalChatIdList(name, { maxItems = 200 } = {}) {
+  const raw = (process.env[name] ?? '').toString().trim();
+  if (!raw) return [];
+
+  const seen = new Set();
+  const out = [];
+  for (const part of raw.split(/[,\s]+/g)) {
+    const value = (part ?? '').toString().trim();
+    if (!value) continue;
+    if (!/^\d{4,20}$/.test(value)) {
+      throw new Error(`Invalid chat id in env var: ${name}`);
+    }
+    if (seen.has(value)) continue;
+    seen.add(value);
+    out.push(Number(value));
+    if (out.length >= maxItems) break;
+  }
+  return out;
+}
+
 const port = Number(process.env.API_PORT || 3000);
 const telegramInitDataMaxAgeSec = Number(process.env.TELEGRAM_INITDATA_MAX_AGE || 86400);
 const corsOrigins = (process.env.CORS_ORIGINS || '')
@@ -110,14 +130,15 @@ export const env = {
   corsOrigins,
   planChangedWebhookUrl: process.env.PLAN_CHANGED_WEBHOOK_URL || '',
   adminDashboardPassword: process.env.ADMIN_DASHBOARD_PASSWORD || '',
-  broadcastWebhookUrl: optionalUrl('BROADCAST_WEBHOOK_URL'),
-  broadcastWebhookSecret: process.env.BROADCAST_WEBHOOK_SECRET || '',
-  scheduledTasksSecret: process.env.SCHEDULED_TASKS_SECRET || '',
-  scheduledTasksTestUsername: optionalUsername('SCHEDULED_TASKS_TEST_USERNAME'),
   broadcastMaxRecipients: optionalInteger('BROADCAST_MAX_RECIPIENTS', 2000, { min: 1, max: 100000 }),
   broadcastProcessBatchSize: optionalInteger('BROADCAST_PROCESS_BATCH_SIZE', 100, { min: 1, max: 1000 }),
   broadcastPerMessageDelayMs: optionalInteger('BROADCAST_PER_MESSAGE_DELAY_MS', 35, { min: 0, max: 5000 }),
+  broadcastSendConcurrency: optionalInteger('BROADCAST_SEND_CONCURRENCY', 5, { min: 1, max: 100 }),
   broadcastMediaChatId: optionalInteger('BROADCAST_MEDIA_CHAT_ID', 0),
+  onboardingCompleteIdleMinutes: optionalInteger('ONBOARDING_COMPLETE_IDLE_MINUTES', 2, { min: 1, max: 1440 }),
+  onboardingCompleteScanLimit: optionalInteger('ONBOARDING_COMPLETE_SCAN_LIMIT', 500, { min: 1, max: 5000 }),
+  scheduledTasksTestChatIds: optionalChatIdList('SCHEDULED_TASKS_TEST_CHAT_IDS'),
+  jobRetryMaxAttempts: optionalInteger('JOB_RETRY_MAX_ATTEMPTS', 5, { min: 1, max: 100 }),
   defaultBotKey: (process.env.DEFAULT_BOT_KEY || 'uk-de').toString().trim().toLowerCase(),
   botKeyByTargetLang: optionalJsonObject('BOT_KEY_BY_TARGET_LANG_JSON'),
   webhooksAppendBotKey: optionalBoolean('WEBHOOKS_APPEND_BOT_KEY', false)

@@ -14,6 +14,18 @@ services:
     expose:
       - "3000"
 
+  worker:
+    build:
+      context: ../apps/api
+    restart: unless-stopped
+    command: ["npm", "run", "worker"]
+    env_file:
+      - .env.api
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./bots:/deploy/bots:ro
+
   miniapp:
     build:
       context: ../apps/miniapp

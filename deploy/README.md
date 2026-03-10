@@ -61,8 +61,7 @@ cp deploy/.env.prod.example deploy/.env.prod
 
 Fill these on the server:
 
-- `deploy/.env.api`: `DATABASE_URL`, `WEBAPP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`, `PLAN_CHANGED_WEBHOOK_URL`, `BROADCAST_WEBHOOK_URL` (use `{bot_key}` placeholder in multi-bot mode, e.g. `.../webhook/plan-changed-{bot_key}` and `.../webhook/send-message-{bot_key}`), `BROADCAST_WEBHOOK_SECRET`, `SCHEDULED_TASKS_SECRET` (optional; can stay empty on free n8n plans that block env access in workflows), `SCHEDULED_TASKS_TEST_USERNAME` (optional temporary scheduler filter by Telegram username), `BROADCAST_MAX_RECIPIENTS` (optional), `BROADCAST_PROCESS_BATCH_SIZE` (optional), `BROADCAST_PER_MESSAGE_DELAY_MS` (optional), `WEBHOOKS_APPEND_BOT_KEY` (optional fallback if webhook URL has no `{bot_key}`), `ADMIN_DASHBOARD_PASSWORD` (for internal `/admin/*`), `STRIPE_PORTAL_CONFIG_ID` (optional), `WEBAPP_RETURN_URL` (optional, e.g. `https://t.me/<bot_username>/menu`)
-- `deploy/.env` / `deploy/.env.dev`: `SCHEDULED_TASKS_SECRET` is optional. Keep it empty if your n8n plan blocks env access and you are using the built-in no-auth internal scheduler flow.
+- `deploy/.env.api`: `DATABASE_URL`, `WEBAPP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`, `PLAN_CHANGED_WEBHOOK_URL`, `BROADCAST_MAX_RECIPIENTS` (optional), `BROADCAST_PROCESS_BATCH_SIZE` (optional), `BROADCAST_PER_MESSAGE_DELAY_MS` (optional), `BROADCAST_SEND_CONCURRENCY` (optional), `ONBOARDING_COMPLETE_IDLE_MINUTES` (optional), `ONBOARDING_COMPLETE_SCAN_LIMIT` (optional), `SCHEDULED_TASKS_TEST_CHAT_IDS` (optional comma-separated Telegram chat IDs to limit onboarding scans during testing), `JOB_RETRY_MAX_ATTEMPTS` (optional), `WEBHOOKS_APPEND_BOT_KEY` (optional fallback if plan-changed webhook URL has no `{bot_key}`), `ADMIN_DASHBOARD_PASSWORD` (for internal `/admin/*`), `STRIPE_PORTAL_CONFIG_ID` (optional), `WEBAPP_RETURN_URL` (optional, e.g. `https://t.me/<bot_username>/menu`)
 - `deploy/.env.miniapp`: `VITE_API_BASE=https://learn-language-api.notarobot.dev`, `VITE_ADMIN_PATH` (secret admin path), `VITE_STRIPE_EMBEDDED_CHECKOUT` (set `true` to use embedded Stripe Checkout), `VITE_STRIPE_PUBLISHABLE_KEY` (required when embedded checkout is enabled), `VITE_SCHOOL_URL` (optional, defaults to `https://ai-language-school.online/`; used for teacher thumbnails), `VITE_DEBUG_UI` (optional, set `true` to always show debug panel and logs in mini-app screens)
 - `deploy/.env`: n8n secrets (`N8N_*`, `WEBHOOK_URL`, DB creds if used). Set `N8N_HOST`, `N8N_EDITOR_BASE_URL`, and `WEBHOOK_URL` to `https://learn-language-n8n.notarobot.dev`.
 - `deploy/.env.prod`: n8n workflow credential IDs used to render workflows for prod (`N8N_CRED_OPENAI_ID`, `N8N_CRED_POSTGRES_ID`). `N8N_CRED_TELEGRAM_ID` is legacy single-bot mode only.
@@ -75,7 +74,7 @@ Fill these on the server:
 ./deploy/deploy.sh
 ```
 
-This runs dbmate migrations, builds API/miniapp images, and starts API + miniapp + Caddy + n8n.
+This runs dbmate migrations, builds API/miniapp images, and starts API + worker + miniapp + Caddy + n8n.
 
 ### 1.6 Start n8n and import workflows
 

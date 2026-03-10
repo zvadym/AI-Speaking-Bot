@@ -9,6 +9,8 @@ import { verifyInitData } from './telegram.js';
 import { stripe } from './stripe.js';
 import { signSession, requireAuth } from './auth.js';
 import { loadBotConfigs } from './bot-configs.js';
+import { enqueueBroadcastCampaign as enqueueBroadcastCampaignJob } from './jobs.js';
+import { getApiBoss, stopApiBoss } from './queue.js';
 
 const app = express();
 
@@ -59,18 +61,6 @@ function requireAdmin(req, res, next) {
 
   const provided = (req.headers['x-admin-password'] || '').toString();
   if (!provided || !safeEqualString(provided, env.adminDashboardPassword)) {
-    return res.status(401).json({ error: 'unauthorized' });
-  }
-  return next();
-}
-
-function requireScheduledTasks(req, res, next) {
-  if (!env.scheduledTasksSecret) {
-    return next();
-  }
-
-  const provided = (req.headers['x-scheduled-tasks-secret'] || '').toString();
-  if (!provided || !safeEqualString(provided, env.scheduledTasksSecret)) {
     return res.status(401).json({ error: 'unauthorized' });
   }
   return next();
@@ -992,14 +982,6 @@ const BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW = 8;
 const BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN = 64;
 const BROADCAST_INLINE_KEYBOARD_MAX_CALLBACK_DATA_LEN = 64;
 const BROADCAST_INLINE_KEYBOARD_MAX_URL_LEN = 2048;
-const SCHEDULED_TASK_TYPES = new Set(['onboarding_complete']);
-const SCHEDULED_TASK_RESULT_STATUSES = new Set(['sent', 'failed']);
-const SCHEDULED_TASK_CLAIM_DEFAULT_LIMIT = 200;
-const SCHEDULED_TASK_CLAIM_MAX_LIMIT = 500;
-const SCHEDULED_TASK_CLAIM_TTL_MINUTES = 10;
-const SCHEDULED_TASK_ONBOARDING_IDLE_MINUTES = 2;
-const SCHEDULED_TASK_ONBOARDING_SCHEDULE_KEY = 'once';
-const broadcastInFlight = new Set();
 
 function normalizeBroadcastMediaFileIds(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -1485,223 +1467,6 @@ function sanitizeErrorText(value) {
   return raw.slice(0, 500);
 }
 
-function normalizeScheduledTaskType(raw) {
-  const value = (raw ?? '').toString().trim().toLowerCase();
-  if (!value || !SCHEDULED_TASK_TYPES.has(value)) return null;
-  return value;
-}
-
-function normalizeScheduledTaskLimit(raw, fallback = SCHEDULED_TASK_CLAIM_DEFAULT_LIMIT) {
-  const value = Number(raw);
-  if (!Number.isFinite(value) || !Number.isInteger(value) || value <= 0) return fallback;
-  return Math.min(value, SCHEDULED_TASK_CLAIM_MAX_LIMIT);
-}
-
-function normalizeScheduledTaskPayload(raw) {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-  return raw;
-}
-
-function normalizeScheduledTaskReportResults(raw) {
-  if (!Array.isArray(raw) || raw.length === 0) return null;
-  const out = [];
-  for (const entry of raw) {
-    const jobId = Number(entry?.job_id ?? entry?.jobId);
-    const status = (entry?.status ?? '').toString().trim().toLowerCase();
-    if (!Number.isFinite(jobId) || jobId <= 0) continue;
-    if (!SCHEDULED_TASK_RESULT_STATUSES.has(status)) continue;
-    const telegramMessageIdRaw = Number(entry?.telegram_message_id ?? entry?.telegramMessageId);
-    out.push({
-      jobId,
-      status,
-      error: sanitizeErrorText(entry?.error),
-      telegramMessageId: Number.isFinite(telegramMessageIdRaw) && telegramMessageIdRaw > 0
-        ? telegramMessageIdRaw
-        : null
-    });
-  }
-  return out.length ? out : null;
-}
-
-async function claimScheduledTaskDispatches(taskType, limit) {
-  if (taskType === 'onboarding_complete') {
-    return claimOnboardingCompleteDispatches(taskType, limit);
-  }
-  return [];
-}
-
-async function claimOnboardingCompleteDispatches(taskType, limit) {
-  const { rows } = await pool.query(
-    `WITH eligible AS (
-       SELECT
-         ub.chat_id,
-         ub.bot_key,
-         '{}'::jsonb AS payload_json,
-         last_user.created_at AS last_user_created_at
-       FROM user_bots ub
-       JOIN users u
-         ON u.chat_id = ub.chat_id
-       JOIN LATERAL (
-         SELECT m.created_at
-         FROM messages m
-         WHERE m.chat_id = ub.chat_id
-           AND m.bot_key = ub.bot_key
-           AND m.role = 'user'
-         ORDER BY m.id DESC
-         LIMIT 1
-       ) last_user ON true
-       WHERE COALESCE(ub.is_active, true) = true
-         AND NOT EXISTS (
-           SELECT 1
-           FROM scheduled_task_dispatches std
-           WHERE std.task_type = $3::text
-             AND std.schedule_key = $4::text
-             AND std.bot_key = ub.bot_key
-             AND std.chat_id = ub.chat_id
-             AND std.status = 'sent'
-             AND std.sent_at IS NOT NULL
-         )
-         AND ($6::text = '' OR LOWER(COALESCE(u.username, '')) = $6::text)
-         AND last_user.created_at <= NOW() - ($1::int * interval '1 minute')
-       ORDER BY last_user.created_at ASC, ub.chat_id ASC, ub.bot_key ASC
-       LIMIT $2::int
-     ),
-     claimed AS (
-       INSERT INTO scheduled_task_dispatches (
-         task_type,
-         bot_key,
-         chat_id,
-         schedule_key,
-         status,
-         claimed_at,
-         claim_expires_at,
-         attempts,
-         last_error,
-         payload_json,
-         created_at,
-         updated_at
-       )
-       SELECT
-         $3::text,
-         e.bot_key,
-         e.chat_id,
-         $4::text,
-         'claimed'::text,
-         NOW(),
-         NOW() + ($5::int * interval '1 minute'),
-         1,
-         NULL,
-         e.payload_json,
-         NOW(),
-         NOW()
-       FROM eligible e
-       ON CONFLICT (task_type, bot_key, chat_id, schedule_key) DO UPDATE
-         SET status = 'claimed',
-             claimed_at = NOW(),
-             claim_expires_at = NOW() + ($5::int * interval '1 minute'),
-             attempts = scheduled_task_dispatches.attempts + 1,
-             last_error = NULL,
-             payload_json = EXCLUDED.payload_json,
-             updated_at = NOW()
-       WHERE scheduled_task_dispatches.status <> 'sent'
-         AND scheduled_task_dispatches.sent_at IS NULL
-         AND (
-           scheduled_task_dispatches.claim_expires_at IS NULL
-           OR scheduled_task_dispatches.claim_expires_at < NOW()
-         )
-       RETURNING
-         id AS job_id,
-         task_type,
-         bot_key,
-         chat_id,
-         payload_json AS payload
-     )
-     SELECT job_id, task_type, bot_key, chat_id, payload
-     FROM claimed
-     ORDER BY bot_key ASC, chat_id ASC`,
-    [
-      SCHEDULED_TASK_ONBOARDING_IDLE_MINUTES,
-      limit,
-      taskType,
-      SCHEDULED_TASK_ONBOARDING_SCHEDULE_KEY,
-      SCHEDULED_TASK_CLAIM_TTL_MINUTES,
-      env.scheduledTasksTestUsername || ''
-    ]
-  );
-
-  return rows.map((row) => ({
-    job_id: Number(row.job_id),
-    task_type: normalizeScheduledTaskType(row.task_type) || taskType,
-    bot_key: normalizeBotKey(row.bot_key),
-    chat_id: Number(row.chat_id),
-    payload: normalizeScheduledTaskPayload(row.payload)
-  }));
-}
-
-async function reportScheduledTaskDispatchResults(taskType, results) {
-  const client = await pool.connect();
-  let updatedCount = 0;
-  const deliveryUpdates = [];
-  try {
-    await client.query('BEGIN');
-    for (const result of results) {
-      const { rows } = await client.query(
-        `UPDATE scheduled_task_dispatches
-            SET status = $3::text,
-                claim_expires_at = NULL,
-                last_error = $4::text,
-                telegram_message_id = CASE
-                  WHEN $5::bigint IS NOT NULL THEN $5::bigint
-                  ELSE telegram_message_id
-                END,
-                sent_at = CASE
-                  WHEN $3::text = 'sent' THEN COALESCE(sent_at, NOW())
-                  ELSE sent_at
-                END,
-                updated_at = NOW()
-          WHERE id = $1::bigint
-            AND task_type = $2::text
-            AND status <> 'sent'
-          RETURNING id, chat_id, bot_key, task_type, status`,
-        [result.jobId, taskType, result.status, result.error, result.telegramMessageId]
-      );
-      const dispatch = rows[0];
-      if (!dispatch) continue;
-
-      deliveryUpdates.push({
-        chatId: Number(dispatch.chat_id),
-        botKey: dispatch.bot_key,
-        status: dispatch.status,
-        error: result.error
-      });
-      updatedCount += 1;
-    }
-    await client.query('COMMIT');
-
-    for (const update of deliveryUpdates) {
-      if (!Number.isFinite(update.chatId) || update.chatId <= 0) continue;
-      const inactiveReason = update.status === 'failed'
-        ? classifyPermanentTelegramFailure({ message: update.error })
-        : null;
-      if (update.status === 'sent' || inactiveReason) {
-        await updateUserDeliveryState(update.chatId, {
-          status: update.status,
-          lastError: update.error,
-          inactiveReason,
-          botKey: update.botKey
-        });
-      }
-    }
-
-    return { updatedCount };
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
 const TELEGRAM_HTML_ALLOWED_TAGS = new Set([
   'b',
   'i',
@@ -2086,196 +1851,6 @@ async function uploadTelegramMediaToChat({ chatId, messageKind, buffer, filename
   }
 
   return { messageId: result?.message_id ?? null, fileId };
-}
-
-async function refreshBroadcastCampaignStats(campaignId, { status = null, errorText = null, setFinishedAt = false } = {}) {
-  await pool.query(
-    `WITH stats AS (
-       SELECT
-         COUNT(*)::int AS total_count,
-         COUNT(*) FILTER (WHERE status = 'sent')::int AS sent_count,
-         COUNT(*) FILTER (WHERE status = 'failed')::int AS failed_count
-       FROM broadcast_recipients
-       WHERE campaign_id = $1
-     )
-     UPDATE broadcast_campaigns c
-        SET total_recipients = s.total_count,
-            sent_count = s.sent_count,
-            failed_count = s.failed_count,
-            status = COALESCE($2::text, c.status),
-            error_text = CASE
-              WHEN $3::text IS NOT NULL THEN $3::text
-              ELSE c.error_text
-            END,
-            finished_at = CASE
-              WHEN $4::boolean THEN NOW()
-              ELSE c.finished_at
-            END,
-            updated_at = NOW()
-       FROM stats s
-      WHERE c.id = $1`,
-    [campaignId, status, errorText, setFinishedAt]
-  );
-}
-
-function queueBroadcastCampaignProcessing(campaignId) {
-  const id = Number(campaignId);
-  if (!Number.isFinite(id) || id <= 0) return;
-  if (broadcastInFlight.has(id)) return;
-
-  broadcastInFlight.add(id);
-  setImmediate(async () => {
-    try {
-      await processBroadcastCampaign(id);
-    } catch (err) {
-      console.error('Broadcast processing failed', {
-        campaignId: id,
-        err: err?.message || String(err)
-      });
-    } finally {
-      broadcastInFlight.delete(id);
-    }
-  });
-}
-
-async function processBroadcastCampaign(campaignId) {
-  const id = Number(campaignId);
-  if (!Number.isFinite(id) || id <= 0) return false;
-
-  const { rows: lockRows } = await pool.query(
-    `UPDATE broadcast_campaigns
-        SET status = 'sending',
-            started_at = COALESCE(started_at, NOW()),
-            finished_at = NULL,
-            error_text = NULL,
-            updated_at = NOW()
-      WHERE id = $1
-        AND (
-          status = 'queued'
-          OR (status = 'sending' AND updated_at < NOW() - interval '5 minutes')
-        )
-      RETURNING id, message_text, message_kind, media_url, media_file_id, media_file_ids, reply_markup`,
-    [id]
-  );
-  if (!lockRows[0]) return false;
-
-  const messageText = (lockRows[0].message_text ?? '').toString();
-  const messageKind = (lockRows[0].message_kind ?? 'text').toString().trim().toLowerCase();
-  const mediaUrl = lockRows[0].media_url ? lockRows[0].media_url.toString() : null;
-  const mediaFileId = lockRows[0].media_file_id ? lockRows[0].media_file_id.toString() : null;
-  const mediaFileIdsByBot = normalizeBroadcastMediaFileIds(lockRows[0].media_file_ids);
-  const replyMarkupResult = normalizeBroadcastReplyMarkup(lockRows[0].reply_markup);
-  if (!replyMarkupResult.ok) {
-    throw new Error('bad_reply_markup');
-  }
-  const replyMarkup = replyMarkupResult.replyMarkup;
-  const telegramSafeText = sanitizeTelegramHtml(messageText);
-  if (!BROADCAST_MESSAGE_KINDS.has(messageKind)) {
-    throw new Error('bad_message_kind');
-  }
-
-  try {
-    while (true) {
-      const { rows: pendingRows } = await pool.query(
-        `SELECT
-           r.chat_id,
-           r.bot_key
-         FROM broadcast_recipients r
-        WHERE r.campaign_id = $1
-          AND r.status = 'pending'
-        ORDER BY r.chat_id ASC, r.bot_key ASC
-        LIMIT $2`,
-        [id, env.broadcastProcessBatchSize]
-      );
-      if (pendingRows.length === 0) break;
-
-      for (const row of pendingRows) {
-        let status = 'sent';
-        let lastError = null;
-        let telegramMessageId = null;
-        let inactiveReason = null;
-        const recipientBotKey = normalizeBotKey(row.bot_key);
-        const botKey = recipientBotKey || normalizeBotKey(env.defaultBotKey) || 'uk-de';
-        const mediaInput = (mediaFileIdsByBot?.[botKey] || mediaFileId || mediaUrl || null);
-        if (messageKind !== 'text' && !mediaInput) {
-          throw new Error('missing_media');
-        }
-
-        try {
-          let telegramResult = null;
-          if (messageKind === 'text') {
-            telegramResult = await sendTelegramTextMessage(row.chat_id, telegramSafeText, {
-              botKey,
-              parseMode: 'HTML',
-              replyMarkup
-            });
-          } else if (messageKind === 'photo') {
-            telegramResult = await sendTelegramPhotoMessage(row.chat_id, mediaInput, telegramSafeText, {
-              botKey,
-              parseMode: 'HTML',
-              replyMarkup
-            });
-          } else if (messageKind === 'video') {
-            telegramResult = await sendTelegramVideoMessage(row.chat_id, mediaInput, telegramSafeText, {
-              botKey,
-              parseMode: 'HTML',
-              replyMarkup
-            });
-          } else {
-            const err = new Error('bad_message_kind');
-            err.code = 'bad_message_kind';
-            throw err;
-          }
-          const messageId = Number(telegramResult?.message_id ?? 0);
-          telegramMessageId = Number.isFinite(messageId) && messageId > 0 ? messageId : null;
-        } catch (err) {
-          status = 'failed';
-          lastError = sanitizeErrorText(err?.message || String(err));
-          inactiveReason = classifyPermanentTelegramFailure(err);
-        }
-
-        await pool.query(
-          `UPDATE broadcast_recipients
-              SET status = $3,
-                  attempts = attempts + 1,
-                  last_error = $4,
-                  sent_at = CASE
-                    WHEN $3::text = 'sent' THEN NOW()
-                    ELSE sent_at
-                  END,
-                  telegram_message_id = CASE
-                    WHEN $5::bigint IS NOT NULL THEN $5::bigint
-                    ELSE telegram_message_id
-                  END,
-                  updated_at = NOW()
-            WHERE campaign_id = $1
-              AND chat_id = $2
-              AND (
-                bot_key = $6
-                OR (bot_key IS NULL AND $6 IS NULL)
-              )`,
-          [id, row.chat_id, status, lastError, telegramMessageId, recipientBotKey]
-        );
-        await updateUserDeliveryState(row.chat_id, { status, lastError, inactiveReason, botKey });
-
-        if (env.broadcastPerMessageDelayMs > 0) {
-          await new Promise((resolve) => setTimeout(resolve, env.broadcastPerMessageDelayMs));
-        }
-      }
-
-      await refreshBroadcastCampaignStats(id);
-    }
-
-    await refreshBroadcastCampaignStats(id, { status: 'completed', setFinishedAt: true });
-    return true;
-  } catch (err) {
-    await refreshBroadcastCampaignStats(id, {
-      status: 'failed',
-      errorText: sanitizeErrorText(err?.message || String(err)),
-      setFinishedAt: true
-    });
-    return false;
-  }
 }
 
 app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
@@ -4479,7 +4054,7 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
   });
 });
 
-app.post('/admin/broadcasts/preview', requireAdmin, async (req, res) => {
+app.post('/admin/broadcast-campaigns/preview', requireAdmin, async (req, res) => {
   res.set('Cache-Control', 'no-store');
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
@@ -4502,7 +4077,7 @@ const broadcastMediaUpload = multer({
   limits: { fileSize: BROADCAST_MEDIA_UPLOAD_MAX_BYTES }
 });
 
-app.post('/admin/broadcasts/upload-media', requireAdmin, broadcastMediaUpload.single('file'), async (req, res) => {
+app.post('/admin/broadcast-media', requireAdmin, broadcastMediaUpload.single('file'), async (req, res) => {
   res.set('Cache-Control', 'no-store');
   if (!env.broadcastMediaChatId) {
     return res.status(400).json({ error: 'media_chat_id_not_configured' });
@@ -4548,7 +4123,7 @@ app.post('/admin/broadcasts/upload-media', requireAdmin, broadcastMediaUpload.si
   return res.json({ ok: true, messageKind, mediaFileIds });
 });
 
-app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
+app.post('/admin/broadcast-campaigns', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
   const filters = normalizeBroadcastFilters(req.body?.filters ?? req.body ?? {});
@@ -4696,16 +4271,22 @@ app.post('/admin/broadcasts/send', requireAdmin, async (req, res) => {
     throw err;
   }
 
-  queueBroadcastCampaignProcessing(campaignId);
+  const apiBoss = await getApiBoss();
+  await enqueueBroadcastCampaignJob(apiBoss, campaignId);
 
   return res.json({
-    campaign_id: campaignId,
-    status: 'queued',
-    total_recipients: chatIds.length
+    campaign: {
+      id: campaignId,
+      status: 'queued',
+      total_recipients: chatIds.length,
+      sent_count: 0,
+      failed_count: 0,
+      pending_count: chatIds.length
+    }
   });
 });
 
-app.get('/admin/broadcasts/:id', requireAdmin, async (req, res) => {
+app.get('/admin/broadcast-campaigns/:id', requireAdmin, async (req, res) => {
   res.set('Cache-Control', 'no-store');
   const campaignId = Number(req.params.id);
   if (!Number.isFinite(campaignId) || campaignId <= 0) {
@@ -4771,54 +4352,6 @@ app.get('/admin/broadcasts/:id', requireAdmin, async (req, res) => {
     campaign,
     failed: failedRows
   });
-});
-
-app.post('/internal/broadcasts/process', async (req, res) => {
-  if (!env.broadcastWebhookSecret) {
-    return res.status(404).json({ error: 'not_found' });
-  }
-
-  const provided = (req.headers['x-broadcast-secret'] || '').toString();
-  if (!provided || !safeEqualString(provided, env.broadcastWebhookSecret)) {
-    return res.status(401).json({ error: 'unauthorized' });
-  }
-
-  const campaignIdRaw = req.body?.campaign_id ?? req.body?.campaignId;
-  const campaignId = Number(campaignIdRaw);
-  if (!Number.isFinite(campaignId) || campaignId <= 0) {
-    return res.status(400).json({ error: 'bad_campaign_id' });
-  }
-
-  queueBroadcastCampaignProcessing(campaignId);
-  return res.json({ ok: true, campaign_id: campaignId });
-});
-
-app.post('/internal/scheduled-tasks/claim', requireScheduledTasks, async (req, res) => {
-  const taskType = normalizeScheduledTaskType(req.body?.task_type ?? req.body?.taskType);
-  if (!taskType) {
-    return res.status(400).json({ error: 'bad_task_type' });
-  }
-
-  const limit = normalizeScheduledTaskLimit(req.body?.limit);
-  const jobs = await claimScheduledTaskDispatches(taskType, limit);
-  return res.json({ jobs });
-});
-
-app.post('/internal/scheduled-tasks/report', requireScheduledTasks, async (req, res) => {
-  const taskType = normalizeScheduledTaskType(req.body?.task_type ?? req.body?.taskType);
-  if (!taskType) {
-    return res.status(400).json({ error: 'bad_task_type' });
-  }
-
-  const rawResults = req.body?.results
-    ?? ((req.body?.job_id ?? req.body?.jobId) ? [req.body] : null);
-  const results = normalizeScheduledTaskReportResults(rawResults);
-  if (!results) {
-    return res.status(400).json({ error: 'bad_results' });
-  }
-
-  const report = await reportScheduledTaskDispatchResults(taskType, results);
-  return res.json({ ok: true, updated_count: report.updatedCount });
 });
 
 app.post('/auth/telegram', async (req, res) => {
@@ -6302,6 +5835,30 @@ async function handleStripeEvent(event) {
     }
   }
 }
+
+const apiBoss = await getApiBoss();
+
+async function shutdown(signal) {
+  console.log(`API shutting down on ${signal}`);
+  await stopApiBoss();
+  process.exit(0);
+}
+
+process.on('SIGINT', () => {
+  shutdown('SIGINT').catch((error) => {
+    console.error('API shutdown failed', error);
+    process.exit(1);
+  });
+});
+
+process.on('SIGTERM', () => {
+  shutdown('SIGTERM').catch((error) => {
+    console.error('API shutdown failed', error);
+    process.exit(1);
+  });
+});
+
+app.locals.apiBoss = apiBoss;
 
 app.listen(env.port, () => {
   console.log(`API listening on :${env.port}`);

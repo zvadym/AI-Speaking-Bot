@@ -1868,7 +1868,7 @@ async function uploadBroadcastMedia() {
     form.append('bots', JSON.stringify(broadcastUploadBots.value));
     form.append('file', broadcastMediaFile.value);
 
-    const data = await apiJson(props.apiBase, '/admin/broadcasts/upload-media', {
+    const data = await apiJson(props.apiBase, '/admin/broadcast-media', {
       method: 'POST',
       headers,
       body: form
@@ -2859,7 +2859,7 @@ function stopCampaignPolling() {
 async function loadCampaignStatus(campaignId) {
   if (!password.value) return;
   const headers = adminHeaders();
-  const data = await apiJson(props.apiBase, `/admin/broadcasts/${campaignId}`, { headers });
+  const data = await apiJson(props.apiBase, `/admin/broadcast-campaigns/${campaignId}`, { headers });
   campaignState.value = data?.campaign || null;
   const status = campaignState.value?.status || '';
   if (status === 'completed' || status === 'failed') {
@@ -2891,7 +2891,7 @@ async function refreshBroadcastPreview({ silent = false } = {}) {
   try {
     const headers = adminHeaders();
     const body = { filters: broadcastFiltersPayload() };
-    const data = await apiJson(props.apiBase, '/admin/broadcasts/preview', {
+    const data = await apiJson(props.apiBase, '/admin/broadcast-campaigns/preview', {
       method: 'POST',
       headers,
       query: broadcastRangeQuery(),
@@ -2947,19 +2947,19 @@ async function sendBroadcast() {
       messageText: broadcast.messageText.trim(),
       inlineKeyboard
     };
-    const data = await apiJson(props.apiBase, '/admin/broadcasts/send', {
+    const data = await apiJson(props.apiBase, '/admin/broadcast-campaigns', {
       method: 'POST',
       headers,
       query: broadcastRangeQuery(),
       body: payloadBody
     });
 
-    const campaignId = Number(data?.campaign_id || 0);
+    const campaignId = Number(data?.campaign?.id || 0);
     if (!Number.isFinite(campaignId) || campaignId <= 0) {
       throw new Error('bad_campaign_id');
     }
 
-    sendInfo.value = `Queued campaign #${campaignId} for ${fmt(data?.total_recipients || 0)} users.`;
+    sendInfo.value = `Queued campaign #${campaignId} for ${fmt(data?.campaign?.total_recipients || 0)} users.`;
     broadcastConfirm.value = '';
     await loadCampaignStatus(campaignId);
     startCampaignPolling(campaignId);
