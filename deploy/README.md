@@ -143,7 +143,9 @@ docker compose -p languagebot-n8n -f docker-compose.yml down
 ```bash
 cd /opt/ai-speaking-bot
 
-git pull --ff-only
+git fetch origin
+git checkout main
+git reset --hard origin/main
 ```
 
 ### 2.2 Run migrations + restart API/miniapp/Caddy
@@ -190,7 +192,7 @@ COMPOSE_FILE=docker-compose.yml PROJECT=languagebot WORKFLOWS_DIR=workflows/.ren
 
 ## 3) Optional: Remote deploy from local machine
 
-Use `scripts/deploy-remote.sh` to SSH into the server, run `git pull`, migrations, live n8n workflow import/publish, and health checks.
+Use `scripts/deploy-remote.sh` to SSH into the server, hard-reset the repo to the target remote branch while preserving server env files, then run migrations, live n8n workflow import/publish, and health checks.
 Note: SSH access requires VPN to be connected.
 
 ```bash

@@ -100,17 +100,45 @@ if [[ ! -d "${DEPLOY_DIR}" ]]; then
 fi
 cd "${DEPLOY_DIR}"
 
-step "🧹 2.2/10: Ensure clean git state"
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "Repo has uncommitted changes. Please commit/stash before deploy." >&2
-  exit 1
-fi
+step "🧹 2.2/10: Hard reset repo to origin/${DEPLOY_BRANCH} (preserve server env files)"
+preserved_files=(
+  deploy/.env
+  deploy/.env.api
+  deploy/.env.miniapp
+  deploy/.env.prod
+  deploy/.env.dev
+)
+backup_dir="$(mktemp -d)"
+cleanup_backup() {
+  rm -rf "${backup_dir}"
+}
+trap cleanup_backup EXIT
+
+for f in "${preserved_files[@]}"; do
+  if [[ -f "${f}" ]]; then
+    mkdir -p "${backup_dir}/$(dirname "${f}")"
+    cp "${f}" "${backup_dir}/${f}"
+  fi
+done
 
 git fetch origin
 
-git checkout "${DEPLOY_BRANCH}"
+git checkout -f "${DEPLOY_BRANCH}"
 
-git pull --ff-only origin "${DEPLOY_BRANCH}"
+git reset --hard "origin/${DEPLOY_BRANCH}"
+
+for f in "${preserved_files[@]}"; do
+  if [[ -f "${backup_dir}/${f}" ]]; then
+    cp "${backup_dir}/${f}" "${f}"
+  fi
+done
+
+unexpected_changes="$(git status --porcelain | awk '$2 != "deploy/.env" && $2 != "deploy/.env.api" && $2 != "deploy/.env.miniapp" && $2 != "deploy/.env.prod" && $2 != "deploy/.env.dev" { print }')"
+if [[ -n "${unexpected_changes}" ]]; then
+  echo "Repo has unexpected local changes after reset:" >&2
+  echo "${unexpected_changes}" >&2
+  exit 1
+fi
 
 step "🔐 2.3/10: Verify required env files (won't overwrite)"
 required_env_files=(deploy/.env deploy/.env.api deploy/.env.miniapp)
