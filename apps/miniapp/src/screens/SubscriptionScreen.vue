@@ -461,26 +461,65 @@ function planActionKey(plan) {
   return `${plan?.tier || 'unknown'}:${interval}`;
 }
 
+function applyPlansPayload(data, { includeUserState = true } = {}) {
+  state.plans = Array.isArray(data?.plans) ? data.plans : [];
+  state.user = includeUserState ? (data?.user || null) : null;
+  state.usage = includeUserState ? (data?.usage || null) : null;
+  state.currency = data?.currency || 'EUR';
+  syncSelectedBillingInterval();
+}
+
+async function fetchPlansPayload(path, headers = {}) {
+  const resp = await fetch(`${props.apiBase}${path}`, { headers });
+  const data = await resp.json().catch(() => null);
+  return { resp, data };
+}
+
 async function loadPlans({ keepNotice = false } = {}) {
   errorState.value = null;
   if (!keepNotice) noticeState.value = null;
   addDebugLog('plans_request_started');
-  const resp = await fetch(`${props.apiBase}/plans?include_all_intervals=true`, {
-    headers: { Authorization: `Bearer ${props.token}` }
-  });
-  addDebugLog('plans_response_received', { ok: resp.ok, status: resp.status });
-
-  if (!resp.ok) {
-    setError('subscription.actionLabels.unableToLoadPlans');
-    return;
+  try {
+    const { resp, data } = await fetchPlansPayload('/plans?include_all_intervals=true', {
+      Authorization: `Bearer ${props.token}`
+    });
+    addDebugLog('plans_response_received', { ok: resp.ok, status: resp.status, source: 'authorized' });
+    if (resp.ok) {
+      applyPlansPayload(data);
+      return;
+    }
+    addDebugLog('plans_request_failed', {
+      status: resp.status,
+      error: data?.error || null,
+      source: 'authorized'
+    });
+  } catch (err) {
+    console.error(err);
+    addDebugLog('plans_request_failed', {
+      status: null,
+      error: err?.message || 'unknown_error',
+      source: 'authorized'
+    });
   }
 
-  const data = await resp.json();
-  state.plans = data.plans || [];
-  state.user = data.user;
-  state.currency = data.currency || 'EUR';
-  state.usage = data.usage || null;
-  syncSelectedBillingInterval();
+  try {
+    addDebugLog('plans_public_fallback_started');
+    const { resp, data } = await fetchPlansPayload('/public/plans?include_all_intervals=true');
+    addDebugLog('plans_response_received', { ok: resp.ok, status: resp.status, source: 'public' });
+    if (!resp.ok) {
+      setError('subscription.actionLabels.unableToLoadPlans');
+      return;
+    }
+    applyPlansPayload(data, { includeUserState: false });
+  } catch (err) {
+    console.error(err);
+    addDebugLog('plans_request_failed', {
+      status: null,
+      error: err?.message || 'unknown_error',
+      source: 'public'
+    });
+    setError('subscription.actionLabels.unableToLoadPlans');
+  }
 }
 
 async function subscribe(tier, billingIntervalRaw = BILLING_INTERVAL_MONTH) {

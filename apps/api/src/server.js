@@ -519,6 +519,44 @@ async function getUserUsageSummary(chatIdRaw) {
   return rows[0] || null;
 }
 
+function serializePlanCatalogRows(rows, { includeStripePriceId = false } = {}) {
+  return (rows || [])
+    .filter((row) => row?.currency && row?.amount_cents != null && row?.billing_interval)
+    .map((row) => ({
+      tier: row.tier,
+      voice_seconds_limit: row.voice_seconds_limit,
+      voice_limit_period: row.voice_limit_period,
+      currency: row.currency,
+      amount_cents: row.amount_cents,
+      billing_interval: row.billing_interval,
+      ...(includeStripePriceId ? { stripe_price_id: row.stripe_price_id || null } : {})
+    }));
+}
+
+async function loadPlanCatalog(currency, includeAllIntervals, { includeStripePriceId = false } = {}) {
+  const stripePriceSelect = includeStripePriceId ? ', pp.stripe_price_id' : '';
+  const { rows } = await pool.query(
+    `SELECT p.tier, p.voice_seconds_limit, p.voice_limit_period,
+            pp.currency, pp.amount_cents, pp.billing_interval${stripePriceSelect}
+       FROM plans p
+       LEFT JOIN plan_prices pp
+         ON p.tier = pp.tier
+        AND pp.currency = $1
+        AND pp.active = true
+        AND ($2::boolean = true OR pp.billing_interval = 'month')
+      WHERE p.tier IN ('pro')
+      ORDER BY p.tier,
+               CASE
+                 WHEN pp.billing_interval = 'month' THEN 0
+                 WHEN pp.billing_interval = 'year' THEN 1
+                 ELSE 2
+               END`,
+    [currency, includeAllIntervals]
+  );
+
+  return serializePlanCatalogRows(rows, { includeStripePriceId });
+}
+
 async function getUserStreakSummary(chatIdRaw) {
   const chatId = Number(chatIdRaw);
   if (!Number.isFinite(chatId)) {
@@ -4406,59 +4444,56 @@ app.get('/plans', requireAuth, async (req, res) => {
     req.query.include_all_intervals ?? req.query.includeAllIntervals
   );
   const chatId = req.auth.chatId;
+  const plans = await loadPlanCatalog(currency, includeAllIntervals, { includeStripePriceId: true });
 
-  const { rows: userRows } = await pool.query(
-    `SELECT plan_tier, plan_expires_at, plan_autorenew, pending_plan_tier, pending_plan_effective_at,
-            override_plan_tier, override_expires_at, billing_currency, stripe_subscription_status
-       FROM users
-      WHERE chat_id = $1
-      LIMIT 1`,
-    [chatId]
-  );
+  try {
+    const { rows: userRows } = await pool.query(
+      `SELECT plan_tier, plan_expires_at, plan_autorenew, pending_plan_tier, pending_plan_effective_at,
+              override_plan_tier, override_expires_at, billing_currency, stripe_subscription_status
+         FROM users
+        WHERE chat_id = $1
+        LIMIT 1`,
+      [chatId]
+    );
 
-  const { rows: plans } = await pool.query(
-    `SELECT p.tier, p.voice_seconds_limit, p.voice_limit_period,
-            pp.currency, pp.amount_cents, pp.billing_interval, pp.stripe_price_id
-       FROM plans p
-       LEFT JOIN plan_prices pp
-         ON p.tier = pp.tier
-        AND pp.currency = $1
-        AND pp.active = true
-        AND ($2::boolean = true OR pp.billing_interval = 'month')
-      WHERE p.tier IN ('pro')
-      ORDER BY p.tier,
-               CASE
-                 WHEN pp.billing_interval = 'month' THEN 0
-                 WHEN pp.billing_interval = 'year' THEN 1
-                 ELSE 2
-               END`,
-    [currency, includeAllIntervals]
-  );
+    const user = userRows[0] || null;
+    const usage = user ? await getUserUsageSummary(chatId) : null;
+    const effectiveTier = (usage?.tier || user?.plan_tier || 'free').toString().trim().toLowerCase();
+    if (user && effectiveTier !== 'pro') {
+      await recordActionEventSafe({
+        chatId,
+        botKey: req.auth?.botKey || null,
+        actionType: 'paywall_shown',
+        source: 'api',
+        idempotencyKey: `paywall_shown:${chatId}`,
+        properties: {
+          tier: effectiveTier,
+          currency,
+          embedded_checkout: null,
+          screen: 'plans'
+        }
+      });
+    }
 
-  const usage = userRows[0] ? await getUserUsageSummary(chatId) : null;
-
-  const effectiveTier = (usage?.tier || userRows[0]?.plan_tier || 'free').toString().trim().toLowerCase();
-  if (userRows[0] && effectiveTier !== 'pro') {
-    await recordActionEventSafe({
+    return res.json({
+      currency,
+      user,
+      plans,
+      usage
+    });
+  } catch (err) {
+    console.warn('plans personalized payload failed; returning catalog only', {
       chatId,
       botKey: req.auth?.botKey || null,
-      actionType: 'paywall_shown',
-      source: 'api',
-      idempotencyKey: `paywall_shown:${chatId}`,
-      properties: {
-        tier: effectiveTier,
-        currency,
-        embedded_checkout: null,
-        screen: 'plans'
-      }
+      err: err?.message || String(err)
     });
   }
 
   return res.json({
     currency,
-    user: userRows[0] || null,
+    user: null,
     plans,
-    usage
+    usage: null
   });
 });
 
@@ -4467,39 +4502,12 @@ app.get('/public/plans', async (req, res) => {
   const includeAllIntervals = parseQueryBoolean(
     req.query.include_all_intervals ?? req.query.includeAllIntervals
   );
-
-  const { rows: plans } = await pool.query(
-    `SELECT p.tier, p.voice_seconds_limit, p.voice_limit_period,
-            pp.currency, pp.amount_cents, pp.billing_interval
-       FROM plans p
-       LEFT JOIN plan_prices pp
-         ON p.tier = pp.tier
-        AND pp.currency = $1
-        AND pp.active = true
-        AND ($2::boolean = true OR pp.billing_interval = 'month')
-      WHERE p.tier IN ('pro')
-      ORDER BY p.tier,
-               CASE
-                 WHEN pp.billing_interval = 'month' THEN 0
-                 WHEN pp.billing_interval = 'year' THEN 1
-                 ELSE 2
-               END`,
-    [currency, includeAllIntervals]
-  );
+  const plans = await loadPlanCatalog(currency, includeAllIntervals);
 
   res.setHeader('Cache-Control', 'public, max-age=300');
   return res.json({
     currency,
-    plans: (plans || [])
-      .filter((row) => row?.currency && row?.amount_cents != null && row?.billing_interval)
-      .map((row) => ({
-        tier: row.tier,
-        voice_seconds_limit: row.voice_seconds_limit,
-        voice_limit_period: row.voice_limit_period,
-        currency: row.currency,
-        amount_cents: row.amount_cents,
-        billing_interval: row.billing_interval
-      }))
+    plans
   });
 });
 
