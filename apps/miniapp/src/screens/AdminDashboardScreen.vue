@@ -852,24 +852,10 @@
           </div>
 
           <div class="row">
-            <label class="field grow">
-              <span>Only these chat IDs</span>
-              <textarea
-                v-model="broadcast.chatIdsRaw"
-                rows="3"
-                placeholder="123456789&#10;987654321"
-              />
-              <small class="hint">
-                One Telegram <code>chat_id</code> per line. When filled, broadcast preview/send is limited to these users on the selected bots.
-              </small>
-            </label>
-          </div>
-
-          <div class="row" v-if="botStats.length">
             <div class="field grow">
               <span>Bots</span>
               <small class="hint">Pick at least one bot. A single campaign can only target one base language.</small>
-              <div class="broadcast-groups">
+              <div v-if="botStats.length" class="broadcast-groups">
                 <section
                   class="broadcast-group"
                   v-for="group in broadcastBotGroups"
@@ -898,7 +884,22 @@
                   </div>
                 </section>
               </div>
+              <small v-else class="hint">Bot list is unavailable until admin data is loaded.</small>
             </div>
+          </div>
+
+          <div class="row">
+            <label class="field grow">
+              <span>Only these chat IDs</span>
+              <textarea
+                v-model="broadcast.chatIdsRaw"
+                rows="3"
+                placeholder="123456789&#10;987654321"
+              />
+              <small class="hint">
+                One Telegram <code>chat_id</code> per line. When filled, broadcast preview/send is limited to these users on the selected bots.
+              </small>
+            </label>
           </div>
         </section>
 
