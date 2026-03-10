@@ -19,6 +19,13 @@ const retryOptions = {
 let apiBossPromise = null;
 let workerBossPromise = null;
 
+async function ensureQueues(boss) {
+  await boss.createQueue(QUEUE_ONBOARDING_COMPLETE_SCAN);
+  await boss.createQueue(QUEUE_ONBOARDING_COMPLETE_SEND, retryOptions);
+  await boss.createQueue(QUEUE_BROADCAST_CAMPAIGN_ENQUEUE, retryOptions);
+  await boss.createQueue(QUEUE_BROADCAST_RECIPIENT_SEND, retryOptions);
+}
+
 function createBoss({ enableScheduling }) {
   const boss = new PgBoss({
     connectionString: env.databaseUrl,
@@ -50,6 +57,7 @@ export async function getApiBoss() {
     apiBossPromise = (async () => {
       const boss = createBoss({ enableScheduling: false });
       await boss.start();
+      await ensureQueues(boss);
       return boss;
     })();
   }
@@ -69,6 +77,7 @@ export async function startWorkerBoss() {
     workerBossPromise = (async () => {
       const boss = createBoss({ enableScheduling: true });
       await boss.start();
+      await ensureQueues(boss);
       await boss.schedule(
         QUEUE_ONBOARDING_COMPLETE_SCAN,
         '*/2 * * * *',

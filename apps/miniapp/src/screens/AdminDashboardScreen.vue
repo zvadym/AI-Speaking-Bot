@@ -2362,17 +2362,20 @@ function parseDateLike(raw) {
   return Number.isFinite(d.getTime()) ? d : null;
 }
 
-const utcDateTimeFormat = new Intl.DateTimeFormat(undefined, {
+const ADMIN_TIME_ZONE = 'Europe/Vienna';
+
+const adminDateTimeFormat = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
   month: 'short',
   day: '2-digit',
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
-  timeZone: 'UTC'
+  timeZone: ADMIN_TIME_ZONE,
+  timeZoneName: 'short'
 });
 
-const utcDateTimeFormatWithSeconds = new Intl.DateTimeFormat(undefined, {
+const adminDateTimeFormatWithSeconds = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
   month: 'short',
   day: '2-digit',
@@ -2380,18 +2383,18 @@ const utcDateTimeFormatWithSeconds = new Intl.DateTimeFormat(undefined, {
   minute: '2-digit',
   second: '2-digit',
   hour12: false,
-  timeZone: 'UTC'
+  timeZone: ADMIN_TIME_ZONE,
+  timeZoneName: 'short'
 });
 
-function formatUtcDateTime(raw, { seconds = false } = {}) {
+function formatAdminDateTime(raw, { seconds = false } = {}) {
   const d = parseDateLike(raw);
   if (!d) return raw ? String(raw) : '—';
-  const formatted = (seconds ? utcDateTimeFormatWithSeconds : utcDateTimeFormat).format(d);
-  return `${formatted} UTC`;
+  return (seconds ? adminDateTimeFormatWithSeconds : adminDateTimeFormat).format(d);
 }
 
 function isoStampNow() {
-  return formatUtcDateTime(new Date(), { seconds: true });
+  return formatAdminDateTime(new Date(), { seconds: true });
 }
 
 function formatLastActivity(raw) {
@@ -2408,7 +2411,7 @@ function formatLastActivity(raw) {
 function formatFeedbackTime(raw) {
   const d = parseDateLike(raw);
   if (!d) return 'unknown time';
-  return formatUtcDateTime(d, { seconds: false });
+  return formatAdminDateTime(d, { seconds: false });
 }
 
 function displayTier(rawTier) {
