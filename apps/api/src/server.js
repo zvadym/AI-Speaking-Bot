@@ -1266,8 +1266,8 @@ function broadcastAudienceParams(filters, range) {
 function broadcastAudienceSql(selectSql, suffixSql = '') {
   return `WITH params AS (
       SELECT
-        $10::timestamptz AS from_ts,
-        $11::timestamptz AS to_ts
+        $11::timestamptz AS from_ts,
+        $12::timestamptz AS to_ts
     ),
     effective_users AS (
       SELECT
