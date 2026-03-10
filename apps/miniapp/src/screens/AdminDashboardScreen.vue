@@ -1106,7 +1106,7 @@
         <template v-else>
           <div class="billing-layout">
             <section class="billing-pane">
-              <div class="pane-title">Create price</div>
+              <div class="pane-title">Create currency bundle</div>
               <div class="row">
                 <label class="field">
                   <span>Currency</span>
@@ -1121,21 +1121,24 @@
                 </label>
 
                 <label class="field">
-                  <span>Billing interval</span>
-                  <select v-model="billingCreateDraft.billingInterval">
-                    <option value="month">Monthly</option>
-                    <option value="year">Annual</option>
-                  </select>
-                </label>
-
-                <label class="field">
-                  <span>Amount (minor units)</span>
+                  <span>Monthly amount (minor units)</span>
                   <input
-                    v-model.trim="billingCreateDraft.amountCents"
+                    v-model.trim="billingCreateDraft.monthlyAmountCents"
                     type="number"
                     min="1"
                     step="1"
                     placeholder="1000"
+                  />
+                </label>
+
+                <label class="field">
+                  <span>Annual amount (minor units)</span>
+                  <input
+                    v-model.trim="billingCreateDraft.annualAmountCents"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="10000"
                   />
                 </label>
               </div>
@@ -1156,65 +1159,27 @@
                   <span class="hint">Suggested for bases</span>
                   <strong>{{ billingBaseLanguageListLabel(selectedBillingCreateCurrencyMeta.base_languages) }}</strong>
                 </div>
+                <div class="billing-summary-line">
+                  <span class="hint">Monthly preview</span>
+                  <strong>{{ billingCreateMonthlyAmountCents === null ? '—' : formatBillingAmountMajor(billingCreateMonthlyAmountCents, billingCreateDraft.currency) || billingMinorUnitsLabel(billingCreateMonthlyAmountCents) }}</strong>
+                </div>
+                <div class="billing-summary-line">
+                  <span class="hint">Annual preview</span>
+                  <strong>{{ billingCreateAnnualAmountCents === null ? '—' : formatBillingAmountMajor(billingCreateAnnualAmountCents, billingCreateDraft.currency) || billingMinorUnitsLabel(billingCreateAnnualAmountCents) }}</strong>
+                </div>
               </div>
               <p v-else-if="billingCurrencyError" class="hint error">Currency catalog unavailable: {{ billingCurrencyError }}</p>
               <div class="actions">
                 <button class="btn primary" type="button" :disabled="!canCreateBillingPrice || Boolean(billingMutationBusyId)" @click="createBillingPrice()">
-                  {{ billingMutationMode === 'create' ? 'Creating…' : 'Create price' }}
+                  {{ billingMutationMode === 'create' ? 'Creating…' : 'Create monthly + annual' }}
                 </button>
               </div>
-              <p class="hint">Creates a new recurring Stripe price on the configured product and inserts the active runtime mapping in <code>plan_prices</code>.</p>
+              <p class="hint">Creates both recurring Stripe prices for this currency and inserts the active runtime mappings in <code>plan_prices</code> for monthly and annual checkout.</p>
 
               <div class="billing-mini-summary" v-if="billingLivePriceCount || billingArchivedPrices.length">
                 <span class="query-chip">Live: {{ fmt(billingLivePriceCount) }}</span>
                 <span class="query-chip subtle">Archived: {{ fmt(billingArchivedPrices.length) }}</span>
                 <span class="query-chip subtle">Stripe only: {{ fmt(billingStripeOnlyCount) }}</span>
-              </div>
-            </section>
-
-            <section class="billing-pane">
-              <div class="pane-title">Replace live price</div>
-              <div class="row">
-                <label class="field grow">
-                  <span>Current live price</span>
-                  <select v-model="billingReplaceDraft.priceId">
-                    <option value="">Select a live price…</option>
-                    <option v-for="row in billingReplaceOptions" :key="row.stripe_price_id" :value="row.stripe_price_id">
-                      {{ billingReplaceOptionLabel(row) }}
-                    </option>
-                  </select>
-                </label>
-
-                <label class="field">
-                  <span>New amount (minor units)</span>
-                  <input
-                    v-model.trim="billingReplaceDraft.amountCents"
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="1200"
-                  />
-                </label>
-              </div>
-              <div class="actions">
-                <button class="btn primary" type="button" :disabled="!canReplaceBillingPrice || Boolean(billingMutationBusyId)" @click="replaceBillingPrice()">
-                  {{ billingMutationMode === 'replace' ? 'Replacing…' : 'Replace amount' }}
-                </button>
-              </div>
-              <p class="hint">Replacing creates a new Stripe price on the same product, switches the runtime mapping, and archives the previous Stripe price.</p>
-              <div v-if="selectedBillingReplacePrice" class="billing-summary">
-                <div class="billing-summary-line">
-                  <span class="hint">Selected live price</span>
-                  <strong>{{ billingPriceHeading(selectedBillingReplacePrice) }}</strong>
-                </div>
-                <div class="billing-summary-line">
-                  <span class="hint">Stripe ID</span>
-                  <code>{{ selectedBillingReplacePrice.stripe_price_id }}</code>
-                </div>
-                <div class="billing-summary-line">
-                  <span class="hint">Current amount</span>
-                  <strong>{{ billingAmountLabel(selectedBillingReplacePrice) }}</strong>
-                </div>
               </div>
             </section>
           </div>
@@ -1235,38 +1200,81 @@
 
           <section class="billing-pane">
             <div class="pane-title">Active product prices</div>
-            <p class="hint">Live in checkout means this exact Stripe price is the current runtime mapping in <code>plan_prices</code>. Stripe only means it exists on the product but is not used by checkout. Archive removes a live mapping if one exists.</p>
+            <p class="hint">Each row represents one currency. Replace actions ask for a new amount in minor units, create a fresh Stripe price for that interval, swap the runtime mapping, and archive the previous Stripe price.</p>
 
-            <div v-if="billingActiveGroups.length" class="billing-groups">
-              <section v-for="group in billingActiveGroups" :key="group.interval" class="billing-group">
-                <div class="billing-group-head">
-                  <strong>{{ billingIntervalLabel(group.interval) }}</strong>
-                  <span class="hint">{{ fmt(group.rows.length) }} price{{ group.rows.length === 1 ? '' : 's' }}</span>
-                </div>
-
-                <div class="billing-price-list compact">
-                  <article v-for="row in group.rows" :key="row.stripe_price_id" class="billing-price-card" :class="{ active: row.is_runtime_active }">
-                    <div class="billing-price-card-head">
-                      <strong>{{ billingPriceHeading(row) }}</strong>
-                      <span class="chip" :class="billingStatusClass(row)">{{ billingStatusLabel(row) }}</span>
-                    </div>
-                    <div class="billing-price-card-meta">
-                      <span><code>{{ row.stripe_price_id }}</code></span>
-                      <span v-if="row.created_at">Created: {{ formatAdminDateTime(row.created_at) }}</span>
-                      <span v-if="row.runtime && !row.is_runtime_active">Runtime: <code>{{ row.runtime.stripe_price_id }}</code></span>
-                    </div>
-                    <div class="billing-card-actions">
-                      <button v-if="row.status === 'live'" class="btn" type="button" :disabled="Boolean(billingMutationBusyId)" @click="prefillBillingReplace(row)">
-                        Replace amount
-                      </button>
-                      <button v-if="row.active && row.status !== 'runtime_only'" class="btn danger" type="button" :disabled="billingMutationMode === 'archive' && billingMutationBusyId === row.stripe_price_id" @click="archiveBillingPrice(row)">
-                        {{ billingMutationMode === 'archive' && billingMutationBusyId === row.stripe_price_id ? 'Archiving…' : 'Archive' }}
-                      </button>
-                    </div>
-                    <p v-if="row.stripe_error" class="error">{{ row.stripe_error }}</p>
-                  </article>
-                </div>
-              </section>
+            <div v-if="billingCurrencyRows.length" class="sample-table-wrap">
+              <table class="sample-table billing-table billing-currency-table">
+                <thead>
+                  <tr>
+                    <th>Currency</th>
+                    <th>Monthly price</th>
+                    <th>Annual price</th>
+                    <th class="actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="group in billingCurrencyRows" :key="group.currency">
+                    <td>
+                      <div class="billing-currency-cell">
+                        <strong>{{ billingCurrencyBadge(group.currency) }}</strong>
+                        <span class="hint">{{ group.meta?.name || group.currency }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div v-if="group.monthlyRows.length" class="billing-table-stack">
+                        <div v-for="row in group.monthlyRows" :key="row.stripe_price_id" class="billing-table-card" :class="{ active: row.is_runtime_active }">
+                          <div class="billing-table-card-head">
+                            <strong>{{ billingAmountLabel(row) }}</strong>
+                            <span class="chip" :class="billingStatusClass(row)">{{ billingStatusLabel(row) }}</span>
+                          </div>
+                          <div class="billing-price-card-meta">
+                            <span><code>{{ row.stripe_price_id }}</code></span>
+                            <span v-if="row.created_at">Created: {{ formatAdminDateTime(row.created_at) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <span v-else class="hint">—</span>
+                    </td>
+                    <td>
+                      <div v-if="group.annualRows.length" class="billing-table-stack">
+                        <div v-for="row in group.annualRows" :key="row.stripe_price_id" class="billing-table-card" :class="{ active: row.is_runtime_active }">
+                          <div class="billing-table-card-head">
+                            <strong>{{ billingAmountLabel(row) }}</strong>
+                            <span class="chip" :class="billingStatusClass(row)">{{ billingStatusLabel(row) }}</span>
+                          </div>
+                          <div class="billing-price-card-meta">
+                            <span><code>{{ row.stripe_price_id }}</code></span>
+                            <span v-if="row.created_at">Created: {{ formatAdminDateTime(row.created_at) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <span v-else class="hint">—</span>
+                    </td>
+                    <td class="actions">
+                      <details class="billing-action-menu">
+                        <summary class="btn billing-action-toggle">Show menu</summary>
+                        <div class="billing-action-sheet">
+                          <button v-if="group.monthlyPrimary" class="btn" type="button" :disabled="Boolean(billingMutationBusyId)" @click="replaceBillingPrice(group.monthlyPrimary)">
+                            Replace monthly
+                          </button>
+                          <button v-if="group.annualPrimary" class="btn" type="button" :disabled="Boolean(billingMutationBusyId)" @click="replaceBillingPrice(group.annualPrimary)">
+                            Replace annual
+                          </button>
+                          <button v-if="group.monthlyPrimary" class="btn danger" type="button" :disabled="Boolean(billingMutationBusyId)" @click="archiveBillingPrice(group.monthlyPrimary)">
+                            Archive monthly
+                          </button>
+                          <button v-if="group.annualPrimary" class="btn danger" type="button" :disabled="Boolean(billingMutationBusyId)" @click="archiveBillingPrice(group.annualPrimary)">
+                            Archive annual
+                          </button>
+                          <button v-if="group.monthlyPrimary && group.annualPrimary" class="btn danger" type="button" :disabled="Boolean(billingMutationBusyId)" @click="archiveBillingCurrency(group)">
+                            Archive both
+                          </button>
+                        </div>
+                      </details>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             <p v-else-if="!billingLoading" class="hint">No active monthly or annual Stripe prices found for this product.</p>
@@ -1818,12 +1826,8 @@ const billingMutationMode = ref('');
 const billingSyncSummary = ref(null);
 const billingCreateDraft = reactive({
   currency: '',
-  billingInterval: 'month',
-  amountCents: ''
-});
-const billingReplaceDraft = reactive({
-  priceId: '',
-  amountCents: ''
+  monthlyAmountCents: '',
+  annualAmountCents: ''
 });
 const usersSort = reactive({
   key: 'created_at',
@@ -1863,8 +1867,15 @@ const selectedBillingCreateCurrencyMeta = computed(() => {
   return billingCurrencyOptions.value.find((item) => item?.code === code) || billingCurrencyDetails.value[code] || null;
 });
 
-const billingCreateAmountCents = computed(() => {
-  const value = String(billingCreateDraft.amountCents || '').trim();
+const billingCreateMonthlyAmountCents = computed(() => {
+  const value = String(billingCreateDraft.monthlyAmountCents || '').trim();
+  if (!/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+});
+
+const billingCreateAnnualAmountCents = computed(() => {
+  const value = String(billingCreateDraft.annualAmountCents || '').trim();
   if (!/^\d+$/.test(value)) return null;
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -1873,51 +1884,55 @@ const billingCreateAmountCents = computed(() => {
 const canCreateBillingPrice = computed(() => {
   if (!password.value) return false;
   if (!normalizedBillingCreateCurrency.value) return false;
-  if (!['month', 'year'].includes(String(billingCreateDraft.billingInterval || ''))) return false;
-  if (billingCreateAmountCents.value === null) return false;
+  if (billingCreateMonthlyAmountCents.value === null) return false;
+  if (billingCreateAnnualAmountCents.value === null) return false;
   return true;
 });
 
-const billingReplaceOptions = computed(() =>
-  billingPrices.value.filter((row) => row?.status === 'live')
-);
+const billingCurrencyRows = computed(() => {
+  const grouped = new Map();
+  const activeRows = billingPrices.value.filter((row) => row?.active || row?.is_runtime_active);
 
-const selectedBillingReplacePrice = computed(() =>
-  billingReplaceOptions.value.find((row) => row?.stripe_price_id === billingReplaceDraft.priceId) || null
-);
+  const sortRows = (rows) =>
+    rows.slice().sort((a, b) => {
+      const rankA = a?.is_runtime_active ? 0 : a?.status === 'stripe_only' ? 1 : 2;
+      const rankB = b?.is_runtime_active ? 0 : b?.status === 'stripe_only' ? 1 : 2;
+      if (rankA !== rankB) return rankA - rankB;
+      const createdA = Date.parse(a?.created_at || '') || 0;
+      const createdB = Date.parse(b?.created_at || '') || 0;
+      if (createdA !== createdB) return createdB - createdA;
+      return String(a?.stripe_price_id || '').localeCompare(String(b?.stripe_price_id || ''));
+    });
 
-const billingReplaceAmountCents = computed(() => {
-  const value = String(billingReplaceDraft.amountCents || '').trim();
-  if (!/^\d+$/.test(value)) return null;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-});
+  for (const row of activeRows) {
+    const currency = String(row?.currency || '').trim().toUpperCase();
+    if (!currency) continue;
+    if (!grouped.has(currency)) {
+      grouped.set(currency, {
+        currency,
+        meta: billingCurrencyMeta(currency),
+        monthlyRows: [],
+        annualRows: []
+      });
+    }
+    const bucket = grouped.get(currency);
+    if (row?.billing_interval === 'year') bucket.annualRows.push(row);
+    else bucket.monthlyRows.push(row);
+  }
 
-const canReplaceBillingPrice = computed(() => {
-  if (!password.value) return false;
-  if (!selectedBillingReplacePrice.value?.stripe_price_id) return false;
-  if (billingReplaceAmountCents.value === null) return false;
-  return true;
-});
-
-const billingActiveGroups = computed(() => {
-  const sourceRows = billingPrices.value.filter((row) => row?.active || row?.is_runtime_active);
-  const groups = ['month', 'year']
-    .map((interval) => ({
-      interval,
-      rows: sourceRows
-        .filter((row) => row?.billing_interval === interval)
-        .slice()
-        .sort((a, b) => {
-          const statusRankA = a?.is_runtime_active ? 0 : a?.status === 'stripe_only' ? 1 : 2;
-          const statusRankB = b?.is_runtime_active ? 0 : b?.status === 'stripe_only' ? 1 : 2;
-          if (statusRankA !== statusRankB) return statusRankA - statusRankB;
-          return String(a?.currency || '').localeCompare(String(b?.currency || ''));
-        })
-    }))
-    .filter((group) => group.rows.length > 0);
-
-  return groups;
+  return [...grouped.values()]
+    .map((entry) => {
+      const monthlyRows = sortRows(entry.monthlyRows);
+      const annualRows = sortRows(entry.annualRows);
+      return {
+        ...entry,
+        monthlyRows,
+        annualRows,
+        monthlyPrimary: monthlyRows[0] || null,
+        annualPrimary: annualRows[0] || null
+      };
+    })
+    .sort((a, b) => a.currency.localeCompare(b.currency));
 });
 
 const billingArchivedPrices = computed(() =>
@@ -2819,10 +2834,6 @@ function billingPriceHeading(row) {
   return `${currency} · ${interval} · ${billingAmountLabel(row)}`;
 }
 
-function billingReplaceOptionLabel(row) {
-  return `${billingCurrencyBadge(row?.currency)} · ${billingIntervalLabel(row?.billing_interval)} · ${billingAmountLabel(row)} · ${row?.stripe_price_id || 'missing Stripe ID'}`;
-}
-
 function billingCurrencyOptionLabel(option) {
   const code = String(option?.code || '').trim().toUpperCase();
   if (!code) return 'Unknown currency';
@@ -2863,12 +2874,96 @@ function billingStatusClass(row) {
   return '';
 }
 
-function prefillBillingReplace(row) {
-  if (!row?.stripe_price_id) return;
-  billingReplaceDraft.priceId = String(row.stripe_price_id).trim();
-  billingReplaceDraft.amountCents = row?.amount_cents != null ? String(row.amount_cents) : '';
+async function replaceBillingPrice(row, amountCentsRaw = null) {
+  const priceId = String(row?.stripe_price_id || '').trim();
+  const fallbackAmount = row?.amount_cents != null ? String(row.amount_cents) : '';
+  const promptValue = amountCentsRaw == null
+    ? window.prompt(`New amount in minor units for ${billingPriceHeading(row)}`, fallbackAmount)
+    : String(amountCentsRaw);
+  if (promptValue === null) return;
+
+  const normalizedAmount = String(promptValue || '').trim();
+  if (!/^\d+$/.test(normalizedAmount) || Number(normalizedAmount) <= 0) {
+    billingError.value = 'Replace failed: amount must be a positive integer in minor units.';
+    return;
+  }
+  if (!priceId) return;
+
+  billingMutationBusyId.value = priceId;
+  billingMutationMode.value = 'replace';
   billingError.value = '';
-  billingInfo.value = `Prepared replacement for ${billingPriceHeading(row)}.`;
+  billingInfo.value = '';
+  billingSyncSummary.value = null;
+
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, `/admin/stripe/product-prices/${priceId}/replace`, {
+      method: 'POST',
+      headers,
+      body: {
+        amount_cents: Number(normalizedAmount)
+      }
+    });
+    const replaceInfo = `Replaced ${data?.previous_price_id || priceId} with ${data?.price?.stripe_price_id || 'new Stripe price'}.`;
+    await refreshBillingPrices();
+    billingInfo.value = replaceInfo;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    billingError.value = `Replace failed: ${msg}`;
+  } finally {
+    billingMutationBusyId.value = '';
+    billingMutationMode.value = '';
+  }
+}
+
+async function archiveBillingPrices(rows, label = 'selected prices') {
+  const targets = (Array.isArray(rows) ? rows : [])
+    .filter((row) => row?.stripe_price_id && row?.active && row?.status !== 'runtime_only')
+    .map((row) => ({
+      id: String(row.stripe_price_id).trim(),
+      row
+    }));
+  if (!targets.length) return;
+
+  const confirmed = window.confirm(
+    `Archive ${label}?\n\nThis will set the Stripe price inactive and remove its runtime checkout mapping if one exists.`
+  );
+  if (!confirmed) return;
+
+  billingError.value = '';
+  billingInfo.value = '';
+  billingSyncSummary.value = null;
+
+  try {
+    const headers = adminHeaders();
+    for (const target of targets) {
+      billingMutationBusyId.value = target.id;
+      billingMutationMode.value = 'archive';
+      await apiJson(props.apiBase, `/admin/stripe/product-prices/${target.id}/archive`, {
+        method: 'POST',
+        headers
+      });
+    }
+    await refreshBillingPrices();
+    billingInfo.value = `Archived ${targets.length} price${targets.length === 1 ? '' : 's'} for ${label}.`;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    billingError.value = `Archive failed: ${msg}`;
+  } finally {
+    billingMutationBusyId.value = '';
+    billingMutationMode.value = '';
+  }
+}
+
+async function archiveBillingPrice(row) {
+  await archiveBillingPrices([row], billingPriceHeading(row));
+}
+
+async function archiveBillingCurrency(rowGroup) {
+  const targets = [rowGroup?.monthlyPrimary, rowGroup?.annualPrimary].filter(Boolean);
+  await archiveBillingPrices(targets, `${rowGroup?.currency || 'currency'} prices`);
 }
 
 function userDirectoryLabel(row) {
@@ -3607,13 +3702,6 @@ async function refreshBillingPrices({ resetMessages = false } = {}) {
     billingProductId.value = String(data?.product_id || '').trim();
     billingPrices.value = Array.isArray(data?.prices) ? data.prices : [];
     billingUpdatedAt.value = isoStampNow();
-    if (billingReplaceDraft.priceId) {
-      const hasSelected = billingPrices.value.some((row) => row?.stripe_price_id === billingReplaceDraft.priceId && row?.status === 'live');
-      if (!hasSelected) {
-        billingReplaceDraft.priceId = '';
-        billingReplaceDraft.amountCents = '';
-      }
-    }
   } catch (err) {
     console.error(err);
     billingProductId.value = '';
@@ -3629,7 +3717,7 @@ async function refreshBillingPrices({ resetMessages = false } = {}) {
 async function createBillingPrice() {
   if (!canCreateBillingPrice.value) return;
 
-  billingMutationBusyId.value = `${normalizedBillingCreateCurrency.value}:${billingCreateDraft.billingInterval}`;
+  billingMutationBusyId.value = normalizedBillingCreateCurrency.value;
   billingMutationMode.value = 'create';
   billingError.value = '';
   billingInfo.value = '';
@@ -3642,92 +3730,22 @@ async function createBillingPrice() {
       headers,
       body: {
         currency: normalizedBillingCreateCurrency.value,
-        billing_interval: billingCreateDraft.billingInterval,
-        amount_cents: billingCreateAmountCents.value
+        monthly_amount_cents: billingCreateMonthlyAmountCents.value,
+        annual_amount_cents: billingCreateAnnualAmountCents.value
       }
     });
-    const createdInfo = `Created ${String(data?.price?.currency || normalizedBillingCreateCurrency.value).toUpperCase()} ${billingIntervalLabel(data?.price?.billing_interval || billingCreateDraft.billingInterval)} price ${data?.price?.stripe_price_id || ''}.`;
+    const monthId = data?.prices?.month?.stripe_price_id || 'monthly price';
+    const yearId = data?.prices?.year?.stripe_price_id || 'annual price';
+    const createdInfo = `Created ${String(normalizedBillingCreateCurrency.value || '').toUpperCase()} monthly ${monthId} and annual ${yearId}.`;
     billingCreateDraft.currency = '';
-    billingCreateDraft.billingInterval = 'month';
-    billingCreateDraft.amountCents = '';
+    billingCreateDraft.monthlyAmountCents = '';
+    billingCreateDraft.annualAmountCents = '';
     await refreshBillingPrices();
     billingInfo.value = createdInfo;
   } catch (err) {
     console.error(err);
     const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
     billingError.value = `Create failed: ${msg}`;
-  } finally {
-    billingMutationBusyId.value = '';
-    billingMutationMode.value = '';
-  }
-}
-
-async function replaceBillingPrice() {
-  if (!canReplaceBillingPrice.value) return;
-  const priceId = String(billingReplaceDraft.priceId || '').trim();
-  if (!priceId || billingReplaceAmountCents.value === null) return;
-
-  billingMutationBusyId.value = priceId;
-  billingMutationMode.value = 'replace';
-  billingError.value = '';
-  billingInfo.value = '';
-  billingSyncSummary.value = null;
-
-  try {
-    const headers = adminHeaders();
-    const data = await apiJson(props.apiBase, `/admin/stripe/product-prices/${priceId}/replace`, {
-      method: 'POST',
-      headers,
-      body: {
-        amount_cents: billingReplaceAmountCents.value
-      }
-    });
-    const replaceInfo = `Replaced ${data?.previous_price_id || priceId} with ${data?.price?.stripe_price_id || 'new Stripe price'}.`;
-    billingReplaceDraft.priceId = '';
-    billingReplaceDraft.amountCents = '';
-    await refreshBillingPrices();
-    billingInfo.value = replaceInfo;
-  } catch (err) {
-    console.error(err);
-    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
-    billingError.value = `Replace failed: ${msg}`;
-  } finally {
-    billingMutationBusyId.value = '';
-    billingMutationMode.value = '';
-  }
-}
-
-async function archiveBillingPrice(row) {
-  const priceId = String(row?.stripe_price_id || '').trim();
-  if (!priceId) return;
-  const confirmed = window.confirm(
-    `Archive ${billingPriceHeading(row)}?\n\nThis will set the Stripe price inactive and remove its runtime checkout mapping if one exists.`
-  );
-  if (!confirmed) return;
-
-  billingMutationBusyId.value = priceId;
-  billingMutationMode.value = 'archive';
-  billingError.value = '';
-  billingInfo.value = '';
-  billingSyncSummary.value = null;
-  try {
-    const headers = adminHeaders();
-    const data = await apiJson(props.apiBase, `/admin/stripe/product-prices/${priceId}/archive`, {
-      method: 'POST',
-      headers
-    });
-    const action = data?.removed_runtime ? 'Archived Stripe price and removed runtime mapping.' : 'Archived Stripe price.';
-    const archiveInfo = `${action} (${priceId})`;
-    if (billingReplaceDraft.priceId === priceId) {
-      billingReplaceDraft.priceId = '';
-      billingReplaceDraft.amountCents = '';
-    }
-    await refreshBillingPrices();
-    billingInfo.value = archiveInfo;
-  } catch (err) {
-    console.error(err);
-    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
-    billingError.value = `Archive failed: ${msg}`;
   } finally {
     billingMutationBusyId.value = '';
     billingMutationMode.value = '';
@@ -3961,10 +3979,8 @@ function clearPassword() {
   billingMutationMode.value = '';
   billingSyncSummary.value = null;
   billingCreateDraft.currency = '';
-  billingCreateDraft.billingInterval = 'month';
-  billingCreateDraft.amountCents = '';
-  billingReplaceDraft.priceId = '';
-  billingReplaceDraft.amountCents = '';
+  billingCreateDraft.monthlyAmountCents = '';
+  billingCreateDraft.annualAmountCents = '';
   freeUserTotals.value = {
     free_users_all_time: 0,
     free_users_with_voice_in_range: 0,
@@ -4006,19 +4022,6 @@ watch(excludeSearch, () => {
     excludeLookupTimer = null;
   }, 250);
 });
-
-watch(
-  () => billingReplaceDraft.priceId,
-  (next, prev) => {
-    if (next === prev) return;
-    const row = billingReplaceOptions.value.find((item) => item?.stripe_price_id === next) || null;
-    if (row) {
-      billingReplaceDraft.amountCents = row?.amount_cents != null ? String(row.amount_cents) : '';
-    } else {
-      billingReplaceDraft.amountCents = '';
-    }
-  }
-);
 
 watch(
   () => [
@@ -4768,7 +4771,7 @@ h1 {
 
 .billing-layout {
   display: grid;
-  grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.25fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
@@ -4783,71 +4786,32 @@ h1 {
 }
 
 .billing-mini-summary,
-.billing-sync-stats,
-.billing-card-actions {
+.billing-sync-stats {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 10px;
   align-items: center;
 }
 
-.billing-groups {
-  display: grid;
-  gap: 12px;
-}
-
-.billing-group {
-  display: grid;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(30, 26, 22, 0.08);
-  background: rgba(246, 241, 232, 0.22);
-}
-
-.billing-group-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.billing-price-list {
-  display: grid;
-  gap: 10px;
-  max-height: 560px;
-  overflow: auto;
-  padding-right: 4px;
-}
-
-.billing-price-card {
+.billing-table-card {
   border: 1px solid rgba(30, 26, 22, 0.10);
   background: rgba(255, 255, 255, 0.66);
   border-radius: 14px;
-  padding: 12px;
+  padding: 10px 11px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
   text-align: left;
   font: inherit;
   color: inherit;
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, transform 160ms ease;
 }
 
-.billing-price-card:hover {
-  background: rgba(255, 255, 255, 0.82);
-  border-color: rgba(59, 130, 246, 0.22);
-  box-shadow: 0 16px 34px rgba(20, 18, 16, 0.10);
-  transform: translateY(-1px);
-}
-
-.billing-price-card.active {
+.billing-table-card.active {
   border-color: rgba(31, 107, 99, 0.34);
   background: rgba(31, 107, 99, 0.08);
-  box-shadow: 0 18px 36px rgba(20, 18, 16, 0.12);
+  box-shadow: 0 14px 28px rgba(20, 18, 16, 0.10);
 }
 
-.billing-price-card-head,
+.billing-table-card-head,
 .billing-price-card-meta,
 .billing-summary-line,
 .billing-table-actions {
@@ -4873,21 +4837,60 @@ h1 {
   background: rgba(246, 241, 232, 0.42);
 }
 
-.billing-card-actions .btn,
-.billing-table-actions .btn {
+.billing-table-actions .btn,
+.billing-action-sheet .btn,
+.billing-action-toggle {
   min-inline-size: 0;
   padding: 8px 12px;
   font-size: 12px;
   box-shadow: 0 10px 20px rgba(30, 26, 22, 0.12);
 }
 
-.billing-card-actions {
-  justify-content: flex-end;
-}
-
 .billing-table td:last-child,
 .billing-table th:last-child {
   white-space: normal;
+}
+
+.billing-currency-table td,
+.billing-currency-table th {
+  vertical-align: top;
+}
+
+.billing-currency-cell,
+.billing-table-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.billing-action-menu {
+  position: relative;
+}
+
+.billing-action-menu summary {
+  list-style: none;
+}
+
+.billing-action-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.billing-action-sheet {
+  position: absolute;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 5;
+  min-inline-size: 190px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(255, 253, 248, 0.98);
+  box-shadow: 0 18px 40px rgba(20, 18, 16, 0.16);
+}
+
+.billing-action-sheet .btn {
+  justify-content: flex-start;
 }
 
 .chip.live {

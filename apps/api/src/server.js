@@ -847,6 +847,19 @@ function summarizeBillingEntry({ currency, billing_interval: billingInterval, st
   };
 }
 
+async function archiveStripePriceSafely(priceId) {
+  const normalizedPriceId = String(priceId || '').trim();
+  if (!normalizedPriceId) return;
+  try {
+    await stripe.prices.update(normalizedPriceId, { active: false });
+  } catch (err) {
+    console.warn('Admin Stripe product price cleanup archive failed', {
+      priceId: normalizedPriceId,
+      err: err?.message || String(err)
+    });
+  }
+}
+
 async function getUserStreakSummary(chatIdRaw) {
   const chatId = Number(chatIdRaw);
   if (!Number.isFinite(chatId)) {
@@ -3515,75 +3528,112 @@ app.get('/admin/stripe/product-prices', requireAdmin, async (req, res) => {
 
 app.post('/admin/stripe/product-prices', requireAdmin, async (req, res) => {
   const currency = normalizeCurrencyCode(req.body?.currency);
-  const billingInterval = normalizeBillingInterval(req.body?.billing_interval, null);
-  const amountCents = parsePositiveInteger(req.body?.amount_cents);
+  const monthlyAmountCents = parsePositiveInteger(req.body?.monthly_amount_cents);
+  const annualAmountCents = parsePositiveInteger(req.body?.annual_amount_cents);
 
   if (!currency) {
     return res.status(400).json({ error: 'bad_currency' });
   }
-  if (!billingInterval) {
-    return res.status(400).json({ error: 'bad_billing_interval' });
+  if (monthlyAmountCents === null) {
+    return res.status(400).json({ error: 'bad_monthly_amount_cents' });
   }
-  if (amountCents === null) {
-    return res.status(400).json({ error: 'bad_amount_cents' });
+  if (annualAmountCents === null) {
+    return res.status(400).json({ error: 'bad_annual_amount_cents' });
   }
 
+  let client;
+  const createdPriceIds = [];
   try {
     const productId = getStripeBillingProductId();
     const runtimeCurrency = normalizeRuntimeCurrencyCode(currency);
-    const { rows: existingRows } = await pool.query(
-      `SELECT id, stripe_price_id
+
+    client = await pool.connect();
+    await client.query('BEGIN');
+
+    const { rows: existingRows } = await client.query(
+      `SELECT id, stripe_price_id, billing_interval
          FROM plan_prices
         WHERE tier = 'pro'
           AND currency = $1
-          AND billing_interval = $2
-        LIMIT 1`,
-      [runtimeCurrency, billingInterval]
+          AND billing_interval = ANY($2::text[])`,
+      [runtimeCurrency, ['month', 'year']]
     );
 
-    if (existingRows[0]?.id) {
+    if (existingRows.length > 0) {
+      await client.query('ROLLBACK');
       return res.status(409).json({
         error: 'runtime_price_exists',
-        detail: 'A runtime price already exists for this currency and billing interval.',
-        existing: {
+        detail: 'Runtime prices already exist for this currency.',
+        existing: existingRows.map((row) => ({
           currency,
-          billing_interval: billingInterval,
-          stripe_price_id: existingRows[0].stripe_price_id || null
-        }
+          billing_interval: row.billing_interval,
+          stripe_price_id: row.stripe_price_id || null
+        }))
       });
     }
 
-    const created = await stripe.prices.create({
+    const monthlyPrice = await stripe.prices.create({
       product: productId,
       currency,
-      unit_amount: amountCents,
-      recurring: { interval: billingInterval }
+      unit_amount: monthlyAmountCents,
+      recurring: { interval: 'month' }
     });
+    createdPriceIds.push(monthlyPrice.id);
 
-    await pool.query(
+    const annualPrice = await stripe.prices.create({
+      product: productId,
+      currency,
+      unit_amount: annualAmountCents,
+      recurring: { interval: 'year' }
+    });
+    createdPriceIds.push(annualPrice.id);
+
+    await client.query(
       `INSERT INTO plan_prices (tier, currency, amount_cents, billing_interval, stripe_price_id, active)
-       VALUES ('pro', $1, $2, $3, $4, true)`,
-      [runtimeCurrency, amountCents, billingInterval, created.id]
+       VALUES
+         ('pro', $1, $2, 'month', $3, true),
+         ('pro', $1, $4, 'year', $5, true)`,
+      [runtimeCurrency, monthlyAmountCents, monthlyPrice.id, annualAmountCents, annualPrice.id]
     );
+
+    await client.query('COMMIT');
 
     return res.json({
       product_id: productId,
-      price: summarizeBillingEntry({
-        currency,
-        billing_interval: billingInterval,
-        stripe_price_id: created.id,
-        amount_cents: amountCents
-      })
+      prices: {
+        month: summarizeBillingEntry({
+          currency,
+          billing_interval: 'month',
+          stripe_price_id: monthlyPrice.id,
+          amount_cents: monthlyAmountCents
+        }),
+        year: summarizeBillingEntry({
+          currency,
+          billing_interval: 'year',
+          stripe_price_id: annualPrice.id,
+          amount_cents: annualAmountCents
+        })
+      }
     });
   } catch (err) {
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackErr) {
+        console.error('Admin Stripe product price create rollback failed', rollbackErr);
+      }
+    }
+    await Promise.all(createdPriceIds.map((priceId) => archiveStripePriceSafely(priceId)));
     console.error('Admin Stripe product price create failed', err);
     if (err?.code === '23505') {
       return res.status(409).json({
         error: 'runtime_price_exists',
-        detail: 'A runtime price already exists for this currency and billing interval.'
+        detail: 'Runtime prices already exist for this currency.'
       });
     }
     return billingRouteErrorResponse(res, err, 500);
+  } finally {
+    client?.release();
   }
 });
 
