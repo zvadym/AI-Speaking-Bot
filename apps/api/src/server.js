@@ -1176,6 +1176,8 @@ function normalizeBroadcastFilters(raw) {
   const source = raw && typeof raw === 'object' ? raw : {};
   const usernameRaw = (source.username ?? '').toString().trim();
   const username = usernameRaw ? usernameRaw.slice(0, 64) : null;
+  const chatIds = parseChatIdList(source.chatIds ?? source.chat_ids ?? source.chatIdsCsv ?? source.chat_ids_csv);
+  const normalizedChatIds = chatIds.length > 0 ? chatIds : null;
 
   const plansProvided = Array.isArray(source.plans);
   const plansRaw = plansProvided ? source.plans : [];
@@ -1229,6 +1231,7 @@ function normalizeBroadcastFilters(raw) {
 
   return {
     username,
+    chatIds: normalizedChatIds,
     plans: normalizedPlans,
     lastActivityMode,
     lastActivityDays,
@@ -1241,10 +1244,12 @@ function normalizeBroadcastFilters(raw) {
 }
 
 function broadcastAudienceParams(filters, range) {
+  const chatIds = Array.isArray(filters.chatIds) ? filters.chatIds : null;
   const plans = Array.isArray(filters.plans) ? filters.plans : null;
   const bots = Array.isArray(filters.bots) ? filters.bots : null;
   return [
     filters.username,
+    chatIds,
     plans,
     filters.lastActivityMode,
     filters.lastActivityDays,
@@ -1394,26 +1399,27 @@ function broadcastAudienceSql(selectSql, suffixSql = '') {
         e.streak_days
       FROM enriched e
       WHERE ($1::text IS NULL OR e.username ILIKE ('%' || $1::text || '%'))
-        AND ($2::text[] IS NULL OR e.effective_tier = ANY($2::text[]))
+        AND ($2::bigint[] IS NULL OR e.chat_id = ANY($2::bigint[]))
+        AND ($3::text[] IS NULL OR e.effective_tier = ANY($3::text[]))
         AND (
-          $3::text IS NULL
-          OR ($3::text = 'active_within'
+          $4::text IS NULL
+          OR ($4::text = 'active_within'
               AND e.last_activity_at IS NOT NULL
-              AND e.last_activity_at >= NOW() - make_interval(days => $4::int))
-          OR ($3::text = 'inactive_for'
-              AND (e.last_activity_at IS NULL OR e.last_activity_at < NOW() - make_interval(days => $4::int)))
-          OR ($3::text = 'never_active' AND e.last_activity_at IS NULL)
+              AND e.last_activity_at >= NOW() - make_interval(days => $5::int))
+          OR ($4::text = 'inactive_for'
+              AND (e.last_activity_at IS NULL OR e.last_activity_at < NOW() - make_interval(days => $5::int)))
+          OR ($4::text = 'never_active' AND e.last_activity_at IS NULL)
         )
         AND (
-          $5::text IS NULL
-          OR ($5::text = 'reached' AND e.limit_reached)
-          OR ($5::text = 'percent_gte' AND e.usage_percent >= $6::numeric)
+          $6::text IS NULL
+          OR ($6::text = 'reached' AND e.limit_reached)
+          OR ($6::text = 'percent_gte' AND e.usage_percent >= $7::numeric)
         )
-        AND ($7::text[] IS NULL OR e.bot_key = ANY($7::text[]))
+        AND ($8::text[] IS NULL OR e.bot_key = ANY($8::text[]))
         AND (
-          $8::text IS NULL
-          OR ($8::text = 'gte' AND e.streak_days >= $9::int)
-          OR ($8::text = 'zero' AND e.streak_days = 0)
+          $9::text IS NULL
+          OR ($9::text = 'gte' AND e.streak_days >= $10::int)
+          OR ($9::text = 'zero' AND e.streak_days = 0)
         )
     )
     SELECT ${selectSql}
@@ -1446,7 +1452,7 @@ async function getBroadcastAudiencePreview(filters, range, sampleLimit = 20) {
      f.streak_days,
      ROUND(f.usage_percent, 2)::numeric AS usage_percent,
      f.limit_reached`,
-    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $12::int'
+    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $13::int'
   );
 
   const [countRes, sampleRes] = await Promise.all([
@@ -1467,7 +1473,7 @@ async function listBroadcastRecipients(filters, range, limit) {
      f.username,
      f.first_name,
      f.bot_key`,
-    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $12::int'
+    'ORDER BY f.chat_id ASC, f.bot_key ASC LIMIT $13::int'
   );
   const { rows } = await pool.query(query, [...params, limit]);
   return rows;
@@ -1635,6 +1641,7 @@ async function claimOnboardingCompleteDispatches(taskType, limit) {
 async function reportScheduledTaskDispatchResults(taskType, results) {
   const client = await pool.connect();
   let updatedCount = 0;
+  const deliveryUpdates = [];
   try {
     await client.query('BEGIN');
     for (const result of results) {
@@ -1661,9 +1668,31 @@ async function reportScheduledTaskDispatchResults(taskType, results) {
       const dispatch = rows[0];
       if (!dispatch) continue;
 
+      deliveryUpdates.push({
+        chatId: Number(dispatch.chat_id),
+        botKey: dispatch.bot_key,
+        status: dispatch.status,
+        error: result.error
+      });
       updatedCount += 1;
     }
     await client.query('COMMIT');
+
+    for (const update of deliveryUpdates) {
+      if (!Number.isFinite(update.chatId) || update.chatId <= 0) continue;
+      const inactiveReason = update.status === 'failed'
+        ? classifyPermanentTelegramFailure({ message: update.error })
+        : null;
+      if (update.status === 'sent' || inactiveReason) {
+        await updateUserDeliveryState(update.chatId, {
+          status: update.status,
+          lastError: update.error,
+          inactiveReason,
+          botKey: update.botKey
+        });
+      }
+    }
+
     return { updatedCount };
   } catch (err) {
     await client.query('ROLLBACK');

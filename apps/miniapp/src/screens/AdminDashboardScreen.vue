@@ -851,6 +851,20 @@
             </div>
           </div>
 
+          <div class="row">
+            <label class="field grow">
+              <span>Only these chat IDs</span>
+              <textarea
+                v-model="broadcast.chatIdsRaw"
+                rows="3"
+                placeholder="123456789&#10;987654321"
+              />
+              <small class="hint">
+                One Telegram <code>chat_id</code> per line. When filled, broadcast preview/send is limited to these users on the selected bots.
+              </small>
+            </label>
+          </div>
+
           <div class="row" v-if="botStats.length">
             <div class="field grow">
               <span>Bots</span>
@@ -1635,6 +1649,7 @@ const broadcast = reactive({
   mediaFileIds: {},
   messageText: '',
   inlineKeyboardJson: '',
+  chatIdsRaw: '',
   botKeys: []
 });
 
@@ -2744,11 +2759,32 @@ const selectedPlans = computed(() => {
 
 const hasAnySelectedPlan = computed(() => selectedPlans.value.length > 0);
 const hasSelectedBots = computed(() => selectedBroadcastBotKeys.value.length > 0);
+const selectedBroadcastChatIds = computed(() => {
+  const parts = String(broadcast.chatIdsRaw ?? '').split(/\r?\n/g);
+  const seen = new Set();
+  const out = [];
+  for (const part of parts) {
+    const chatId = normalizeChatIdCandidate(part);
+    if (!chatId || seen.has(chatId)) continue;
+    seen.add(chatId);
+    out.push(chatId);
+    if (out.length >= 200) break;
+  }
+  return out;
+});
 
 const broadcastUploadBots = computed(() => selectedBroadcastBotKeys.value.slice());
 
 function broadcastFiltersPayload() {
   const filters = {};
+  if (selectedBroadcastChatIds.value.length > 0) {
+    filters.chatIds = selectedBroadcastChatIds.value.slice();
+    if (selectedBroadcastBotKeys.value.length > 0) {
+      filters.bots = selectedBroadcastBotKeys.value.slice();
+    }
+    return filters;
+  }
+
   if (broadcast.username.trim()) filters.username = broadcast.username.trim();
 
   if (selectedPlans.value.length > 0 && selectedPlans.value.length < 2) {
@@ -3315,6 +3351,7 @@ watch(
     broadcast.usagePercent,
     broadcast.streakMode,
     broadcast.streakDays,
+    broadcast.chatIdsRaw,
     rangePreset.value,
     fromDate.value,
     toDate.value,
