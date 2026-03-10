@@ -18,7 +18,7 @@
             {{ password ? 'Password set' : 'Locked' }}
           </span>
           <span v-if="activeStamp" class="status-pill subtle">Updated: {{ activeStamp }}</span>
-          <button class="btn danger" type="button" :disabled="loading || feedbackLoading || usersLoading || previewLoading" @click="clearPassword">
+          <button class="btn danger" type="button" :disabled="loading || feedbackLoading || usersLoading || previewLoading || billingLoading || Boolean(billingMutationBusyId)" @click="clearPassword">
             Clear
           </button>
         </div>
@@ -37,6 +37,9 @@
       </button>
       <button class="tab-btn" :class="{ active: activeTab === 'messaging' }" type="button" role="tab" @click="activeTab = 'messaging'">
         Messaging
+      </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'billing' }" type="button" role="tab" @click="activeTab = 'billing'">
+        Billing
       </button>
       <button class="tab-btn" :class="{ active: activeTab === 'feedback' }" type="button" role="tab" @click="activeTab = 'feedback'">
         Feedback
@@ -1079,6 +1082,205 @@
       </div>
     </section>
 
+    <section class="card panel" v-else-if="activeTab === 'billing'">
+      <header class="panel-head">
+        <div>
+          <div class="panel-kicker">Billing</div>
+          <h2 class="panel-title">Stripe product prices</h2>
+          <p class="panel-sub">Create monthly and yearly recurring Stripe prices for the configured product, switch which one is live in checkout, and sync Stripe back into <code>plan_prices</code> for tier <code>pro</code>.</p>
+        </div>
+        <div class="panel-actions">
+          <span class="status-pill subtle" v-if="billingProductId">Product: <code>{{ billingProductId }}</code></span>
+          <span class="status-pill subtle" v-if="billingUpdatedAt">Updated: {{ billingUpdatedAt }}</span>
+          <button class="btn primary" type="button" :disabled="!password || billingLoading" @click="refreshBillingPrices({ resetMessages: true })">
+            {{ billingLoading ? 'Loading…' : 'Refresh' }}
+          </button>
+          <button class="btn" type="button" :disabled="!password || billingLoading || Boolean(billingMutationBusyId)" @click="syncBillingFromStripe()">
+            {{ billingMutationMode === 'sync' ? 'Syncing…' : 'Sync from Stripe' }}
+          </button>
+        </div>
+      </header>
+
+      <div class="panel-body">
+        <div v-if="!password" class="callout">Enter admin password above to load Stripe prices.</div>
+        <template v-else>
+          <div class="billing-layout">
+            <section class="billing-pane">
+              <div class="pane-title">Create price</div>
+              <div class="row">
+                <label class="field">
+                  <span>Currency</span>
+                  <input
+                    v-model.trim="billingCreateDraft.currency"
+                    type="text"
+                    autocomplete="off"
+                    inputmode="text"
+                    maxlength="3"
+                    placeholder="eur"
+                  />
+                </label>
+
+                <label class="field">
+                  <span>Billing interval</span>
+                  <select v-model="billingCreateDraft.billingInterval">
+                    <option value="month">Monthly</option>
+                    <option value="year">Annual</option>
+                  </select>
+                </label>
+
+                <label class="field">
+                  <span>Amount (minor units)</span>
+                  <input
+                    v-model.trim="billingCreateDraft.amountCents"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="1000"
+                  />
+                </label>
+              </div>
+              <div class="actions">
+                <button class="btn primary" type="button" :disabled="!canCreateBillingPrice || Boolean(billingMutationBusyId)" @click="createBillingPrice()">
+                  {{ billingMutationMode === 'create' ? 'Creating…' : 'Create price' }}
+                </button>
+              </div>
+              <p class="hint">Creates a new recurring Stripe price on the configured product and inserts the active runtime mapping in <code>plan_prices</code>.</p>
+
+              <div class="billing-mini-summary" v-if="billingLivePriceCount || billingArchivedPrices.length">
+                <span class="query-chip">Live: {{ fmt(billingLivePriceCount) }}</span>
+                <span class="query-chip subtle">Archived: {{ fmt(billingArchivedPrices.length) }}</span>
+                <span class="query-chip subtle">Stripe only: {{ fmt(billingStripeOnlyCount) }}</span>
+              </div>
+            </section>
+
+            <section class="billing-pane">
+              <div class="pane-title">Replace live price</div>
+              <div class="row">
+                <label class="field grow">
+                  <span>Current live price</span>
+                  <select v-model="billingReplaceDraft.priceId">
+                    <option value="">Select a live price…</option>
+                    <option v-for="row in billingReplaceOptions" :key="row.stripe_price_id" :value="row.stripe_price_id">
+                      {{ billingReplaceOptionLabel(row) }}
+                    </option>
+                  </select>
+                </label>
+
+                <label class="field">
+                  <span>New amount (minor units)</span>
+                  <input
+                    v-model.trim="billingReplaceDraft.amountCents"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="1200"
+                  />
+                </label>
+              </div>
+              <div class="actions">
+                <button class="btn primary" type="button" :disabled="!canReplaceBillingPrice || Boolean(billingMutationBusyId)" @click="replaceBillingPrice()">
+                  {{ billingMutationMode === 'replace' ? 'Replacing…' : 'Replace amount' }}
+                </button>
+              </div>
+              <p class="hint">Replacing creates a new Stripe price on the same product, switches the runtime mapping, and archives the previous Stripe price.</p>
+              <div v-if="selectedBillingReplacePrice" class="billing-summary">
+                <div class="billing-summary-line">
+                  <span class="hint">Selected live price</span>
+                  <strong>{{ billingPriceHeading(selectedBillingReplacePrice) }}</strong>
+                </div>
+                <div class="billing-summary-line">
+                  <span class="hint">Stripe ID</span>
+                  <code>{{ selectedBillingReplacePrice.stripe_price_id }}</code>
+                </div>
+                <div class="billing-summary-line">
+                  <span class="hint">Current amount</span>
+                  <strong>{{ billingAmountLabel(selectedBillingReplacePrice) }}</strong>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div v-if="billingError" class="callout error">{{ billingError }}</div>
+          <div v-if="billingInfo" class="callout">{{ billingInfo }}</div>
+          <div v-if="billingSyncSummary" class="callout">
+            <div class="billing-summary-copy">
+              <strong>Sync summary</strong>
+              <div class="billing-sync-stats">
+                <span>Created: {{ fmt(billingSyncSummary.created?.length || 0) }}</span>
+                <span>Updated: {{ fmt(billingSyncSummary.updated?.length || 0) }}</span>
+                <span>Removed: {{ fmt(billingSyncSummary.removed?.length || 0) }}</span>
+                <span>Unchanged: {{ fmt(billingSyncSummary.unchanged?.length || 0) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <section class="billing-pane">
+            <div class="pane-title">Active product prices</div>
+            <p class="hint">Live in checkout means this exact Stripe price is the current runtime mapping in <code>plan_prices</code>. Stripe only means it exists on the product but is not used by checkout. Archive removes a live mapping if one exists.</p>
+
+            <div v-if="billingActiveGroups.length" class="billing-groups">
+              <section v-for="group in billingActiveGroups" :key="group.interval" class="billing-group">
+                <div class="billing-group-head">
+                  <strong>{{ billingIntervalLabel(group.interval) }}</strong>
+                  <span class="hint">{{ fmt(group.rows.length) }} price{{ group.rows.length === 1 ? '' : 's' }}</span>
+                </div>
+
+                <div class="billing-price-list compact">
+                  <article v-for="row in group.rows" :key="row.stripe_price_id" class="billing-price-card" :class="{ active: row.is_runtime_active }">
+                    <div class="billing-price-card-head">
+                      <strong>{{ billingPriceHeading(row) }}</strong>
+                      <span class="chip" :class="billingStatusClass(row)">{{ billingStatusLabel(row) }}</span>
+                    </div>
+                    <div class="billing-price-card-meta">
+                      <span><code>{{ row.stripe_price_id }}</code></span>
+                      <span v-if="row.created_at">Created: {{ formatAdminDateTime(row.created_at) }}</span>
+                      <span v-if="row.runtime && !row.is_runtime_active">Runtime: <code>{{ row.runtime.stripe_price_id }}</code></span>
+                    </div>
+                    <div class="billing-card-actions">
+                      <button v-if="row.status === 'live'" class="btn" type="button" :disabled="Boolean(billingMutationBusyId)" @click="prefillBillingReplace(row)">
+                        Replace amount
+                      </button>
+                      <button v-if="row.active && row.status !== 'runtime_only'" class="btn danger" type="button" :disabled="billingMutationMode === 'archive' && billingMutationBusyId === row.stripe_price_id" @click="archiveBillingPrice(row)">
+                        {{ billingMutationMode === 'archive' && billingMutationBusyId === row.stripe_price_id ? 'Archiving…' : 'Archive' }}
+                      </button>
+                    </div>
+                    <p v-if="row.stripe_error" class="error">{{ row.stripe_error }}</p>
+                  </article>
+                </div>
+              </section>
+            </div>
+
+            <p v-else-if="!billingLoading" class="hint">No active monthly or annual Stripe prices found for this product.</p>
+          </section>
+
+          <section class="billing-pane">
+            <div class="pane-title">Archived prices</div>
+            <div v-if="billingArchivedPrices.length" class="sample-table-wrap">
+              <table class="sample-table billing-table">
+                <thead>
+                  <tr>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Stripe ID</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in billingArchivedPrices" :key="row.stripe_price_id">
+                    <td>{{ billingPriceHeading(row) }}</td>
+                    <td>{{ billingStatusLabel(row) }}</td>
+                    <td><code>{{ row.stripe_price_id }}</code></td>
+                    <td>{{ row.created_at ? formatAdminDateTime(row.created_at) : '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p v-else-if="!billingLoading" class="hint">No archived prices on the configured product.</p>
+          </section>
+        </template>
+      </div>
+    </section>
+
     <section class="card panel" v-else-if="activeTab === 'feedback'">
       <header class="panel-head">
         <div>
@@ -1287,6 +1489,7 @@
       <span v-else-if="activeTab === 'users' && usersUpdatedAt" class="stamp">Updated: {{ usersUpdatedAt }}</span>
       <span v-else-if="activeTab === 'feedback' && feedbackUpdatedAt" class="stamp">Updated: {{ feedbackUpdatedAt }}</span>
       <span v-else-if="activeTab === 'messaging' && previewUpdatedAt" class="stamp">Updated: {{ previewUpdatedAt }}</span>
+      <span v-else-if="activeTab === 'billing' && billingUpdatedAt" class="stamp">Updated: {{ billingUpdatedAt }}</span>
     </footer>
   </div>
 </template>
@@ -1582,6 +1785,24 @@ const usersUpdatedAt = ref('');
 const userDeleteBusyId = ref('');
 const userDeleteError = ref('');
 const userDeleteInfo = ref('');
+const billingProductId = ref('');
+const billingPrices = ref([]);
+const billingLoading = ref(false);
+const billingError = ref('');
+const billingInfo = ref('');
+const billingUpdatedAt = ref('');
+const billingMutationBusyId = ref('');
+const billingMutationMode = ref('');
+const billingSyncSummary = ref(null);
+const billingCreateDraft = reactive({
+  currency: '',
+  billingInterval: 'month',
+  amountCents: ''
+});
+const billingReplaceDraft = reactive({
+  priceId: '',
+  amountCents: ''
+});
 const usersSort = reactive({
   key: 'created_at',
   dir: 'desc' // 'asc' | 'desc'
@@ -1594,9 +1815,84 @@ const activeStamp = computed(() => {
   if (activeTab.value === 'analytics') return lastUpdated.value || '';
   if (activeTab.value === 'users') return usersUpdatedAt.value || '';
   if (activeTab.value === 'messaging') return previewUpdatedAt.value || '';
+  if (activeTab.value === 'billing') return billingUpdatedAt.value || '';
   if (activeTab.value === 'feedback') return feedbackUpdatedAt.value || '';
   return '';
 });
+
+const normalizedBillingCreateCurrency = computed(() => {
+  const value = String(billingCreateDraft.currency || '').trim().toLowerCase();
+  return /^[a-z]{3}$/.test(value) ? value : '';
+});
+
+const billingCreateAmountCents = computed(() => {
+  const value = String(billingCreateDraft.amountCents || '').trim();
+  if (!/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+});
+
+const canCreateBillingPrice = computed(() => {
+  if (!password.value) return false;
+  if (!normalizedBillingCreateCurrency.value) return false;
+  if (!['month', 'year'].includes(String(billingCreateDraft.billingInterval || ''))) return false;
+  if (billingCreateAmountCents.value === null) return false;
+  return true;
+});
+
+const billingReplaceOptions = computed(() =>
+  billingPrices.value.filter((row) => row?.status === 'live')
+);
+
+const selectedBillingReplacePrice = computed(() =>
+  billingReplaceOptions.value.find((row) => row?.stripe_price_id === billingReplaceDraft.priceId) || null
+);
+
+const billingReplaceAmountCents = computed(() => {
+  const value = String(billingReplaceDraft.amountCents || '').trim();
+  if (!/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+});
+
+const canReplaceBillingPrice = computed(() => {
+  if (!password.value) return false;
+  if (!selectedBillingReplacePrice.value?.stripe_price_id) return false;
+  if (billingReplaceAmountCents.value === null) return false;
+  return true;
+});
+
+const billingActiveGroups = computed(() => {
+  const sourceRows = billingPrices.value.filter((row) => row?.active || row?.is_runtime_active);
+  const groups = ['month', 'year']
+    .map((interval) => ({
+      interval,
+      rows: sourceRows
+        .filter((row) => row?.billing_interval === interval)
+        .slice()
+        .sort((a, b) => {
+          const statusRankA = a?.is_runtime_active ? 0 : a?.status === 'stripe_only' ? 1 : 2;
+          const statusRankB = b?.is_runtime_active ? 0 : b?.status === 'stripe_only' ? 1 : 2;
+          if (statusRankA !== statusRankB) return statusRankA - statusRankB;
+          return String(a?.currency || '').localeCompare(String(b?.currency || ''));
+        })
+    }))
+    .filter((group) => group.rows.length > 0);
+
+  return groups;
+});
+
+const billingArchivedPrices = computed(() =>
+  billingPrices.value.filter((row) => !row?.active && !row?.is_runtime_active)
+);
+
+const billingLivePriceCount = computed(() =>
+  billingPrices.value.filter((row) => row?.status === 'live').length
+);
+
+const billingStripeOnlyCount = computed(() =>
+  billingPrices.value.filter((row) => row?.active && row?.status === 'stripe_only').length
+);
 
 function usersSortIndicator(key) {
   if (usersSort.key !== key) return '';
@@ -2421,6 +2717,56 @@ function displayTier(rawTier) {
   return 'pro';
 }
 
+function billingIntervalLabel(rawInterval) {
+  const value = String(rawInterval || '').trim().toLowerCase();
+  if (value === 'month') return 'monthly';
+  if (value === 'year') return 'annual';
+  return value || 'custom';
+}
+
+function billingAmountLabel(row) {
+  const currency = String(row?.currency || '').trim().toUpperCase();
+  const amount = Number.isFinite(Number(row?.amount_cents)) ? Number(row.amount_cents) : null;
+  if (!currency || amount === null) return '—';
+  return `${currency} ${fmt(amount)} minor`;
+}
+
+function billingPriceHeading(row) {
+  const currency = String(row?.currency || '').trim().toUpperCase() || '—';
+  const interval = billingIntervalLabel(row?.billing_interval);
+  return `${currency} · ${interval} · ${billingAmountLabel(row)}`;
+}
+
+function billingReplaceOptionLabel(row) {
+  return `${String(row?.currency || '').toUpperCase()} · ${billingIntervalLabel(row?.billing_interval)} · ${billingAmountLabel(row)} · ${row?.stripe_price_id || 'missing Stripe ID'}`;
+}
+
+function billingStatusLabel(row) {
+  const status = String(row?.status || '').trim().toLowerCase();
+  if (status === 'live') return 'Live in checkout';
+  if (status === 'stripe_only') return 'Stripe only';
+  if (status === 'archived') return 'Archived';
+  if (status === 'runtime_only') return 'Backend only';
+  return status || 'Unknown';
+}
+
+function billingStatusClass(row) {
+  const status = String(row?.status || '').trim().toLowerCase();
+  if (status === 'live') return 'live';
+  if (status === 'stripe_only') return 'stripe-only';
+  if (status === 'archived') return 'archived';
+  if (status === 'runtime_only') return 'runtime-only';
+  return '';
+}
+
+function prefillBillingReplace(row) {
+  if (!row?.stripe_price_id) return;
+  billingReplaceDraft.priceId = String(row.stripe_price_id).trim();
+  billingReplaceDraft.amountCents = row?.amount_cents != null ? String(row.amount_cents) : '';
+  billingError.value = '';
+  billingInfo.value = `Prepared replacement for ${billingPriceHeading(row)}.`;
+}
+
 function userDirectoryLabel(row) {
   const username = (row?.username ?? '').toString().trim();
   if (username) return `@${username}`;
@@ -3125,6 +3471,191 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
   }
 }
 
+async function refreshBillingPrices({ resetMessages = false } = {}) {
+  if (!password.value) return;
+  billingLoading.value = true;
+  billingProductId.value = '';
+  billingMutationBusyId.value = '';
+  billingMutationMode.value = '';
+  billingError.value = '';
+  if (resetMessages) {
+    billingInfo.value = '';
+    billingSyncSummary.value = null;
+  }
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, '/admin/stripe/product-prices', { headers });
+    billingProductId.value = String(data?.product_id || '').trim();
+    billingPrices.value = Array.isArray(data?.prices) ? data.prices : [];
+    billingUpdatedAt.value = isoStampNow();
+    if (billingReplaceDraft.priceId) {
+      const hasSelected = billingPrices.value.some((row) => row?.stripe_price_id === billingReplaceDraft.priceId && row?.status === 'live');
+      if (!hasSelected) {
+        billingReplaceDraft.priceId = '';
+        billingReplaceDraft.amountCents = '';
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    billingProductId.value = '';
+    billingPrices.value = [];
+    billingUpdatedAt.value = '';
+    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    billingError.value = `Failed to load Stripe prices: ${msg}`;
+  } finally {
+    billingLoading.value = false;
+  }
+}
+
+async function createBillingPrice() {
+  if (!canCreateBillingPrice.value) return;
+
+  billingMutationBusyId.value = `${normalizedBillingCreateCurrency.value}:${billingCreateDraft.billingInterval}`;
+  billingMutationMode.value = 'create';
+  billingError.value = '';
+  billingInfo.value = '';
+  billingSyncSummary.value = null;
+
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, '/admin/stripe/product-prices', {
+      method: 'POST',
+      headers,
+      body: {
+        currency: normalizedBillingCreateCurrency.value,
+        billing_interval: billingCreateDraft.billingInterval,
+        amount_cents: billingCreateAmountCents.value
+      }
+    });
+    const createdInfo = `Created ${String(data?.price?.currency || normalizedBillingCreateCurrency.value).toUpperCase()} ${billingIntervalLabel(data?.price?.billing_interval || billingCreateDraft.billingInterval)} price ${data?.price?.stripe_price_id || ''}.`;
+    billingCreateDraft.currency = '';
+    billingCreateDraft.billingInterval = 'month';
+    billingCreateDraft.amountCents = '';
+    await refreshBillingPrices();
+    billingInfo.value = createdInfo;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    billingError.value = `Create failed: ${msg}`;
+  } finally {
+    billingMutationBusyId.value = '';
+    billingMutationMode.value = '';
+  }
+}
+
+async function replaceBillingPrice() {
+  if (!canReplaceBillingPrice.value) return;
+  const priceId = String(billingReplaceDraft.priceId || '').trim();
+  if (!priceId || billingReplaceAmountCents.value === null) return;
+
+  billingMutationBusyId.value = priceId;
+  billingMutationMode.value = 'replace';
+  billingError.value = '';
+  billingInfo.value = '';
+  billingSyncSummary.value = null;
+
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, `/admin/stripe/product-prices/${priceId}/replace`, {
+      method: 'POST',
+      headers,
+      body: {
+        amount_cents: billingReplaceAmountCents.value
+      }
+    });
+    const replaceInfo = `Replaced ${data?.previous_price_id || priceId} with ${data?.price?.stripe_price_id || 'new Stripe price'}.`;
+    billingReplaceDraft.priceId = '';
+    billingReplaceDraft.amountCents = '';
+    await refreshBillingPrices();
+    billingInfo.value = replaceInfo;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    billingError.value = `Replace failed: ${msg}`;
+  } finally {
+    billingMutationBusyId.value = '';
+    billingMutationMode.value = '';
+  }
+}
+
+async function archiveBillingPrice(row) {
+  const priceId = String(row?.stripe_price_id || '').trim();
+  if (!priceId) return;
+  const confirmed = window.confirm(
+    `Archive ${billingPriceHeading(row)}?\n\nThis will set the Stripe price inactive and remove its runtime checkout mapping if one exists.`
+  );
+  if (!confirmed) return;
+
+  billingMutationBusyId.value = priceId;
+  billingMutationMode.value = 'archive';
+  billingError.value = '';
+  billingInfo.value = '';
+  billingSyncSummary.value = null;
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, `/admin/stripe/product-prices/${priceId}/archive`, {
+      method: 'POST',
+      headers
+    });
+    const action = data?.removed_runtime ? 'Archived Stripe price and removed runtime mapping.' : 'Archived Stripe price.';
+    const archiveInfo = `${action} (${priceId})`;
+    if (billingReplaceDraft.priceId === priceId) {
+      billingReplaceDraft.priceId = '';
+      billingReplaceDraft.amountCents = '';
+    }
+    await refreshBillingPrices();
+    billingInfo.value = archiveInfo;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    billingError.value = `Archive failed: ${msg}`;
+  } finally {
+    billingMutationBusyId.value = '';
+    billingMutationMode.value = '';
+  }
+}
+
+async function syncBillingFromStripe() {
+  if (!password.value) return;
+  const confirmed = window.confirm(
+    'Sync from Stripe will rebuild plan_prices for tier pro from active monthly and annual Stripe prices on the configured product. Continue?'
+  );
+  if (!confirmed) return;
+
+  billingMutationBusyId.value = 'sync';
+  billingMutationMode.value = 'sync';
+  billingError.value = '';
+  billingInfo.value = '';
+  billingSyncSummary.value = null;
+
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, '/admin/stripe/product-prices/sync', {
+      method: 'POST',
+      headers
+    });
+    billingProductId.value = String(data?.product_id || billingProductId.value || '').trim();
+    const syncSummary = data?.summary || null;
+    await refreshBillingPrices();
+    billingSyncSummary.value = syncSummary;
+    billingInfo.value = 'Stripe sync completed. Runtime price mappings were rebuilt from active Stripe prices.';
+  } catch (err) {
+    console.error(err);
+    const detail = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    if (err?.payload?.error === 'duplicate_active_prices' && Array.isArray(err?.payload?.conflicts)) {
+      const conflictText = err.payload.conflicts
+        .map((item) => `${String(item.currency || '').toUpperCase()} ${billingIntervalLabel(item.billing_interval)}: ${(item.stripe_price_ids || []).join(', ')}`)
+        .join(' · ');
+      billingError.value = `Sync failed: ${detail}${conflictText ? ` (${conflictText})` : ''}`;
+    } else {
+      billingError.value = `Sync failed: ${detail}`;
+    }
+  } finally {
+    billingMutationBusyId.value = '';
+    billingMutationMode.value = '';
+  }
+}
+
 async function deleteUserCompletely(row) {
   const chatId = String(row?.chat_id ?? '').trim();
   if (!chatId) return;
@@ -3301,6 +3832,20 @@ function clearPassword() {
   userDeleteBusyId.value = '';
   userDeleteError.value = '';
   userDeleteInfo.value = '';
+  billingProductId.value = '';
+  billingPrices.value = [];
+  billingLoading.value = false;
+  billingError.value = '';
+  billingInfo.value = '';
+  billingUpdatedAt.value = '';
+  billingMutationBusyId.value = '';
+  billingMutationMode.value = '';
+  billingSyncSummary.value = null;
+  billingCreateDraft.currency = '';
+  billingCreateDraft.billingInterval = 'month';
+  billingCreateDraft.amountCents = '';
+  billingReplaceDraft.priceId = '';
+  billingReplaceDraft.amountCents = '';
   freeUserTotals.value = {
     free_users_all_time: 0,
     free_users_with_voice_in_range: 0,
@@ -3342,6 +3887,19 @@ watch(excludeSearch, () => {
     excludeLookupTimer = null;
   }, 250);
 });
+
+watch(
+  () => billingReplaceDraft.priceId,
+  (next, prev) => {
+    if (next === prev) return;
+    const row = billingReplaceOptions.value.find((item) => item?.stripe_price_id === next) || null;
+    if (row) {
+      billingReplaceDraft.amountCents = row?.amount_cents != null ? String(row.amount_cents) : '';
+    } else {
+      billingReplaceDraft.amountCents = '';
+    }
+  }
+);
 
 watch(
   () => [
@@ -3393,6 +3951,9 @@ watch(
   (tab) => {
     if (tab === 'messaging' && password.value && botStats.value.length === 0) {
       refreshBotStats();
+    }
+    if (tab === 'billing' && password.value && billingPrices.value.length === 0) {
+      refreshBillingPrices();
     }
     if (tab === 'feedback' && password.value && feedbackThreads.value.length === 0) {
       feedbackOffset.value = 0;
@@ -4083,6 +4644,148 @@ h1 {
   gap: 12px;
 }
 
+.billing-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.25fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.billing-pane {
+  border-radius: 18px;
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.54);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.billing-mini-summary,
+.billing-sync-stats,
+.billing-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+}
+
+.billing-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.billing-group {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: rgba(246, 241, 232, 0.22);
+}
+
+.billing-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.billing-price-list {
+  display: grid;
+  gap: 10px;
+  max-height: 560px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.billing-price-card {
+  border: 1px solid rgba(30, 26, 22, 0.10);
+  background: rgba(255, 255, 255, 0.66);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.billing-price-card:hover {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(59, 130, 246, 0.22);
+  box-shadow: 0 16px 34px rgba(20, 18, 16, 0.10);
+  transform: translateY(-1px);
+}
+
+.billing-price-card.active {
+  border-color: rgba(31, 107, 99, 0.34);
+  background: rgba(31, 107, 99, 0.08);
+  box-shadow: 0 18px 36px rgba(20, 18, 16, 0.12);
+}
+
+.billing-price-card-head,
+.billing-price-card-meta,
+.billing-summary-line,
+.billing-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.billing-price-card-meta {
+  justify-content: flex-start;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.billing-summary {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  border-radius: 14px;
+  background: rgba(246, 241, 232, 0.42);
+}
+
+.billing-card-actions .btn,
+.billing-table-actions .btn {
+  min-inline-size: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  box-shadow: 0 10px 20px rgba(30, 26, 22, 0.12);
+}
+
+.billing-card-actions {
+  justify-content: flex-end;
+}
+
+.billing-table td:last-child,
+.billing-table th:last-child {
+  white-space: normal;
+}
+
+.chip.live {
+  background: rgba(31, 107, 99, 0.12);
+  border-color: rgba(31, 107, 99, 0.24);
+  color: rgba(31, 107, 99, 0.96);
+}
+
+.chip.stripe-only {
+  background: rgba(59, 130, 246, 0.10);
+  border-color: rgba(59, 130, 246, 0.22);
+  color: rgba(38, 84, 124, 0.96);
+}
+
+.chip.runtime-only {
+  background: rgba(140, 87, 45, 0.12);
+  border-color: rgba(140, 87, 45, 0.24);
+  color: rgba(140, 87, 45, 0.96);
+}
+
 .pane-title {
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -4579,6 +5282,10 @@ h1 {
 
 @media (max-width: 980px) {
   .broadcast-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .billing-layout {
     grid-template-columns: 1fr;
   }
 }

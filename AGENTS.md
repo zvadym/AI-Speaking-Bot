@@ -41,6 +41,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
   - At least one valid `deploy/bots/*.json` with `telegram_bot_token` is also required at runtime.
 - API optional env vars: `API_PORT`, `API_BASE_URL`, `CORS_ORIGINS`,
   `DATABASE_SSL`, `DATABASE_SSL_REJECT_UNAUTHORIZED`, `TELEGRAM_INITDATA_MAX_AGE`,
+  `STRIPE_BILLING_PRODUCT_ID` (required to manage Stripe product prices from the admin dashboard),
   `STRIPE_PORTAL_CONFIG_ID`, `WEBAPP_RETURN_URL`, `PLAN_CHANGED_WEBHOOK_URL`,
   `ADMIN_DASHBOARD_PASSWORD`, `BROADCAST_WEBHOOK_URL`, `BROADCAST_WEBHOOK_SECRET`,
   `BROADCAST_MAX_RECIPIENTS`, `BROADCAST_PROCESS_BATCH_SIZE`,
