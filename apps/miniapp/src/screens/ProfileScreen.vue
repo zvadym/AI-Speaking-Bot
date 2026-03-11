@@ -181,18 +181,18 @@ onMounted(() => {
 <style scoped>
 .profile-shell {
   width: min(760px, 100%);
-  padding: 28px 18px calc(118px + env(safe-area-inset-bottom, 0px));
+  padding: 22px 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .section {
-  padding: 20px;
+  padding: 16px;
 }
 
 .section {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .section-head {
@@ -207,26 +207,28 @@ onMounted(() => {
 }
 
 .eyebrow {
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 750;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--muted-strong);
+  letter-spacing: 0.12em;
+  color: var(--muted);
 }
 
 h1,
 h2 {
   margin: 0;
-  font-family: var(--font-display);
-  letter-spacing: -0.03em;
+  font-family: var(--font-body);
+  letter-spacing: -0.04em;
 }
 
 h1 {
-  font-size: clamp(32px, 8vw, 48px);
+  font-size: clamp(28px, 7vw, 38px);
+  font-weight: 800;
 }
 
 h2 {
-  font-size: clamp(24px, 5vw, 32px);
+  font-size: clamp(20px, 4vw, 26px);
+  font-weight: 760;
 }
 
 .hero-copy,
@@ -234,20 +236,20 @@ h2 {
 .level-tile p {
   margin: 0;
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .ghost-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 50px;
-  padding: 0 16px;
-  border-radius: 18px;
-  border: 0;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(157, 146, 129, 0.24);
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.58);
   color: var(--ink);
   font-weight: 700;
 }
@@ -258,20 +260,21 @@ h2 {
 
 .button-icon,
 .section-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .meta-grid,
 .level-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .meta-tile,
 .level-tile {
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.78);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(157, 146, 129, 0.2);
 }
 
 .meta-button {
@@ -281,34 +284,32 @@ h2 {
 }
 
 .meta-tile {
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .meta-tile span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .meta-tile strong {
   color: var(--ink);
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .level-tile {
-  border: 0;
   cursor: pointer;
   text-align: left;
-  padding: 16px;
-  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  padding: 14px;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
 .level-tile.active {
-  background:
-    radial-gradient(120% 150% at 0% 0%, rgba(124, 197, 255, 0.22), transparent 48%),
-    rgba(255, 255, 255, 0.9);
+  background: rgba(127, 150, 128, 0.16);
+  border-color: rgba(95, 117, 96, 0.3);
 }
 
 .level-tile.busy {
@@ -319,16 +320,16 @@ h2 {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .level-top strong {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .level-top span {
   color: var(--accent-strong);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 

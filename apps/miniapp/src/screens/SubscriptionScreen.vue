@@ -86,67 +86,80 @@
     </section>
 
     <section class="plans">
-      <div v-if="showCurrencySelector" class="currency-toolbar">
-        <div class="currency-toolbar-head">
-          <span class="currency-toolbar-label">{{ $t('subscription.currency.label') }}</span>
-          <span class="currency-toolbar-note">{{ currencyNoteLabel }}</span>
+      <div v-if="showCurrencySelector" class="selector-group">
+        <div class="selector-group-head">
+          <span class="selector-group-label">{{ $t('subscription.currency.label') }}</span>
+          <span class="selector-group-note">{{ currencyNoteLabel }}</span>
         </div>
-        <div class="currency-chip-row">
+        <div class="selector-list" role="radiogroup" :aria-label="$t('subscription.currency.label')">
           <button
             v-for="currency in primaryCurrencies"
             :key="currency"
             type="button"
-            class="currency-chip"
+            class="selector-option"
             :class="{ active: currency === state.currency }"
             :disabled="isBusy"
             @click="selectCurrency(currency)"
           >
-            {{ currencyChipLabel(currency) }}
-          </button>
-          <button
-            v-if="hasOverflowCurrencies"
-            type="button"
-            class="currency-chip subtle"
-            :class="{ active: showAllCurrencies }"
-            :disabled="isBusy"
-            @click="toggleAllCurrencies"
-          >
-            {{ showAllCurrencies ? $t('subscription.currency.less') : $t('subscription.currency.more') }}
+            <span class="selector-radio" aria-hidden="true"></span>
+            <span class="selector-copy">
+              <span class="selector-title">{{ currencyChipLabel(currency) }}</span>
+              <span class="selector-caption">{{ currencyOptionNote(currency) }}</span>
+            </span>
           </button>
         </div>
-        <div v-if="showAllCurrencies && overflowCurrencies.length" class="currency-chip-row currency-chip-row-secondary">
+        <button
+          v-if="hasOverflowCurrencies"
+          type="button"
+          class="selector-toggle"
+          :disabled="isBusy"
+          @click="toggleAllCurrencies"
+        >
+          {{ showAllCurrencies ? $t('subscription.currency.less') : $t('subscription.currency.more') }}
+        </button>
+        <div v-if="showAllCurrencies && overflowCurrencies.length" class="selector-list selector-list-secondary">
           <button
             v-for="currency in overflowCurrencies"
             :key="currency"
             type="button"
-            class="currency-chip"
+            class="selector-option"
             :class="{ active: currency === state.currency }"
             :disabled="isBusy"
             @click="selectCurrency(currency)"
           >
-            {{ currencyChipLabel(currency) }}
+            <span class="selector-radio" aria-hidden="true"></span>
+            <span class="selector-copy">
+              <span class="selector-title">{{ currencyChipLabel(currency) }}</span>
+              <span class="selector-caption">{{ currencyOptionNote(currency) }}</span>
+            </span>
           </button>
         </div>
       </div>
 
-      <div class="billing-toggle" v-if="showBillingToggle">
+      <div class="selector-group" v-if="showBillingToggle">
+        <div class="selector-group-head">
+          <span class="selector-group-label">{{ $t('subscription.billingIntervals.monthly') }} / {{ $t('subscription.billingIntervals.annual') }}</span>
+          <span class="selector-group-note" v-if="billingSavingsPercent">
+            {{ $t('subscription.billingIntervals.save', { save: billingSavingsPercent }) }}
+          </span>
+        </div>
+        <div class="selector-list selector-list-billing" role="radiogroup" :aria-label="$t('subscription.title')">
         <button
           v-for="interval in availableBillingIntervals"
           :key="interval"
           type="button"
-          class="billing-toggle-btn"
+          class="selector-option"
           :class="{ active: interval === selectedBillingInterval }"
           :disabled="isBusy"
           @click="selectBillingInterval(interval)"
         >
-          {{ billingIntervalLabel(interval) }}
-          <span
-            v-if="interval === BILLING_INTERVAL_YEAR && billingSavingsPercent"
-            class="billing-save"
-          >
-            {{ $t('subscription.billingIntervals.save', { save: billingSavingsPercent }) }}
+          <span class="selector-radio" aria-hidden="true"></span>
+          <span class="selector-copy">
+            <span class="selector-title">{{ billingIntervalLabel(interval) }}</span>
+            <span class="selector-caption">{{ billingIntervalNote(interval) }}</span>
           </span>
         </button>
+        </div>
       </div>
 
       <article
@@ -155,9 +168,12 @@
         class="plan"
         :class="{ featured: plan.tier === 'pro' }"
         :style="{ animationDelay: `${index * 120}ms` }"
-      >
+        >
         <header>
-          <span class="plan-tier">{{ planLabel(plan.tier) }}</span>
+          <div class="plan-topline">
+            <span class="plan-tier">{{ planLabel(plan.tier) }}</span>
+            <span class="plan-context">{{ currencyChipLabel(plan.currency) }} · {{ billingIntervalLabel(plan.billing_interval) }}</span>
+          </div>
           <div class="plan-price">
             <template v-if="plan.billing_interval === BILLING_INTERVAL_YEAR && monthlyProPlan">
               <div class="price-meta">
@@ -505,6 +521,14 @@ function billingIntervalLabel(intervalRaw) {
   return t('subscription.billingIntervals.monthly');
 }
 
+function billingIntervalNote(intervalRaw) {
+  const interval = normalizeBillingInterval(intervalRaw, BILLING_INTERVAL_MONTH);
+  if (interval === BILLING_INTERVAL_YEAR && billingSavingsPercent.value) {
+    return t('subscription.billingIntervals.save', { save: billingSavingsPercent.value });
+  }
+  return t('subscription.period.perMonth');
+}
+
 function selectBillingInterval(intervalRaw) {
   const interval = normalizeBillingInterval(intervalRaw);
   if (!interval) return;
@@ -600,6 +624,12 @@ function currencyChipLabel(currencyRaw) {
   const details = currencyDetails.value[currency];
   const symbol = details?.symbol || currency;
   return symbol === currency ? currency : `${symbol} ${currency}`;
+}
+
+function currencyOptionNote(currencyRaw) {
+  const currency = normalizeCurrencyCode(currencyRaw, '');
+  if (!currency) return '';
+  return currencyDetails.value[currency]?.name || currency;
 }
 
 function toggleAllCurrencies() {
@@ -783,39 +813,42 @@ onMounted(async () => {
 
 <style scoped>
 .shell {
-  width: min(1100px, 100%);
+  width: min(760px, 100%);
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 48px 24px calc(118px + env(safe-area-inset-bottom, 0px));
+  padding: 24px 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 18px;
 }
 
 .hero {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .hero-badge {
   text-transform: uppercase;
-  letter-spacing: 0.25em;
-  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-size: 10px;
   color: var(--accent-2);
+  font-weight: 700;
 }
 
 .hero h1 {
-  font-family: var(--font-display);
-  font-size: clamp(32px, 5vw, 56px);
+  font-family: var(--font-body);
+  font-size: clamp(28px, 7vw, 38px);
+  letter-spacing: -0.04em;
+  font-weight: 800;
   margin: 0;
 }
 
 .hero-sub {
   margin: 0;
-  max-width: 560px;
+  max-width: 40ch;
   color: var(--muted);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .status {
@@ -824,23 +857,22 @@ onMounted(async () => {
 
 .status-card {
   border: 1px solid var(--stroke);
-  border-radius: 16px;
-  padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 20px 50px var(--shadow);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.58);
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .status-card.error {
-  border-color: rgba(199, 90, 36, 0.35);
-  background: rgba(199, 90, 36, 0.08);
+  border-color: rgba(181, 109, 86, 0.32);
+  background: rgba(181, 109, 86, 0.08);
 }
 
 .status-label {
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.12em;
   font-size: 10px;
   color: var(--muted);
 }
@@ -851,43 +883,43 @@ onMounted(async () => {
 
 .manage-card {
   border: 1px solid var(--stroke);
-  border-radius: 22px;
-  padding: 20px 22px;
+  border-radius: 16px;
+  padding: 16px;
   background: rgba(255, 255, 255, 0.62);
-  box-shadow: 0 28px 70px var(--shadow);
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 24px;
+  gap: 14px;
 }
 
 .manage-card h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
+  letter-spacing: -0.03em;
 }
 
 .manage-card p {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--muted);
 }
 
 .pending {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   color: rgba(30, 26, 22, 0.78);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .manage-actions {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   align-content: start;
   justify-items: end;
 }
 
 .ghost {
   border: 1px solid var(--stroke);
-  background: transparent;
-  padding: 10px 14px;
-  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.42);
+  padding: 10px 12px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: 650;
   letter-spacing: 0.01em;
@@ -904,37 +936,37 @@ onMounted(async () => {
 }
 
 .manage-usage {
-  margin-top: 16px;
+  margin-top: 12px;
   display: grid;
-  gap: 16px;
+  gap: 10px;
 }
 
 .usage-item .label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
 }
 
 .usage-bar {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .usage-track {
-  height: 10px;
+  height: 8px;
   border-radius: 999px;
-  background: rgba(30, 26, 22, 0.08);
+  background: rgba(32, 35, 29, 0.08);
   overflow: hidden;
 }
 
 .usage-fill {
   height: 100%;
   border-radius: 999px;
-  background: rgba(31, 107, 99, 0.75);
+  background: rgba(95, 117, 96, 0.75);
 }
 
 .usage-fill.accent {
-  background: rgba(199, 90, 36, 0.75);
+  background: rgba(181, 109, 86, 0.78);
 }
 
 .usage-meta {
@@ -947,158 +979,156 @@ onMounted(async () => {
 
 .plans {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
-.currency-toolbar {
-  grid-column: 1 / -1;
+.selector-group {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  padding-top: 2px;
 }
 
-.currency-toolbar-head {
+.selector-group-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.currency-toolbar-label {
-  font-size: 12px;
+.selector-group-label {
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.selector-group-note {
+  font-size: 12px;
   color: var(--muted);
 }
 
-.currency-toolbar-note {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.currency-chip-row {
-  display: flex;
+.selector-list {
+  display: grid;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.currency-chip-row-secondary {
-  margin-top: -2px;
+.selector-list-billing {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
-.currency-chip {
-  border: 1px solid var(--stroke);
-  border-radius: 999px;
-  padding: 8px 12px;
+.selector-option {
+  border: 1px solid rgba(157, 146, 129, 0.24);
+  border-radius: 14px;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.58);
   color: var(--ink);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 
-.currency-chip.active {
-  border-color: rgba(31, 107, 99, 0.36);
-  background: rgba(31, 107, 99, 0.92);
-  color: rgba(255, 255, 255, 0.94);
+.selector-option:hover:not(:disabled),
+.selector-option:focus-visible:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(95, 117, 96, 0.28);
 }
 
-.currency-chip.subtle {
-  color: var(--muted);
+.selector-option.active {
+  background: rgba(127, 150, 128, 0.12);
+  border-color: rgba(95, 117, 96, 0.34);
 }
 
-.currency-chip:disabled {
+.selector-option:disabled,
+.selector-toggle:disabled {
   opacity: 0.6;
   cursor: default;
 }
 
-.billing-toggle {
-  grid-column: 1 / -1;
-  display: inline-flex;
-  width: fit-content;
-  border-radius: 14px;
-  border: 1px solid var(--stroke);
-  background: rgba(255, 255, 255, 0.55);
-  padding: 4px;
-  box-shadow: 0 14px 34px rgba(30, 26, 22, 0.12);
-}
-
-.billing-toggle-btn {
-  border: none;
-  border-radius: 10px;
-  padding: 8px 12px;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 140ms ease, color 140ms ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.billing-toggle-btn.active {
-  background: rgba(31, 107, 99, 0.92);
-  color: rgba(255, 255, 255, 0.94);
-}
-
-.billing-save {
-  display: inline-flex;
-  align-items: center;
+.selector-radio {
+  width: 16px;
+  height: 16px;
   border-radius: 999px;
-  padding: 2px 8px;
-  background: rgba(31, 107, 99, 0.14);
-  border: 1px solid rgba(31, 107, 99, 0.24);
-  color: rgba(31, 107, 99, 0.95);
+  border: 1.5px solid rgba(134, 124, 107, 0.45);
+  background: rgba(255, 255, 255, 0.82);
+  position: relative;
+}
+
+.selector-option.active .selector-radio {
+  border-color: rgba(95, 117, 96, 0.6);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.selector-option.active .selector-radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 999px;
+  background: var(--accent-strong);
+}
+
+.selector-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.selector-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.selector-caption {
   font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-}
-
-.billing-toggle-btn.active .billing-save {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.22);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.billing-toggle-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
+  color: var(--muted);
 }
 
 .plan {
   border: 1px solid var(--stroke);
-  border-radius: 22px;
-  padding: 18px 18px;
+  border-radius: 16px;
+  padding: 16px;
   background: rgba(255, 255, 255, 0.64);
-  box-shadow: 0 26px 60px var(--shadow);
   display: grid;
-  gap: 14px;
+  gap: 12px;
   animation: floatIn 700ms ease-out both;
 }
 
 .plan.featured {
-  border-color: rgba(199, 90, 36, 0.28);
+  border-color: rgba(181, 109, 86, 0.28);
   background:
-    radial-gradient(120% 150% at 0% 0%, rgba(199, 90, 36, 0.18), transparent 55%),
+    radial-gradient(120% 150% at 0% 0%, rgba(181, 109, 86, 0.12), transparent 55%),
     rgba(255, 255, 255, 0.64);
+}
+
+.plan-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .plan-tier {
   text-transform: uppercase;
-  letter-spacing: 0.26em;
-  font-size: 11px;
-  color: var(--accent-2);
+  letter-spacing: 0.12em;
+  font-size: 10px;
+  color: var(--accent-strong);
   font-weight: 800;
+}
+
+.plan-context {
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .plan-price {
   display: grid;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 4px;
+  margin-top: 8px;
 }
 
 .price-main {
@@ -1111,7 +1141,7 @@ onMounted(async () => {
 
 .price-meta,
 .price-sub {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
 }
 
@@ -1129,20 +1159,20 @@ onMounted(async () => {
 }
 
 .amount {
-  font-size: 34px;
-  font-weight: 900;
+  font-size: 31px;
+  font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .period {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .plan-tagline {
   margin: 0;
   color: var(--muted);
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 .pro-advantage {
@@ -1179,20 +1209,18 @@ onMounted(async () => {
 .cta {
   width: 100%;
   border: none;
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 12px 14px;
-  background: rgba(31, 107, 99, 0.9);
+  background: rgba(95, 117, 96, 0.92);
   color: white;
-  font-weight: 800;
+  font-weight: 750;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 18px 40px rgba(31, 107, 99, 0.25);
-  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+  transition: transform 120ms ease, filter 120ms ease;
 }
 
 .plan.featured .cta {
-  background: rgba(199, 90, 36, 0.95);
-  box-shadow: 0 18px 40px rgba(199, 90, 36, 0.23);
+  background: rgba(181, 109, 86, 0.95);
 }
 
 .cta:disabled {
@@ -1221,12 +1249,26 @@ onMounted(async () => {
   grid-column: 1 / -1;
 }
 
+.selector-toggle {
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0;
+}
+
 @media (max-width: 720px) {
   .manage-card {
     grid-template-columns: 1fr;
   }
   .manage-actions {
     justify-items: start;
+  }
+
+  .status-card {
+    flex-direction: column;
   }
 }
 </style>

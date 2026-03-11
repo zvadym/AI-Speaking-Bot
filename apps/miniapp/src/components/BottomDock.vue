@@ -41,10 +41,10 @@ const items = computed(() => ([
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
-  padding: 0 18px;
+  padding: 0 16px;
   z-index: 18;
   pointer-events: none;
 }
@@ -54,33 +54,31 @@ const items = computed(() => ([
   width: min(560px, 100%);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  padding: 10px;
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  background: rgba(248, 251, 255, 0.74);
-  box-shadow: 0 24px 65px rgba(40, 58, 87, 0.18);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  gap: 6px;
+  padding: 8px;
+  border-radius: 22px;
+  border: 1px solid rgba(186, 177, 160, 0.62);
+  background: rgba(249, 245, 238, 0.95);
+  box-shadow: 0 12px 28px rgba(61, 52, 38, 0.09);
 }
 
 .dock-item {
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
-  border-radius: 20px;
-  min-height: 58px;
+  border-radius: 14px;
+  min-height: 50px;
   color: var(--muted);
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 5px;
-  transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+  gap: 4px;
+  transition: background-color 180ms ease, color 180ms ease, transform 180ms ease, border-color 180ms ease;
   cursor: pointer;
 }
 
 .dock-item:hover,
 .dock-item:focus-visible {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.65);
   color: var(--ink);
 }
 
@@ -90,25 +88,24 @@ const items = computed(() => ([
 
 .dock-item.active {
   color: var(--accent-strong);
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(124, 197, 255, 0.22), transparent 50%),
-    rgba(255, 255, 255, 0.8);
+  border-color: rgba(127, 150, 128, 0.26);
+  background: rgba(255, 255, 255, 0.78);
 }
 
 .dock-icon {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 
 .dock-label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 @media (min-width: 768px) {
   .dock-item {
-    min-height: 62px;
+    min-height: 54px;
   }
 }
 </style>

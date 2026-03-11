@@ -284,42 +284,41 @@ const calendarCells = computed(() => {
 <style scoped>
 .dashboard-shell {
   width: min(760px, 100%);
-  padding: 28px 18px calc(118px + env(safe-area-inset-bottom, 0px));
+  padding: 22px 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .dash-head {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app-title {
   margin: 0;
-  font-family: var(--font-display);
-  letter-spacing: -0.03em;
-  font-size: 24px;
+  font-family: var(--font-body);
+  letter-spacing: -0.04em;
+  font-size: 22px;
+  font-weight: 800;
   line-height: 1.1;
 }
 
 .app-subtitle {
   margin: 0;
-  color: var(--muted-strong);
-  font-weight: 650;
+  color: var(--muted);
+  font-weight: 600;
   line-height: 1.35;
   font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .chip-row {
   display: flex;
   flex-wrap: nowrap;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  padding-bottom: 2px;
 }
 
 .chip-row::-webkit-scrollbar {
@@ -330,16 +329,16 @@ const calendarCells = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
-  padding: 0 12px;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(157, 146, 129, 0.26);
   color: var(--ink);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 750;
   white-space: nowrap;
 }
 
@@ -351,18 +350,18 @@ const calendarCells = computed(() => {
 .chip--tier:hover,
 .chip--tier:focus-visible {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.86);
-  border-color: rgba(122, 154, 196, 0.34);
+  background: rgba(255, 255, 255, 0.74);
+  border-color: rgba(127, 150, 128, 0.32);
 }
 
 .streak-card,
 .notice-card {
-  padding: 20px;
+  padding: 16px;
 }
 
 .streak-card {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .streak-head {
@@ -374,15 +373,15 @@ const calendarCells = computed(() => {
 
 .streak-label {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 750;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--muted-strong);
+  letter-spacing: 0.12em;
+  color: var(--muted);
 }
 
 .streak-value {
-  font-size: 40px;
-  font-weight: 900;
+  font-size: 34px;
+  font-weight: 800;
   letter-spacing: -0.05em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
@@ -394,30 +393,30 @@ const calendarCells = computed(() => {
 
 .calendar {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .calendar-head {
   display: grid;
-  grid-template-columns: 34px 1fr 34px;
+  grid-template-columns: 30px 1fr 30px;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .calendar-month {
   text-align: center;
-  font-weight: 850;
+  font-weight: 760;
   letter-spacing: -0.02em;
   color: var(--ink);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .cal-nav {
-  border: 1px solid rgba(255, 255, 255, 0.68);
-  background: rgba(255, 255, 255, 0.78);
-  height: 32px;
-  width: 32px;
-  border-radius: 12px;
+  border: 1px solid rgba(157, 146, 129, 0.26);
+  background: rgba(255, 255, 255, 0.54);
+  height: 30px;
+  width: 30px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -432,24 +431,24 @@ const calendarCells = computed(() => {
 .cal-nav:not(:disabled):hover,
 .cal-nav:not(:disabled):focus-visible {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.86);
-  border-color: rgba(122, 154, 196, 0.34);
+  background: rgba(255, 255, 255, 0.74);
+  border-color: rgba(127, 150, 128, 0.32);
 }
 
 .cal-nav-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   color: var(--ink);
 }
 
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-  color: var(--muted-strong);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -460,19 +459,19 @@ const calendarCells = computed(() => {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
 }
 
 .calendar-day {
   position: relative;
-  height: 34px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.68);
-  border-radius: 12px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid rgba(157, 146, 129, 0.2);
+  border-radius: 10px;
   display: grid;
   place-items: center;
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 750;
   font-variant-numeric: tabular-nums;
 }
 
@@ -485,18 +484,18 @@ const calendarCells = computed(() => {
 }
 
 .calendar-day.active {
-  background: rgba(39, 177, 111, 0.22);
-  border-color: rgba(39, 177, 111, 0.35);
+  background: rgba(103, 130, 102, 0.16);
+  border-color: rgba(103, 130, 102, 0.26);
 }
 
 .calendar-day.inactive {
-  background: rgba(192, 75, 85, 0.16);
-  border-color: rgba(192, 75, 85, 0.28);
+  background: rgba(181, 109, 86, 0.1);
+  border-color: rgba(181, 109, 86, 0.2);
 }
 
 .calendar-day.today {
-  border-color: rgba(63, 129, 216, 0.5);
-  box-shadow: 0 10px 28px rgba(63, 129, 216, 0.14);
+  border-color: rgba(95, 117, 96, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(95, 117, 96, 0.12);
 }
 
 .calendar-day.future {
@@ -504,7 +503,7 @@ const calendarCells = computed(() => {
 }
 
 .day-num {
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .notice-card p {

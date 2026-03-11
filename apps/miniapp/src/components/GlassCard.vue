@@ -28,12 +28,10 @@ const toneClass = computed(() => {
 .glass-card {
   position: relative;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 18px;
   border: 1px solid var(--glass-border);
   background: var(--glass-surface);
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow);
 }
 
 .glass-card::before {
@@ -41,9 +39,9 @@ const toneClass = computed(() => {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.12) 42%, transparent 78%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.12) 58%, transparent 100%);
   pointer-events: none;
-  opacity: 0.9;
+  opacity: 0.55;
 }
 
 .glass-card--subtle {
@@ -52,32 +50,33 @@ const toneClass = computed(() => {
 
 .glass-card--accent {
   background:
-    radial-gradient(120% 160% at 0% 0%, rgba(124, 197, 255, 0.28), transparent 52%),
-    radial-gradient(120% 160% at 100% 100%, rgba(58, 164, 148, 0.18), transparent 48%),
+    radial-gradient(120% 160% at 0% 0%, rgba(127, 150, 128, 0.16), transparent 52%),
+    radial-gradient(120% 160% at 100% 100%, rgba(205, 181, 156, 0.12), transparent 48%),
     var(--glass-surface-strong);
 }
 
 .glass-card--success {
   background:
-    radial-gradient(120% 150% at 0% 0%, rgba(45, 184, 122, 0.22), transparent 48%),
+    radial-gradient(120% 150% at 0% 0%, rgba(103, 130, 102, 0.14), transparent 48%),
     var(--glass-surface-strong);
 }
 
 .glass-card--warning {
   background:
-    radial-gradient(120% 150% at 100% 0%, rgba(245, 166, 35, 0.22), transparent 48%),
+    radial-gradient(120% 150% at 100% 0%, rgba(181, 109, 86, 0.14), transparent 48%),
     var(--glass-surface-strong);
 }
 
 .interactive {
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
   cursor: pointer;
 }
 
 .interactive:hover {
   transform: translateY(-1px);
-  box-shadow: 0 26px 70px rgba(43, 61, 90, 0.16);
-  border-color: rgba(122, 154, 196, 0.34);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(127, 150, 128, 0.4);
+  background: rgba(251, 247, 239, 0.98);
 }
 
 .interactive:active {
@@ -90,7 +89,7 @@ const toneClass = computed(() => {
   .glass-card--accent,
   .glass-card--success,
   .glass-card--warning {
-    background: rgba(255, 255, 255, 0.94);
+    background: rgba(250, 246, 239, 0.98);
   }
 }
 </style>

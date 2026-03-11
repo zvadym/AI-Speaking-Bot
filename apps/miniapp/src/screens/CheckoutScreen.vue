@@ -171,39 +171,42 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .shell {
-  width: min(1100px, 100%);
+  width: min(760px, 100%);
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 48px 24px calc(22px + env(safe-area-inset-bottom, 0px));
+  padding: 24px 16px calc(28px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .hero {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .hero-badge {
   text-transform: uppercase;
-  letter-spacing: 0.25em;
-  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-size: 10px;
   color: var(--accent-2);
+  font-weight: 700;
 }
 
 .hero h1 {
-  font-family: var(--font-display);
-  font-size: clamp(28px, 4vw, 44px);
+  font-family: var(--font-body);
+  font-size: clamp(24px, 5vw, 32px);
+  letter-spacing: -0.04em;
+  font-weight: 800;
   margin: 0;
 }
 
 .hero-sub {
   margin: 0;
-  max-width: 560px;
+  max-width: 44ch;
   color: var(--muted);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .status {
@@ -212,23 +215,22 @@ onBeforeUnmount(() => {
 
 .status-card {
   border: 1px solid var(--stroke);
-  border-radius: 16px;
-  padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 20px 50px var(--shadow);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.6);
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .status-card.error {
-  border-color: rgba(199, 90, 36, 0.35);
-  background: rgba(199, 90, 36, 0.08);
+  border-color: rgba(181, 109, 86, 0.32);
+  background: rgba(181, 109, 86, 0.08);
 }
 
 .status-label {
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.12em;
   font-size: 10px;
   color: var(--muted);
 }
@@ -240,10 +242,10 @@ onBeforeUnmount(() => {
 
 .checkout {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   flex: 1;
-  min-height: 420px;
+  min-height: 380px;
 }
 
 .checkout-loading {
@@ -253,31 +255,30 @@ onBeforeUnmount(() => {
 
 .checkout-mount {
   width: 100%;
-  min-height: 420px;
+  min-height: 380px;
   border: 1px solid var(--stroke);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.62);
   overflow: hidden;
 }
 
 .bottom-nav {
   display: grid;
   justify-items: stretch;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 .ghost {
   width: 100%;
   border: 1px solid var(--stroke);
-  background: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 18px 40px rgba(30, 26, 22, 0.12);
-  padding: 12px 14px;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.52);
+  padding: 11px 14px;
+  border-radius: 12px;
   cursor: pointer;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--ink);
-  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 }
 
 .ghost:disabled {
@@ -287,6 +288,6 @@ onBeforeUnmount(() => {
 
 .ghost:active:not(:disabled) {
   transform: translateY(1px);
-  box-shadow: 0 12px 28px rgba(30, 26, 22, 0.12);
+  border-color: rgba(95, 117, 96, 0.34);
 }
 </style>

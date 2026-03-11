@@ -1,6 +1,6 @@
 <template>
   <div class="feedback-shell fade-in">
-    <GlassCard tone="accent" class="support-hero">
+    <GlassCard tone="subtle" class="support-hero">
       <div>
         <div class="eyebrow">{{ $t('feedback.eyebrow') }}</div>
         <h1>{{ $t('feedback.title') }}</h1>
@@ -28,6 +28,7 @@
           type="button"
           class="category-chip"
           :class="{ active: category === option.value }"
+          :aria-pressed="category === option.value"
           @click="category = option.value"
         >
           {{ option.label }}
@@ -40,7 +41,7 @@
           v-model.trim="message"
           :placeholder="$t('feedback.messagePlaceholder')"
           :maxlength="1000"
-          rows="5"
+          rows="4"
         />
       </label>
 
@@ -229,40 +230,42 @@ async function submit() {
 <style scoped>
 .feedback-shell {
   width: min(760px, 100%);
-  padding: 28px 18px calc(118px + env(safe-area-inset-bottom, 0px));
+  padding: 22px 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .support-hero,
 .composer-card,
 .thread-card {
-  padding: 20px;
+  padding: 16px;
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .eyebrow {
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 750;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: var(--muted-strong);
+  letter-spacing: 0.12em;
+  color: var(--muted);
 }
 
 h1,
 h2 {
   margin: 0;
-  font-family: var(--font-display);
-  letter-spacing: -0.03em;
+  font-family: var(--font-body);
+  letter-spacing: -0.04em;
 }
 
 h1 {
-  font-size: clamp(32px, 8vw, 48px);
+  font-size: clamp(28px, 7vw, 38px);
+  font-weight: 800;
 }
 
 h2 {
-  font-size: clamp(24px, 5vw, 32px);
+  font-size: clamp(20px, 4vw, 26px);
+  font-weight: 760;
 }
 
 .hero-copy,
@@ -270,7 +273,7 @@ h2 {
 .thread-state {
   margin: 0;
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .hero-meta,
@@ -290,14 +293,15 @@ h2 {
 
 .hero-meta span,
 .category-chip {
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(157, 146, 129, 0.22);
   display: inline-flex;
   align-items: center;
-  color: var(--muted-strong);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -308,13 +312,15 @@ h2 {
 }
 
 .category-chip {
-  border: 0;
+  border-width: 1px;
+  border-style: solid;
   cursor: pointer;
 }
 
 .category-chip.active {
-  color: white;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--ink);
+  background: rgba(127, 150, 128, 0.18);
+  border-color: rgba(95, 117, 96, 0.28);
 }
 
 .message-field {
@@ -323,31 +329,30 @@ h2 {
 }
 
 .message-field span {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--muted-strong);
+  color: var(--muted);
 }
 
 .message-field textarea {
   width: 100%;
-  border-radius: 18px;
-  border: 1px solid rgba(131, 150, 179, 0.26);
-  background: rgba(255, 255, 255, 0.82);
-  min-height: 140px;
-  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(157, 146, 129, 0.28);
+  background: rgba(255, 255, 255, 0.62);
+  min-height: 112px;
+  padding: 14px;
   color: var(--ink);
   resize: vertical;
 }
 
 .message-field textarea:focus-visible {
-  outline: none;
-  border-color: rgba(81, 156, 245, 0.55);
-  box-shadow: 0 0 0 4px rgba(81, 156, 245, 0.14);
+  border-color: rgba(95, 117, 96, 0.45);
+  box-shadow: 0 0 0 4px rgba(95, 117, 96, 0.09);
 }
 
 .composer-foot span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .composer-foot span.danger,
@@ -357,16 +362,16 @@ h2 {
 
 .send-btn {
   border: 0;
-  border-radius: 18px;
-  min-height: 50px;
-  padding: 0 18px;
+  border-radius: 14px;
+  min-height: 42px;
+  padding: 0 16px;
   cursor: pointer;
   color: white;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  gap: 8px;
+  background: var(--accent-strong);
 }
 
 .send-btn:disabled {
@@ -376,8 +381,8 @@ h2 {
 
 .section-icon,
 .button-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .refresh {
@@ -390,29 +395,30 @@ h2 {
 
 .thread-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .thread-item {
   display: grid;
-  gap: 10px;
-  padding: 14px 16px;
-  border-radius: 20px;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(157, 146, 129, 0.2);
 }
 
 .thread-item.user {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.56);
 }
 
 .thread-item.admin {
   background:
-    radial-gradient(120% 160% at 0% 0%, rgba(124, 197, 255, 0.18), transparent 48%),
-    rgba(244, 249, 255, 0.96);
+    radial-gradient(120% 160% at 0% 0%, rgba(127, 150, 128, 0.12), transparent 48%),
+    rgba(247, 242, 235, 0.96);
 }
 
 .thread-item-meta {
-  font-size: 12px;
-  color: var(--muted-strong);
+  font-size: 11px;
+  color: var(--muted);
   flex-wrap: wrap;
 }
 
