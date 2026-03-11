@@ -1,10 +1,14 @@
 <template>
   <div class="dashboard-shell fade-in">
     <header class="dash-head">
-      <p class="app-subtitle">{{ $t('dashboard.subtitle') }}</p>
       <div class="chip-row" aria-label="Current learning setup">
-        <span class="chip">{{ languageLabel }}</span>
-        <span class="chip">{{ levelLabel }}</span>
+        <button
+          type="button"
+          class="chip chip--tier"
+          @click="emit('navigate', '/profile?section=level')"
+        >
+          {{ levelLabel }}
+        </button>
         <button
           type="button"
           class="chip chip--tier"
@@ -149,15 +153,6 @@ const xp = computed(() => dashboard.value?.xp || {
   streak_bonus_applied: false
 });
 
-function practiceLanguageLabel(codeRaw) {
-  const code = (codeRaw || '').toString().trim().toLowerCase();
-  if (!code) return t('common.dash');
-  const key = `practiceLanguages.${code}`;
-  const translated = t(key);
-  return translated !== key ? translated : code.toUpperCase();
-}
-
-const languageLabel = computed(() => practiceLanguageLabel(selectedBot.value?.learning_language));
 const levelLabel = computed(() => (selectedBot.value?.level || props.me?.level || 'b1').toString().toUpperCase());
 
 const planLabel = computed(() => {
@@ -314,15 +309,6 @@ const calendarCells = computed(() => {
 .dash-head {
   display: grid;
   gap: 8px;
-}
-
-.app-subtitle {
-  margin: 0;
-  color: var(--muted-strong);
-  font-weight: 700;
-  line-height: 1.3;
-  font-size: 16px;
-  letter-spacing: -0.03em;
 }
 
 .chip-row {

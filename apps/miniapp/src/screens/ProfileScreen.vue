@@ -17,15 +17,41 @@
           <span>{{ $t('profile.level') }}</span>
           <strong>{{ currentLevelLabel }}</strong>
         </button>
-        <div class="meta-tile">
+        <button type="button" class="meta-tile meta-button" @click="scrollToReplyModeSection">
           <span>{{ $t('profile.replyMode') }}</span>
           <strong>{{ replyModeLabel }}</strong>
-        </div>
+        </button>
       </div>
       <button type="button" class="ghost-link secondary" @click="openTeachersUrl">
         <Globe class="button-icon" />
         <span>{{ $t('profile.otherLanguages') }}</span>
       </button>
+    </GlassCard>
+
+    <GlassCard ref="replyModeSectionEl" tone="subtle" class="section">
+      <div class="section-head compact">
+        <div>
+          <div class="eyebrow">{{ $t('profile.replyMode') }}</div>
+          <h2>{{ $t('profile.replyModeTitle') }}</h2>
+        </div>
+      </div>
+      <div class="settings-grid">
+        <button
+          v-for="mode in replyModes"
+          :key="mode.code"
+          type="button"
+          class="settings-tile"
+          :class="{ active: currentReplyMode === mode.code, busy: savingReplyMode === mode.code }"
+          :disabled="Boolean(savingReplyMode)"
+          @click="setReplyMode(mode.code)"
+        >
+          <div class="settings-top">
+            <strong>{{ mode.label }}</strong>
+            <span v-if="currentReplyMode === mode.code">{{ $t('common.selected') }}</span>
+          </div>
+          <p>{{ mode.note }}</p>
+        </button>
+      </div>
     </GlassCard>
 
     <GlassCard ref="levelSectionEl" tone="subtle" class="section">
@@ -36,17 +62,17 @@
         </div>
         <GraduationCap class="section-icon" />
       </div>
-      <div class="level-grid">
+      <div class="settings-grid">
         <button
           v-for="lvl in levels"
           :key="lvl.code"
           type="button"
-          class="level-tile"
+          class="settings-tile"
           :class="{ active: currentLevel === lvl.code, busy: savingLevel === lvl.code }"
           :disabled="Boolean(savingLevel)"
           @click="setLevel(lvl.code)"
         >
-          <div class="level-top">
+          <div class="settings-top">
             <strong>{{ lvl.code.toUpperCase() }}</strong>
             <span v-if="currentLevel === lvl.code">{{ $t('common.selected') }}</span>
           </div>
@@ -93,13 +119,18 @@ const props = defineProps({
 
 const { t } = useI18n({ useScope: 'global' });
 const savingLevel = ref('');
+const savingReplyMode = ref('');
 const levelSectionEl = ref(null);
+const replyModeSectionEl = ref(null);
 const schoolUrl = ((import.meta.env.VITE_SCHOOL_URL || 'https://ai-language-school.online/').toString()).trim();
 
 const selectedBot = computed(() => props.me || {});
 const currentBotKey = computed(() => props.botKey || selectedBot.value?.bot_key || '');
 const currentLevel = computed(() => (selectedBot.value?.level || 'b1').toString().toLowerCase());
 const currentLevelLabel = computed(() => currentLevel.value.toUpperCase());
+const currentReplyMode = computed(() => (
+  selectedBot.value?.reply_mode === 'voice' ? 'voice' : 'text'
+));
 const teacherTagline = computed(() =>
   selectedBot.value?.teacher_tagline_en
   || selectedBot.value?.teacher_tagline_it
@@ -117,7 +148,7 @@ function languageLabelForCode(codeRaw, keyPrefix = 'practiceLanguages') {
 
 const languageLabel = computed(() => languageLabelForCode(selectedBot.value?.learning_language));
 const replyModeLabel = computed(() => (
-  selectedBot.value?.reply_mode === 'voice' ? t('profile.replyModeVoice') : t('profile.replyModeText')
+  currentReplyMode.value === 'voice' ? t('profile.replyModeVoice') : t('profile.replyModeText')
 ));
 const baseLanguageCode = computed(() => {
   const raw = (selectedBot.value?.base_language || currentBotKey.value.split('-')[0] || '').toString().trim().toLowerCase();
@@ -125,6 +156,11 @@ const baseLanguageCode = computed(() => {
   return raw || 'en';
 });
 const teachersUrl = computed(() => `${schoolUrl.replace(/\/+$/, '')}/${baseLanguageCode.value}/teachers`);
+
+const replyModes = computed(() => [
+  { code: 'text', label: t('profile.replyModeText'), note: t('profile.replyModeNotes.text') },
+  { code: 'voice', label: t('profile.replyModeVoice'), note: t('profile.replyModeNotes.voice') }
+]);
 
 const levels = computed(() => [
   { code: 'a1', note: t('level.notes.a1') },
@@ -134,8 +170,16 @@ const levels = computed(() => [
   { code: 'c1', note: t('level.notes.c1') }
 ]);
 
+function scrollToSection(sectionRef) {
+  sectionRef.value?.$el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+}
+
 function scrollToLevelSection() {
-  levelSectionEl.value?.$el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  scrollToSection(levelSectionEl);
+}
+
+function scrollToReplyModeSection() {
+  scrollToSection(replyModeSectionEl);
 }
 
 function openTeachersUrl() {
@@ -165,6 +209,28 @@ async function setLevel(code) {
   }
 }
 
+async function setReplyMode(mode) {
+  if (!mode || savingReplyMode.value || currentReplyMode.value === mode) return;
+  savingReplyMode.value = mode;
+  try {
+    await apiJson(props.apiBase, '/me/reply-mode', {
+      method: 'POST',
+      token: props.token,
+      query: currentBotKey.value ? { bot_key: currentBotKey.value } : undefined,
+      body: { reply_mode: mode }
+    });
+    await props.refreshMe();
+    props.toast(t('profile.replyModeSaved'));
+    tgHaptic('notification', 'success');
+  } catch (err) {
+    console.error(err);
+    props.toast(t('common.errors.couldNotSave'));
+    tgHaptic('notification', 'error');
+  } finally {
+    savingReplyMode.value = '';
+  }
+}
+
 function openSchoolUrl() {
   if (!schoolUrl) return;
   tgOpenLink(schoolUrl);
@@ -172,9 +238,8 @@ function openSchoolUrl() {
 
 onMounted(() => {
   const section = new URLSearchParams(window.location.search).get('section');
-  if (section === 'level') {
-    window.requestAnimationFrame(() => scrollToLevelSection());
-  }
+  if (section === 'level') window.requestAnimationFrame(() => scrollToLevelSection());
+  if (section === 'reply-mode') window.requestAnimationFrame(() => scrollToReplyModeSection());
 });
 </script>
 
@@ -235,7 +300,7 @@ h2 {
 
 .hero-copy,
 .section-copy,
-.level-tile p {
+.settings-tile p {
   margin: 0;
   color: var(--muted);
   line-height: 1.4;
@@ -276,7 +341,7 @@ h2 {
 }
 
 .meta-grid,
-.level-grid {
+.settings-grid {
   display: grid;
   gap: 8px;
 }
@@ -285,12 +350,12 @@ h2 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.level-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.settings-grid {
+  grid-template-columns: 1fr;
 }
 
 .meta-tile,
-.level-tile {
+.settings-tile {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.56);
   border: 1px solid rgba(157, 146, 129, 0.2);
@@ -320,44 +385,40 @@ h2 {
   line-height: 1.2;
 }
 
-.level-tile {
+.settings-tile {
   cursor: pointer;
   text-align: left;
   padding: 11px 12px;
   transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
-.level-tile.active {
+.settings-tile.active {
   background: rgba(127, 150, 128, 0.16);
   border-color: rgba(95, 117, 96, 0.3);
 }
 
-.level-tile.busy {
+.settings-tile.busy {
   opacity: 0.82;
 }
 
-.level-top {
+.settings-top {
   display: flex;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 4px;
 }
 
-.level-top strong {
+.settings-top strong {
   font-size: 14px;
 }
 
-.level-top span {
+.settings-top span {
   color: var(--accent-strong);
   font-size: 10px;
   font-weight: 700;
 }
 
 @media (max-width: 380px) {
-  .level-grid {
-    grid-template-columns: 1fr;
-  }
-
   .meta-grid {
     grid-template-columns: 1fr;
   }

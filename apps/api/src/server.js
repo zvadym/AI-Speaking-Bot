@@ -5804,6 +5804,60 @@ app.post('/me/level', requireAuth, async (req, res) => {
   return res.json({ user });
 });
 
+app.post('/me/reply-mode', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const raw = (req.body?.reply_mode ?? req.body?.replyMode ?? '').toString().trim().toLowerCase();
+  if (!['text', 'voice'].includes(raw)) {
+    return res.status(400).json({ error: 'bad_reply_mode' });
+  }
+
+  const currentBotKey =
+    requestedBotKeyFromReq(req) ||
+    normalizeBotKey(req.auth?.botKey || null) ||
+    await resolveUserBotKey(chatId) ||
+    normalizeBotKey(env.defaultBotKey) ||
+    'uk-de';
+
+  const { rowCount } = await pool.query(
+    `INSERT INTO user_bots (
+       chat_id,
+       bot_key,
+       level,
+       reply_mode,
+       tts_voice,
+       first_seen_at,
+       last_seen_at,
+       is_active,
+       updated_at
+     )
+     SELECT $1, $2, 'a1', $3, 'marin', NOW(), NOW(), true, NOW()
+     FROM users u
+     WHERE u.chat_id = $1
+     ON CONFLICT (chat_id, bot_key)
+     DO UPDATE SET
+       reply_mode = EXCLUDED.reply_mode,
+       last_seen_at = NOW(),
+       is_active = true,
+       updated_at = NOW()`,
+    [chatId, currentBotKey, raw]
+  );
+
+  if (!rowCount) return res.status(404).json({ error: 'user_not_found' });
+  const user = await getMeUserRow(chatId, currentBotKey);
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+
+  await recordActionEventSafe({
+    chatId,
+    botKey: currentBotKey,
+    actionType: 'profile_set_reply_mode',
+    source: 'api',
+    idempotencyKey: `profile_set_reply_mode:${chatId}`,
+    properties: { reply_mode: raw, via: 'miniapp' }
+  });
+
+  return res.json({ user });
+});
+
 app.post('/billing/checkout', requireAuth, async (req, res) => {
   const chatId = req.auth.chatId;
   const { tier, currency, billing_interval: billingIntervalRaw } = req.body || {};

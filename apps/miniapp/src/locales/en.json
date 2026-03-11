@@ -163,6 +163,12 @@
     "learningLanguage": "Learning language",
     "level": "Level",
     "replyMode": "Reply mode",
+    "replyModeTitle": "How should the coach answer?",
+    "replyModeSaved": "Reply mode saved.",
+    "replyModeNotes": {
+      "text": "Text replies in chat. Better when you want to read corrections quickly.",
+      "voice": "Voice replies when available. Better for listening rhythm and speaking flow."
+    },
     "replyModeText": "Text-first",
     "replyModeVoice": "Voice-first",
     "levelSection": "Level tuning",
@@ -238,11 +244,11 @@
     "subPrefix": "This mirrors your teacher’s",
     "subSuffix": " selector.",
     "notes": {
-      "a1": "Simple replies. One key fix at a time.",
-      "a2": "Simple replies + simple grammar.",
-      "b1": "Conversational replies + useful corrections.",
-      "b2": "More natural replies: collocations, flow.",
-      "c1": "Advanced replies + only high-value fixes."
+      "a1": "Short present-tense replies. Usually 1 key correction only.",
+      "a2": "Simple past and future. Up to 2 basic grammar fixes.",
+      "b1": "More open replies. Useful fixes for tense, articles, and prepositions.",
+      "b2": "Natural phrasing and collocations. 2-4 higher-value corrections.",
+      "c1": "Nuanced replies. Only 1-2 advanced fixes for register or subtle grammar."
     },
     "toasts": {
       "saved": "Level saved ✅"

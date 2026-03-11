@@ -111,11 +111,11 @@
     "subPrefix": "Questo rispecchia il selettore del tuo insegnante",
     "subSuffix": ".",
     "notes": {
-      "a1": "Risposte molto semplici. Una correzione chiave alla volta.",
-      "a2": "Risposte semplici + grammatica semplice.",
-      "b1": "Risposte più conversazionali + correzioni utili.",
-      "b2": "Risposte più naturali: collocazioni, fluidità.",
-      "c1": "Risposte avanzate + solo correzioni ad alto valore."
+      "a1": "Risposte brevi al presente. Di solito solo 1 correzione chiave.",
+      "a2": "Passato e futuro semplici. Fino a 2 correzioni grammaticali di base.",
+      "b1": "Risposte piu aperte. Correzioni utili su tempi, articoli e preposizioni.",
+      "b2": "Frasi piu naturali e collocazioni. 2-4 correzioni di valore.",
+      "c1": "Risposte sfumate. Solo 1-2 correzioni avanzate su registro o grammatica sottile."
     },
     "toasts": {
       "saved": "Livello salvato ✅"
@@ -310,6 +310,12 @@
     "learningLanguage": "Learning language",
     "level": "Level",
     "replyMode": "Reply mode",
+    "replyModeTitle": "Come deve rispondere il coach?",
+    "replyModeSaved": "Modalita di risposta salvata.",
+    "replyModeNotes": {
+      "text": "Risposte testuali in chat. Meglio se vuoi leggere subito le correzioni.",
+      "voice": "Risposte vocali quando disponibili. Meglio per ascolto, ritmo e fluidita."
+    },
     "voice": "Voice",
     "replyModeText": "Text-first",
     "replyModeVoice": "Voice-first",

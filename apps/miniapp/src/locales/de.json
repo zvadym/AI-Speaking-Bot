@@ -111,11 +111,11 @@
     "subPrefix": "Das entspricht dem Auswahlfeld deiner Lehrkraft für",
     "subSuffix": ".",
     "notes": {
-      "a1": "Sehr einfache Antworten. Eine wichtige Korrektur pro Schritt.",
-      "a2": "Einfache Antworten + einfache Grammatik.",
-      "b1": "Alltagstaugliche Antworten + nützliche Korrekturen.",
-      "b2": "Natürlichere Antworten: Kollokationen, Sprachfluss.",
-      "c1": "Fortgeschrittene Antworten + nur wirklich wertvolle Korrekturen."
+      "a1": "Kurze Antworten im Praesens. Meist nur 1 wichtige Korrektur.",
+      "a2": "Einfache Vergangenheit und Zukunft. Bis zu 2 grundlegende Grammatik-Fixes.",
+      "b1": "Offenere Antworten. Nuetzliche Korrekturen bei Zeitformen, Artikeln und Praepositionen.",
+      "b2": "Natuerlichere Formulierungen und Kollokationen. 2-4 wertvolle Korrekturen.",
+      "c1": "Nuancierte Antworten. Nur 1-2 fortgeschrittene Korrekturen zu Register oder subtiler Grammatik."
     },
     "toasts": {
       "saved": "Niveau gespeichert ✅"
@@ -316,6 +316,12 @@
     "learningLanguage": "Learning language",
     "level": "Level",
     "replyMode": "Reply mode",
+    "replyModeTitle": "Wie soll der Coach antworten?",
+    "replyModeSaved": "Antwortmodus gespeichert.",
+    "replyModeNotes": {
+      "text": "Textantworten im Chat. Praktisch, wenn du Korrekturen schnell lesen willst.",
+      "voice": "Sprachantworten, wenn verfuegbar. Besser fuer Hoerrhythmus und Sprechfluss."
+    },
     "voice": "Voice",
     "replyModeText": "Text-first",
     "replyModeVoice": "Voice-first",
