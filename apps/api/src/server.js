@@ -2768,6 +2768,64 @@ app.get('/admin/metrics/active-users-by-day', requireAdmin, async (req, res) => 
   });
 });
 
+app.get('/admin/metrics/total-users-by-day', requireAdmin, async (req, res) => {
+  const range = parseAdminRange(req);
+  if (!range.ok) return res.status(400).json({ error: range.error });
+  res.set('Cache-Control', 'no-store');
+
+  const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+  const { rows } = await pool.query(
+    `WITH params AS (
+       SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+     ),
+     days AS (
+       SELECT generate_series(
+         date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+         date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+         interval '1 day'
+       )::date AS day_utc
+     ),
+     filtered_users AS (
+       SELECT chat_id, created_at
+       FROM users
+       WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+         AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
+     ),
+     baseline AS (
+       SELECT COUNT(*)::int AS count
+       FROM filtered_users
+       WHERE created_at < (SELECT from_ts FROM params)
+     ),
+     created_counts AS (
+       SELECT
+         date_trunc('day', created_at AT TIME ZONE 'UTC')::date AS day_utc,
+         COUNT(*)::int AS count
+       FROM filtered_users
+       WHERE created_at >= (SELECT from_ts FROM params)
+         AND created_at < (SELECT to_ts FROM params)
+       GROUP BY 1
+     )
+     SELECT
+       d.day_utc::text AS day,
+       (
+         (SELECT count FROM baseline)
+         + SUM(COALESCE(c.count, 0)) OVER (ORDER BY d.day_utc ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+       )::int AS count
+     FROM days d
+     LEFT JOIN created_counts c USING (day_utc)
+     ORDER BY d.day_utc ASC`,
+    [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
+  );
+
+  return res.json({
+    tz: 'UTC',
+    from: range.from.toISOString(),
+    to: range.to.toISOString(),
+    payload: range.payload,
+    series: rows
+  });
+});
+
 app.get('/admin/metrics/user-streaks', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });

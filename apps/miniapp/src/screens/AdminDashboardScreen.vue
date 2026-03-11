@@ -463,13 +463,13 @@
 
         <AdminChart
           title="Active users by day"
-          subtitle="Daily active users in UTC with current active-user total from users table"
+          subtitle="Daily active users in UTC with total users present in the database that day"
           kind="bar"
           x-labels="all"
           :data="activeUsersChartSeries"
           :series="[
             { key: 'count', label: 'Active users by day', color: 'rgba(31, 107, 99, 0.78)' },
-            { key: 'overall', label: 'Users overall', color: 'rgba(199, 90, 36, 0.94)', type: 'line' }
+            { key: 'overall', label: 'Users overall', color: 'rgba(199, 90, 36, 0.94)', type: 'line', yAxisId: 'y1' }
           ]"
         />
 
@@ -1840,6 +1840,7 @@ const actionFunnelLastWeekSeries = ref([]);
 const topicUsageSeries = ref([]);
 const topicUsageSeriesConfig = ref([]);
 const activeUsersSeries = ref([]);
+const totalUsersSeries = ref([]);
 const activeUsersByBotSeries = ref([]);
 const activeUsersByBotSeriesConfig = ref([]);
 const inactiveUsersSeries = ref([]);
@@ -1861,12 +1862,19 @@ const activeUsersByHourTodaySeries = ref([]);
 const userStreakSeries = ref([]);
 const xpDistributionSeries = ref([]);
 const xpEarnedByDaySeries = ref([]);
-const activeUsersChartSeries = computed(() =>
-  activeUsersSeries.value.map((row) => ({
-    ...row,
-    overall: safeNum(totals.value.active_users_all_time)
-  }))
-);
+const activeUsersChartSeries = computed(() => {
+  const totalUsersByDay = new Map(
+    totalUsersSeries.value.map((row) => [String(row?.day ?? '').trim(), safeNum(row?.count)])
+  );
+
+  return activeUsersSeries.value.map((row) => {
+    const day = String(row?.day ?? '').trim();
+    return {
+      ...row,
+      overall: totalUsersByDay.get(day) ?? 0
+    };
+  });
+});
 const activeUsersByHourCombinedSeries = computed(() => {
   const merged = new Map();
 
@@ -3752,6 +3760,7 @@ async function refreshAnalytics() {
       actionFunnelLastWeek,
       topicsByDay,
       activeUsers,
+      totalUsers,
       activeUsersByBot,
       inactiveUsers,
       usageSeconds,
@@ -3774,6 +3783,7 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.lastWeek, headers }),
       apiJson(props.apiBase, '/admin/metrics/topics-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/total-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
@@ -3808,6 +3818,7 @@ async function refreshAnalytics() {
     topicUsageSeries.value = topicChartData;
     topicUsageSeriesConfig.value = topicChartConfig;
     activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
+    totalUsersSeries.value = Array.isArray(totalUsers?.series) ? totalUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
     freeUserTotals.value = freeUsersInsights?.totals || freeUserTotals.value;
