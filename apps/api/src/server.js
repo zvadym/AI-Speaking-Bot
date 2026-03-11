@@ -6015,7 +6015,9 @@ app.post('/billing/checkout/embedded', requireAuth, async (req, res) => {
     customer: stripeCustomerId,
     client_reference_id: String(chatId),
     line_items: [{ price: priceRows[0].stripe_price_id, quantity: 1 }],
-    return_url: `${env.webappUrl}/success`,
+    return_url: env.webappReturnUrlIsCustom
+      ? env.webappReturnUrl
+      : `${env.webappUrl}/success`,
     allow_promotion_codes: true,
     redirect_on_completion: 'always',
     metadata: {
