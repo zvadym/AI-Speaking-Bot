@@ -233,6 +233,7 @@ async function submit() {
   padding: 22px 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: grid;
   gap: 14px;
+  align-content: start;
 }
 
 .support-hero,
@@ -241,6 +242,7 @@ async function submit() {
   padding: 16px;
   display: grid;
   gap: 12px;
+  align-content: start;
 }
 
 .eyebrow {

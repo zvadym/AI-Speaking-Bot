@@ -176,6 +176,7 @@
       "resumeAutoRenew": "Automatische Verlängerung fortsetzen"
     },
     "period": {
+      "label": "Zeitraum",
       "perMonth": "/ Monat",
       "perYear": "/ Jahr"
     },

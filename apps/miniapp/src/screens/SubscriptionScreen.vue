@@ -91,38 +91,12 @@
           <span class="selector-group-label">{{ $t('subscription.currency.label') }}</span>
           <span class="selector-group-note">{{ currencyNoteLabel }}</span>
         </div>
-        <div class="selector-list" role="radiogroup" :aria-label="$t('subscription.currency.label')">
+        <div class="selector-list selector-list-row selector-list-currency" role="radiogroup" :aria-label="$t('subscription.currency.label')">
           <button
-            v-for="currency in primaryCurrencies"
+            v-for="currency in availableCurrencies"
             :key="currency"
             type="button"
-            class="selector-option"
-            :class="{ active: currency === state.currency }"
-            :disabled="isBusy"
-            @click="selectCurrency(currency)"
-          >
-            <span class="selector-radio" aria-hidden="true"></span>
-            <span class="selector-copy">
-              <span class="selector-title">{{ currencyChipLabel(currency) }}</span>
-              <span class="selector-caption">{{ currencyOptionNote(currency) }}</span>
-            </span>
-          </button>
-        </div>
-        <button
-          v-if="hasOverflowCurrencies"
-          type="button"
-          class="selector-toggle"
-          :disabled="isBusy"
-          @click="toggleAllCurrencies"
-        >
-          {{ showAllCurrencies ? $t('subscription.currency.less') : $t('subscription.currency.more') }}
-        </button>
-        <div v-if="showAllCurrencies && overflowCurrencies.length" class="selector-list selector-list-secondary">
-          <button
-            v-for="currency in overflowCurrencies"
-            :key="currency"
-            type="button"
-            class="selector-option"
+            class="selector-option selector-option-compact"
             :class="{ active: currency === state.currency }"
             :disabled="isBusy"
             @click="selectCurrency(currency)"
@@ -138,17 +112,17 @@
 
       <div class="selector-group" v-if="showBillingToggle">
         <div class="selector-group-head">
-          <span class="selector-group-label">{{ $t('subscription.billingIntervals.monthly') }} / {{ $t('subscription.billingIntervals.annual') }}</span>
+          <span class="selector-group-label">{{ $t('subscription.period.label') }}</span>
           <span class="selector-group-note" v-if="billingSavingsPercent">
             {{ $t('subscription.billingIntervals.save', { save: billingSavingsPercent }) }}
           </span>
         </div>
-        <div class="selector-list selector-list-billing" role="radiogroup" :aria-label="$t('subscription.title')">
+        <div class="selector-list selector-list-row selector-list-billing" role="radiogroup" :aria-label="$t('subscription.period.label')">
         <button
           v-for="interval in availableBillingIntervals"
           :key="interval"
           type="button"
-          class="selector-option"
+          class="selector-option selector-option-compact"
           :class="{ active: interval === selectedBillingInterval }"
           :disabled="isBusy"
           @click="selectBillingInterval(interval)"
@@ -265,7 +239,6 @@ const BILLING_INTERVAL_MONTH = 'month';
 const BILLING_INTERVAL_YEAR = 'year';
 const BILLING_INTERVALS = new Set([BILLING_INTERVAL_MONTH, BILLING_INTERVAL_YEAR]);
 const selectedBillingInterval = ref(BILLING_INTERVAL_YEAR);
-const showAllCurrencies = ref(false);
 
 function normalizeBillingInterval(raw, fallback = null) {
   const value = (raw ?? '').toString().trim().toLowerCase();
@@ -281,8 +254,8 @@ function normalizeCurrencyCode(raw, fallback = null) {
 }
 
 function billingIntervalSortValue(interval) {
-  if (interval === BILLING_INTERVAL_MONTH) return 0;
-  if (interval === BILLING_INTERVAL_YEAR) return 1;
+  if (interval === BILLING_INTERVAL_YEAR) return 0;
+  if (interval === BILLING_INTERVAL_MONTH) return 1;
   return 2;
 }
 
@@ -345,9 +318,6 @@ const currencyDetails = computed(() => (state.currencyDetails && typeof state.cu
 const effectiveTier = computed(() => usage.value?.tier || state.user?.plan_tier || 'free');
 const showAutoRenewControls = computed(() => effectiveTier.value !== 'free');
 const showManagePayments = computed(() => showAutoRenewControls.value || Boolean(state.user?.stripe_subscription_status));
-const primaryCurrencies = computed(() => availableCurrencies.value.slice(0, 3));
-const overflowCurrencies = computed(() => availableCurrencies.value.slice(3));
-const hasOverflowCurrencies = computed(() => overflowCurrencies.value.length > 0);
 const showCurrencySelector = computed(() => effectiveTier.value !== 'pro' && availableCurrencies.value.length > 1);
 const currencyNoteLabel = computed(() => {
   const details = currencyDetails.value[state.currency];
@@ -553,7 +523,6 @@ function applyPlansPayload(data, { includeUserState = true } = {}) {
     ? data.currency_details
     : {};
   state.baseLanguage = (data?.base_language || '').toString().trim().toLowerCase();
-  if (overflowCurrencies.value.length === 0) showAllCurrencies.value = false;
   syncSelectedBillingInterval();
 }
 
@@ -630,11 +599,6 @@ function currencyOptionNote(currencyRaw) {
   const currency = normalizeCurrencyCode(currencyRaw, '');
   if (!currency) return '';
   return currencyDetails.value[currency]?.name || currency;
-}
-
-function toggleAllCurrencies() {
-  if (!hasOverflowCurrencies.value) return;
-  showAllCurrencies.value = !showAllCurrencies.value;
 }
 
 async function selectCurrency(currencyRaw) {
@@ -1014,8 +978,17 @@ onMounted(async () => {
   gap: 8px;
 }
 
+.selector-list-row {
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
+.selector-list-currency {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .selector-list-billing {
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .selector-option {
@@ -1032,6 +1005,11 @@ onMounted(async () => {
   transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 
+.selector-option-compact {
+  min-width: 0;
+  padding: 10px 10px;
+}
+
 .selector-option:hover:not(:disabled),
 .selector-option:focus-visible:not(:disabled) {
   transform: translateY(-1px);
@@ -1043,8 +1021,7 @@ onMounted(async () => {
   border-color: rgba(95, 117, 96, 0.34);
 }
 
-.selector-option:disabled,
-.selector-toggle:disabled {
+.selector-option:disabled {
   opacity: 0.6;
   cursor: default;
 }
@@ -1249,16 +1226,6 @@ onMounted(async () => {
   grid-column: 1 / -1;
 }
 
-.selector-toggle {
-  width: fit-content;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  padding: 0;
-}
-
 @media (max-width: 720px) {
   .manage-card {
     grid-template-columns: 1fr;
@@ -1269,6 +1236,10 @@ onMounted(async () => {
 
   .status-card {
     flex-direction: column;
+  }
+
+  .selector-list-currency {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   }
 }
 </style>

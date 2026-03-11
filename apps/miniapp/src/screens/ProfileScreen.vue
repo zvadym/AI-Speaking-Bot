@@ -184,6 +184,7 @@ onMounted(() => {
   padding: 22px 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: grid;
   gap: 14px;
+  align-content: start;
 }
 
 .section {
@@ -193,6 +194,7 @@ onMounted(() => {
 .section {
   display: grid;
   gap: 12px;
+  align-content: start;
 }
 
 .section-head {

@@ -287,6 +287,7 @@ const calendarCells = computed(() => {
   padding: 22px 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: grid;
   gap: 14px;
+  align-content: start;
 }
 
 .dash-head {
@@ -362,6 +363,7 @@ const calendarCells = computed(() => {
 .streak-card {
   display: grid;
   gap: 8px;
+  align-content: start;
 }
 
 .streak-head {
@@ -394,6 +396,7 @@ const calendarCells = computed(() => {
 .calendar {
   display: grid;
   gap: 4px;
+  align-content: start;
 }
 
 .calendar-head {

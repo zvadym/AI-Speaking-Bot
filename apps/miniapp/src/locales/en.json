@@ -297,6 +297,7 @@
       "resumeAutoRenew": "Resume auto-renew"
     },
     "period": {
+      "label": "Period",
       "perMonth": "/ month",
       "perYear": "/ year"
     },

@@ -176,6 +176,7 @@
       "resumeAutoRenew": "Увімкнути автопродовження"
     },
     "period": {
+      "label": "Період",
       "perMonth": "/ місяць",
       "perYear": "/ рік"
     },

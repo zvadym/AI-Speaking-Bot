@@ -176,6 +176,7 @@
       "resumeAutoRenew": "Riattiva rinnovo automatico"
     },
     "period": {
+      "label": "Periodo",
       "perMonth": "/ mese",
       "perYear": "/ anno"
     },

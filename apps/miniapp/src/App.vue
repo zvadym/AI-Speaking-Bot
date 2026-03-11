@@ -356,7 +356,9 @@ onBeforeUnmount(() => {
   width: 100%;
   min-height: 100vh;
   display: grid;
-  place-items: stretch;
+  justify-items: stretch;
+  align-items: start;
+  align-content: start;
 }
 
 .loading {
