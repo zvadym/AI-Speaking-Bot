@@ -463,12 +463,13 @@
 
         <AdminChart
           title="Active users by day"
-          subtitle="Overall daily active users in UTC"
-          kind="line"
+          subtitle="Daily active users in UTC with current active-user total from users table"
+          kind="bar"
           x-labels="all"
-          :data="activeUsersSeries"
+          :data="activeUsersChartSeries"
           :series="[
-            { key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.9)' }
+            { key: 'count', label: 'Active users by day', color: 'rgba(31, 107, 99, 0.78)' },
+            { key: 'overall', label: 'Users overall', color: 'rgba(199, 90, 36, 0.94)', type: 'line' }
           ]"
         />
 
@@ -1860,6 +1861,12 @@ const activeUsersByHourTodaySeries = ref([]);
 const userStreakSeries = ref([]);
 const xpDistributionSeries = ref([]);
 const xpEarnedByDaySeries = ref([]);
+const activeUsersChartSeries = computed(() =>
+  activeUsersSeries.value.map((row) => ({
+    ...row,
+    overall: safeNum(totals.value.active_users_all_time)
+  }))
+);
 const activeUsersByHourCombinedSeries = computed(() => {
   const merged = new Map();
 
