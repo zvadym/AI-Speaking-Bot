@@ -150,8 +150,15 @@ def to_env_key(credential_type: str) -> str:
     return f"N8N_CRED_{s}_ID"
 
 
-def iter_workflow_files(input_dir: Path) -> List[Path]:
-    return sorted([p for p in input_dir.glob("*.json") if p.is_file()])
+def iter_workflow_files(input_dir: Path, excluded_paths: Optional[Set[Path]] = None) -> List[Path]:
+    excluded = {path.resolve() for path in (excluded_paths or set())}
+    return sorted(
+        [
+            p
+            for p in input_dir.glob("*.json")
+            if p.is_file() and p.resolve() not in excluded
+        ]
+    )
 
 
 def load_json(path: Path) -> Dict[str, Any]:
@@ -927,11 +934,6 @@ def main() -> int:
         print(f"Input directory not found: {input_dir}", file=sys.stderr)
         return 1
 
-    files = iter_workflow_files(input_dir)
-    if not files:
-        print(f"No workflow JSON files found in {input_dir}", file=sys.stderr)
-        return 1
-
     # Bot configs are required - no legacy single-bot mode supported
     bots_mode = bots_dir.exists() and any(p.suffix == ".json" for p in bots_dir.glob("*.json"))
     if not bots_mode:
@@ -950,6 +952,11 @@ def main() -> int:
         openai_models = load_openai_models_config(models_config_path)
     except ValueError as e:
         print(str(e), file=sys.stderr)
+        return 1
+
+    files = iter_workflow_files(input_dir, excluded_paths={models_config_path})
+    if not files:
+        print(f"No workflow JSON files found in {input_dir}", file=sys.stderr)
         return 1
 
     # Telegram credentials come from bot configs, not env vars
