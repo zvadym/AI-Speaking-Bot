@@ -369,34 +369,6 @@ onBeforeUnmount(() => {
   align-content: start;
 }
 
-.app::before,
-.app::after {
-  content: '';
-  position: fixed;
-  left: 0;
-  right: 0;
-  pointer-events: none;
-  z-index: 12;
-}
-
-.app::before {
-  top: 0;
-  height: calc(92px + env(safe-area-inset-top, 0px));
-  background:
-    linear-gradient(180deg, rgba(244, 239, 231, 0.9) 0%, rgba(244, 239, 231, 0.62) 54%, rgba(244, 239, 231, 0) 100%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.app::after {
-  bottom: 0;
-  height: calc(116px + env(safe-area-inset-bottom, 0px));
-  background:
-    linear-gradient(0deg, rgba(244, 239, 231, 0.94) 0%, rgba(244, 239, 231, 0.7) 56%, rgba(244, 239, 231, 0) 100%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
 .loading {
   width: 100%;
   min-height: 100vh;
