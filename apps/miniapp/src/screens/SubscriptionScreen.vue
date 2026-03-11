@@ -1,8 +1,6 @@
 <template>
   <div class="shell fade-in">
     <header class="hero">
-      <div class="hero-badge">{{ $t('subscription.heroBadge') }}</div>
-      <h1>{{ $t('subscription.title') }}</h1>
       <p class="hero-sub">
         {{ $t('subscription.sub') }}
       </p>
@@ -31,38 +29,41 @@
 
     <section class="manage" v-if="user">
       <div class="manage-card">
-        <div class="manage-summary">
-          <h2>{{ $t('subscription.manage.yourPlan') }}</h2>
-          <p class="manage-plan">
-            {{ currentPlanLabel }}
-            <template v-if="showAutoRenewControls"> · {{ autoRenewLabel }}</template>
-          </p>
-          <p class="pending" v-if="pendingLabel">
-            {{ pendingLabel }}
-          </p>
+        <div class="manage-cell manage-cell--primary">
+          <span class="manage-label">{{ $t('subscription.manage.yourPlan') }}</span>
+          <strong class="manage-plan">{{ currentPlanDisplayLabel }}</strong>
         </div>
-        <div class="manage-usage" v-if="usage">
-          <div class="usage-item">
-            <span class="label">{{ voiceUsageLabel }}</span>
-            <div class="usage-bar">
-              <div class="usage-track">
-                <div
-                  class="usage-fill accent"
-                  :style="{ width: `${usagePercent(totalVoiceUsed(usage), totalVoiceLimit(usage))}%` }"
-                ></div>
-              </div>
+        <div class="manage-cell manage-cell--secondary">
+          <template v-if="effectiveTier === 'pro'">
+            <span class="manage-meta-label">{{ $t('subscription.manage.expires') }}</span>
+            <strong class="manage-meta-value">{{ planExpiryDisplay }}</strong>
+          </template>
+          <template v-else>
+            <div class="manage-usage-head">
+              <span class="manage-meta-label">{{ voiceUsageLabel }}</span>
+              <span class="manage-meta-value">{{ usagePercentLabel }}</span>
             </div>
-          </div>
+            <div class="usage-track">
+              <div
+                class="usage-fill accent"
+                :style="{ width: `${usagePercentValue}%` }"
+              ></div>
+            </div>
+          </template>
         </div>
-        <div class="manage-actions">
-          <button
-            class="ghost"
-            :disabled="isBusy"
-            @click="openBillingPortal"
-            v-if="showManagePayments"
-          >
-            {{ $t('subscription.manage.managePayments') }}
-          </button>
+      </div>
+      <p class="pending" v-if="pendingLabel">
+        {{ pendingLabel }}
+      </p>
+      <div class="manage-actions" v-if="showManagePayments || showAutoRenewControls">
+        <button
+          class="ghost"
+          :disabled="isBusy"
+          @click="openBillingPortal"
+          v-if="showManagePayments"
+        >
+          {{ $t('subscription.manage.managePayments') }}
+        </button>
         <template v-if="showAutoRenewControls">
           <button
             class="ghost"
@@ -80,8 +81,7 @@
           >
             {{ $t('subscription.manage.resumeAutoRenew') }}
           </button>
-          </template>
-        </div>
+        </template>
       </div>
     </section>
 
@@ -107,10 +107,7 @@
             @click="selectCurrency(currency)"
           >
             <span class="selector-radio" aria-hidden="true"></span>
-            <span class="selector-copy">
-              <span class="selector-title">{{ currencyChipLabel(currency) }}</span>
-              <span class="selector-caption">{{ currencyOptionNote(currency) }}</span>
-            </span>
+            <span class="selector-title">{{ currency }}</span>
           </button>
         </div>
       </div>
@@ -333,6 +330,13 @@ const currentPlanLabel = computed(() => {
   return planLabel(effectiveTier.value);
 });
 
+const currentPlanDisplayLabel = computed(() => (
+  effectiveTier.value === 'pro' ? 'PRO' : currentPlanLabel.value
+));
+
+const usagePercentValue = computed(() => usagePercent(totalVoiceUsed(usage.value), totalVoiceLimit(usage.value)));
+const usagePercentLabel = computed(() => `${usagePercentValue.value}%`);
+
 const voiceUsageLabel = computed(() => {
   if (usage.value?.limit_period === 'month') return t('subscription.manage.voiceTotalMonthly');
   return t('subscription.manage.voiceTotalLifetime');
@@ -357,9 +361,12 @@ const pendingLabel = computed(() => {
   return t('subscription.pending.atRenewal', { plan: label });
 });
 
-const autoRenewLabel = computed(() => {
-  if (!state.user) return t('subscription.autoRenew.off');
-  return state.user.plan_autorenew ? t('subscription.autoRenew.on') : t('subscription.autoRenew.off');
+const planExpiryDisplay = computed(() => {
+  const raw = state.user?.plan_expires_at;
+  if (!raw) return t('common.dash');
+  const parsed = new Date(raw);
+  if (!Number.isFinite(parsed.getTime())) return t('common.dash');
+  return formatDate(parsed);
 });
 
 function planLabel(tier) {
@@ -597,12 +604,6 @@ function currencyChipLabel(currencyRaw) {
   return symbol === currency ? currency : `${symbol} ${currency}`;
 }
 
-function currencyOptionNote(currencyRaw) {
-  const currency = normalizeCurrencyCode(currencyRaw, '');
-  if (!currency) return '';
-  return currencyDetails.value[currency]?.name || currency;
-}
-
 async function selectCurrency(currencyRaw) {
   const currency = normalizeCurrencyCode(currencyRaw, null);
   if (!currency) return;
@@ -790,23 +791,7 @@ onMounted(async () => {
 
 .hero {
   display: grid;
-  gap: 8px;
-}
-
-.hero-badge {
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 10px;
-  color: var(--accent-2);
-  font-weight: 700;
-}
-
-.hero h1 {
-  font-family: var(--font-body);
-  font-size: clamp(28px, 7vw, 38px);
-  letter-spacing: -0.04em;
-  font-weight: 800;
-  margin: 0;
+  gap: 4px;
 }
 
 .hero-sub {
@@ -850,51 +835,59 @@ onMounted(async () => {
 .manage-card {
   border: 1px solid var(--stroke);
   border-radius: 16px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   background: rgba(255, 255, 255, 0.62);
   display: grid;
-  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
 }
 
-.manage-summary {
+.manage-cell {
   display: grid;
-  gap: 2px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.manage-cell--secondary {
   align-content: center;
 }
 
-.manage-card h2 {
-  margin: 0;
-  font-size: 14px;
-  letter-spacing: -0.03em;
-}
-
-.manage-summary p {
-  margin: 0;
+.manage-label,
+.manage-meta-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--muted);
+  font-weight: 700;
 }
 
 .manage-plan {
-  font-size: 17px;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.05;
+}
+
+.manage-meta-value {
+  font-size: 15px;
   font-weight: 700;
   color: var(--ink);
+  line-height: 1.2;
 }
 
 .pending {
-  margin-top: 4px;
+  margin: 8px 2px 0;
   color: rgba(30, 26, 22, 0.78);
   font-size: 11px;
   font-weight: 600;
 }
 
 .manage-actions {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  align-content: start;
-  justify-items: start;
-  grid-column: 1 / -1;
-  padding-top: 2px;
+  padding-top: 8px;
 }
 
 .ghost {
@@ -917,26 +910,15 @@ onMounted(async () => {
   transform: translateY(1px);
 }
 
-.manage-usage {
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-  align-content: center;
-}
-
-.usage-item .label {
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.usage-bar {
-  margin-top: 4px;
+.manage-usage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .usage-track {
-  height: 8px;
+  height: 7px;
   border-radius: 999px;
   background: rgba(32, 35, 29, 0.08);
   overflow: hidden;
@@ -950,14 +932,6 @@ onMounted(async () => {
 
 .usage-fill.accent {
   background: rgba(181, 109, 86, 0.78);
-}
-
-.usage-meta {
-  margin-top: 8px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--muted);
 }
 
 .plans {
@@ -1029,6 +1003,12 @@ onMounted(async () => {
   padding: 10px 10px;
 }
 
+.selector-list-currency .selector-option {
+  grid-template-columns: 16px auto;
+  justify-content: center;
+  gap: 8px;
+}
+
 .selector-option:hover:not(:disabled),
 .selector-option:focus-visible:not(:disabled) {
   transform: translateY(-1px);
@@ -1074,7 +1054,7 @@ onMounted(async () => {
 
 .selector-title {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--ink);
 }
 

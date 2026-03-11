@@ -16,27 +16,23 @@
       </div>
       <div class="stats-row" aria-label="Progress stats">
         <div class="stat-card">
-          <span class="stat-label">{{ $t('dashboard.xpLevelLabel') }}</span>
-          <strong class="stat-value">L{{ xpLevelDisplay }}</strong>
-        </div>
-        <div class="stat-card">
           <span class="stat-label">{{ $t('dashboard.xpTotalLabel') }}</span>
           <strong class="stat-value">{{ xpTotalDisplay }}</strong>
         </div>
-        <div class="stat-card stat-card--muted">
-          <span class="stat-label">{{ $t('dashboard.streakBonusLabel') }}</span>
-          <strong class="stat-value">{{ $t('dashboard.streakBonusPendingShort') }}</strong>
-          <span class="stat-note">{{ $t('dashboard.streakBonusPendingNote') }}</span>
+        <div class="stat-card">
+          <span class="stat-label">{{ $t('dashboard.xpLevelLabel') }}</span>
+          <strong class="stat-value">L{{ xpLevelDisplay }}</strong>
+        </div>
+      </div>
+      <div class="stats-row stats-row--single" aria-label="Current streak">
+        <div class="stat-card stat-card--muted stat-card--streak">
+          <span class="stat-label">{{ $t('dashboard.currentStreak') }}</span>
+          <strong class="stat-value">{{ streakDaysDisplay }}</strong>
         </div>
       </div>
     </header>
 
     <GlassCard tone="subtle" class="streak-card">
-      <div class="streak-head">
-        <div class="streak-label">{{ $t('dashboard.currentStreak') }}</div>
-        <div class="streak-value" :class="{ placeholder: loading }">{{ streakCountDisplay }}</div>
-      </div>
-
       <div class="calendar" role="group" :aria-label="$t('dashboard.streakCalendar')">
         <div class="calendar-head">
           <button
@@ -169,7 +165,11 @@ const planLabel = computed(() => {
   return tier === 'pro' ? t('plans.tiers.pro') : t('plans.tiers.free');
 });
 
-const streakCountDisplay = computed(() => (loading.value ? '—' : String(streak.value.current ?? 0)));
+const streakDaysDisplay = computed(() => (
+  loading.value
+    ? '—'
+    : t('dashboard.streakDays', { count: streak.value.current ?? 0 })
+));
 const xpTotalDisplay = computed(() => (loading.value ? '—' : String(xp.value.total ?? 0)));
 const xpLevelDisplay = computed(() => (loading.value ? '—' : String(xp.value.level ?? 1)));
 
@@ -370,8 +370,12 @@ const calendarCells = computed(() => {
 
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.stats-row--single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .stat-card {
@@ -385,6 +389,12 @@ const calendarCells = computed(() => {
 
 .stat-card--muted {
   background: rgba(127, 150, 128, 0.08);
+}
+
+.stat-card--streak {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
 }
 
 .stat-label {
@@ -402,12 +412,6 @@ const calendarCells = computed(() => {
   letter-spacing: -0.03em;
 }
 
-.stat-note {
-  font-size: 10px;
-  line-height: 1.2;
-  color: var(--muted);
-}
-
 .streak-card,
 .notice-card {
   padding: 16px;
@@ -415,35 +419,8 @@ const calendarCells = computed(() => {
 
 .streak-card {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   align-content: start;
-}
-
-.streak-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: baseline;
-}
-
-.streak-label {
-  font-size: 11px;
-  font-weight: 750;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-}
-
-.streak-value {
-  font-size: 34px;
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
-.streak-value.placeholder {
-  opacity: 0.55;
 }
 
 .calendar {
@@ -561,12 +538,6 @@ const calendarCells = computed(() => {
 
 .day-num {
   font-size: 11px;
-}
-
-@media (max-width: 420px) {
-  .stats-row {
-    grid-template-columns: 1fr;
-  }
 }
 
 .notice-card p {

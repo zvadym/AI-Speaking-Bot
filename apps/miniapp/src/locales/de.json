@@ -171,6 +171,7 @@
     "title": "Abo",
     "sub": "Verwalte Plan, Nutzung und Zahlungen an einem Ort.",
     "manage": {
+      "expires": "Ablaufdatum",
       "yourPlan": "Dein Plan",
       "practiceTime": "Übungszeit",
       "voiceReplies": "Sprachantworten",
@@ -260,6 +261,7 @@
     "statusAtRisk": "One quick session keeps the streak alive today.",
     "statusBroken": "A fresh streak starts with your next message.",
     "currentStreak": "Current streak",
+    "streakDays": "{count} Tage",
     "xpLevelLabel": "Level",
     "xpTotalLabel": "XP",
     "streakBonusLabel": "Streak XP",

@@ -172,6 +172,7 @@
     "sub": "Керуй планом, використанням і оплатою в одному місці.",
     "manage": {
       "yourPlan": "Твій план",
+      "expires": "Дата завершення",
       "practiceTime": "Час практики",
       "voiceReplies": "Голосові відповіді",
       "voiceTotalLifetime": "Голосове використання за весь час",
@@ -258,6 +259,7 @@
     "statusAtRisk": "Одна коротка практика сьогодні збереже streak.",
     "statusBroken": "Новий streak почнеться з наступного повідомлення.",
     "currentStreak": "Поточний streak",
+    "streakDays": "{count} днів",
     "xpLevelLabel": "Рівень",
     "xpTotalLabel": "XP",
     "streakBonusLabel": "Streak XP",

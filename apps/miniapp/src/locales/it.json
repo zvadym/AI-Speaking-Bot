@@ -172,6 +172,7 @@
     "sub": "Gestisci piano, utilizzo e pagamenti in un unico posto.",
     "manage": {
       "yourPlan": "Il tuo piano",
+      "expires": "Data scadenza",
       "practiceTime": "Tempo di pratica",
       "voiceReplies": "Risposte vocali",
       "voiceTotalLifetime": "Uso vocale totale",
@@ -254,6 +255,7 @@
     "statusAtRisk": "One quick session keeps the streak alive today.",
     "statusBroken": "A fresh streak starts with your next message.",
     "currentStreak": "Current streak",
+    "streakDays": "{count} giorni",
     "xpLevelLabel": "Livello",
     "xpTotalLabel": "XP",
     "streakBonusLabel": "Streak XP",
