@@ -160,6 +160,9 @@
             "Possiamo rendere il ritorno facile. {{reply_cta_label}} in {{target_language_label}} e poi ti guido io."
           ]
         }
+      },
+      "free_limit_50": {
+        "message_html": "<b>Hai già usato metà del tuo limite gratuito ✨</b>\nSe vuoi continuare, PRO costa meno di 2 caffè al mese.\n\nSblocca funzioni extra come nuovi argomenti, impostazioni del tono e altri aggiornamenti in futuro."
       }
     }
   },

@@ -160,6 +160,9 @@
             "We can make the comeback easy. {{reply_cta_label}} in {{target_language_label}} and we'll go from there."
           ]
         }
+      },
+      "free_limit_50": {
+        "message_html": "<b>You’re already halfway through your free limit ✨</b>\nIf you want to keep going, PRO costs less than 2 cups of coffee per month.\n\nIt unlocks extra features like new topics, tone settings, and more updates in the future."
       }
     }
   },

@@ -160,6 +160,9 @@
             "Donusu kolaylastiralim. {{reply_cta_label}} {{target_language_label}} olarak gonder, gerisini ben yoneteyim."
           ]
         }
+      },
+      "free_limit_50": {
+        "message_html": "<b>Ücretsiz limitinin yarısına ulaştın ✨</b>\nDevam etmek istersen, PRO aylık 2 fincan kahveden daha ucuza geliyor.\n\nYeni konular, ton ayarları ve gelecekte gelecek daha fazla güncelleme gibi ekstra avantajların kilidini açar."
       }
     }
   },

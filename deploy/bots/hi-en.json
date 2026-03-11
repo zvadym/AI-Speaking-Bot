@@ -160,6 +160,9 @@
             "Comeback ko easy banate hain. {{reply_cta_label}} {{target_language_label}} me bhejo, baaki main dekh lunga."
           ]
         }
+      },
+      "free_limit_50": {
+        "message_html": "<b>आप अपने फ्री लिमिट का आधा पहले ही इस्तेमाल कर चुके हैं ✨</b>\nअगर आप जारी रखना चाहते हैं, तो PRO की कीमत महीने में 2 कप कॉफी से भी कम है।\n\nइससे नए विषय, टोन सेटिंग्स और आगे आने वाले अपडेट जैसी अतिरिक्त सुविधाएँ मिलती हैं।"
       }
     }
   },

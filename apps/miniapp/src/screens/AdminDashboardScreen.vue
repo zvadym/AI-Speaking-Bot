@@ -1100,7 +1100,7 @@
         <div>
           <div class="panel-kicker">Messaging</div>
           <h2 class="panel-title">Reminder tests</h2>
-          <p class="panel-sub">Send an immediate D3, D7, or D14 reminder test to one selected user on one selected bot.</p>
+          <p class="panel-sub">Send an immediate D3, D7, D14, or 50% free limit reminder test to one selected user on one selected bot.</p>
         </div>
         <div class="panel-actions">
           <span class="status-pill" :class="{ warn: automatedMessageTestModeActive }">
@@ -1169,6 +1169,7 @@
               <option value="d3">D3</option>
               <option value="d7">D7</option>
               <option value="d14">D14</option>
+              <option value="free_limit_50">50% free limit</option>
             </select>
           </label>
 
@@ -1185,7 +1186,7 @@
 
           <div class="actions">
             <button class="btn primary" type="button" :disabled="!canSendReminderTest || reminderTestSending" @click="sendReminderTest">
-              {{ reminderTestSending ? 'Sending…' : `Send ${String(reminderTestType || '').toUpperCase()}` }}
+              {{ reminderTestSending ? 'Sending…' : `Send ${reminderTestTypeLabel(reminderTestType)}` }}
             </button>
           </div>
         </div>
@@ -2185,6 +2186,10 @@ const reminderTestError = ref('');
 const reminderTestInfo = ref('');
 const reminderTestResult = ref(null);
 
+function reminderTestTypeLabel(value) {
+  return value === 'free_limit_50' ? '50% free limit' : String(value || '').toUpperCase();
+}
+
 const broadcastMediaAccept = computed(() => (broadcast.messageKind === 'photo' ? 'image/*' : 'video/*'));
 
 const hasBroadcastMedia = computed(() => {
@@ -2542,7 +2547,7 @@ const canSendReminderTest = computed(() => {
   if (!password.value) return false;
   if (!reminderTestSelectedChatId.value) return false;
   if (!normalizeBotKeyValue(reminderTestBotKey.value) || !reminderTestBotExists.value) return false;
-  if (!['d3', 'd7', 'd14'].includes(reminderTestType.value)) return false;
+  if (!['d3', 'd7', 'd14', 'free_limit_50'].includes(reminderTestType.value)) return false;
   if (reminderTestConfirm.value.trim().toUpperCase() !== 'TEST') return false;
   if (reminderTestAllowlistBlocked.value) return false;
   return true;
@@ -4179,7 +4184,7 @@ async function sendReminderTest() {
       }
     });
     reminderTestResult.value = data || null;
-    reminderTestInfo.value = `Sent ${String(reminderTestType.value || '').toUpperCase()} reminder test.`;
+    reminderTestInfo.value = `Sent ${reminderTestTypeLabel(reminderTestType.value)} reminder test.`;
     reminderTestConfirm.value = '';
   } catch (err) {
     console.error(err);

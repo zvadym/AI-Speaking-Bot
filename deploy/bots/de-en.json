@@ -160,6 +160,9 @@
             "Wir machen das Comeback leicht. {{reply_cta_label}} auf {{target_language_label}}, und ich übernehme von dort."
           ]
         }
+      },
+      "free_limit_50": {
+        "message_html": "<b>Du hast schon die Hälfte deines freien Limits geschafft ✨</b>\nWenn du weitermachen willst, kostet PRO weniger als 2 Tassen Kaffee pro Monat.\n\nDamit bekommst du Extras wie neue Themen, Toneinstellungen und weitere Updates in Zukunft."
       }
     }
   },

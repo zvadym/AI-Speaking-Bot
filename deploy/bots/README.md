@@ -91,6 +91,11 @@ The `/xp` workflow also expects these `locale` keys for the expanded progress ca
 - `xp_streak_bonus_label`
 - `xp_streak_bonus_pending`
 
+The API automated notifications also read these locale keys when present:
+
+- `locale.notifications.winback.*`
+- `locale.notifications.free_limit_50.message_html`
+
 ## Two-Step Workflow
 
 ### 1) Validate / normalize bot files

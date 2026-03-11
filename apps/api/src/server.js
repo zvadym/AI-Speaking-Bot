@@ -19,6 +19,7 @@ import {
   getAutomatedMessageTestState,
   enqueueLoaderRotateJob,
   enqueueLoaderTimeoutCleanupJob,
+  sendAdminTestFreeLimitHalfReminder,
   sendAdminTestWinbackReminder
 } from './jobs.js';
 import { getApiBoss, stopApiBoss } from './queue.js';
@@ -111,6 +112,7 @@ const ACTION_EVENT_TYPES = [
   'topic_message_sent',
   'topic_clear',
   'day1_return',
+  'free_limit_half',
   'paywall_shown',
   'purchase_success'
 ];
@@ -4895,17 +4897,24 @@ app.post('/admin/reminders/test-send', requireAdmin, async (req, res) => {
   const chatId = Number(req.body?.chatId ?? req.body?.chat_id);
   const botKey = normalizeBotKey(req.body?.botKey ?? req.body?.bot_key);
   const reminderType = String(req.body?.reminderType ?? req.body?.reminder_type ?? '').trim().toLowerCase();
+  const isWinbackType = ['d3', 'd7', 'd14'].includes(reminderType);
+  const isFreeLimitHalfType = reminderType === 'free_limit_50';
 
-  if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || !['d3', 'd7', 'd14'].includes(reminderType)) {
+  if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || (!isWinbackType && !isFreeLimitHalfType)) {
     return res.status(400).json({ error: 'bad_request' });
   }
 
   try {
-    const result = await sendAdminTestWinbackReminder({
-      chatId,
-      botKey,
-      reminderType
-    });
+    const result = isFreeLimitHalfType
+      ? await sendAdminTestFreeLimitHalfReminder({
+          chatId,
+          botKey
+        })
+      : await sendAdminTestWinbackReminder({
+          chatId,
+          botKey,
+          reminderType
+        });
     return res.json(result);
   } catch (err) {
     const errorCode = String(err?.code || '').trim() || 'request_failed';
@@ -4916,6 +4925,13 @@ app.post('/admin/reminders/test-send', requireAdmin, async (req, res) => {
     }
     if (errorCode === 'chat_not_allowed_in_test_mode') {
       return res.status(403).json({ error: 'chat_not_allowed_in_test_mode' });
+    }
+    if (
+      errorCode === 'missing_free_limit_half_message'
+      || errorCode === 'missing_free_limit_half_cta'
+      || errorCode === 'free_limit_half_send_failed'
+    ) {
+      return res.status(502).json({ error: errorCode, detail });
     }
     if (errorCode === 'llm_generation_failed') {
       return res.status(502).json({ error: 'llm_generation_failed', detail });
