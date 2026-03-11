@@ -1125,6 +1125,36 @@ async function getUserStreakSummary(chatIdRaw) {
   };
 }
 
+async function getUserXpSummary(chatIdRaw, botKeyRaw) {
+  const chatId = Number(chatIdRaw);
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (!Number.isFinite(chatId) || !botKey) {
+    return {
+      total: 0,
+      level: 1,
+      streak_bonus_applied: false
+    };
+  }
+
+  const { rows } = await pool.query(
+    `SELECT
+       COALESCE(up.xp_total, 0)::int AS xp_total,
+       FLOOR(COALESCE(up.xp_total, 0) / 200.0)::int + 1 AS xp_level
+     FROM user_progress up
+     WHERE up.chat_id = $1
+       AND up.bot_key = $2
+     LIMIT 1`,
+    [chatId, botKey]
+  );
+
+  const row = rows[0] || null;
+  return {
+    total: Number(row?.xp_total || 0),
+    level: Number(row?.xp_level || 1) || 1,
+    streak_bonus_applied: false
+  };
+}
+
 function feedbackPreviewText(raw) {
   const text = (raw ?? '').toString().replace(/\s+/g, ' ').trim();
   if (!text) return '';
@@ -5519,10 +5549,11 @@ app.get('/me/dashboard', requireAuth, async (req, res) => {
   const user = await getMeUserRow(chatId, requestedBotKey);
   if (!user) return res.status(404).json({ error: 'user_not_found' });
 
-  const [usage, streak, feedbackSummary] = await Promise.all([
+  const [usage, streak, feedbackSummary, xp] = await Promise.all([
     getUserUsageSummary(chatId),
     getUserStreakSummary(chatId),
-    getUserFeedbackSummary(chatId, user.bot_key)
+    getUserFeedbackSummary(chatId, user.bot_key),
+    getUserXpSummary(chatId, user.bot_key)
   ]);
 
   return res.json({
@@ -5548,6 +5579,7 @@ app.get('/me/dashboard', requireAuth, async (req, res) => {
       teacher_style_tags: user.teacher_style_tags || null
     },
     streak,
+    xp,
     usage,
     feedback_summary: feedbackSummary
   });

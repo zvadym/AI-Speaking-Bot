@@ -14,6 +14,21 @@
           {{ planLabel }}
         </button>
       </div>
+      <div class="stats-row" aria-label="Progress stats">
+        <div class="stat-card">
+          <span class="stat-label">{{ $t('dashboard.xpLevelLabel') }}</span>
+          <strong class="stat-value">L{{ xpLevelDisplay }}</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">{{ $t('dashboard.xpTotalLabel') }}</span>
+          <strong class="stat-value">{{ xpTotalDisplay }}</strong>
+        </div>
+        <div class="stat-card stat-card--muted">
+          <span class="stat-label">{{ $t('dashboard.streakBonusLabel') }}</span>
+          <strong class="stat-value">{{ $t('dashboard.streakBonusPendingShort') }}</strong>
+          <span class="stat-note">{{ $t('dashboard.streakBonusPendingNote') }}</span>
+        </div>
+      </div>
     </header>
 
     <GlassCard tone="subtle" class="streak-card">
@@ -132,6 +147,11 @@ const streak = computed(() => dashboard.value?.streak || {
   activity_days: []
 });
 const usage = computed(() => dashboard.value?.usage || null);
+const xp = computed(() => dashboard.value?.xp || {
+  total: 0,
+  level: 1,
+  streak_bonus_applied: false
+});
 
 function practiceLanguageLabel(codeRaw) {
   const code = (codeRaw || '').toString().trim().toLowerCase();
@@ -150,6 +170,8 @@ const planLabel = computed(() => {
 });
 
 const streakCountDisplay = computed(() => (loading.value ? '—' : String(streak.value.current ?? 0)));
+const xpTotalDisplay = computed(() => (loading.value ? '—' : String(xp.value.total ?? 0)));
+const xpLevelDisplay = computed(() => (loading.value ? '—' : String(xp.value.level ?? 1)));
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -291,7 +313,7 @@ const calendarCells = computed(() => {
 
 .dash-head {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .app-subtitle {
@@ -344,6 +366,46 @@ const calendarCells = computed(() => {
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.74);
   border-color: rgba(127, 150, 128, 0.32);
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stat-card {
+  display: grid;
+  gap: 3px;
+  padding: 10px 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(157, 146, 129, 0.2);
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.stat-card--muted {
+  background: rgba(127, 150, 128, 0.08);
+}
+
+.stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stat-value {
+  font-size: 15px;
+  line-height: 1.1;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+}
+
+.stat-note {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--muted);
 }
 
 .streak-card,
@@ -478,8 +540,9 @@ const calendarCells = computed(() => {
 }
 
 .calendar-day.active {
-  background: rgba(103, 130, 102, 0.16);
-  border-color: rgba(103, 130, 102, 0.26);
+  background: rgba(103, 130, 102, 0.3);
+  border-color: rgba(103, 130, 102, 0.48);
+  box-shadow: inset 0 0 0 1px rgba(103, 130, 102, 0.12);
 }
 
 .calendar-day.inactive {
@@ -498,6 +561,12 @@ const calendarCells = computed(() => {
 
 .day-num {
   font-size: 11px;
+}
+
+@media (max-width: 420px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .notice-card p {
