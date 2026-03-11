@@ -1,7 +1,6 @@
 <template>
   <div class="dashboard-shell fade-in">
     <header class="dash-head">
-      <h1 class="app-title">{{ $t('dashboard.title') }}</h1>
       <p class="app-subtitle">{{ $t('dashboard.subtitle') }}</p>
       <div class="chip-row" aria-label="Current learning setup">
         <span class="chip">{{ languageLabel }}</span>
@@ -284,7 +283,7 @@ const calendarCells = computed(() => {
 <style scoped>
 .dashboard-shell {
   width: min(760px, 100%);
-  padding: 22px 16px calc(104px + env(safe-area-inset-bottom, 0px));
+  padding: calc(var(--app-header-offset) + 16px) 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: grid;
   gap: 14px;
   align-content: start;
@@ -295,21 +294,13 @@ const calendarCells = computed(() => {
   gap: 6px;
 }
 
-.app-title {
-  margin: 0;
-  font-family: var(--font-body);
-  letter-spacing: -0.04em;
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1.1;
-}
-
 .app-subtitle {
   margin: 0;
-  color: var(--muted);
-  font-weight: 600;
-  line-height: 1.35;
-  font-size: 13px;
+  color: var(--muted-strong);
+  font-weight: 700;
+  line-height: 1.3;
+  font-size: 16px;
+  letter-spacing: -0.03em;
 }
 
 .chip-row {

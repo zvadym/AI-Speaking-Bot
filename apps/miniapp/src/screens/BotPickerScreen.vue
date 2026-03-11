@@ -72,7 +72,7 @@ const normalizedBots = computed(() =>
 <style scoped>
 .shell {
   width: min(900px, 100%);
-  padding: 44px 22px 76px;
+  padding: calc(var(--app-header-offset) + 24px) 22px 76px;
   display: grid;
   gap: 22px;
 }

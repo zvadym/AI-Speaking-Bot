@@ -25,6 +25,7 @@
   --shadow-lg: 0 14px 32px rgba(61, 52, 38, 0.08);
   --surface-tint: rgba(139, 154, 121, 0.08);
   --surface-warm: rgba(183, 133, 102, 0.08);
+  --app-header-offset: 92px;
 }
 
 * {

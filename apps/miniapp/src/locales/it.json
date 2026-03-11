@@ -43,6 +43,11 @@
       "authFailed": "Autorizzazione non riuscita. Riapri la mini-app."
     }
   },
+  "appHeader": {
+    "title": "AI Language School",
+    "linkLabel": "ai-language-school.online",
+    "description": "20+ lingue per la pratica quotidiana in un solo posto."
+  },
   "botPicker": {
     "kicker": "Contesto insegnante",
     "title": "Scegli insegnante",

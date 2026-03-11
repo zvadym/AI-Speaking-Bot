@@ -17,8 +17,10 @@
       </div>
     </div>
 
+    <AppHeader v-else-if="showAppHeader" />
+
     <BotPickerScreen
-      v-else-if="showBotPicker"
+      v-if="showBotPicker"
       :bots="meBots"
       @select="selectBotAndRefresh"
     />
@@ -100,6 +102,7 @@ import ProfileScreen from './screens/ProfileScreen.vue';
 import FeedbackScreen from './screens/FeedbackScreen.vue';
 import BotPickerScreen from './screens/BotPickerScreen.vue';
 import BottomDock from './components/BottomDock.vue';
+import AppHeader from './components/AppHeader.vue';
 import { useNav } from './lib/nav.js';
 import { apiJson, authTelegram } from './lib/api.js';
 import { getTelegramWebApp, tgReady } from './lib/tg.js';
@@ -127,6 +130,11 @@ const showBottomDock = computed(
     && !showBotPicker.value
     && !isAdmin.value
     && nav.screen.value !== 'checkout'
+);
+const showAppHeader = computed(
+  () => !loading.value
+    && !fatalKey.value
+    && !isAdmin.value
 );
 const effectiveBaseLanguage = computed(() => {
   const fromMe = (me.value?.base_language || '').toString().trim().toLowerCase();

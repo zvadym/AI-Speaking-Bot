@@ -181,7 +181,7 @@ onMounted(() => {
 <style scoped>
 .profile-shell {
   width: min(760px, 100%);
-  padding: 22px 16px calc(104px + env(safe-area-inset-bottom, 0px));
+  padding: calc(var(--app-header-offset) + 16px) 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: grid;
   gap: 14px;
   align-content: start;

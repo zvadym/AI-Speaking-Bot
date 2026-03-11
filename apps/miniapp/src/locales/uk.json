@@ -43,6 +43,11 @@
       "authFailed": "Не вдалося авторизуватися. Будь ласка, відкрийте міні‑додаток ще раз."
     }
   },
+  "appHeader": {
+    "title": "AI Language School",
+    "linkLabel": "ai-language-school.online",
+    "description": "20+ мов для щоденної практики в одному місці."
+  },
   "botPicker": {
     "kicker": "Контекст викладача",
     "title": "Обери викладача",

@@ -31,25 +31,25 @@
 
     <section class="manage" v-if="user">
       <div class="manage-card">
-        <div>
+        <div class="manage-summary">
           <h2>{{ $t('subscription.manage.yourPlan') }}</h2>
-          <p>
+          <p class="manage-plan">
             {{ currentPlanLabel }}
             <template v-if="showAutoRenewControls"> · {{ autoRenewLabel }}</template>
           </p>
           <p class="pending" v-if="pendingLabel">
             {{ pendingLabel }}
           </p>
-          <div class="manage-usage" v-if="usage">
-            <div class="usage-item">
-              <span class="label">{{ voiceUsageLabel }}</span>
-              <div class="usage-bar">
-                <div class="usage-track">
-                  <div
-                    class="usage-fill accent"
-                    :style="{ width: `${usagePercent(totalVoiceUsed(usage), totalVoiceLimit(usage))}%` }"
-                  ></div>
-                </div>
+        </div>
+        <div class="manage-usage" v-if="usage">
+          <div class="usage-item">
+            <span class="label">{{ voiceUsageLabel }}</span>
+            <div class="usage-bar">
+              <div class="usage-track">
+                <div
+                  class="usage-fill accent"
+                  :style="{ width: `${usagePercent(totalVoiceUsed(usage), totalVoiceLimit(usage))}%` }"
+                ></div>
               </div>
             </div>
           </div>
@@ -91,7 +91,12 @@
           <span class="selector-group-label">{{ $t('subscription.currency.label') }}</span>
           <span class="selector-group-note">{{ currencyNoteLabel }}</span>
         </div>
-        <div class="selector-list selector-list-row selector-list-currency" role="radiogroup" :aria-label="$t('subscription.currency.label')">
+        <div
+          class="selector-list selector-list-row selector-list-currency"
+          role="radiogroup"
+          :aria-label="$t('subscription.currency.label')"
+          :style="{ gridTemplateColumns: `repeat(${Math.max(availableCurrencies.length, 1)}, minmax(0, 1fr))` }"
+        >
           <button
             v-for="currency in availableCurrencies"
             :key="currency"
@@ -113,9 +118,6 @@
       <div class="selector-group" v-if="showBillingToggle">
         <div class="selector-group-head">
           <span class="selector-group-label">{{ $t('subscription.period.label') }}</span>
-          <span class="selector-group-note" v-if="billingSavingsPercent">
-            {{ $t('subscription.billingIntervals.save', { save: billingSavingsPercent }) }}
-          </span>
         </div>
         <div class="selector-list selector-list-row selector-list-billing" role="radiogroup" :aria-label="$t('subscription.period.label')">
         <button
@@ -780,7 +782,7 @@ onMounted(async () => {
   width: min(760px, 100%);
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 24px 16px calc(104px + env(safe-area-inset-bottom, 0px));
+  padding: calc(var(--app-header-offset) + 18px) 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -848,27 +850,41 @@ onMounted(async () => {
 .manage-card {
   border: 1px solid var(--stroke);
   border-radius: 16px;
-  padding: 16px;
+  padding: 14px 16px;
   background: rgba(255, 255, 255, 0.62);
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 14px;
+  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.manage-summary {
+  display: grid;
+  gap: 2px;
+  align-content: center;
 }
 
 .manage-card h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: 14px;
   letter-spacing: -0.03em;
 }
 
-.manage-card p {
-  margin: 4px 0 0;
+.manage-summary p {
+  margin: 0;
   color: var(--muted);
 }
 
+.manage-plan {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .pending {
-  margin: 8px 0 0;
+  margin-top: 4px;
   color: rgba(30, 26, 22, 0.78);
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -876,7 +892,9 @@ onMounted(async () => {
   display: grid;
   gap: 8px;
   align-content: start;
-  justify-items: end;
+  justify-items: start;
+  grid-column: 1 / -1;
+  padding-top: 2px;
 }
 
 .ghost {
@@ -900,9 +918,10 @@ onMounted(async () => {
 }
 
 .manage-usage {
-  margin-top: 12px;
   display: grid;
   gap: 10px;
+  min-width: 0;
+  align-content: center;
 }
 
 .usage-item .label {
@@ -913,7 +932,7 @@ onMounted(async () => {
 }
 
 .usage-bar {
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .usage-track {

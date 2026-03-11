@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
   width: min(760px, 100%);
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 24px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+  padding: calc(var(--app-header-offset) + 18px) 16px calc(28px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 16px;

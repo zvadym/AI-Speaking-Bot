@@ -43,6 +43,11 @@
       "authFailed": "Autorisierung fehlgeschlagen. Bitte öffne die Mini-App erneut."
     }
   },
+  "appHeader": {
+    "title": "AI Language School",
+    "linkLabel": "ai-language-school.online",
+    "description": "20+ Sprachen für tägliche Praxis an einem Ort."
+  },
   "botPicker": {
     "kicker": "Lehrkraft-Kontext",
     "title": "Lehrkraft auswählen",

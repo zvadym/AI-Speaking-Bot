@@ -43,6 +43,11 @@
       "authFailed": "Authorization failed. Please reopen the mini-app."
     }
   },
+  "appHeader": {
+    "title": "AI Language School",
+    "linkLabel": "ai-language-school.online",
+    "description": "20+ languages for daily practice in one place."
+  },
   "botPicker": {
     "kicker": "Teacher context",
     "title": "Pick teacher",
