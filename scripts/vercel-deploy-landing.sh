@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "PLEASE deploy with github"
+exit 1
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if ! command -v vercel >/dev/null 2>&1; then
@@ -31,13 +34,24 @@ echo "Generating teachers from deploy/bots/*.json (sanitised)..."
 node "$ROOT_DIR/apps/landing/scripts/generate-teachers.mjs"
 
 VERCEL_CWD="$ROOT_DIR/apps/landing"
-if [[ -f "$ROOT_DIR/apps/landing/.vercel/project.json" ]]; then
-  VERCEL_CWD="$ROOT_DIR/apps/landing"
-elif [[ -f "$ROOT_DIR/.vercel/project.json" ]]; then
+if [[ -f "$ROOT_DIR/.vercel/project.json" ]]; then
   VERCEL_CWD="$ROOT_DIR"
+elif [[ -f "$ROOT_DIR/apps/landing/.vercel/project.json" ]]; then
+  VERCEL_CWD="$ROOT_DIR/apps/landing"
 fi
 
 cd "$VERCEL_CWD"
+
+if [[ -f "$ROOT_DIR/.vercel/project.json" && -f "$ROOT_DIR/apps/landing/.vercel/project.json" ]]; then
+  ROOT_PROJECT_NAME="$(node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));process.stdout.write(j.projectName||'');" "$ROOT_DIR/.vercel/project.json")"
+  APP_PROJECT_NAME="$(node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));process.stdout.write(j.projectName||'');" "$ROOT_DIR/apps/landing/.vercel/project.json")"
+  if [[ "$ROOT_PROJECT_NAME" != "$APP_PROJECT_NAME" ]]; then
+    echo "Warning: found two different Vercel links:"
+    echo "  repo root -> $ROOT_PROJECT_NAME"
+    echo "  apps/landing -> $APP_PROJECT_NAME"
+    echo "Using repo root link to avoid deploying the landing to a separate project."
+  fi
+fi
 
 if [[ ! -f .vercel/project.json ]]; then
   echo ""
