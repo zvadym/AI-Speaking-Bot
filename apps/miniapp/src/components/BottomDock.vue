@@ -58,7 +58,7 @@ const items = computed(() => ([
   padding: 8px;
   border-radius: 22px;
   border: 1px solid rgba(186, 177, 160, 0.62);
-  background: rgba(249, 245, 238, 0.82);
+  background: #f4eee4;
   box-shadow: 0 12px 28px rgba(61, 52, 38, 0.09);
 }
 

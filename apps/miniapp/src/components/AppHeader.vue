@@ -39,7 +39,7 @@ function openSchoolUrl() {
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid rgba(185, 176, 159, 0.7);
-  background: rgba(249, 244, 237, 0.82);
+  background: #f4eee4;
   box-shadow: 0 12px 28px rgba(61, 52, 38, 0.08);
   display: grid;
   gap: 2px;
