@@ -90,6 +90,8 @@ EXPLANATION_TITLES = {
     "ru": "Пояснение",
 }
 
+LOADER_API_BASE_URL_DEFAULT = "http://api:3000"
+
 
 def to_env_key(credential_type: str) -> str:
     if credential_type in EXPLICIT_ENV:
@@ -524,6 +526,36 @@ def patch_message_model_node(ai_data: Dict[str, Any], base_language: str, learni
     text_opts["schema"] = json.dumps(schema_obj, indent=2, ensure_ascii=False)
 
 
+def patch_loader_http_nodes(workflow_data: Dict[str, Any]) -> None:
+    base_url = (os.environ.get("LOADER_API_BASE_URL") or LOADER_API_BASE_URL_DEFAULT).strip().rstrip("/")
+    internal_secret = (os.environ.get("INTERNAL_API_SECRET") or "").strip()
+    if not internal_secret:
+        raise ValueError("Missing required env var: INTERNAL_API_SECRET")
+
+    for node_name, suffix in (
+        ("Loader: Start", "/internal/loader/start"),
+        ("Loader: Stop", "/internal/loader/stop"),
+    ):
+        node = find_node(workflow_data, node_name)
+        params = node.get("parameters")
+        if not isinstance(params, dict):
+            raise ValueError(f"{node_name} parameters missing/invalid")
+        params["url"] = f"{base_url}{suffix}"
+
+        header_params = params.get("headerParameters")
+        header_items = (header_params or {}).get("parameters") if isinstance(header_params, dict) else None
+        if not isinstance(header_items, list):
+            raise ValueError(f"{node_name} headerParameters missing/invalid")
+
+        secret_set = False
+        for item in header_items:
+            if isinstance(item, dict) and item.get("name") == "x-internal-secret":
+                item["value"] = internal_secret
+                secret_set = True
+        if not secret_set:
+            raise ValueError(f"{node_name} missing x-internal-secret header")
+
+
 def find_required_env(files: List[Path], *, ignore_types: Optional[Set[str]] = None) -> Dict[str, Set[str]]:
     env_to_types: Dict[str, Set[str]] = {}
     ignore = ignore_types or set()
@@ -866,6 +898,7 @@ def main() -> int:
 
         patch_set_locale_node(ai, full_locale)
         patch_message_model_node(ai, base, learn)
+        patch_loader_http_nodes(ai)
 
         set_telegram_credential_id(ai, tg_cred)
 
