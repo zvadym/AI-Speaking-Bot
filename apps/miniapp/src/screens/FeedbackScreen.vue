@@ -6,9 +6,8 @@
         <h1>{{ $t('feedback.title') }}</h1>
         <p class="hero-copy">{{ $t('feedback.sub') }}</p>
       </div>
-      <div class="hero-meta">
-        <span>{{ currentBotLabel }}</span>
-        <span v-if="thread.unread_admin_replies">{{ $t('feedback.unreadCount', { count: thread.unread_admin_replies }) }}</span>
+      <div v-if="thread.unread_admin_replies" class="hero-meta">
+        <span>{{ $t('feedback.unreadCount', { count: thread.unread_admin_replies }) }}</span>
       </div>
     </GlassCard>
 
@@ -124,7 +123,6 @@ const categoryOptions = computed(() => ([
   { value: 'coach', label: t('feedback.categories.coach') }
 ]));
 
-const currentBotLabel = computed(() => props.me?.bot_name || props.botKey || t('feedback.support'));
 const remainingChars = computed(() => 1000 - message.value.length);
 const canSubmit = computed(() => Boolean(category.value) && Boolean(message.value.trim()) && message.value.trim().length <= 1000);
 const validationMessage = computed(() => {
@@ -291,6 +289,7 @@ h2 {
 
 .hero-meta {
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .hero-meta span,
@@ -368,7 +367,7 @@ h2 {
   min-height: 42px;
   padding: 0 16px;
   cursor: pointer;
-  color: white;
+  color: #f7f3ec;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -378,7 +377,9 @@ h2 {
 
 .send-btn:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 1;
+  background: rgba(95, 117, 96, 0.22);
+  color: var(--muted-strong);
 }
 
 .section-icon,

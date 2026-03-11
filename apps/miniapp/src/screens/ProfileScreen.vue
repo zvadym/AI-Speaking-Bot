@@ -7,7 +7,7 @@
           <h2>{{ selectedBot.bot_name || languageLabel }}</h2>
         </div>
       </div>
-      <p class="section-copy">{{ teacherTagline }}</p>
+      <p class="section-copy section-copy-compact">{{ teacherTagline }}</p>
       <div class="meta-grid">
         <div class="meta-tile">
           <span>{{ $t('profile.learningLanguage') }}</span>
@@ -183,24 +183,24 @@ onMounted(() => {
   width: min(760px, 100%);
   padding: calc(var(--app-header-offset) + 16px) 16px calc(104px + env(safe-area-inset-bottom, 0px));
   display: grid;
-  gap: 14px;
+  gap: 10px;
   align-content: start;
 }
 
 .section {
-  padding: 16px;
+  padding: 14px;
 }
 
 .section {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   align-content: start;
 }
 
 .section-head {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
   align-items: flex-start;
 }
 
@@ -229,7 +229,7 @@ h1 {
 }
 
 h2 {
-  font-size: clamp(20px, 4vw, 26px);
+  font-size: clamp(18px, 4vw, 22px);
   font-weight: 760;
 }
 
@@ -238,22 +238,31 @@ h2 {
 .level-tile p {
   margin: 0;
   color: var(--muted);
-  line-height: 1.5;
+  line-height: 1.4;
+  font-size: 13px;
+}
+
+.section-copy-compact {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .ghost-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 14px;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 12px;
   border-radius: 12px;
   border: 1px solid rgba(157, 146, 129, 0.24);
   cursor: pointer;
   background: rgba(255, 255, 255, 0.58);
   color: var(--ink);
   font-weight: 700;
+  font-size: 12px;
 }
 
 .ghost-link.secondary {
@@ -262,14 +271,22 @@ h2 {
 
 .button-icon,
 .section-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .meta-grid,
 .level-grid {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+}
+
+.meta-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.level-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .meta-tile,
@@ -286,26 +303,27 @@ h2 {
 }
 
 .meta-tile {
-  padding: 12px 14px;
+  padding: 10px 11px;
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .meta-tile span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .meta-tile strong {
   color: var(--ink);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.2;
 }
 
 .level-tile {
   cursor: pointer;
   text-align: left;
-  padding: 14px;
+  padding: 11px 12px;
   transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
@@ -321,27 +339,27 @@ h2 {
 .level-top {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .level-top strong {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .level-top span {
   color: var(--accent-strong);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 
-@media (min-width: 768px) {
-  .meta-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 380px) {
+  .level-grid {
+    grid-template-columns: 1fr;
   }
 
-  .level-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .meta-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
