@@ -129,7 +129,39 @@
     "xp_today_left_label": "المتبقي اليوم",
     "xp_level_progress_label": "تقدم المستوى",
     "xp_streak_bonus_label": "مكافأة السلسلة",
-    "xp_streak_bonus_pending": "مضاعف السلسلة لا يُطبّق على XP بعد."
+    "xp_streak_bonus_pending": "مضاعف السلسلة لا يُطبّق على XP بعد.",
+    "notifications": {
+      "winback": {
+        "reply_cta_voice": "ارسل رسالة صوتية قصيرة",
+        "reply_cta_text": "اكتب جملة قصيرة واحدة",
+        "d3_fallback_variants": [
+          "جاهز تكمل؟ {{reply_cta_label}} بـ {{target_language_label}} وأنا أساعدك بالخطوة التالية.",
+          "تحب ترجع للممارسة؟ {{reply_cta_label}} بـ {{target_language_label}}."
+        ],
+        "d7_fallback_variants": [
+          "تحب بداية سهلة؟ {{reply_cta_label}} بـ {{target_language_label}} وأنا أساعدك.",
+          "نقدر نرجع بخطوة صغيرة. {{reply_cta_label}} بـ {{target_language_label}}."
+        ],
+        "d14": {
+          "default": [
+            "بدون أي ضغط. نقدر نبدأ من جديد في أي وقت. {{reply_cta_label}} بـ {{target_language_label}} لما تحب.",
+            "متى ما كنت جاهز نبدأ بداية جديدة. {{reply_cta_label}} بـ {{target_language_label}}."
+          ],
+          "topic": [
+            "تحب ترجع إلى موضوع {{topic_title}}؟ {{reply_cta_label}} بـ {{target_language_label}} ونبدأ بهدوء.",
+            "موضوع {{topic_title}} ما زال مناسبًا للرجوع. {{reply_cta_label}} بـ {{target_language_label}} وقت ما تريد."
+          ],
+          "streak": [
+            "أنت سبق وبنيت streak لمدة {{streak_best}} يومًا. نقدر نبدأ من جديد بخطوة صغيرة. {{reply_cta_label}} بـ {{target_language_label}}.",
+            "أفضل streak عندك كانت {{streak_best}} يومًا. الرجوع ممكن يبدأ برسالة قصيرة واحدة. {{reply_cta_label}} بـ {{target_language_label}}."
+          ],
+          "voice": [
+            "يكفي مقطع صوتي قصير للرجوع. {{reply_cta_label}} بـ {{target_language_label}} لما يناسبك.",
+            "خلينا نجعل العودة سهلة. {{reply_cta_label}} بـ {{target_language_label}} وأنا أكمل معك من هناك."
+          ]
+        }
+      }
+    }
   },
   "telegram_presentation": {
     "name": "Nour 🇸🇦→🇬🇧 معلمة إنجليزية",

@@ -754,7 +754,8 @@
       </section>
     </template>
 
-    <section class="card panel" v-else-if="activeTab === 'messaging'">
+    <template v-else-if="activeTab === 'messaging'">
+    <section class="card panel">
       <header class="panel-head">
         <div>
           <div class="panel-kicker">Messaging</div>
@@ -1081,6 +1082,142 @@
         </section>
       </div>
     </section>
+
+    <section class="card panel reminder-test-panel">
+      <header class="panel-head">
+        <div>
+          <div class="panel-kicker">Messaging</div>
+          <h2 class="panel-title">Reminder tests</h2>
+          <p class="panel-sub">Send an immediate D3, D7, or D14 reminder test to one selected user on one selected bot.</p>
+        </div>
+        <div class="panel-actions">
+          <span class="status-pill" :class="{ warn: automatedMessageTestModeActive }">
+            {{ automatedMessageTestModeActive ? `Test allowlist: ${fmt(automatedMessageTestChatIds.length)}` : 'Test allowlist off' }}
+          </span>
+        </div>
+      </header>
+
+      <div class="panel-body">
+        <div class="row">
+          <label class="field grow">
+            <span>Find user</span>
+            <input
+              v-model.trim="reminderTestUserSearch"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              placeholder="@username or chat_id"
+            />
+            <small class="hint">Search, then explicitly pick a single user below.</small>
+          </label>
+        </div>
+
+        <div v-if="reminderTestLookupError" class="callout error">
+          {{ reminderTestLookupError }}
+        </div>
+
+        <div v-if="reminderTestSuggestions.length" class="exclude-suggestions">
+          <button
+            v-for="u in reminderTestSuggestions"
+            :key="`reminder-${u.chat_id}`"
+            class="exclude-suggestion"
+            type="button"
+            :disabled="reminderTestSending"
+            @click="selectReminderTestUser(u)"
+          >
+            <div class="exclude-suggestion-main">
+              <strong>{{ excludedUserLabel(u) }}</strong>
+              <span class="exclude-suggestion-meta"><code>{{ u.chat_id }}</code></span>
+            </div>
+            <span class="exclude-suggestion-action">Select</span>
+          </button>
+        </div>
+
+        <div v-if="reminderTestSelectedUser" class="chip-row">
+          <button class="exclude-chip" type="button" :disabled="reminderTestSending" @click="clearReminderTestSelection({ clearSearch: true })">
+            <span>{{ excludedUserLabel(reminderTestSelectedUser) }} · <code>{{ reminderTestSelectedChatId }}</code></span>
+            <span aria-hidden="true" class="exclude-chip-x">×</span>
+          </button>
+        </div>
+
+        <div class="row">
+          <label class="field">
+            <span>Bot</span>
+            <select v-model="reminderTestBotKey">
+              <option value="">Select bot…</option>
+              <option v-for="bot in reminderTestBotOptions" :key="`reminder-bot-${bot.bot_key}`" :value="bot.bot_key">
+                {{ bot.bot_key }} · {{ languageLabelForCode(bot.base_lang) }} → {{ languageLabelForCode(bot.target_lang) }}
+              </option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Reminder type</span>
+            <select v-model="reminderTestType">
+              <option value="d3">D3</option>
+              <option value="d7">D7</option>
+              <option value="d14">D14</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Confirm send</span>
+            <input
+              v-model.trim="reminderTestConfirm"
+              type="text"
+              autocomplete="off"
+              inputmode="text"
+              placeholder="Type TEST"
+            />
+          </label>
+
+          <div class="actions">
+            <button class="btn primary" type="button" :disabled="!canSendReminderTest || reminderTestSending" @click="sendReminderTest">
+              {{ reminderTestSending ? 'Sending…' : `Send ${String(reminderTestType || '').toUpperCase()}` }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="automatedMessageTestModeActive" class="callout">
+          Automated message test mode is active. This panel can send only to the configured allowlist chat IDs.
+        </div>
+        <div v-if="!password" class="callout">Enter admin password above to use reminder tests.</div>
+        <div v-else-if="reminderTestAllowlistBlocked" class="callout error">Selected chat is not included in the automated message test allowlist.</div>
+        <div v-else-if="!reminderTestSelectedChatId" class="callout">Pick a user first.</div>
+        <div v-else-if="!reminderTestBotExists" class="callout">Select a bot explicitly.</div>
+        <div v-else-if="reminderTestConfirm.trim().toUpperCase() !== 'TEST'" class="callout">Type TEST to send the reminder immediately.</div>
+        <div v-else-if="reminderTestError" class="callout error">{{ reminderTestError }}</div>
+        <div v-else-if="reminderTestInfo" class="callout">{{ reminderTestInfo }}</div>
+
+        <div class="sample-card" v-if="reminderTestResult">
+          <div class="sample-title">Last reminder test result</div>
+          <div class="billing-summary">
+            <div class="billing-summary-line">
+              <span class="hint">Chat</span>
+              <strong><code>{{ reminderTestResult.chat_id }}</code></strong>
+            </div>
+            <div class="billing-summary-line">
+              <span class="hint">Bot</span>
+              <strong>{{ reminderTestResult.bot_key }}</strong>
+            </div>
+            <div class="billing-summary-line">
+              <span class="hint">Reminder</span>
+              <strong>{{ String(reminderTestResult.reminder_type || '').toUpperCase() }}</strong>
+            </div>
+            <div class="billing-summary-line">
+              <span class="hint">Task type</span>
+              <strong><code>{{ reminderTestResult.task_type }}</code></strong>
+            </div>
+            <div class="billing-summary-line">
+              <span class="hint">Telegram message</span>
+              <strong><code>{{ reminderTestResult.telegram_message_id || '—' }}</code></strong>
+            </div>
+          </div>
+          <pre class="feedback-text">{{ reminderTestResult.message_text }}</pre>
+        </div>
+      </div>
+    </section>
+    </template>
 
     <section class="card panel" v-else-if="activeTab === 'billing'">
       <header class="panel-head">
@@ -1672,6 +1809,8 @@ const totals = ref({
 });
 
 const botStats = ref([]);
+const automatedMessageTestModeActive = ref(false);
+const automatedMessageTestChatIds = ref([]);
 
 const botSort = reactive({
   key: 'users_last_3_days',
@@ -2007,6 +2146,17 @@ const broadcastMediaFile = ref(null);
 const mediaUploading = ref(false);
 const mediaUploadError = ref('');
 const mediaUploadInfo = ref('');
+const reminderTestUserSearch = ref('');
+const reminderTestSuggestions = ref([]);
+const reminderTestLookupError = ref('');
+const reminderTestSelectedUser = ref(null);
+const reminderTestBotKey = ref('');
+const reminderTestType = ref('d3');
+const reminderTestConfirm = ref('');
+const reminderTestSending = ref(false);
+const reminderTestError = ref('');
+const reminderTestInfo = ref('');
+const reminderTestResult = ref(null);
 
 const broadcastMediaAccept = computed(() => (broadcast.messageKind === 'photo' ? 'image/*' : 'video/*'));
 
@@ -2336,6 +2486,41 @@ const selectedBroadcastBaseLang = computed(() => {
   return (botStatsByKey.value.get(botKey)?.base_lang ?? '').toString().trim().toLowerCase();
 });
 
+const automatedMessageTestChatIdSet = computed(() =>
+  new Set(
+    (Array.isArray(automatedMessageTestChatIds.value) ? automatedMessageTestChatIds.value : [])
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean)
+  )
+);
+
+const reminderTestBotOptions = computed(() =>
+  botStatsTable.value
+    .slice()
+    .sort((a, b) => String(a?.bot_key || '').localeCompare(String(b?.bot_key || '')))
+);
+const reminderTestBotExists = computed(() =>
+  reminderTestBotOptions.value.some((bot) => bot?.bot_key === normalizeBotKeyValue(reminderTestBotKey.value))
+);
+
+const reminderTestSelectedChatId = computed(() => String(reminderTestSelectedUser.value?.chat_id ?? '').trim());
+const reminderTestAllowlistBlocked = computed(() => {
+  if (!automatedMessageTestModeActive.value) return false;
+  const chatId = reminderTestSelectedChatId.value;
+  if (!chatId) return false;
+  return !automatedMessageTestChatIdSet.value.has(chatId);
+});
+
+const canSendReminderTest = computed(() => {
+  if (!password.value) return false;
+  if (!reminderTestSelectedChatId.value) return false;
+  if (!normalizeBotKeyValue(reminderTestBotKey.value) || !reminderTestBotExists.value) return false;
+  if (!['d3', 'd7', 'd14'].includes(reminderTestType.value)) return false;
+  if (reminderTestConfirm.value.trim().toUpperCase() !== 'TEST') return false;
+  if (reminderTestAllowlistBlocked.value) return false;
+  return true;
+});
+
 const broadcastBotGroups = computed(() => {
   const groups = new Map();
   for (const bot of botStatsByKey.value.values()) {
@@ -2428,6 +2613,10 @@ async function refreshBotStats() {
     const headers = adminHeaders();
     const botStatsData = await apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers });
     botStats.value = Array.isArray(botStatsData?.bots) ? botStatsData.bots : [];
+    automatedMessageTestModeActive.value = Boolean(botStatsData?.automated_message_test_mode_active);
+    automatedMessageTestChatIds.value = Array.isArray(botStatsData?.automated_message_test_chat_ids)
+      ? botStatsData.automated_message_test_chat_ids
+      : [];
   } catch (err) {
     console.error(err);
   }
@@ -3578,6 +3767,10 @@ async function refreshAnalytics() {
 
     totals.value = summary?.totals || totals.value;
     botStats.value = Array.isArray(botStatsData?.bots) ? botStatsData.bots : [];
+    automatedMessageTestModeActive.value = Boolean(botStatsData?.automated_message_test_mode_active);
+    automatedMessageTestChatIds.value = Array.isArray(botStatsData?.automated_message_test_chat_ids)
+      ? botStatsData.automated_message_test_chat_ids
+      : [];
     newPaidSeries.value = Array.isArray(newPaid?.series) ? newPaid.series : [];
     actionEventsSeries.value = Array.isArray(actionEvents?.series) ? actionEvents.series : [];
     actionTotalsSeries.value = Array.isArray(actionTotals?.series)
@@ -3832,6 +4025,9 @@ async function deleteUserCompletely(row) {
 
 let excludeLookupTimer = null;
 let excludeLookupRequestId = 0;
+let reminderTestLookupTimer = null;
+let reminderTestLookupRequestId = 0;
+let suppressReminderTestSelectionReset = false;
 
 async function refreshExcludeSuggestions() {
   excludeLookupError.value = '';
@@ -3869,6 +4065,95 @@ async function refreshExcludeSuggestions() {
     const msg = err?.payload?.error || err?.message || 'request_failed';
     excludeLookupError.value = `User lookup failed: ${msg}`;
     excludeSuggestions.value = [];
+  }
+}
+
+function clearReminderTestSelection({ clearSearch = false } = {}) {
+  reminderTestSelectedUser.value = null;
+  if (clearSearch) reminderTestUserSearch.value = '';
+}
+
+function selectReminderTestUser(user) {
+  const chatId = String(user?.chat_id ?? '').trim();
+  if (!chatId) return;
+  reminderTestSelectedUser.value = {
+    chat_id: chatId,
+    username: user?.username ? String(user.username).replace(/^@/, '').trim() : '',
+    first_name: user?.first_name ? String(user.first_name).trim() : ''
+  };
+  suppressReminderTestSelectionReset = true;
+  reminderTestUserSearch.value = '';
+  reminderTestSuggestions.value = [];
+  reminderTestLookupError.value = '';
+  reminderTestError.value = '';
+  reminderTestInfo.value = '';
+}
+
+async function refreshReminderTestSuggestions() {
+  reminderTestLookupError.value = '';
+  const raw = reminderTestUserSearch.value.trim();
+  if (!raw) {
+    reminderTestSuggestions.value = [];
+    return;
+  }
+
+  const q = raw.replace(/^@/, '');
+  const chatId = normalizeChatIdCandidate(q);
+  if (!chatId && q.trim().length < 2) {
+    reminderTestSuggestions.value = [];
+    return;
+  }
+  if (!password.value) {
+    reminderTestSuggestions.value = [];
+    return;
+  }
+
+  const requestId = ++reminderTestLookupRequestId;
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, '/admin/users/search', {
+      query: { q, limit: 8 },
+      headers
+    });
+    if (requestId !== reminderTestLookupRequestId) return;
+    reminderTestSuggestions.value = Array.isArray(data?.items) ? data.items : [];
+  } catch (err) {
+    if (requestId !== reminderTestLookupRequestId) return;
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    reminderTestLookupError.value = `User lookup failed: ${msg}`;
+    reminderTestSuggestions.value = [];
+  }
+}
+
+async function sendReminderTest() {
+  if (!canSendReminderTest.value) return;
+
+  reminderTestSending.value = true;
+  reminderTestError.value = '';
+  reminderTestInfo.value = '';
+  reminderTestResult.value = null;
+
+  try {
+    const headers = adminHeaders();
+    const data = await apiJson(props.apiBase, '/admin/reminders/test-send', {
+      method: 'POST',
+      headers,
+      body: {
+        chatId: reminderTestSelectedChatId.value,
+        botKey: reminderTestBotKey.value,
+        reminderType: reminderTestType.value
+      }
+    });
+    reminderTestResult.value = data || null;
+    reminderTestInfo.value = `Sent ${String(reminderTestType.value || '').toUpperCase()} reminder test.`;
+    reminderTestConfirm.value = '';
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    reminderTestError.value = `Reminder test failed: ${msg}`;
+  } finally {
+    reminderTestSending.value = false;
   }
 }
 
@@ -3981,6 +4266,19 @@ function clearPassword() {
   billingCreateDraft.currency = '';
   billingCreateDraft.monthlyAmountCents = '';
   billingCreateDraft.annualAmountCents = '';
+  automatedMessageTestModeActive.value = false;
+  automatedMessageTestChatIds.value = [];
+  reminderTestUserSearch.value = '';
+  reminderTestSuggestions.value = [];
+  reminderTestLookupError.value = '';
+  reminderTestSelectedUser.value = null;
+  reminderTestBotKey.value = '';
+  reminderTestType.value = 'd3';
+  reminderTestConfirm.value = '';
+  reminderTestSending.value = false;
+  reminderTestError.value = '';
+  reminderTestInfo.value = '';
+  reminderTestResult.value = null;
   freeUserTotals.value = {
     free_users_all_time: 0,
     free_users_with_voice_in_range: 0,
@@ -4022,6 +4320,31 @@ watch(excludeSearch, () => {
     excludeLookupTimer = null;
   }, 250);
 });
+
+watch(reminderTestUserSearch, (next, prev) => {
+  if (suppressReminderTestSelectionReset) {
+    suppressReminderTestSelectionReset = false;
+  } else if (next !== prev && reminderTestSelectedUser.value) {
+    reminderTestSelectedUser.value = null;
+  }
+  if (reminderTestLookupTimer) {
+    window.clearTimeout(reminderTestLookupTimer);
+    reminderTestLookupTimer = null;
+  }
+  reminderTestLookupTimer = window.setTimeout(() => {
+    refreshReminderTestSuggestions();
+    reminderTestLookupTimer = null;
+  }, 250);
+});
+
+watch(
+  () => [reminderTestSelectedChatId.value, reminderTestBotKey.value, reminderTestType.value].join('|'),
+  () => {
+    reminderTestError.value = '';
+    reminderTestInfo.value = '';
+    reminderTestResult.value = null;
+  }
+);
 
 watch(
   () => [
@@ -4097,6 +4420,9 @@ watch(
     if (next.join(',') !== broadcast.botKeys.slice().sort().join(',')) {
       broadcast.botKeys = next;
     }
+    if (reminderTestBotKey.value && !reminderTestBotExists.value) {
+      reminderTestBotKey.value = '';
+    }
   }
 );
 
@@ -4123,6 +4449,10 @@ onBeforeUnmount(() => {
   if (excludeLookupTimer) {
     window.clearTimeout(excludeLookupTimer);
     excludeLookupTimer = null;
+  }
+  if (reminderTestLookupTimer) {
+    window.clearTimeout(reminderTestLookupTimer);
+    reminderTestLookupTimer = null;
   }
   stopCampaignPolling();
 });
@@ -4225,6 +4555,12 @@ h1 {
   border-color: rgba(31, 107, 99, 0.28);
   background: rgba(31, 107, 99, 0.10);
   color: rgba(31, 107, 99, 0.92);
+}
+
+.status-pill.warn {
+  border-color: rgba(199, 90, 36, 0.28);
+  background: rgba(199, 90, 36, 0.10);
+  color: rgba(145, 63, 21, 0.92);
 }
 
 .status-pill.subtle {

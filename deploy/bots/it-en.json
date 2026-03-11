@@ -129,7 +129,39 @@
     "xp_today_left_label": "Rimasto oggi",
     "xp_level_progress_label": "Progresso livello",
     "xp_streak_bonus_label": "Bonus streak",
-    "xp_streak_bonus_pending": "Il moltiplicatore streak non viene ancora applicato agli XP."
+    "xp_streak_bonus_pending": "Il moltiplicatore streak non viene ancora applicato agli XP.",
+    "notifications": {
+      "winback": {
+        "reply_cta_voice": "manda un breve vocale",
+        "reply_cta_text": "scrivi una frase breve",
+        "d3_fallback_variants": [
+          "Pronto/a a continuare? {{reply_cta_label}} in {{target_language_label}} e ti aiuto con il prossimo passo.",
+          "Vuoi riprendere da qui? {{reply_cta_label}} in {{target_language_label}}."
+        ],
+        "d7_fallback_variants": [
+          "Ti va un restart semplice? {{reply_cta_label}} in {{target_language_label}} e ti aiuto io.",
+          "Possiamo ripartire in piccolo. {{reply_cta_label}} in {{target_language_label}}."
+        ],
+        "d14": {
+          "default": [
+            "Nessuna pressione. Possiamo ricominciare da zero in qualsiasi momento. {{reply_cta_label}} in {{target_language_label}} quando vuoi.",
+            "Quando ti va, possiamo ripartire da capo. {{reply_cta_label}} in {{target_language_label}}."
+          ],
+          "topic": [
+            "Vuoi tornare sul tema {{topic_title}}? {{reply_cta_label}} in {{target_language_label}} e ripartiamo con calma.",
+            "{{topic_title}} resta un ottimo punto da cui ripartire. {{reply_cta_label}} in {{target_language_label}} quando vuoi."
+          ],
+          "streak": [
+            "Hai già costruito una streak di {{streak_best}} giorni. Possiamo ricominciare con un passo piccolo. {{reply_cta_label}} in {{target_language_label}}.",
+            "La tua streak migliore è stata di {{streak_best}} giorni. Il rientro può iniziare con un messaggio breve. {{reply_cta_label}} in {{target_language_label}}."
+          ],
+          "voice": [
+            "Per ripartire basta un vocale breve. {{reply_cta_label}} in {{target_language_label}} quando ti va.",
+            "Possiamo rendere il ritorno facile. {{reply_cta_label}} in {{target_language_label}} e poi ti guido io."
+          ]
+        }
+      }
+    }
   },
   "telegram_presentation": {
     "name": "Luca 🇮🇹→🇬🇧 tutor di inglese",

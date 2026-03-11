@@ -128,7 +128,39 @@
     "xp_today_left_label": "Залишилось сьогодні",
     "xp_level_progress_label": "Прогрес рівня",
     "xp_streak_bonus_label": "Бонус за серію",
-    "xp_streak_bonus_pending": "Множник серії поки не застосовується до XP."
+    "xp_streak_bonus_pending": "Множник серії поки не застосовується до XP.",
+    "notifications": {
+      "winback": {
+        "reply_cta_voice": "надішли коротке голосове",
+        "reply_cta_text": "напиши одне коротке речення",
+        "d3_fallback_variants": [
+          "Готовий(-а) продовжити? {{reply_cta_label}} {{target_language_label}}, а я допоможу з наступним кроком.",
+          "Хочеш повернутись до практики? {{reply_cta_label}} {{target_language_label}}."
+        ],
+        "d7_fallback_variants": [
+          "Хочеш легкий рестарт? {{reply_cta_label}} {{target_language_label}}, і я підхоплю далі.",
+          "Можемо почати з малого. {{reply_cta_label}} {{target_language_label}}."
+        ],
+        "d14": {
+          "default": [
+            "Без тиску. Ми можемо почати з нуля будь-коли. {{reply_cta_label}} {{target_language_label}}, коли захочеш.",
+            "Коли будеш готовий(-а), почнемо спочатку. {{reply_cta_label}} {{target_language_label}}."
+          ],
+          "topic": [
+            "Хочеш повернутись до теми {{topic_title}}? {{reply_cta_label}} {{target_language_label}}, і спокійно перезапустимось.",
+            "Тема {{topic_title}} все ще добре підходить для повернення. {{reply_cta_label}} {{target_language_label}}, коли буде зручно."
+          ],
+          "streak": [
+            "У тебе вже була серія {{streak_best}} днів. Можемо почати знову з одного маленького кроку. {{reply_cta_label}} {{target_language_label}}.",
+            "Твоя найкраща серія — {{streak_best}} днів. Повернення може початися з одного короткого повідомлення. {{reply_cta_label}} {{target_language_label}}."
+          ],
+          "voice": [
+            "Для повернення достатньо короткого голосового. {{reply_cta_label}} {{target_language_label}}, коли матимеш хвилину.",
+            "Можемо зробити повернення легким. {{reply_cta_label}} {{target_language_label}}, а далі я допоможу."
+          ]
+        }
+      }
+    }
   },
   "telegram_presentation": {
     "name": "Джекі 🇺🇦→🇬🇧 репетитор англійської",

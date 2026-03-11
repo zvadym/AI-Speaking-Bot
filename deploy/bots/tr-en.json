@@ -129,7 +129,39 @@
     "xp_today_left_label": "Bugün kalan",
     "xp_level_progress_label": "Seviye ilerlemesi",
     "xp_streak_bonus_label": "Seri bonusu",
-    "xp_streak_bonus_pending": "Seri çarpanı henüz XP ödüllerine uygulanmıyor."
+    "xp_streak_bonus_pending": "Seri çarpanı henüz XP ödüllerine uygulanmıyor.",
+    "notifications": {
+      "winback": {
+        "reply_cta_voice": "kisa bir sesli mesaj gonder",
+        "reply_cta_text": "tek kisa bir cumle yaz",
+        "d3_fallback_variants": [
+          "Devam etmeye hazir misin? {{reply_cta_label}} {{target_language_label}} olarak gonder, sonraki adimda yardim edeyim.",
+          "Tekrar baslamak ister misin? {{reply_cta_label}} {{target_language_label}} olarak gonder."
+        ],
+        "d7_fallback_variants": [
+          "Kolay bir donus ister misin? {{reply_cta_label}} {{target_language_label}} olarak gonder, ben yardim ederim.",
+          "Kucuk bir adimla yeniden baslayabiliriz. {{reply_cta_label}} {{target_language_label}} olarak gonder."
+        ],
+        "d14": {
+          "default": [
+            "Baski yok. Istegin oldugunda sifirdan yeniden baslayabiliriz. {{reply_cta_label}} {{target_language_label}} olarak gonder.",
+            "Hazir oldugunda taze bir baslangic yapabiliriz. {{reply_cta_label}} {{target_language_label}} olarak gonder."
+          ],
+          "topic": [
+            "{{topic_title}} konusuna donmek ister misin? {{reply_cta_label}} {{target_language_label}} olarak gonder, sakin sakin yeniden baslayalim.",
+            "{{topic_title}} hala yeniden baslamak icin iyi bir konu. Isteyince {{reply_cta_label}} {{target_language_label}} olarak gonder."
+          ],
+          "streak": [
+            "Bir zamanlar {{streak_best}} gunluk streak yapmistin. Tek kucuk adimla yeniden baslayabiliriz. {{reply_cta_label}} {{target_language_label}} olarak gonder.",
+            "En iyi streakin {{streak_best}} gundu. Donus sadece kisa bir mesajla baslayabilir. {{reply_cta_label}} {{target_language_label}} olarak gonder."
+          ],
+          "voice": [
+            "Geri donmek icin kisa bir sesli mesaj yeter. Isteyince {{reply_cta_label}} {{target_language_label}} olarak gonder.",
+            "Donusu kolaylastiralim. {{reply_cta_label}} {{target_language_label}} olarak gonder, gerisini ben yoneteyim."
+          ]
+        }
+      }
+    }
   },
   "telegram_presentation": {
     "name": "Ece 🇹🇷→🇬🇧 İngilizce öğretmeni",

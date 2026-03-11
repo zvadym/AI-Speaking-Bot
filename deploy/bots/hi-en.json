@@ -129,7 +129,39 @@
     "xp_today_left_label": "आज शेष",
     "xp_level_progress_label": "लेवल प्रगति",
     "xp_streak_bonus_label": "स्ट्रीक बोनस",
-    "xp_streak_bonus_pending": "स्ट्रीक मल्टिप्लायर अभी XP पर लागू नहीं होता।"
+    "xp_streak_bonus_pending": "स्ट्रीक मल्टिप्लायर अभी XP पर लागू नहीं होता।",
+    "notifications": {
+      "winback": {
+        "reply_cta_voice": "ek chhota voice message bhejo",
+        "reply_cta_text": "ek chhota sentence likho",
+        "d3_fallback_variants": [
+          "Dobara continue karna hai? {{reply_cta_label}} {{target_language_label}} me bhejo, agla step main sambhal lunga.",
+          "Phir se shuru karna chahte ho? {{reply_cta_label}} {{target_language_label}} me bhejo."
+        ],
+        "d7_fallback_variants": [
+          "Easy restart chahiye? {{reply_cta_label}} {{target_language_label}} me bhejo, main help karunga.",
+          "Chhote step se dobara shuru kar sakte hain. {{reply_cta_label}} {{target_language_label}} me bhejo."
+        ],
+        "d14": {
+          "default": [
+            "Bilkul pressure nahi. Jab chaho zero se restart kar sakte hain. {{reply_cta_label}} {{target_language_label}} me bhejo.",
+            "Jab ready ho, fresh start karte hain. {{reply_cta_label}} {{target_language_label}} me bhejo."
+          ],
+          "topic": [
+            "{{topic_title}} par wapas aana hai? {{reply_cta_label}} {{target_language_label}} me bhejo, araam se restart karenge.",
+            "{{topic_title}} abhi bhi restart ke liye achha topic hai. Jab chaho {{reply_cta_label}} {{target_language_label}} me bhejo."
+          ],
+          "streak": [
+            "Tum pehle {{streak_best}} din ki streak bana chuke ho. Ek chhote step se phir se shuru kar sakte hain. {{reply_cta_label}} {{target_language_label}} me bhejo.",
+            "Tumhari best streak {{streak_best}} din ki thi. Wapas aana sirf ek chhote message se shuru ho sakta hai. {{reply_cta_label}} {{target_language_label}} me bhejo."
+          ],
+          "voice": [
+            "Restart ke liye ek chhota voice message kaafi hai. Jab man ho {{reply_cta_label}} {{target_language_label}} me bhejo.",
+            "Comeback ko easy banate hain. {{reply_cta_label}} {{target_language_label}} me bhejo, baaki main dekh lunga."
+          ]
+        }
+      }
+    }
   },
   "telegram_presentation": {
     "name": "Riya 🇮🇳→🇬🇧 अंग्रेज़ी शिक्षिका",

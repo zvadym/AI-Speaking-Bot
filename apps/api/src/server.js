@@ -16,8 +16,10 @@ import {
 } from './billing-currencies.js';
 import {
   enqueueBroadcastCampaign as enqueueBroadcastCampaignJob,
+  getAutomatedMessageTestState,
   enqueueLoaderRotateJob,
-  enqueueLoaderTimeoutCleanupJob
+  enqueueLoaderTimeoutCleanupJob,
+  sendAdminTestWinbackReminder
 } from './jobs.js';
 import { getApiBoss, stopApiBoss } from './queue.js';
 
@@ -3456,9 +3458,13 @@ app.get('/admin/metrics/bot-stats', requireAdmin, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT * FROM bot_stats ORDER BY bot_key`
   );
+  const automatedMessageTestState = getAutomatedMessageTestState();
 
   return res.json({
-    bots: rows || []
+    bots: rows || [],
+    automated_message_test_mode_active: automatedMessageTestState.active,
+    automated_message_test_chat_ids: automatedMessageTestState.chatIds,
+    automated_message_test_chat_ids_count: automatedMessageTestState.chatIds.length
   });
 });
 
@@ -4823,6 +4829,53 @@ app.get('/admin/users/search', requireAdmin, async (req, res) => {
   );
 
   return res.json({ q, items: rows || [] });
+});
+
+app.post('/admin/reminders/test-send', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+
+  const chatId = Number(req.body?.chatId ?? req.body?.chat_id);
+  const botKey = normalizeBotKey(req.body?.botKey ?? req.body?.bot_key);
+  const reminderType = String(req.body?.reminderType ?? req.body?.reminder_type ?? '').trim().toLowerCase();
+
+  if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || !['d3', 'd7', 'd14'].includes(reminderType)) {
+    return res.status(400).json({ error: 'bad_request' });
+  }
+
+  try {
+    const result = await sendAdminTestWinbackReminder({
+      chatId,
+      botKey,
+      reminderType
+    });
+    return res.json(result);
+  } catch (err) {
+    const errorCode = String(err?.code || '').trim() || 'request_failed';
+    const detail = String(err?.detail || err?.message || errorCode).trim() || errorCode;
+
+    if (errorCode === 'user_bot_not_found') {
+      return res.status(404).json({ error: 'user_bot_not_found' });
+    }
+    if (errorCode === 'chat_not_allowed_in_test_mode') {
+      return res.status(403).json({ error: 'chat_not_allowed_in_test_mode' });
+    }
+    if (errorCode === 'llm_generation_failed') {
+      return res.status(502).json({ error: 'llm_generation_failed', detail });
+    }
+    if (errorCode === 'telegram_send_failed') {
+      return res.status(502).json({
+        error: 'telegram_send_failed',
+        detail,
+        inactive_reason: err?.inactiveReason || null
+      });
+    }
+    if (errorCode === 'bad_request' || errorCode === 'bad_reminder_type') {
+      return res.status(400).json({ error: 'bad_request' });
+    }
+
+    console.error('Admin reminder test send failed', err);
+    return res.status(502).json({ error: 'request_failed', detail });
+  }
 });
 
 app.post('/admin/users/delete', requireAdmin, async (req, res) => {

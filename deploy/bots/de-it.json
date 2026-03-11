@@ -129,7 +129,39 @@
     "xp_today_left_label": "Heute übrig",
     "xp_level_progress_label": "Level-Fortschritt",
     "xp_streak_bonus_label": "Streak-Bonus",
-    "xp_streak_bonus_pending": "Der Streak-Multiplikator wird aktuell noch nicht auf XP angewendet."
+    "xp_streak_bonus_pending": "Der Streak-Multiplikator wird aktuell noch nicht auf XP angewendet.",
+    "notifications": {
+      "winback": {
+        "reply_cta_voice": "schick eine kurze Sprachnachricht",
+        "reply_cta_text": "schreib einen kurzen Satz",
+        "d3_fallback_variants": [
+          "Bereit weiterzumachen? {{reply_cta_label}} auf {{target_language_label}}, und ich helfe dir mit dem nächsten Schritt.",
+          "Willst du wieder einsteigen? {{reply_cta_label}} auf {{target_language_label}}."
+        ],
+        "d7_fallback_variants": [
+          "Lust auf einen leichten Neustart? {{reply_cta_label}} auf {{target_language_label}}, und ich helfe dir.",
+          "Wir können klein anfangen. {{reply_cta_label}} auf {{target_language_label}}."
+        ],
+        "d14": {
+          "default": [
+            "Kein Druck. Wir können jederzeit wieder bei null anfangen. {{reply_cta_label}} auf {{target_language_label}}, wenn du magst.",
+            "Wenn du bereit bist, starten wir einfach neu. {{reply_cta_label}} auf {{target_language_label}}."
+          ],
+          "topic": [
+            "Willst du zu {{topic_title}} zurückkehren? {{reply_cta_label}} auf {{target_language_label}}, und wir starten ruhig wieder rein.",
+            "{{topic_title}} ist immer noch ein guter Wiedereinstieg. {{reply_cta_label}} auf {{target_language_label}}, wenn du magst."
+          ],
+          "streak": [
+            "Du hattest schon einmal eine Serie von {{streak_best}} Tagen. Wir können mit einem kleinen Schritt neu anfangen. {{reply_cta_label}} auf {{target_language_label}}.",
+            "Deine beste Serie waren {{streak_best}} Tage. Der Neustart kann mit nur einer kurzen Nachricht beginnen. {{reply_cta_label}} auf {{target_language_label}}."
+          ],
+          "voice": [
+            "Für den Wiedereinstieg reicht eine kurze Sprachnachricht. {{reply_cta_label}} auf {{target_language_label}}, wenn du magst.",
+            "Wir machen das Comeback leicht. {{reply_cta_label}} auf {{target_language_label}}, und ich übernehme von dort."
+          ]
+        }
+      }
+    }
   },
   "telegram_presentation": {
     "name": "Giulia 🇩🇪→🇮🇹 Italienisch-Tutor",
