@@ -46,6 +46,10 @@
       v-else-if="nav.screen.value === 'subscription'"
       :apiBase="apiBase"
       :token="token"
+      :botKey="botKey"
+      :initialPlansPayload="plansPayload"
+      :plansLoading="plansLoading"
+      :refreshPlans="refreshPlans"
       @navigate="nav.go"
     />
 
@@ -121,6 +125,8 @@ const token = ref('');
 const me = ref(null);
 const botKey = ref('');
 const meBots = ref([]);
+const plansPayload = ref(null);
+const plansLoading = ref(false);
 const showBotPicker = computed(
   () => !isAdmin.value && !loading.value && !fatalKey.value && meBots.value.length > 1 && !botKey.value
 );
@@ -240,12 +246,38 @@ async function refreshBots() {
   botKey.value = '';
 }
 
+async function refreshPlans({ currencyOverride = null } = {}) {
+  if (!token.value) return null;
+  plansLoading.value = true;
+  try {
+    const query = {
+      include_all_intervals: 'true'
+    };
+    if (currencyOverride) query.currency = currencyOverride;
+    if (botKey.value) query.bot_key = botKey.value;
+    const data = await apiJson(apiBase, '/plans', { token: token.value, query });
+    plansPayload.value = data;
+    return data;
+  } catch (err) {
+    console.error(err);
+    addDebugLog('plans_prefetch_failed', {
+      status: Number.isFinite(err?.status) ? Number(err.status) : null,
+      message: (err?.message || '').toString() || null,
+      botKey: botKey.value || null,
+      currencyOverride: currencyOverride || null
+    });
+    return null;
+  } finally {
+    plansLoading.value = false;
+  }
+}
+
 async function selectBotAndRefresh(nextBotKey) {
   const normalized = (nextBotKey || '').toString().trim().toLowerCase();
   if (!normalized) return;
   botKey.value = normalized;
   setBotKeyInLocation(normalized);
-  await Promise.all([refreshMe(), refreshBots()]);
+  await Promise.all([refreshMe(), refreshBots(), refreshPlans()]);
 }
 
 let tgBackHandler = null;
@@ -314,6 +346,7 @@ onMounted(async () => {
     } else {
       me.value = null;
     }
+    await refreshPlans();
 
   } catch (err) {
     console.error(err);

@@ -205,7 +205,11 @@ import { addDebugLog } from '../lib/debug.js';
 
 const props = defineProps({
   apiBase: { type: String, required: true },
-  token: { type: String, required: true }
+  token: { type: String, required: true },
+  botKey: { type: String, default: '' },
+  initialPlansPayload: { type: Object, default: null },
+  plansLoading: { type: Boolean, default: false },
+  refreshPlans: { type: Function, default: null }
 });
 
 const emit = defineEmits(['navigate']);
@@ -535,6 +539,16 @@ function applyPlansPayload(data, { includeUserState = true } = {}) {
   syncSelectedBillingInterval();
 }
 
+watch(
+  () => props.initialPlansPayload,
+  (payload) => {
+    if (!payload || typeof payload !== 'object') return;
+    applyPlansPayload(payload);
+    state.loading = false;
+  },
+  { immediate: true }
+);
+
 async function fetchPlansPayload(path, headers = {}) {
   const resp = await fetch(`${props.apiBase}${path}`, { headers });
   const data = await resp.json().catch(() => null);
@@ -546,6 +560,7 @@ function buildPlansPath(basePath, currencyOverride = null) {
   params.set('include_all_intervals', 'true');
   const currency = normalizeCurrencyCode(currencyOverride, null);
   if (currency) params.set('currency', currency);
+  if (props.botKey) params.set('bot_key', props.botKey);
   return `${basePath}?${params.toString()}`;
 }
 
@@ -554,19 +569,32 @@ async function loadPlans({ keepNotice = false, currencyOverride = null } = {}) {
   if (!keepNotice) noticeState.value = null;
   addDebugLog('plans_request_started');
   try {
-    const { resp, data } = await fetchPlansPayload(buildPlansPath('/plans', currencyOverride), {
-      Authorization: `Bearer ${props.token}`
-    });
-    addDebugLog('plans_response_received', { ok: resp.ok, status: resp.status, source: 'authorized' });
-    if (resp.ok) {
-      applyPlansPayload(data);
-      return;
+    if (typeof props.refreshPlans === 'function') {
+      const data = await props.refreshPlans({ currencyOverride });
+      addDebugLog('plans_response_received', {
+        ok: Boolean(data),
+        status: data ? 200 : null,
+        source: 'prefetched'
+      });
+      if (data) {
+        applyPlansPayload(data);
+        return;
+      }
+    } else {
+      const { resp, data } = await fetchPlansPayload(buildPlansPath('/plans', currencyOverride), {
+        Authorization: `Bearer ${props.token}`
+      });
+      addDebugLog('plans_response_received', { ok: resp.ok, status: resp.status, source: 'authorized' });
+      if (resp.ok) {
+        applyPlansPayload(data);
+        return;
+      }
+      addDebugLog('plans_request_failed', {
+        status: resp.status,
+        error: data?.error || null,
+        source: 'authorized'
+      });
     }
-    addDebugLog('plans_request_failed', {
-      status: resp.status,
-      error: data?.error || null,
-      source: 'authorized'
-    });
   } catch (err) {
     console.error(err);
     addDebugLog('plans_request_failed', {
@@ -765,6 +793,10 @@ onMounted(async () => {
     stripePublishableKeyPresent,
     useEmbeddedCheckout: useEmbeddedCheckout.value
   });
+  if (props.initialPlansPayload && typeof props.initialPlansPayload === 'object') {
+    state.loading = false;
+    return;
+  }
   state.loading = true;
   try {
     await loadPlans();
@@ -776,6 +808,14 @@ onMounted(async () => {
     actionPending.value = '';
   }
 });
+
+watch(
+  () => props.botKey,
+  (next, prev) => {
+    if (!next || next === prev) return;
+    loadPlans({ keepNotice: true });
+  }
+);
 </script>
 
 <style scoped>
