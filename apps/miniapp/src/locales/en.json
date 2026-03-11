@@ -305,6 +305,12 @@
       "annual": "Annual",
       "save": "Save {save}%"
     },
+    "currency": {
+      "label": "Currency",
+      "note": "Charged in {currency}",
+      "more": "More",
+      "less": "Less"
+    },
     "actions": {
       "openingCheckout": "Opening Checkout…",
       "subscribe": "Subscribe"

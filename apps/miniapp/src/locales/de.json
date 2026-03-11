@@ -184,6 +184,12 @@
       "annual": "Jährlich",
       "save": "Spare {save}%"
     },
+    "currency": {
+      "label": "Währung",
+      "note": "Abrechnung in {currency}",
+      "more": "Mehr",
+      "less": "Weniger"
+    },
     "actions": {
       "openingCheckout": "Checkout wird geöffnet…",
       "subscribe": "Abonnieren"

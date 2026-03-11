@@ -85,7 +85,8 @@ export function getBillingCurrencyDetails() {
   return CURRENCY_DETAILS;
 }
 
-export function buildBillingCurrencyCatalog(botCatalog = []) {
+export function buildBillingCurrencyCatalog(botCatalog = [], { baseLanguage: baseLanguageRaw = null } = {}) {
+  const requestedBaseLanguage = normalizeBaseLanguage(baseLanguageRaw);
   const botsByBaseLanguage = {};
   const baseLanguagesByCurrency = {};
 
@@ -119,7 +120,7 @@ export function buildBillingCurrencyCatalog(botCatalog = []) {
       bot_keys: botsByBaseLanguage[baseLanguage] || []
     }));
 
-  const currencyOptions = Object.keys(CURRENCY_DETAILS)
+  let currencyOptions = Object.keys(CURRENCY_DETAILS)
     .sort((a, b) => {
       const usageDiff = (baseLanguagesByCurrency[b]?.length || 0) - (baseLanguagesByCurrency[a]?.length || 0);
       if (usageDiff !== 0) return usageDiff;
@@ -130,14 +131,32 @@ export function buildBillingCurrencyCatalog(botCatalog = []) {
       base_languages: uniqueSorted(baseLanguagesByCurrency[currency] || [])
     }));
 
+  if (requestedBaseLanguage) {
+    const allowedCurrencies = new Set(BASE_LANGUAGE_CURRENCY_OPTIONS[requestedBaseLanguage] || []);
+    currencyOptions = currencyOptions.filter((item) => allowedCurrencies.has(item.code));
+  }
+
+  const currenciesByBaseLanguage = requestedBaseLanguage
+    ? { [requestedBaseLanguage]: [...(BASE_LANGUAGE_CURRENCY_OPTIONS[requestedBaseLanguage] || [])] }
+    : Object.fromEntries(
+        Object.entries(BASE_LANGUAGE_CURRENCY_OPTIONS).map(([baseLanguage, currencies]) => [baseLanguage, [...currencies]])
+      );
+
+  const currencyDetails = Object.fromEntries(
+    Object.entries(CURRENCY_DETAILS)
+      .filter(([currency]) => {
+        if (!requestedBaseLanguage) return true;
+        return (BASE_LANGUAGE_CURRENCY_OPTIONS[requestedBaseLanguage] || []).includes(currency);
+      })
+      .map(([currency, details]) => [currency, { ...details }])
+  );
+
   return {
-    currencies_by_base_language: Object.fromEntries(
-      Object.entries(BASE_LANGUAGE_CURRENCY_OPTIONS).map(([baseLanguage, currencies]) => [baseLanguage, [...currencies]])
-    ),
-    currency_details: Object.fromEntries(
-      Object.entries(CURRENCY_DETAILS).map(([currency, details]) => [currency, { ...details }])
-    ),
+    currencies_by_base_language: currenciesByBaseLanguage,
+    currency_details: currencyDetails,
     currency_options: currencyOptions,
-    base_languages: baseLanguages
+    base_languages: requestedBaseLanguage
+      ? baseLanguages.filter((item) => item.base_language === requestedBaseLanguage)
+      : baseLanguages
   };
 }

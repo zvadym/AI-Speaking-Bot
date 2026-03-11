@@ -148,6 +148,13 @@
       "annually": "Tahunan",
       "save": "Hemat {save}%"
     },
+    "currency": {
+      "label": "Mata uang",
+      "shownIn": "Harga dalam {currency}",
+      "loading": "Memperbarui harga…",
+      "more": "Lainnya",
+      "less": "Sedikit"
+    },
     "ctaTry": "Coba di Telegram",
     "ctaChooseTeacher": "Coba di Telegram",
     "tiers": {

@@ -86,6 +86,49 @@
     </section>
 
     <section class="plans">
+      <div v-if="showCurrencySelector" class="currency-toolbar">
+        <div class="currency-toolbar-head">
+          <span class="currency-toolbar-label">{{ $t('subscription.currency.label') }}</span>
+          <span class="currency-toolbar-note">{{ currencyNoteLabel }}</span>
+        </div>
+        <div class="currency-chip-row">
+          <button
+            v-for="currency in primaryCurrencies"
+            :key="currency"
+            type="button"
+            class="currency-chip"
+            :class="{ active: currency === state.currency }"
+            :disabled="isBusy"
+            @click="selectCurrency(currency)"
+          >
+            {{ currencyChipLabel(currency) }}
+          </button>
+          <button
+            v-if="hasOverflowCurrencies"
+            type="button"
+            class="currency-chip subtle"
+            :class="{ active: showAllCurrencies }"
+            :disabled="isBusy"
+            @click="toggleAllCurrencies"
+          >
+            {{ showAllCurrencies ? $t('subscription.currency.less') : $t('subscription.currency.more') }}
+          </button>
+        </div>
+        <div v-if="showAllCurrencies && overflowCurrencies.length" class="currency-chip-row currency-chip-row-secondary">
+          <button
+            v-for="currency in overflowCurrencies"
+            :key="currency"
+            type="button"
+            class="currency-chip"
+            :class="{ active: currency === state.currency }"
+            :disabled="isBusy"
+            @click="selectCurrency(currency)"
+          >
+            {{ currencyChipLabel(currency) }}
+          </button>
+        </div>
+      </div>
+
       <div class="billing-toggle" v-if="showBillingToggle">
         <button
           v-for="interval in availableBillingIntervals"
@@ -123,10 +166,9 @@
                 </s>
               </div>
               <div class="price-main">
-                <span class="currency">{{ currencySymbol(plan.currency) }}</span>
                 <span class="amount">
                   {{
-                    formatAmountFromCents(monthlyEquivalentCents(plan.amount_cents) ?? plan.amount_cents, {
+                    formatMoney(plan.currency, monthlyEquivalentCents(plan.amount_cents) ?? plan.amount_cents, {
                       maximumFractionDigits: 2
                     })
                   }}
@@ -144,8 +186,7 @@
             </template>
             <template v-else>
               <div class="price-main">
-                <span class="currency">{{ currencySymbol(plan.currency) }}</span>
-                <span class="amount">{{ formatAmountFromCents(plan.amount_cents) }}</span>
+                <span class="amount">{{ formatMoney(plan.currency, plan.amount_cents) }}</span>
                 <span class="period">{{ periodLabel(plan.billing_interval) }}</span>
               </div>
             </template>
@@ -186,6 +227,9 @@ const state = reactive({
   plans: [],
   user: null,
   currency: 'EUR',
+  availableCurrencies: [],
+  currencyDetails: {},
+  baseLanguage: '',
   usage: null
 });
 
@@ -205,11 +249,18 @@ const BILLING_INTERVAL_MONTH = 'month';
 const BILLING_INTERVAL_YEAR = 'year';
 const BILLING_INTERVALS = new Set([BILLING_INTERVAL_MONTH, BILLING_INTERVAL_YEAR]);
 const selectedBillingInterval = ref(BILLING_INTERVAL_YEAR);
+const showAllCurrencies = ref(false);
 
 function normalizeBillingInterval(raw, fallback = null) {
   const value = (raw ?? '').toString().trim().toLowerCase();
   if (!value) return fallback;
   if (!BILLING_INTERVALS.has(value)) return fallback;
+  return value;
+}
+
+function normalizeCurrencyCode(raw, fallback = null) {
+  const value = (raw ?? '').toString().trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(value)) return fallback;
   return value;
 }
 
@@ -273,9 +324,21 @@ const statusMessage = computed(() => {
 const plans = computed(() => state.plans || []);
 const user = computed(() => state.user);
 const usage = computed(() => state.usage);
+const availableCurrencies = computed(() => Array.isArray(state.availableCurrencies) ? state.availableCurrencies : []);
+const currencyDetails = computed(() => (state.currencyDetails && typeof state.currencyDetails === 'object') ? state.currencyDetails : {});
 const effectiveTier = computed(() => usage.value?.tier || state.user?.plan_tier || 'free');
 const showAutoRenewControls = computed(() => effectiveTier.value !== 'free');
 const showManagePayments = computed(() => showAutoRenewControls.value || Boolean(state.user?.stripe_subscription_status));
+const primaryCurrencies = computed(() => availableCurrencies.value.slice(0, 3));
+const overflowCurrencies = computed(() => availableCurrencies.value.slice(3));
+const hasOverflowCurrencies = computed(() => overflowCurrencies.value.length > 0);
+const showCurrencySelector = computed(() => effectiveTier.value !== 'pro' && availableCurrencies.value.length > 1);
+const currencyNoteLabel = computed(() => {
+  const details = currencyDetails.value[state.currency];
+  return t('subscription.currency.note', {
+    currency: details?.name || state.currency
+  });
+});
 
 const currentPlanLabel = computed(() => {
   if (!effectiveTier.value) return t('plans.tiers.free');
@@ -324,29 +387,22 @@ function planTagline(tier) {
   return t('subscription.taglines.free');
 }
 
-function currencySymbol(currency) {
-  if (currency === 'EUR') return '€';
-  if (currency === 'USD') return '$';
-  return currency || '€';
-}
-
-function formatAmountFromCents(cents, { maximumFractionDigits = 0 } = {}) {
+function formatMoney(currencyRaw, cents, { maximumFractionDigits = 0 } = {}) {
   const value = Number(cents);
   if (!Number.isFinite(value)) return t('common.dash');
   const amount = value / 100;
+  const currency = normalizeCurrencyCode(currencyRaw, state.currency || 'EUR');
   const decimals = Number.isFinite(maximumFractionDigits) ? maximumFractionDigits : 0;
   try {
     return new Intl.NumberFormat(locale.value, {
+      style: 'currency',
+      currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: decimals
     }).format(amount);
   } catch {
-    return amount.toFixed(decimals);
+    return `${currency} ${amount.toFixed(decimals)}`;
   }
-}
-
-function formatMoney(currency, cents, opts) {
-  return `${currencySymbol(currency)}${formatAmountFromCents(cents, opts)}`;
 }
 
 function monthlyEquivalentCents(yearlyCents) {
@@ -465,7 +521,15 @@ function applyPlansPayload(data, { includeUserState = true } = {}) {
   state.plans = Array.isArray(data?.plans) ? data.plans : [];
   state.user = includeUserState ? (data?.user || null) : null;
   state.usage = includeUserState ? (data?.usage || null) : null;
-  state.currency = data?.currency || 'EUR';
+  state.currency = normalizeCurrencyCode(data?.currency, 'EUR');
+  state.availableCurrencies = Array.isArray(data?.available_currencies)
+    ? data.available_currencies.map((currency) => normalizeCurrencyCode(currency)).filter(Boolean)
+    : [];
+  state.currencyDetails = data?.currency_details && typeof data.currency_details === 'object'
+    ? data.currency_details
+    : {};
+  state.baseLanguage = (data?.base_language || '').toString().trim().toLowerCase();
+  if (overflowCurrencies.value.length === 0) showAllCurrencies.value = false;
   syncSelectedBillingInterval();
 }
 
@@ -475,12 +539,20 @@ async function fetchPlansPayload(path, headers = {}) {
   return { resp, data };
 }
 
-async function loadPlans({ keepNotice = false } = {}) {
+function buildPlansPath(basePath, currencyOverride = null) {
+  const params = new URLSearchParams();
+  params.set('include_all_intervals', 'true');
+  const currency = normalizeCurrencyCode(currencyOverride, null);
+  if (currency) params.set('currency', currency);
+  return `${basePath}?${params.toString()}`;
+}
+
+async function loadPlans({ keepNotice = false, currencyOverride = null } = {}) {
   errorState.value = null;
   if (!keepNotice) noticeState.value = null;
   addDebugLog('plans_request_started');
   try {
-    const { resp, data } = await fetchPlansPayload('/plans?include_all_intervals=true', {
+    const { resp, data } = await fetchPlansPayload(buildPlansPath('/plans', currencyOverride), {
       Authorization: `Bearer ${props.token}`
     });
     addDebugLog('plans_response_received', { ok: resp.ok, status: resp.status, source: 'authorized' });
@@ -504,7 +576,7 @@ async function loadPlans({ keepNotice = false } = {}) {
 
   try {
     addDebugLog('plans_public_fallback_started');
-    const { resp, data } = await fetchPlansPayload('/public/plans?include_all_intervals=true');
+    const { resp, data } = await fetchPlansPayload(buildPlansPath('/public/plans', currencyOverride));
     addDebugLog('plans_response_received', { ok: resp.ok, status: resp.status, source: 'public' });
     if (!resp.ok) {
       setError('subscription.actionLabels.unableToLoadPlans');
@@ -519,6 +591,55 @@ async function loadPlans({ keepNotice = false } = {}) {
       source: 'public'
     });
     setError('subscription.actionLabels.unableToLoadPlans');
+  }
+}
+
+function currencyChipLabel(currencyRaw) {
+  const currency = normalizeCurrencyCode(currencyRaw, '');
+  if (!currency) return '';
+  const details = currencyDetails.value[currency];
+  const symbol = details?.symbol || currency;
+  return symbol === currency ? currency : `${symbol} ${currency}`;
+}
+
+function toggleAllCurrencies() {
+  if (!hasOverflowCurrencies.value) return;
+  showAllCurrencies.value = !showAllCurrencies.value;
+}
+
+async function selectCurrency(currencyRaw) {
+  const currency = normalizeCurrencyCode(currencyRaw, null);
+  if (!currency) return;
+  if (!availableCurrencies.value.includes(currency)) return;
+  if (currency === state.currency) return;
+
+  actionPending.value = `currency:${currency}`;
+  clearMessages();
+  try {
+    const resp = await fetch(`${props.apiBase}/me/preferences/billing-currency`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${props.token}`
+      },
+      body: JSON.stringify({ currency })
+    });
+
+    if (!resp.ok) {
+      setError('common.errors.couldNotSave');
+      return;
+    }
+
+    await loadPlans({ keepNotice: true, currencyOverride: currency });
+    addDebugLog('subscription_currency_selected', {
+      currency,
+      baseLanguage: state.baseLanguage || null
+    });
+  } catch (err) {
+    console.error(err);
+    setError('common.errors.couldNotSave');
+  } finally {
+    actionPending.value = '';
   }
 }
 
@@ -828,6 +949,69 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
+}
+
+.currency-toolbar {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+}
+
+.currency-toolbar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.currency-toolbar-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+.currency-toolbar-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.currency-chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.currency-chip-row-secondary {
+  margin-top: -2px;
+}
+
+.currency-chip {
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.currency-chip.active {
+  border-color: rgba(31, 107, 99, 0.36);
+  background: rgba(31, 107, 99, 0.92);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.currency-chip.subtle {
+  color: var(--muted);
+}
+
+.currency-chip:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .billing-toggle {

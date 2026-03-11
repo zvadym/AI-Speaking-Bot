@@ -148,6 +148,13 @@
       "annually": "سنوي",
       "save": "وفّر {save}%"
     },
+    "currency": {
+      "label": "العملة",
+      "shownIn": "الأسعار بـ {currency}",
+      "loading": "يتم تحديث الأسعار…",
+      "more": "المزيد",
+      "less": "أقل"
+    },
     "ctaTry": "جرّب في Telegram",
     "ctaChooseTeacher": "جرّب في Telegram",
     "tiers": {

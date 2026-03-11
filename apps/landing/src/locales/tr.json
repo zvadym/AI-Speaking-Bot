@@ -148,6 +148,13 @@
       "annually": "Yıllık",
       "save": "%{save} tasarruf et"
     },
+    "currency": {
+      "label": "Para birimi",
+      "shownIn": "{currency} fiyatları",
+      "loading": "Fiyatlar güncelleniyor…",
+      "more": "Daha fazla",
+      "less": "Daha az"
+    },
     "ctaTry": "Telegram'da dene",
     "ctaChooseTeacher": "Telegram'da dene",
     "tiers": {

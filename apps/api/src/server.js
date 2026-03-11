@@ -9,7 +9,11 @@ import { verifyInitData } from './telegram.js';
 import { stripe } from './stripe.js';
 import { signSession, requireAuth } from './auth.js';
 import { loadBotConfigs } from './bot-configs.js';
-import { buildBillingCurrencyCatalog } from './billing-currencies.js';
+import {
+  buildBillingCurrencyCatalog,
+  getBillingCurrenciesForBaseLanguage,
+  getBillingCurrencyDetails
+} from './billing-currencies.js';
 import {
   enqueueBroadcastCampaign as enqueueBroadcastCampaignJob,
   enqueueLoaderRotateJob,
@@ -51,8 +55,9 @@ app.get('/healthz', (req, res) => {
 });
 
 app.get('/public/billing/currencies', (req, res) => {
+  const baseLanguage = normalizeLanguageCode(req.query?.base_language ?? req.query?.baseLanguage ?? null);
   res.setHeader('Cache-Control', 'public, max-age=300');
-  return res.json(buildBillingCurrencyCatalog(publicBotCatalog));
+  return res.json(buildBillingCurrencyCatalog(publicBotCatalog, { baseLanguage }));
 });
 
 function safeEqualString(a, b) {
@@ -272,11 +277,62 @@ function buildPublicBotCatalog(configMap = {}) {
 
 const publicBotCatalog = buildPublicBotCatalog(loadBotConfigs());
 const publicBotCatalogByKey = new Map(publicBotCatalog.map((bot) => [bot.bot_key, bot]));
+const billingCurrencyDetailsByCode = getBillingCurrencyDetails();
+const ACTIVE_STRIPE_BILLING_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid']);
+const supportedBillingCurrencyCodes = new Set(Object.keys(billingCurrencyDetailsByCode));
 
 function publicBotMetaForKey(botKeyRaw) {
   const botKey = normalizeBotKey(botKeyRaw);
   if (!botKey) return null;
   return publicBotCatalogByKey.get(botKey) || null;
+}
+
+function getAllowedBillingCurrencies(baseLanguageRaw) {
+  const currencies = getBillingCurrenciesForBaseLanguage(baseLanguageRaw)
+    .map((currency) => normalizeRuntimeCurrencyCode(currency))
+    .filter(Boolean);
+  return currencies.length ? currencies : ['EUR'];
+}
+
+function getBillingCurrencyDetailsForCurrencies(currencies = []) {
+  const details = {};
+  for (const rawCurrency of currencies) {
+    const currency = normalizeRuntimeCurrencyCode(rawCurrency);
+    if (!currency) continue;
+    if (!billingCurrencyDetailsByCode[currency]) continue;
+    details[currency] = { ...billingCurrencyDetailsByCode[currency] };
+  }
+  return details;
+}
+
+function resolvePlanCurrencySelection({
+  requestedCurrency,
+  allowedCurrencies,
+  billingCurrency,
+  preferredCurrency,
+  allowBillingCurrency = false
+}) {
+  const allowed = Array.from(
+    new Set((allowedCurrencies || []).map((item) => normalizeRuntimeCurrencyCode(item)).filter(Boolean))
+  );
+  const allowedSet = new Set(allowed);
+  const requested = normalizeRuntimeCurrencyCode(requestedCurrency);
+  if (requested && allowedSet.has(requested)) return requested;
+
+  const actualBillingCurrency = normalizeRuntimeCurrencyCode(billingCurrency);
+  if (allowBillingCurrency && actualBillingCurrency && allowedSet.has(actualBillingCurrency)) {
+    return actualBillingCurrency;
+  }
+
+  const preferred = normalizeRuntimeCurrencyCode(preferredCurrency);
+  if (preferred && allowedSet.has(preferred)) return preferred;
+
+  return allowed[0] || 'EUR';
+}
+
+function isStripeBackedPaidStatus(statusRaw) {
+  const status = (statusRaw ?? '').toString().trim().toLowerCase();
+  return ACTIVE_STRIPE_BILLING_STATUSES.has(status);
 }
 
 function requestedBotKeyFromReq(req) {
@@ -354,7 +410,10 @@ async function getMeUserRow(chatIdRaw, botKeyRaw = null) {
          ub.tts_voice,
          u.plan_tier,
          u.plan_expires_at,
-         u.plan_autorenew
+         u.plan_autorenew,
+         u.billing_currency,
+         u.preferred_billing_currency,
+         u.stripe_subscription_status
        FROM users u
        LEFT JOIN user_bots ub
          ON ub.chat_id = u.chat_id
@@ -637,6 +696,25 @@ async function loadPlanCatalog(currency, includeAllIntervals, { includeStripePri
   );
 
   return serializePlanCatalogRows(rows, { includeStripePriceId });
+}
+
+function buildPlanCatalogResponse({
+  currency,
+  plans,
+  user = null,
+  usage = null,
+  baseLanguage = null,
+  availableCurrencies = []
+}) {
+  return {
+    currency,
+    base_language: baseLanguage || null,
+    available_currencies: availableCurrencies,
+    currency_details: getBillingCurrencyDetailsForCurrencies(availableCurrencies),
+    user,
+    plans,
+    usage
+  };
 }
 
 function normalizeRuntimeCurrencyCode(raw) {
@@ -5309,17 +5387,20 @@ app.post('/auth/telegram', async (req, res) => {
 });
 
 app.get('/plans', requireAuth, async (req, res) => {
-  const currency = (req.query.currency || 'EUR').toString().toUpperCase();
   const includeAllIntervals = parseQueryBoolean(
     req.query.include_all_intervals ?? req.query.includeAllIntervals
   );
   const chatId = req.auth.chatId;
-  const plans = await loadPlanCatalog(currency, includeAllIntervals, { includeStripePriceId: true });
+  const requestedCurrency = req.query.currency;
+  const requestedBotKey = requestedBotKeyFromReq(req) || normalizeBotKey(req.auth?.botKey || null);
+  const meUser = await getMeUserRow(chatId, requestedBotKey);
+  const baseLanguage = normalizeLanguageCode(meUser?.base_language || null);
+  const availableCurrencies = getAllowedBillingCurrencies(baseLanguage);
 
   try {
     const { rows: userRows } = await pool.query(
       `SELECT plan_tier, plan_expires_at, plan_autorenew, pending_plan_tier, pending_plan_effective_at,
-              override_plan_tier, override_expires_at, billing_currency, stripe_subscription_status
+              override_plan_tier, override_expires_at, billing_currency, preferred_billing_currency, stripe_subscription_status
          FROM users
         WHERE chat_id = $1
         LIMIT 1`,
@@ -5329,6 +5410,14 @@ app.get('/plans', requireAuth, async (req, res) => {
     const user = userRows[0] || null;
     const usage = user ? await getUserUsageSummary(chatId) : null;
     const effectiveTier = (usage?.tier || user?.plan_tier || 'free').toString().trim().toLowerCase();
+    const currency = resolvePlanCurrencySelection({
+      requestedCurrency,
+      allowedCurrencies: availableCurrencies,
+      billingCurrency: user?.billing_currency,
+      preferredCurrency: user?.preferred_billing_currency,
+      allowBillingCurrency: effectiveTier !== 'free' && isStripeBackedPaidStatus(user?.stripe_subscription_status)
+    });
+    const plans = await loadPlanCatalog(currency, includeAllIntervals, { includeStripePriceId: true });
     if (user && effectiveTier !== 'pro') {
       await recordActionEventSafe({
         chatId,
@@ -5345,12 +5434,14 @@ app.get('/plans', requireAuth, async (req, res) => {
       });
     }
 
-    return res.json({
+    return res.json(buildPlanCatalogResponse({
       currency,
       user,
       plans,
-      usage
-    });
+      usage,
+      baseLanguage,
+      availableCurrencies
+    }));
   } catch (err) {
     console.warn('plans personalized payload failed; returning catalog only', {
       chatId,
@@ -5359,12 +5450,22 @@ app.get('/plans', requireAuth, async (req, res) => {
     });
   }
 
-  return res.json({
+  const currency = resolvePlanCurrencySelection({
+    requestedCurrency,
+    allowedCurrencies: availableCurrencies,
+    billingCurrency: null,
+    preferredCurrency: meUser?.preferred_billing_currency,
+    allowBillingCurrency: false
+  });
+  const plans = await loadPlanCatalog(currency, includeAllIntervals, { includeStripePriceId: true });
+  return res.json(buildPlanCatalogResponse({
     currency,
     user: null,
     plans,
-    usage: null
-  });
+    usage: null,
+    baseLanguage,
+    availableCurrencies
+  }));
 });
 
 app.get('/public/plans', async (req, res) => {
@@ -5387,6 +5488,29 @@ app.get('/me', requireAuth, async (req, res) => {
   const user = await getMeUserRow(chatId, requestedBotKey);
   if (!user) return res.status(404).json({ error: 'user_not_found' });
   return res.json({ user });
+});
+
+app.post('/me/preferences/billing-currency', requireAuth, async (req, res) => {
+  const chatId = req.auth.chatId;
+  const preferredCurrency = normalizeRuntimeCurrencyCode(req.body?.currency);
+  if (!preferredCurrency || !supportedBillingCurrencyCodes.has(preferredCurrency)) {
+    return res.status(400).json({ error: 'bad_currency' });
+  }
+
+  const { rows } = await pool.query(
+    `UPDATE users
+        SET preferred_billing_currency = $1,
+            updated_at = NOW()
+      WHERE chat_id = $2
+      RETURNING preferred_billing_currency`,
+    [preferredCurrency, chatId]
+  );
+
+  if (!rows[0]) return res.status(404).json({ error: 'user_not_found' });
+
+  return res.json({
+    preferred_billing_currency: rows[0].preferred_billing_currency || preferredCurrency
+  });
 });
 
 app.get('/me/dashboard', requireAuth, async (req, res) => {

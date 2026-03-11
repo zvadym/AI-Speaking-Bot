@@ -11,6 +11,7 @@ Optional:
 
 - `NUXT_PUBLIC_SITE_URL` — canonical site origin for SEO links and sitemap URLs (defaults to `https://ai-language-school.online`).
 - `PRICING_API_BASE` — API base URL used at build-time to generate `src/generated/pricing.js` (kept out of the client bundle).
+- `NUXT_PUBLIC_PRICING_API_BASE` — API base URL exposed to the browser so the landing can fetch live pricing and currency options at runtime.
 
 Temporary backwards-compatible fallbacks are supported:
 

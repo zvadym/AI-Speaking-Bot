@@ -123,6 +123,47 @@
               <h2 class="h2">{{ t('pricing.title') }}</h2>
               <p class="muted">{{ t('pricing.subhead') }}</p>
             </div>
+            <div v-if="showPricingCurrencySelector" class="pricing-currency-panel">
+              <div class="pricing-currency-head">
+                <span class="pricing-currency-label">{{ t('pricing.currency.label') }}</span>
+                <span class="pricing-currency-note">
+                  {{ pricingState.loading ? t('pricing.currency.loading') : pricingCurrencyNote }}
+                </span>
+              </div>
+              <div class="pricing-currency-row">
+                <button
+                  v-for="currency in primaryPricingCurrencies"
+                  :key="currency"
+                  class="pricing-currency-chip"
+                  type="button"
+                  :class="{ active: currency === pricingCurrency }"
+                  @click="selectPricingCurrency(currency)"
+                >
+                  {{ pricingCurrencyChipLabel(currency) }}
+                </button>
+                <button
+                  v-if="hasOverflowPricingCurrencies"
+                  class="pricing-currency-chip subtle"
+                  type="button"
+                  :class="{ active: pricingExpanded }"
+                  @click="togglePricingCurrencies"
+                >
+                  {{ pricingExpanded ? t('pricing.currency.less') : t('pricing.currency.more') }}
+                </button>
+              </div>
+              <div v-if="pricingExpanded && overflowPricingCurrencies.length" class="pricing-currency-row pricing-currency-row-secondary">
+                <button
+                  v-for="currency in overflowPricingCurrencies"
+                  :key="currency"
+                  class="pricing-currency-chip"
+                  type="button"
+                  :class="{ active: currency === pricingCurrency }"
+                  @click="selectPricingCurrency(currency)"
+                >
+                  {{ pricingCurrencyChipLabel(currency) }}
+                </button>
+              </div>
+            </div>
             <div
               v-if="showBillingSwitch"
               class="billing-switch"
@@ -283,7 +324,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue';
+import { computed, onMounted, reactive, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import ChatConversationDemo from '../components/ChatConversationDemo.vue';
 import TeacherCard from '../components/TeacherCard.vue';
@@ -295,9 +336,47 @@ import { pricing } from '../generated/pricing.js';
 import { normalizeLocale, routeWithLocale, useI18n } from '../i18n.js';
 
 const { t, tm, locale } = useI18n();
+const runtimeConfig = useRuntimeConfig();
 const tryTeacherModalOpen = useState('tryTeacherModalOpen', () => false);
 const billingInterval = useState('pricingBillingInterval', () => 'year');
-const pricingCurrency = computed(() => (pricing?.currency || 'EUR').toString().trim().toUpperCase() || 'EUR');
+const selectedPricingCurrency = useState(
+  'pricingCurrency',
+  () => (pricing?.currency || 'EUR').toString().trim().toUpperCase() || 'EUR'
+);
+const pricingExpanded = useState('pricingCurrencyExpanded', () => false);
+const pricingState = reactive({
+  loading: false,
+  data: pricing,
+  availableCurrencies: [(pricing?.currency || 'EUR').toString().trim().toUpperCase() || 'EUR'],
+  currencyDetails: {},
+  lastBaseLanguage: ''
+});
+const runtimePricing = computed(() => pricingState.data || pricing);
+const pricingCurrency = computed(
+  () => (runtimePricing.value?.currency || selectedPricingCurrency.value || 'EUR').toString().trim().toUpperCase() || 'EUR'
+);
+const pricingApiBase = computed(() => normalizeBaseUrl(runtimeConfig.public?.pricingApiBase || ''));
+const pricingBaseLanguage = computed(() => normalizeLocale(locale.value) || 'en');
+const availablePricingCurrencies = computed(() => {
+  const values = Array.isArray(pricingState.availableCurrencies) ? pricingState.availableCurrencies : [];
+  const normalized = uniqueCurrencies(values);
+  return normalized.length ? normalized : [pricingCurrency.value];
+});
+const pricingCurrencyDetails = computed(() => (
+  pricingState.currencyDetails && typeof pricingState.currencyDetails === 'object'
+    ? pricingState.currencyDetails
+    : {}
+));
+const primaryPricingCurrencies = computed(() => availablePricingCurrencies.value.slice(0, 3));
+const overflowPricingCurrencies = computed(() => availablePricingCurrencies.value.slice(3));
+const hasOverflowPricingCurrencies = computed(() => overflowPricingCurrencies.value.length > 0);
+const showPricingCurrencySelector = computed(() => availablePricingCurrencies.value.length > 1);
+const pricingCurrencyNote = computed(() => {
+  const details = pricingCurrencyDetails.value[pricingCurrency.value];
+  return t('pricing.currency.shownIn', {
+    currency: details?.name || pricingCurrency.value
+  });
+});
 
 const posts = computed(() => blogPosts.slice(0, 3));
 const featureCards = computed(() => {
@@ -365,6 +444,45 @@ function openTryModal() {
   tryTeacherModalOpen.value = true;
 }
 
+function normalizeBaseUrl(input) {
+  return (input || '').toString().trim().replace(/\/+$/, '');
+}
+
+function normalizeCurrencyCode(raw, fallback = null) {
+  const value = (raw ?? '').toString().trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(value)) return fallback;
+  return value;
+}
+
+function uniqueCurrencies(values = []) {
+  return Array.from(new Set((Array.isArray(values) ? values : []).map((value) => normalizeCurrencyCode(value)).filter(Boolean)));
+}
+
+function pricingCurrencyStorageKey(baseLanguage) {
+  const normalized = normalizeLocale(baseLanguage) || 'default';
+  return `pricing.currency.${normalized}`;
+}
+
+function readStoredPricingCurrency(baseLanguage) {
+  if (typeof window === 'undefined') return null;
+  try {
+    return normalizeCurrencyCode(window.localStorage.getItem(pricingCurrencyStorageKey(baseLanguage)));
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredPricingCurrency(baseLanguage, currencyRaw) {
+  if (typeof window === 'undefined') return;
+  const currency = normalizeCurrencyCode(currencyRaw, null);
+  if (!currency) return;
+  try {
+    window.localStorage.setItem(pricingCurrencyStorageKey(baseLanguage), currency);
+  } catch {
+    // ignore
+  }
+}
+
 function getLocalized(map) {
   const l = locale.value;
   if (!map || typeof map !== 'object') return '';
@@ -397,17 +515,180 @@ function formatPrice(value) {
   }
 }
 
+function buildPricingFromPlans({ currency, plans, source = 'api/public_plans' }) {
+  const normalizedCurrency = normalizeCurrencyCode(currency, 'EUR');
+  const rows = Array.isArray(plans) ? plans : [];
+  const month = rows.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'month' && normalizeCurrencyCode(plan?.currency) === normalizedCurrency);
+  const year = rows.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'year' && normalizeCurrencyCode(plan?.currency) === normalizedCurrency);
+  const monthCents = Number(month?.amount_cents);
+  const yearCents = Number(year?.amount_cents);
+  const monthlyAmount = Number.isFinite(monthCents) ? monthCents : null;
+  const yearlyAmount = Number.isFinite(yearCents) ? yearCents : null;
+  const savingsPercent =
+    monthlyAmount != null && yearlyAmount != null && monthlyAmount > 0
+      ? Math.round((1 - yearlyAmount / (monthlyAmount * 12)) * 100)
+      : null;
+
+  return {
+    generated_at: new Date().toISOString(),
+    source,
+    currency: normalizedCurrency,
+    pro: {
+      month: monthlyAmount == null ? null : { amount_cents: monthlyAmount, billing_interval: 'month' },
+      year: yearlyAmount == null ? null : { amount_cents: yearlyAmount, billing_interval: 'year' },
+      savings_percent: Number.isFinite(Number(savingsPercent)) && savingsPercent > 0 ? savingsPercent : null
+    }
+  };
+}
+
+async function fetchPricingJson(url) {
+  const resp = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return await resp.json().catch(() => ({}));
+}
+
+async function fetchPricingCatalog(baseLanguage) {
+  if (!pricingApiBase.value) return null;
+  const url = new URL(`${pricingApiBase.value}/public/billing/currencies`);
+  url.searchParams.set('base_language', baseLanguage);
+  return await fetchPricingJson(url.toString());
+}
+
+async function fetchPricingForCurrency(currency) {
+  if (!pricingApiBase.value) return false;
+  const url = new URL(`${pricingApiBase.value}/public/plans`);
+  url.searchParams.set('include_all_intervals', 'true');
+  url.searchParams.set('currency', currency);
+  const payload = await fetchPricingJson(url.toString());
+  pricingState.data = buildPricingFromPlans({
+    currency,
+    plans: payload?.plans,
+    source: 'api/public_plans'
+  });
+  return true;
+}
+
+async function refreshPricing(baseLanguage, requestedCurrency = null) {
+  const fallbackCurrency = normalizeCurrencyCode(pricingCurrency.value, 'EUR');
+  let availableCurrencies = pricingApiBase.value ? ['EUR'] : [fallbackCurrency];
+  let currencyDetails = {};
+
+  if (pricingApiBase.value) {
+    try {
+      const catalog = await fetchPricingCatalog(baseLanguage);
+      const options = Array.isArray(catalog?.currency_options) ? catalog.currency_options : [];
+      const catalogCurrencies = uniqueCurrencies(options.map((item) => item?.code));
+      if (catalogCurrencies.length) availableCurrencies = catalogCurrencies;
+      const detailsFromCatalog = catalog?.currency_details && typeof catalog.currency_details === 'object'
+        ? catalog.currency_details
+        : {};
+      currencyDetails = Object.fromEntries(
+        availableCurrencies
+          .filter((currency) => detailsFromCatalog[currency])
+          .map((currency) => [currency, detailsFromCatalog[currency]])
+      );
+    } catch (err) {
+      console.error('pricing currency catalog failed', err);
+      availableCurrencies = uniqueCurrencies([normalizeCurrencyCode(selectedPricingCurrency.value), fallbackCurrency, 'EUR']);
+    }
+  }
+
+  const selectedCurrency = [
+    normalizeCurrencyCode(requestedCurrency),
+    readStoredPricingCurrency(baseLanguage),
+    normalizeCurrencyCode(selectedPricingCurrency.value),
+    availableCurrencies[0],
+    fallbackCurrency,
+    'EUR'
+  ].find((currency) => currency && availableCurrencies.includes(currency)) || availableCurrencies[0] || 'EUR';
+
+  pricingState.availableCurrencies = availableCurrencies;
+  pricingState.currencyDetails = currencyDetails;
+  pricingState.lastBaseLanguage = baseLanguage;
+  if (overflowPricingCurrencies.value.length === 0) pricingExpanded.value = false;
+
+  if (!pricingApiBase.value) {
+    selectedPricingCurrency.value = selectedCurrency;
+    saveStoredPricingCurrency(baseLanguage, selectedCurrency);
+    pricingState.data = {
+      ...runtimePricing.value,
+      currency: selectedCurrency
+    };
+    return;
+  }
+
+  pricingState.loading = true;
+  try {
+    await fetchPricingForCurrency(selectedCurrency);
+    selectedPricingCurrency.value = selectedCurrency;
+    saveStoredPricingCurrency(baseLanguage, selectedCurrency);
+  } catch (err) {
+    console.error('pricing fetch failed', err);
+    const stableCurrency = normalizeCurrencyCode(pricingState.data?.currency, null)
+      || normalizeCurrencyCode(pricing?.currency, fallbackCurrency)
+      || fallbackCurrency;
+    selectedPricingCurrency.value = stableCurrency;
+    pricingState.availableCurrencies = uniqueCurrencies([stableCurrency, ...availableCurrencies]);
+    saveStoredPricingCurrency(baseLanguage, stableCurrency);
+  } finally {
+    pricingState.loading = false;
+  }
+}
+
+async function selectPricingCurrency(currencyRaw) {
+  const currency = normalizeCurrencyCode(currencyRaw, null);
+  if (!currency) return;
+  if (!availablePricingCurrencies.value.includes(currency)) return;
+  if (currency === pricingCurrency.value) return;
+
+  if (hasOverflowPricingCurrencies.value) pricingExpanded.value = false;
+
+  if (!pricingApiBase.value) {
+    selectedPricingCurrency.value = currency;
+    saveStoredPricingCurrency(pricingBaseLanguage.value, currency);
+    pricingState.data = {
+      ...runtimePricing.value,
+      currency
+    };
+    return;
+  }
+
+  pricingState.loading = true;
+  try {
+    await fetchPricingForCurrency(currency);
+    selectedPricingCurrency.value = currency;
+    saveStoredPricingCurrency(pricingBaseLanguage.value, currency);
+  } catch (err) {
+    console.error('pricing fetch failed', err);
+  } finally {
+    pricingState.loading = false;
+  }
+}
+
+function togglePricingCurrencies() {
+  if (!hasOverflowPricingCurrencies.value) return;
+  pricingExpanded.value = !pricingExpanded.value;
+}
+
+function pricingCurrencyChipLabel(currencyRaw) {
+  const currency = normalizeCurrencyCode(currencyRaw, '');
+  if (!currency) return '';
+  const details = pricingCurrencyDetails.value[currency];
+  const symbol = details?.symbol || currency;
+  return symbol === currency ? currency : `${symbol} ${currency}`;
+}
+
 function normalizeBillingInterval(raw, fallback = null) {
   const value = (raw ?? '').toString().trim().toLowerCase();
   if (value === 'month' || value === 'year') return value;
   return fallback;
 }
 
-const proMonthlyPlan = computed(() => pricing?.pro?.month || null);
-const proAnnualPlan = computed(() => pricing?.pro?.year || null);
+const proMonthlyPlan = computed(() => runtimePricing.value?.pro?.month || null);
+const proAnnualPlan = computed(() => runtimePricing.value?.pro?.year || null);
 const showBillingSwitch = computed(() => Boolean(proMonthlyPlan.value && proAnnualPlan.value));
 const annualSavingsPercent = computed(() => {
-  const pct = Number(pricing?.pro?.savings_percent);
+  const pct = Number(runtimePricing.value?.pro?.savings_percent);
   return Number.isFinite(pct) && pct > 0 ? pct : null;
 });
 
@@ -498,7 +779,9 @@ onMounted(() => {
   } catch {
     // ignore
   }
-  syncBillingIntervalWithAvailability();
+  refreshPricing(pricingBaseLanguage.value).finally(() => {
+    syncBillingIntervalWithAvailability();
+  });
 });
 
 watch(billingInterval, (next) => {
@@ -509,6 +792,18 @@ watch(billingInterval, (next) => {
     // ignore
   }
 });
+
+watch([proMonthlyPlan, proAnnualPlan], () => {
+  syncBillingIntervalWithAvailability();
+}, { immediate: true });
+
+watch(
+  () => pricingBaseLanguage.value,
+  (next, prev) => {
+    if (!next || next === prev) return;
+    refreshPricing(next);
+  }
+);
 </script>
 
 <style scoped>
@@ -587,6 +882,66 @@ watch(billingInterval, (next) => {
 .pricing-head {
   flex-wrap: wrap;
   align-items: end;
+}
+
+.pricing-currency-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.pricing-currency-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pricing-currency-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+.pricing-currency-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.pricing-currency-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pricing-currency-row-secondary {
+  margin-top: -2px;
+}
+
+.pricing-currency-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--surface) 76%, var(--bg));
+  color: color-mix(in srgb, var(--fg) 88%, var(--muted));
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.pricing-currency-chip.active {
+  background: rgba(31, 107, 99, 0.92);
+  border-color: rgba(31, 107, 99, 0.92);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.pricing-currency-chip.subtle {
+  color: var(--muted);
 }
 
 .billing-switch {

@@ -148,6 +148,13 @@
       "annually": "Щороку",
       "save": "Економія {save}%"
     },
+    "currency": {
+      "label": "Валюта",
+      "shownIn": "Ціни у {currency}",
+      "loading": "Оновлюємо ціни…",
+      "more": "Ще",
+      "less": "Менше"
+    },
     "ctaTry": "Спробувати в Telegram",
     "ctaChooseTeacher": "Спробувати в Telegram",
     "tiers": {

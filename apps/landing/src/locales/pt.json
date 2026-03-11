@@ -148,6 +148,13 @@
       "annually": "Anual",
       "save": "Economize {save}%"
     },
+    "currency": {
+      "label": "Moeda",
+      "shownIn": "Preços em {currency}",
+      "loading": "Atualizando preços…",
+      "more": "Mais",
+      "less": "Menos"
+    },
     "ctaTry": "Testar no Telegram",
     "ctaChooseTeacher": "Testar no Telegram",
     "tiers": {

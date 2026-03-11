@@ -148,6 +148,13 @@
       "annually": "वार्षिक",
       "save": "{save}% बचाएँ"
     },
+    "currency": {
+      "label": "मुद्रा",
+      "shownIn": "{currency} में कीमतें",
+      "loading": "कीमतें अपडेट हो रही हैं…",
+      "more": "और",
+      "less": "कम"
+    },
     "ctaTry": "Telegram में आज़माएँ",
     "ctaChooseTeacher": "Telegram में आज़माएँ",
     "tiers": {

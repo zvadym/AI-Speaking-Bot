@@ -184,6 +184,12 @@
       "annual": "Щороку",
       "save": "Економія {save}%"
     },
+    "currency": {
+      "label": "Валюта",
+      "note": "Списання в {currency}",
+      "more": "Ще",
+      "less": "Менше"
+    },
     "actions": {
       "openingCheckout": "Відкриваємо оплату…",
       "subscribe": "Підписатися"

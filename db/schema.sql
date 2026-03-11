@@ -511,7 +511,9 @@ CREATE TABLE public.users (
     inactive_reason text,
     inactive_at timestamp with time zone,
     last_delivery_error text,
-    CONSTRAINT users_inactive_reason_check CHECK (((inactive_reason IS NULL) OR (inactive_reason = ANY (ARRAY['blocked'::text, 'deactivated'::text, 'chat_not_found'::text, 'forbidden'::text]))))
+    preferred_billing_currency text,
+    CONSTRAINT users_inactive_reason_check CHECK (((inactive_reason IS NULL) OR (inactive_reason = ANY (ARRAY['blocked'::text, 'deactivated'::text, 'chat_not_found'::text, 'forbidden'::text])))),
+    CONSTRAINT users_preferred_billing_currency_check CHECK (((preferred_billing_currency IS NULL) OR (char_length(preferred_billing_currency) = 3)))
 );
 
 
@@ -1706,4 +1708,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260306130000'),
     ('20260307220402'),
     ('20260309110000'),
-    ('20260309123000');
+    ('20260309123000'),
+    ('20260310120000'),
+    ('20260311103000');
