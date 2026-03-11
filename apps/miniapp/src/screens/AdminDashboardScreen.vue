@@ -462,6 +462,17 @@
         />
 
         <AdminChart
+          title="Active users by day"
+          subtitle="Overall daily active users in UTC"
+          kind="line"
+          x-labels="all"
+          :data="activeUsersSeries"
+          :series="[
+            { key: 'count', label: 'Active users', color: 'rgba(31, 107, 99, 0.9)' }
+          ]"
+        />
+
+        <AdminChart
           title="Active users by day by bot"
           subtitle="Active users split by bot (stacked)"
           kind="bar"
@@ -1827,6 +1838,7 @@ const actionFunnelLastMonthSeries = ref([]);
 const actionFunnelLastWeekSeries = ref([]);
 const topicUsageSeries = ref([]);
 const topicUsageSeriesConfig = ref([]);
+const activeUsersSeries = ref([]);
 const activeUsersByBotSeries = ref([]);
 const activeUsersByBotSeriesConfig = ref([]);
 const inactiveUsersSeries = ref([]);
@@ -3732,6 +3744,7 @@ async function refreshAnalytics() {
       actionFunnelLastMonth,
       actionFunnelLastWeek,
       topicsByDay,
+      activeUsers,
       activeUsersByBot,
       inactiveUsers,
       usageSeconds,
@@ -3753,6 +3766,7 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.lastMonth, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.lastWeek, headers }),
       apiJson(props.apiBase, '/admin/metrics/topics-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/active-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
@@ -3786,6 +3800,7 @@ async function refreshAnalytics() {
     const { chartData: topicChartData, seriesConfig: topicChartConfig } = transformByTopicData(topicsByDayRawRows);
     topicUsageSeries.value = topicChartData;
     topicUsageSeriesConfig.value = topicChartConfig;
+    activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
     freeUserTotals.value = freeUsersInsights?.totals || freeUserTotals.value;
