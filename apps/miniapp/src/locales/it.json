@@ -12,6 +12,10 @@
     }
   },
   "locales": {
+    "ar": "Arabo",
+    "hi": "Hindi",
+    "pl": "Polacco",
+    "tr": "Turco",
     "uk": "Ucraino",
     "en": "Inglese",
     "de": "Tedesco",
@@ -19,10 +23,15 @@
     "it": "Italiano"
   },
   "practiceLanguages": {
+    "ar": "Arabo",
     "en": "Inglese",
     "de": "Tedesco",
     "es": "Spagnolo",
-    "it": "Italiano"
+    "hi": "Hindi",
+    "it": "Italiano",
+    "pl": "Polacco",
+    "tr": "Turco",
+    "uk": "Ucraino"
   },
   "plans": {
     "tiers": {

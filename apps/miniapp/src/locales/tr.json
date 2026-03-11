@@ -1,0 +1,377 @@
+{
+  "common": {
+    "selected": "Seçildi",
+    "status": "Durum",
+    "scheduled": "Planlandı",
+    "notice": "Bilgi",
+    "back": "Geri",
+    "backToMenu": "Menüye dön",
+    "dash": "—",
+    "errors": {
+      "couldNotSave": "Kaydedilemedi. Lütfen tekrar deneyin."
+    }
+  },
+  "locales": {
+    "ar": "Arapça",
+    "de": "Almanca",
+    "en": "İngilizce",
+    "es": "İspanyolca",
+    "hi": "Hintçe",
+    "it": "İtalyanca",
+    "pl": "Lehçe",
+    "tr": "Türkçe",
+    "uk": "Ukraynaca"
+  },
+  "practiceLanguages": {
+    "ar": "Arapça",
+    "de": "Almanca",
+    "en": "İngilizce",
+    "es": "İspanyolca",
+    "hi": "Hintçe",
+    "it": "İtalyanca",
+    "pl": "Lehçe",
+    "tr": "Türkçe",
+    "uk": "Ukraynaca"
+  },
+  "plans": {
+    "tiers": {
+      "free": "Ücretsiz",
+      "pro": "Pro"
+    }
+  },
+  "app": {
+    "loading": {
+      "kicker": "Açılıyor…",
+      "title": "Girişiniz hazırlanıyor",
+      "sub": "Lütfen bu pencereyi açık tutun."
+    },
+    "error": {
+      "kicker": "Bilgi",
+      "title": "Mini uygulama açılamadı",
+      "openInTelegram": "Bu sayfayı Telegram içinde açın.",
+      "authFailed": "Kimlik doğrulama başarısız oldu. Lütfen mini uygulamayı yeniden açın."
+    }
+  },
+  "appHeader": {
+    "title": "AI Language School",
+    "linkLabel": "ai-language-school.online",
+    "description": "Günlük pratik için 20+ dil tek bir yerde."
+  },
+  "botPicker": {
+    "kicker": "Öğretmen bağlamı",
+    "title": "Öğretmen seç",
+    "sub": "Ayarlarınız her öğretmen için ayrıdır. Şimdi ayarlarını yönetmek istediğiniz öğretmeni seçin.",
+    "empty": "Henüz bağlı bir öğretmen bulunamadı."
+  },
+  "home": {
+    "kicker": "AI Language School · Ayarlar",
+    "greeting": {
+      "named": "Merhaba, {name}.",
+      "anon": "Merhaba."
+    },
+    "sub": "Bir kart seçin ve dil okulu ayarlarınızı tek bir yerden yönetin.",
+    "uiLanguage": "Arayüz dili",
+    "menu": {
+      "subscription": {
+        "title": "Abonelik",
+        "desc": "Planlar, limitler, otomatik yenileme; her şey tek bir yerde."
+      },
+      "language": {
+        "title": "Diller ve öğretmenler",
+        "desc": "Dilini ve öğretmenini seç."
+      },
+      "level": {
+        "title": "Seviye",
+        "desc": "Düzeltmelerin sıkılığını ve cevapların zorluğunu ayarla."
+      },
+      "about": {
+        "title": "Hakkında",
+        "desc": "Nasıl çalıştığı ve nelerin kaydedildiği."
+      }
+    }
+  },
+  "dock": {
+    "home": "Panel",
+    "plan": "Abonelik",
+    "profile": "Profil",
+    "support": "Destek"
+  },
+  "dashboard": {
+    "title": "AI Language School",
+    "subtitle": "İlerlemenin özeti.",
+    "eyebrow": "Kişisel panelin",
+    "greetingNamed": "Tekrar hoş geldin, {name}.",
+    "greetingAnon": "Tekrar hoş geldin.",
+    "heroSub": "{language} pratiğin şu anda {level} seviyesine ayarlı.",
+    "setupLabel": "Mevcut düzen",
+    "manageSetup": "Düzeni ayarla",
+    "openSubscription": "Aboneliği aç",
+    "streakCalendar": "Seri takvimi",
+    "prevMonth": "Önceki ay",
+    "nextMonth": "Sonraki ay",
+    "otherLanguages": "Diğer diller",
+    "openChat": "Koç sohbetini aç",
+    "coachLabel": "Seçili koç",
+    "teacherFallback": "Telegram içinde, düzenli günlük pratik için tasarlanmış premium bir koçluk alanı.",
+    "statusActive": "Bugün zaten pratik yaptın.",
+    "statusAtRisk": "Bugün kısa bir seans seriyi canlı tutar.",
+    "statusBroken": "Yeni bir seri sonraki mesajınla başlar.",
+    "currentStreak": "Mevcut seri",
+    "streakDays": "{count} gün",
+    "xpLevelLabel": "Seviye",
+    "xpTotalLabel": "XP",
+    "streakBonusLabel": "Seri XP",
+    "streakBonusPendingShort": "Yakında",
+    "streakBonusPendingNote": "Henüz aktif değil",
+    "longestStreak": "En uzun seri",
+    "planUsage": "Plan ve kullanım",
+    "learningProfile": "Öğrenme profili",
+    "profileSummary": "Mevcut seviye: {level}",
+    "currentStreakActive": "Bugünün ritmi yerinde.",
+    "currentStreakAtRisk": "Dün pratik yaptın. Seriyi korumak için bugün bir mesaj gönder.",
+    "currentStreakBroken": "Şu anda aktif bir seri yok, ama bugün yeniden başlayabilirsin.",
+    "longestStreakEmpty": "Henüz seri geçmişi yok. İlk istikrarlı serin şimdi başlıyor.",
+    "longestStreakCopy": "Şimdiye kadarki en iyi seri: {count} gün.",
+    "minutes": "dk",
+    "usageFallback": "Planın aktif olduğunda kullanım verileri burada görünecek.",
+    "usageCopy": "Hakkının %{percent}'i kullanıldı",
+    "todayFocus": "Bugünün odağı",
+    "focusActiveTitle": "Ritmi buldun",
+    "focusActiveCopy": "Bugünkü pratiğin zaten kaydedildi. İstersen ekstra ivme için kısa bir tur daha ekle.",
+    "focusRiskTitle": "Bugünü canlı tut",
+    "focusRiskCopy": "Bugün atacağın kısa bir yazı ya da sesli mesaj seriyi korur ve alışkanlığı sıcak tutar.",
+    "focusRestartTitle": "Yeni bir seri başlat",
+    "focusRestartCopy": "Bir sonraki pratik mesajın ilk gün olur. Başlangıcı küçük ve kolay tut.",
+    "practiceNow": "Şimdi pratik yap",
+    "quickActions": "Hızlı işlemler",
+    "quickActionsTitle": "Temelleri ayarla",
+    "actions": {
+      "level": "Seviyeyi değiştir",
+      "otherLanguages": "Diğer diller",
+      "plan": "Planı yönet",
+      "support": "Destekle iletişime geç"
+    },
+    "supportLabel": "Destek yazışması",
+    "supportTitle": "Geri bildirimler ve yönetici yanıtları",
+    "supportEmpty": "Henüz bir dizin yok. İlk notunu, hata bildirimini ya da ürün fikrini burada gönder.",
+    "supportFromAdmin": "Destekten son yanıt",
+    "supportFromYou": "Senden son mesaj",
+    "unreadReplies": "{count} okunmamış",
+    "openSupport": "Destek yazışmasını aç",
+    "startSupport": "Bir destek yazışması başlat",
+    "loadError": "Panelin şu anda yüklenemedi."
+  },
+  "profile": {
+    "eyebrow": "Öğrenme düzeni",
+    "title": "Düzenini yönet",
+    "sub": "Koç, dil ve seviye burada durur; böylece panel ilerlemeye odaklı kalır.",
+    "openCoachChat": "Koç sohbetini aç",
+    "teacherSection": "Mevcut koç",
+    "otherLanguages": "Diğer diller",
+    "teacherFallback": "Koç ayrıntılarını burada tut; ana ekran sakin ve ilerleme odaklı kalsın.",
+    "learningLanguage": "Öğrenme dili",
+    "level": "Seviye",
+    "replyMode": "Yanıt modu",
+    "replyModeTitle": "Koç nasıl yanıt vermeli?",
+    "replyModeSaved": "Yanıt modu kaydedildi.",
+    "replyModeNotes": {
+      "text": "Sohbette yazılı yanıtlar. Düzeltmeleri hızlıca okumak istediğinde daha iyi.",
+      "voice": "Mümkün olduğunda sesli yanıtlar. Dinleme ritmi ve konuşma akışı için daha iyi."
+    },
+    "replyModeText": "Önce yazı",
+    "replyModeVoice": "Önce ses",
+    "levelSection": "Seviye ayarı",
+    "levelTitle": "Düzeltmeler ne kadar sıkı hissettirsin?",
+    "levelSaved": "Seviye kaydedildi.",
+    "appSection": "Okul",
+    "appTitle": "AI Language School",
+    "schoolCopy": "Okul sitesindeki tüm öğretmenleri ve dilleri incele.",
+    "schoolLink": "Okul sitesini aç"
+  },
+  "feedback": {
+    "eyebrow": "Geri bildirim ve destek",
+    "title": "Ekiple konuş",
+    "sub": "Ürün geri bildirimi gönder, sorun bildir ya da yardım iste. Yönetici ekibinin yanıtları burada görünecek.",
+    "support": "Destek",
+    "unreadCount": "{count} okunmamış yanıt",
+    "newMessage": "Yeni mesaj",
+    "composeTitle": "Ekibe mesaj gönder",
+    "category": "Kategori",
+    "messageLabel": "Ne oldu?",
+    "messagePlaceholder": "Hatanı, fikrini, fatura sorunu ya da koçlukla ilgili konuyu anlat.",
+    "charactersLeft": "{count} karakter kaldı",
+    "send": "Geri bildirim gönder",
+    "sending": "Gönderiliyor…",
+    "sent": "Geri bildirim gönderildi.",
+    "threadLabel": "Yazışma",
+    "threadTitle": "Yazışman",
+    "loading": "Yazışman yükleniyor…",
+    "empty": "Henüz mesaj yok. İlk notun bu yazışmayı başlatacak.",
+    "admin": "Destek",
+    "you": "Sen",
+    "loadError": "Destek yazışması şu anda yüklenemedi.",
+    "sendError": "Geri bildirim şu anda gönderilemedi.",
+    "validation": {
+      "category": "Önce bir kategori seç.",
+      "message": "Önce kısa bir mesaj yaz.",
+      "length": "Mesaj çok uzun. 1000 karakterin altında tut."
+    },
+    "categories": {
+      "bug": "Hata",
+      "idea": "Fikir",
+      "billing": "Faturalandırma",
+      "coach": "Koç"
+    }
+  },
+  "language": {
+    "kicker": "🌍 Diller ve Öğretmenler",
+    "title": "Dilini ve öğretmenini seç",
+    "sub": "Önce dili değiştir, sonra birlikte pratik yapmak istediğin öğretmeni seç.",
+    "teacherFallback": "Öğretmen",
+    "baseTeachersHeading": "{language} öğretmenleri",
+    "showMoreTeachers": "Daha fazla göster",
+    "showLessTeachers": "Daha az göster",
+    "chooseTeacher": "{language} için öğretmenler",
+    "teacherCount": "{count} öğretmen",
+    "noTeachers": "Bu dil için henüz öğretmen yok.",
+    "options": {
+      "en": {
+        "note": "Nazik düzeltmeler, doğal yanıtlar."
+      },
+      "de": {
+        "note": "Artikeller, kelime sırası ve akış — yumuşakça."
+      }
+    },
+    "toasts": {
+      "savedPickLevel": "Kaydedildi. Şimdi seviyeni seç.",
+      "teacherSaved": "Öğretmen değiştirildi: {teacher}"
+    }
+  },
+  "level": {
+    "kicker": "🎯 Seviye",
+    "title": "Ne kadar sıkı olayım?",
+    "subPrefix": "Bu, öğretmeninin",
+    "subSuffix": " seçimini yansıtır.",
+    "notes": {
+      "a1": "Kısa, şimdiki zaman odaklı yanıtlar. Genelde sadece 1 temel düzeltme.",
+      "a2": "Basit geçmiş ve gelecek. En fazla 2 temel dilbilgisi düzeltmesi.",
+      "b1": "Daha açık yanıtlar. Zamanlar, artikeller ve edatlar için faydalı düzeltmeler.",
+      "b2": "Doğal ifade ve kalıp kullanımları. 2-4 yüksek değerli düzeltme.",
+      "c1": "Nüanslı yanıtlar. Üslup ya da ince dilbilgisi için yalnızca 1-2 ileri düzey düzeltme."
+    },
+    "toasts": {
+      "saved": "Seviye kaydedildi ✅"
+    }
+  },
+  "about": {
+    "kicker": "ℹ️ Hakkında",
+    "title": "AI Language School hakkında",
+    "sub": "AI Language School, Telegram içinde konuşma pratiğidir. Çok dilliyiz ve öğretmen ekibimiz büyümeye devam ediyor.",
+    "school": {
+      "title": "Okul hakkında",
+      "desc": "Her birinin kendine özgü tarzı ve yaklaşımı olan gerçek öğretmenlerle pratik yaparsın. Bir dil seç, öğretmenini seç ve düzenli bir konuşma alışkanlığı kur.",
+      "linkLabel": "Okul sitesi"
+    },
+    "multilingual": {
+      "title": "Çok dilli düzen",
+      "desc": "Hedeflerine ve moduna göre dilleri ve öğretmenleri istediğin zaman değiştir.",
+      "availableNow": "Şu anda mevcut: {languages} dil, {teachers} öğretmen.",
+      "languagesTitle": "Diller",
+      "teachersTitle": "Öğretmenler",
+      "noneLanguages": "Henüz yapılandırılmış dil yok.",
+      "noneTeachers": "Henüz yapılandırılmış öğretmen yok."
+    },
+    "saved": {
+      "title": "Neler kaydedilir",
+      "languageTitle": "Dil ve öğretmen",
+      "languageDesc": "Hangi dili çalıştığın ve kiminle çalıştığın.",
+      "levelTitle": "Seviye",
+      "levelDesc": "Geri bildirimin ne kadar ayrıntılı olduğu ve yanıtların ne kadar karmaşık olduğu.",
+      "subscriptionTitle": "Abonelik",
+      "subscriptionDesc": "Planlar, limitler ve otomatik yenileme."
+    },
+    "tips": {
+      "title": "İpuçları",
+      "pickLanguageFirst": "Önce dili ve öğretmeni seç, sonra seviyeni ayarla.",
+      "sendVoice": "Hedef dilinde kısa sesli mesajlar gönder. Sana yanıt verir, daha doğal konuşmana nazikçe yardımcı oluruz."
+    }
+  },
+  "checkout": {
+    "heroBadge": "Güvenli ödeme",
+    "title": "Ödeme",
+    "sub": "Telegram'dan çıkmadan ödemeni tamamla.",
+    "loading": "Güvenli ödeme sayfası yükleniyor…",
+    "errors": {
+      "unavailable": "Ödeme şu anda kullanılamıyor.",
+      "badTier": "Geçersiz plan seçimi.",
+      "badBillingInterval": "Geçersiz faturalandırma aralığı.",
+      "missingKey": "Gömülü ödeme için Stripe yapılandırılmamış."
+    }
+  },
+  "subscription": {
+    "heroBadge": "Abonelik",
+    "title": "Abonelik",
+    "sub": "Planını, kullanımını ve ödemelerini tek bir yerden yönet.",
+    "manage": {
+      "yourPlan": "Planın",
+      "expires": "Bitiş tarihi",
+      "practiceTime": "Pratik süresi",
+      "voiceReplies": "Sesli yanıtlar",
+      "voiceTotalLifetime": "Toplam ses kullanımı",
+      "voiceTotalMonthly": "Bu ayki ses kullanımı",
+      "managePayments": "Ödemeleri yönet",
+      "turnOffAutoRenew": "Otomatik yenilemeyi kapat",
+      "resumeAutoRenew": "Otomatik yenilemeyi yeniden aç"
+    },
+    "period": {
+      "label": "Dönem",
+      "perMonth": "/ ay",
+      "perYear": "/ yıl"
+    },
+    "billingIntervals": {
+      "monthly": "Aylık",
+      "annual": "Yıllık",
+      "save": "%{save} tasarruf et"
+    },
+    "currency": {
+      "label": "Para birimi",
+      "note": "{currency} cinsinden ücretlendirilir",
+      "more": "Daha fazla",
+      "less": "Daha az"
+    },
+    "actions": {
+      "openingCheckout": "Ödeme açılıyor…",
+      "subscribe": "Abone ol"
+    },
+    "notes": {
+      "billedAnnually": "Yıllık olarak faturalandırılır: {total} {period}"
+    },
+    "statusMessage": {
+      "checkoutCompleted": "Ödeme tamamlandı. Planını şimdi etkinleştiriyoruz.",
+      "checkoutCanceled": "Ödeme iptal edildi. Mevcut planın aynı kalır."
+    },
+    "pending": {
+      "withDate": "Planlandı: {date} tarihinde {plan} planına geçilecek.",
+      "atRenewal": "Planlandı: yenilemede {plan} planına geçilecek."
+    },
+    "autoRenew": {
+      "on": "Otomatik yenileme açık",
+      "off": "Otomatik yenileme kapalı"
+    },
+    "taglines": {
+      "pro": "Günlük antrenman modu: daha uzun sesli mesajlar ve daha fazla karşılıklı konuşma için.",
+      "free": "Rahat tempolu pratik için yumuşak bir başlangıç."
+    },
+    "actionLabels": {
+      "checkoutUnavailable": "Ödeme şu anda kullanılamıyor.",
+      "unableToLoadPlans": "Planlar yüklenemedi.",
+      "unexpectedError": "Beklenmeyen bir hata oluştu. Daha sonra tekrar dene.",
+      "billingNotAvailableYet": "Faturalandırma henüz kullanılamıyor.",
+      "unableToOpenBillingPortal": "Faturalandırma portalı açılamadı."
+    }
+  },
+  "units": {
+    "minutesShort": "{count} dk",
+    "hoursShort": "{count} sa"
+  }
+}

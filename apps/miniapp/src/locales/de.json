@@ -12,6 +12,10 @@
     }
   },
   "locales": {
+    "ar": "Arabisch",
+    "hi": "Hindi",
+    "pl": "Polnisch",
+    "tr": "Türkisch",
     "uk": "Ukrainisch",
     "en": "Englisch",
     "de": "Deutsch",
@@ -19,10 +23,15 @@
     "it": "Italienisch"
   },
   "practiceLanguages": {
+    "ar": "Arabisch",
     "en": "Englisch",
     "de": "Deutsch",
     "es": "Spanisch",
-    "it": "Italienisch"
+    "hi": "Hindi",
+    "it": "Italienisch",
+    "pl": "Polnisch",
+    "tr": "Türkisch",
+    "uk": "Ukrainisch"
   },
   "plans": {
     "tiers": {

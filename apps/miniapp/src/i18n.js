@@ -1,7 +1,10 @@
 import { watch, ref, inject } from 'vue';
+import ar from './locales/ar.json';
 import en from './locales/en.json';
 import de from './locales/de.json';
+import hi from './locales/hi.json';
 import it from './locales/it.json';
+import tr from './locales/tr.json';
 import uk from './locales/uk.json';
 
 const STORAGE_KEY = 'miniapp_ui_locale';
@@ -9,9 +12,12 @@ const I18N_SYMBOL = Symbol('miniapp_i18n');
 
 function normalizeLocale(input) {
   const raw = (input || '').toString().trim().toLowerCase();
+  if (raw === 'ar' || raw.startsWith('ar-')) return 'ar';
   if (raw === 'uk' || raw === 'uk-ua' || raw === 'ua' || raw === 'ua-ua') return 'uk';
   if (raw === 'de' || raw.startsWith('de-')) return 'de';
+  if (raw === 'hi' || raw.startsWith('hi-')) return 'hi';
   if (raw === 'it' || raw.startsWith('it-')) return 'it';
+  if (raw === 'tr' || raw.startsWith('tr-')) return 'tr';
   if (raw === 'en' || raw.startsWith('en-')) return 'en';
   return '';
 }
@@ -36,7 +42,7 @@ export function getInitialLocale() {
   return loadSavedLocale() || 'en';
 }
 
-const messages = { en, de, it, uk };
+const messages = { ar, de, en, hi, it, tr, uk };
 export const locale = ref(getInitialLocale());
 
 function getByPath(value, path) {
@@ -76,6 +82,7 @@ export const i18n = {
 function syncHtmlLang(value) {
   try {
     document?.documentElement?.setAttribute('lang', value);
+    document?.documentElement?.setAttribute('dir', value === 'ar' ? 'rtl' : 'ltr');
   } catch {
     // ignore
   }
