@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "PLEASE deploy with github"
+echo "PLEASE deploy with github. The landing Vercel project should use the Nuxt.js preset rooted at apps/landing with no custom output directory."
 exit 1
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -56,7 +56,7 @@ fi
 if [[ ! -f .vercel/project.json ]]; then
   echo ""
   echo "Project not linked yet. Running: vercel link"
-  echo "(Tip: set Root Directory to apps/landing and Nuxt output to .output/public.)"
+  echo "(Tip: set Root Directory to apps/landing, Framework Preset to Nuxt.js, and leave Output Directory empty.)"
   vercel_cmd link
 fi
 

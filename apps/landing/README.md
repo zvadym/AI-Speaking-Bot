@@ -1,6 +1,6 @@
 # Landing (Vercel)
 
-Static marketing site for `ai-language-school.online`, built with Nuxt 3 SSR + prerendered output.
+Nuxt 3 marketing site for `ai-language-school.online`, deployed to Vercel with Nitro server routes and prerendered marketing pages.
 
 Teacher pages are generated from `deploy/bots/*.json` at build time (secrets are not included in the public bundle).
 Teacher thumbnails are generated into `apps/landing/public/teachers/thumbnail/*.png` from source images in `apps/landing/public/teachers/*`.
@@ -41,15 +41,21 @@ cd apps/landing
 npm run build
 ```
 
-This generates static, prerendered HTML under `.output/public`.
+This produces a Nitro build for Vercel while still prerendering the configured marketing routes during the build.
+
+## Nitro API
+
+- `GET /api/health` is served by Nitro and returns a small health payload for landing-local backend smoke checks.
+- The frontend can consume it via the landing helper in `src/composables/useLandingHealth.js`.
 
 ## Vercel
 
 - Framework preset: **Nuxt.js**
 - Root directory: `apps/landing`
 - Build command: `npm run build`
-- Output directory: `.output/public`
+- Output directory: leave unset so Vercel uses the Nuxt/Nitro output automatically
 - Recommended pricing env: set `PRICING_API_BASE` in Vercel project settings. The landing no longer fetches pricing from the browser at runtime.
+- Nitro server routes and prerendered pages are deployed together as one full-stack Nuxt app.
 
 ### Deploy (CLI)
 

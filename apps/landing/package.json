@@ -7,7 +7,7 @@
     "predev": "npm run prepare:thumbnails && node scripts/generate-teachers.mjs && node scripts/generate-pricing.mjs",
     "dev": "nuxt dev",
     "prebuild": "npm run prepare:thumbnails && node scripts/generate-teachers.mjs && node scripts/generate-pricing.mjs",
-    "build": "nuxt generate",
+    "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview --host"
   },
