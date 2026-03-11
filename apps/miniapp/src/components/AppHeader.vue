@@ -29,18 +29,20 @@ function openSchoolUrl() {
   right: 0;
   display: grid;
   justify-items: center;
-  padding: 0 16px;
+  padding: 0 12px;
   z-index: 16;
   pointer-events: none;
 }
 
 .app-header-card {
-  width: min(760px, 100%);
+  width: min(840px, 100%);
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid rgba(185, 176, 159, 0.7);
-  background: rgba(249, 244, 237, 0.94);
+  background: rgba(249, 244, 237, 0.82);
   box-shadow: 0 12px 28px rgba(61, 52, 38, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: grid;
   gap: 2px;
   pointer-events: auto;

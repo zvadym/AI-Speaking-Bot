@@ -44,22 +44,24 @@ const items = computed(() => ([
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: center;
-  padding: 0 16px;
+  padding: 0 12px;
   z-index: 18;
   pointer-events: none;
 }
 
 .dock {
   pointer-events: auto;
-  width: min(560px, 100%);
+  width: min(840px, 100%);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   padding: 8px;
   border-radius: 22px;
   border: 1px solid rgba(186, 177, 160, 0.62);
-  background: rgba(249, 245, 238, 0.95);
+  background: rgba(249, 245, 238, 0.82);
   box-shadow: 0 12px 28px rgba(61, 52, 38, 0.09);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .dock-item {
