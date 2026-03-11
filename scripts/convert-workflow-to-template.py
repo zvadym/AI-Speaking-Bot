@@ -7,7 +7,6 @@ Default source dir:
 
 Supported targets:
   - ai-bot
-  - loader-messages-rotator
 """
 
 from __future__ import annotations
@@ -25,9 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT_DIR = REPO_ROOT / "deploy" / "workflows" / "to_convert"
 TARGET_TEMPLATE_FILES = {
     "ai-bot": REPO_ROOT / "deploy" / "workflows" / "ai-bot.json",
-    "loader-messages-rotator": REPO_ROOT / "deploy" / "workflows" / "loader-messages-rotator.json",
 }
-BOT_KEY_EXPR = "={{ $('Settings').item.json.bot_key }}"
 
 
 def resolve_path(path_str: str) -> Path:
@@ -177,55 +174,6 @@ def restore_webhook_ids(converted: Dict[str, Any], template: Dict[str, Any]) -> 
     return changed
 
 
-def normalize_start_loader(converted: Dict[str, Any], template: Dict[str, Any]) -> int:
-    src_node = find_node_by_name(converted, "Start loader")
-    tpl_node = find_node_by_name(template, "Start loader")
-    if not isinstance(src_node, dict) or not isinstance(tpl_node, dict):
-        return 0
-
-    src_params = src_node.get("parameters")
-    tpl_params = tpl_node.get("parameters")
-    if not isinstance(src_params, dict) or not isinstance(tpl_params, dict):
-        return 0
-
-    changed = 0
-
-    tpl_workflow_id = tpl_params.get("workflowId")
-    src_workflow_id = src_params.get("workflowId")
-    if isinstance(tpl_workflow_id, dict):
-        if not isinstance(src_workflow_id, dict):
-            src_params["workflowId"] = copy.deepcopy(tpl_workflow_id)
-            changed += 1
-        else:
-            for key in ("value", "cachedResultName", "cachedResultUrl"):
-                if key in tpl_workflow_id and src_workflow_id.get(key) != tpl_workflow_id.get(key):
-                    src_workflow_id[key] = tpl_workflow_id[key]
-                    changed += 1
-
-    src_inputs = src_params.get("workflowInputs")
-    if isinstance(src_inputs, dict):
-        src_val = src_inputs.get("value")
-        if not isinstance(src_val, dict):
-            src_val = {}
-            src_inputs["value"] = src_val
-            changed += 1
-        if src_val.get("bot_key") != BOT_KEY_EXPR:
-            src_val["bot_key"] = BOT_KEY_EXPR
-            changed += 1
-
-        src_schema = src_inputs.get("schema")
-        if isinstance(src_schema, list):
-            before = len(src_schema)
-            src_inputs["schema"] = [
-                item
-                for item in src_schema
-                if not (isinstance(item, dict) and item.get("id") == "bot_key")
-            ]
-            if len(src_inputs["schema"]) != before:
-                changed += before - len(src_inputs["schema"])
-    return changed
-
-
 def normalize_locale_nodes_to_placeholders(
     converted: Dict[str, Any], node_names: Tuple[str, ...] = ("Set Locale", "Digest Locale")
 ) -> int:
@@ -318,7 +266,6 @@ def main() -> int:
     changes.append(("webhook path suffix stripped", strip_webhook_path_suffix(converted, bot_key)))
     changes.append(("webhookId restored from template", restore_webhook_ids(converted, template)))
     if target_name == "ai-bot":
-        changes.append(("Start loader normalized", normalize_start_loader(converted, template)))
         changes.append(("Locale nodes normalized to placeholders", normalize_locale_nodes_to_placeholders(converted)))
 
     print("\nConversion summary:")

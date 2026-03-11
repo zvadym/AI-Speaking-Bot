@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'crypto';
+import { randomUUID, timingSafeEqual } from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -10,7 +10,11 @@ import { stripe } from './stripe.js';
 import { signSession, requireAuth } from './auth.js';
 import { loadBotConfigs } from './bot-configs.js';
 import { buildBillingCurrencyCatalog } from './billing-currencies.js';
-import { enqueueBroadcastCampaign as enqueueBroadcastCampaignJob } from './jobs.js';
+import {
+  enqueueBroadcastCampaign as enqueueBroadcastCampaignJob,
+  enqueueLoaderRotateJob,
+  enqueueLoaderTimeoutCleanupJob
+} from './jobs.js';
 import { getApiBoss, stopApiBoss } from './queue.js';
 
 const app = express();
@@ -72,7 +76,20 @@ function requireAdmin(req, res, next) {
   return next();
 }
 
+function requireInternalApi(req, res, next) {
+  if (!env.internalApiSecret) {
+    return res.status(404).json({ error: 'not_found' });
+  }
+
+  const provided = (req.headers['x-internal-secret'] || '').toString();
+  if (!provided || !safeEqualString(provided, env.internalApiSecret)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  return next();
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
+const LOADER_MESSAGE_MAX_LEN = 4096;
 const PURCHASE_ALLOWED_TIERS = new Set(['pro']);
 const PURCHASE_ALLOWED_BILLING_INTERVALS = new Set(['month', 'year']);
 const QUERY_TRUE_VALUES = new Set(['true', '1', 'yes']);
@@ -145,6 +162,59 @@ function normalizeStringArray(raw, { maxItems = 12, maxItemLen = 32 } = {}) {
     .map((v) => v.slice(0, maxItemLen))
     .slice(0, maxItems);
   return items.length ? items : null;
+}
+
+async function fetchLoaderState(chatId, botKey) {
+  const normalizedChatId = Number(chatId);
+  const normalizedBotKey = normalizeBotKey(botKey);
+  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey) return null;
+
+  const { rows } = await pool.query(
+    `SELECT chat_id, bot_key, stop_flag, updated_at, session_id, message_id, started_at
+       FROM loader_flags
+      WHERE chat_id = $1
+        AND bot_key = $2
+      LIMIT 1`,
+    [normalizedChatId, normalizedBotKey]
+  );
+  if (!rows[0]) return null;
+
+  return {
+    chat_id: Number(rows[0].chat_id),
+    bot_key: normalizeBotKey(rows[0].bot_key),
+    stop_flag: rows[0].stop_flag === true,
+    updated_at: rows[0].updated_at ? new Date(rows[0].updated_at) : null,
+    session_id: normalizeLoaderSessionId(rows[0].session_id),
+    message_id: normalizeLoaderMessageId(rows[0].message_id),
+    started_at: rows[0].started_at ? new Date(rows[0].started_at) : null
+  };
+}
+
+async function upsertLoaderState({ chatId, botKey, sessionId, messageId }) {
+  await pool.query(
+    `INSERT INTO loader_flags (chat_id, bot_key, session_id, message_id, stop_flag, started_at, updated_at)
+     VALUES ($1, $2, $3, $4, false, NOW(), NOW())
+     ON CONFLICT (chat_id, bot_key) DO UPDATE SET
+       session_id = EXCLUDED.session_id,
+       message_id = EXCLUDED.message_id,
+       stop_flag = false,
+       started_at = NOW(),
+       updated_at = NOW()`,
+    [Number(chatId), normalizeBotKey(botKey), normalizeLoaderSessionId(sessionId), normalizeLoaderMessageId(messageId)]
+  );
+}
+
+async function markLoaderStopped(chatId, botKey, sessionId, { clearMessageId = false } = {}) {
+  await pool.query(
+    `UPDATE loader_flags
+        SET stop_flag = true,
+            updated_at = NOW(),
+            message_id = CASE WHEN $4::boolean THEN NULL ELSE message_id END
+      WHERE chat_id = $1
+        AND bot_key = $2
+        AND ($3::text IS NULL OR session_id = $3)`,
+    [Number(chatId), normalizeBotKey(botKey), normalizeLoaderSessionId(sessionId), clearMessageId]
+  );
 }
 
 function buildPublicBotCatalog(configMap = {}) {
@@ -1808,6 +1878,42 @@ function sanitizeErrorText(value) {
   return raw.slice(0, 500);
 }
 
+function normalizeLoaderMessages(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((value) => (value ?? '').toString().trim())
+    .filter(Boolean)
+    .map((value) => value.slice(0, LOADER_MESSAGE_MAX_LEN))
+    .slice(0, 32);
+}
+
+function normalizeLoaderWaitingText(raw) {
+  const value = (raw ?? '').toString().trim();
+  return value ? value.slice(0, LOADER_MESSAGE_MAX_LEN) : '';
+}
+
+function normalizeLoaderSessionId(raw) {
+  const value = (raw ?? '').toString().trim();
+  return value ? value.slice(0, 128) : null;
+}
+
+function normalizeLoaderMessageId(raw) {
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return Math.trunc(value);
+}
+
+function isTelegramMessageGoneError(error) {
+  const message = (error?.telegramDescription || error?.message || '').toString().toLowerCase();
+  return (
+    message.includes('message to edit not found') ||
+    message.includes('message to delete not found') ||
+    message.includes('message identifier is not specified') ||
+    message.includes('message can\'t be deleted') ||
+    message.includes('message can not be edited')
+  );
+}
+
 const TELEGRAM_HTML_ALLOWED_TAGS = new Set([
   'b',
   'i',
@@ -1992,13 +2098,6 @@ async function updateUserDeliveryState(chatId, { status, lastError, inactiveReas
 }
 
 async function sendTelegramTextMessage(chatId, text, { botKey = null, replyToMessageId = null, parseMode = null, replyMarkup = null } = {}) {
-  const token = resolveTelegramBotToken(botKey);
-  if (!token) {
-    const err = new Error('missing_telegram_bot_token');
-    err.code = 'missing_telegram_bot_token';
-    throw err;
-  }
-
   const body = {
     chat_id: Number(chatId),
     text,
@@ -2015,7 +2114,18 @@ async function sendTelegramTextMessage(chatId, text, { botKey = null, replyToMes
     body.allow_sending_without_reply = true;
   }
 
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  return callTelegramApi(botKey, 'sendMessage', body);
+}
+
+async function callTelegramApi(botKey, method, body) {
+  const token = resolveTelegramBotToken(botKey);
+  if (!token) {
+    const err = new Error('missing_telegram_bot_token');
+    err.code = 'missing_telegram_bot_token';
+    throw err;
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -2040,13 +2150,6 @@ async function sendTelegramTextMessage(chatId, text, { botKey = null, replyToMes
 }
 
 async function sendTelegramPhotoMessage(chatId, photo, caption, { botKey = null, parseMode = null, replyMarkup = null } = {}) {
-  const token = resolveTelegramBotToken(botKey);
-  if (!token) {
-    const err = new Error('missing_telegram_bot_token');
-    err.code = 'missing_telegram_bot_token';
-    throw err;
-  }
-
   const body = {
     chat_id: Number(chatId),
     photo: (photo ?? '').toString()
@@ -2058,39 +2161,10 @@ async function sendTelegramPhotoMessage(chatId, photo, caption, { botKey = null,
   if (replyMarkup && typeof replyMarkup === 'object' && !Array.isArray(replyMarkup)) {
     body.reply_markup = replyMarkup;
   }
-
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-
-  let payload = null;
-  try {
-    payload = await response.json();
-  } catch {
-    payload = null;
-  }
-
-  if (!response.ok || !payload?.ok) {
-    const description = payload?.description || `telegram_http_${response.status}`;
-    const err = new Error(description);
-    err.telegramStatus = response.status;
-    err.telegramDescription = payload?.description || null;
-    throw err;
-  }
-
-  return payload.result || null;
+  return callTelegramApi(botKey, 'sendPhoto', body);
 }
 
 async function sendTelegramVideoMessage(chatId, video, caption, { botKey = null, parseMode = null, replyMarkup = null } = {}) {
-  const token = resolveTelegramBotToken(botKey);
-  if (!token) {
-    const err = new Error('missing_telegram_bot_token');
-    err.code = 'missing_telegram_bot_token';
-    throw err;
-  }
-
   const body = {
     chat_id: Number(chatId),
     video: (video ?? '').toString(),
@@ -2103,29 +2177,22 @@ async function sendTelegramVideoMessage(chatId, video, caption, { botKey = null,
   if (replyMarkup && typeof replyMarkup === 'object' && !Array.isArray(replyMarkup)) {
     body.reply_markup = replyMarkup;
   }
+  return callTelegramApi(botKey, 'sendVideo', body);
+}
 
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendVideo`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+async function editTelegramMessageText(chatId, messageId, text, { botKey = null } = {}) {
+  return callTelegramApi(botKey, 'editMessageText', {
+    chat_id: Number(chatId),
+    message_id: Number(messageId),
+    text
   });
+}
 
-  let payload = null;
-  try {
-    payload = await response.json();
-  } catch {
-    payload = null;
-  }
-
-  if (!response.ok || !payload?.ok) {
-    const description = payload?.description || `telegram_http_${response.status}`;
-    const err = new Error(description);
-    err.telegramStatus = response.status;
-    err.telegramDescription = payload?.description || null;
-    throw err;
-  }
-
-  return payload.result || null;
+async function deleteTelegramMessage(chatId, messageId, { botKey = null } = {}) {
+  return callTelegramApi(botKey, 'deleteMessage', {
+    chat_id: Number(chatId),
+    message_id: Number(messageId)
+  });
 }
 
 async function uploadTelegramMediaToChat({ chatId, messageKind, buffer, filename, mimeType, botKey = null }) {
@@ -2193,6 +2260,123 @@ async function uploadTelegramMediaToChat({ chatId, messageKind, buffer, filename
 
   return { messageId: result?.message_id ?? null, fileId };
 }
+
+async function stopAndDeleteLoader(chatId, botKey, sessionId = null) {
+  const state = await fetchLoaderState(chatId, botKey);
+  if (!state) return null;
+
+  const requestedSessionId = normalizeLoaderSessionId(sessionId);
+  if (requestedSessionId && state.session_id !== requestedSessionId) {
+    return null;
+  }
+  const effectiveSessionId = requestedSessionId || state.session_id;
+
+  await markLoaderStopped(chatId, botKey, effectiveSessionId);
+
+  if (state.message_id) {
+    try {
+      await deleteTelegramMessage(chatId, state.message_id, { botKey });
+    } catch (error) {
+      if (!isTelegramMessageGoneError(error)) {
+        console.warn('loader-stop:delete-failed', {
+          chatId,
+          botKey,
+          sessionId: effectiveSessionId,
+          error: error?.telegramDescription || error?.message || String(error)
+        });
+      }
+    }
+  }
+
+  await markLoaderStopped(chatId, botKey, effectiveSessionId, { clearMessageId: true });
+  return {
+    session_id: effectiveSessionId,
+    message_id: state.message_id
+  };
+}
+
+app.post('/internal/loader/start', requireInternalApi, async (req, res) => {
+  const chatId = Number(req.body?.chat_id);
+  const botKey = normalizeBotKey(req.body?.bot_key);
+  const waitingText = normalizeLoaderWaitingText(req.body?.waiting_text);
+  const messages = normalizeLoaderMessages(req.body?.messages);
+  if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || !waitingText) {
+    return res.status(400).json({ error: 'bad_request' });
+  }
+
+  try {
+    await stopAndDeleteLoader(chatId, botKey);
+
+    const telegramResult = await sendTelegramTextMessage(chatId, waitingText, { botKey });
+    const messageId = normalizeLoaderMessageId(telegramResult?.message_id);
+    if (!messageId) {
+      return res.status(502).json({ error: 'telegram_message_missing' });
+    }
+
+    const sessionId = randomUUID();
+
+    try {
+      await upsertLoaderState({ chatId, botKey, sessionId, messageId });
+      const boss = await getApiBoss();
+      await enqueueLoaderRotateJob(boss, {
+        chatId,
+        botKey,
+        sessionId,
+        waitingText,
+        messages
+      });
+      await enqueueLoaderTimeoutCleanupJob(boss, { chatId, botKey, sessionId });
+    } catch (error) {
+      try {
+        await deleteTelegramMessage(chatId, messageId, { botKey });
+      } catch (cleanupError) {
+        if (!isTelegramMessageGoneError(cleanupError)) {
+          console.warn('loader-start:rollback-delete-failed', {
+            chatId,
+            botKey,
+            messageId,
+            error: cleanupError?.telegramDescription || cleanupError?.message || String(cleanupError)
+          });
+        }
+      }
+      await markLoaderStopped(chatId, botKey, sessionId, { clearMessageId: true });
+      throw error;
+    }
+
+    return res.json({
+      ok: true,
+      session_id: sessionId,
+      message_id: messageId
+    });
+  } catch (error) {
+    console.error('internal-loader-start failed', {
+      chatId,
+      botKey,
+      error: error?.message || String(error)
+    });
+    return res.status(500).json({ error: 'loader_start_failed' });
+  }
+});
+
+app.post('/internal/loader/stop', requireInternalApi, async (req, res) => {
+  const chatId = Number(req.body?.chat_id);
+  const botKey = normalizeBotKey(req.body?.bot_key);
+  if (!Number.isFinite(chatId) || chatId <= 0 || !botKey) {
+    return res.status(400).json({ error: 'bad_request' });
+  }
+
+  try {
+    await stopAndDeleteLoader(chatId, botKey);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('internal-loader-stop failed', {
+      chatId,
+      botKey,
+      error: error?.message || String(error)
+    });
+    return res.status(500).json({ error: 'loader_stop_failed' });
+  }
+});
 
 app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);

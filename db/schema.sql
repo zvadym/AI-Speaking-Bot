@@ -698,7 +698,10 @@ CREATE TABLE public.loader_flags (
     chat_id bigint NOT NULL,
     stop_flag boolean DEFAULT false NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    bot_key text NOT NULL
+    bot_key text NOT NULL,
+    session_id text,
+    message_id bigint,
+    started_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 

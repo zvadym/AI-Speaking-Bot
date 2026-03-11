@@ -22,7 +22,6 @@ EXPLICIT_ENV = {
 # workflows when deploy/bots/*.json exists.
 BOT_TEMPLATES = {
     "ai-bot.json": "ai-bot",
-    "loader-messages-rotator.json": "loader-messages-rotator",
 }
 
 PROMPT_KEYS = (
@@ -722,35 +721,6 @@ def patch_set_locale_node(
             a["value"] = value
 
 
-def patch_start_loader(ai_data: Dict[str, Any], loader_workflow_id: str, loader_workflow_name: str, bot_key: str) -> None:
-    node = find_node(ai_data, "Start loader")
-    params = node.get("parameters", {})
-    wf = params.get("workflowId")
-    if isinstance(wf, dict):
-        wf["value"] = loader_workflow_id
-        wf["cachedResultName"] = loader_workflow_name
-        wf["cachedResultUrl"] = f"/workflow/{loader_workflow_id}"
-
-    wf_inputs = params.get("workflowInputs")
-    if isinstance(wf_inputs, dict):
-        val = wf_inputs.get("value")
-        if isinstance(val, dict):
-            val["bot_key"] = bot_key
-        schema = wf_inputs.get("schema")
-        if isinstance(schema, list) and not any(isinstance(x, dict) and x.get("id") == "bot_key" for x in schema):
-            schema.append(
-                {
-                    "id": "bot_key",
-                    "type": "string",
-                    "display": True,
-                    "required": False,
-                    "displayName": "bot_key",
-                    "defaultMatch": False,
-                    "canBeUsedToMatch": True,
-                }
-            )
-
-
 def load_bot_configs(bots_dir: Path) -> List[Tuple[str, Dict[str, Any]]]:
     bots: List[Tuple[str, Dict[str, Any]]] = []
     for path in sorted([p for p in bots_dir.glob("*.json") if p.is_file()]):
@@ -849,14 +819,12 @@ def main() -> int:
 
     # Load templates once.
     template_ai = input_dir / "ai-bot.json"
-    template_loader = input_dir / "loader-messages-rotator.json"
-    if not template_ai.exists() or not template_loader.exists():
+    if not template_ai.exists():
         print("Multi-bot mode requires templates in input dir:", file=sys.stderr)
-        print(f"  Missing: {template_ai} or {template_loader}", file=sys.stderr)
+        print(f"  Missing: {template_ai}", file=sys.stderr)
         return 1
 
     ai_tpl = load_json(template_ai)
-    loader_tpl = load_json(template_loader)
 
     for bot_key, bot in bots:
         base = bot["base_language"]
@@ -885,35 +853,26 @@ def main() -> int:
         )
 
         ai = copy.deepcopy(ai_tpl)
-        loader = copy.deepcopy(loader_tpl)
 
         ai_id = deterministic_workflow_id("ai-bot", bot_key)
-        loader_id = deterministic_workflow_id("loader-messages-rotator", bot_key)
 
         ai["id"] = ai_id
         ai["name"] = f"ai-bot-{bot_key}"
-        loader["id"] = loader_id
-        loader["name"] = f"loader-messages-rotator-{bot_key}"
 
         patch_webhook_paths_for_bot(ai, bot_key)
         patch_webhook_ids_for_bot(ai, "ai-bot", bot_key)
-        patch_webhook_ids_for_bot(loader, "loader-messages-rotator", bot_key)
 
         patch_settings_node(ai, bot_key, base, learn, bot_voice)
 
         patch_set_locale_node(ai, full_locale)
         patch_message_model_node(ai, base, learn)
-        patch_start_loader(ai, loader_id, loader["name"], bot_key)
 
         set_telegram_credential_id(ai, tg_cred)
-        set_telegram_credential_id(loader, tg_cred)
 
         apply_env_credentials(ai, env_map, ignore_types={"telegramApi"})
-        apply_env_credentials(loader, env_map, ignore_types={"telegramApi"})
 
         write_json(output_dir / f"ai-bot-{bot_key}.json", ai)
-        write_json(output_dir / f"loader-messages-rotator-{bot_key}.json", loader)
-        rendered += 2
+        rendered += 1
 
     # Render other workflows (skip templates).
     for path in files:

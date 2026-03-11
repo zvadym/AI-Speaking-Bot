@@ -131,6 +131,7 @@ export const env = {
   corsOrigins,
   planChangedWebhookUrl: process.env.PLAN_CHANGED_WEBHOOK_URL || '',
   adminDashboardPassword: process.env.ADMIN_DASHBOARD_PASSWORD || '',
+  internalApiSecret: process.env.INTERNAL_API_SECRET || '',
   broadcastMaxRecipients: optionalInteger('BROADCAST_MAX_RECIPIENTS', 2000, { min: 1, max: 100000 }),
   broadcastProcessBatchSize: optionalInteger('BROADCAST_PROCESS_BATCH_SIZE', 100, { min: 1, max: 1000 }),
   broadcastPerMessageDelayMs: optionalInteger('BROADCAST_PER_MESSAGE_DELAY_MS', 35, { min: 0, max: 5000 }),

@@ -75,7 +75,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 
 ## n8n Workflows
 - Source: `deploy/workflows`.
-- Template workflows: `ai-bot.json` and `loader-messages-rotator.json`.
+- Template workflow: `ai-bot.json`. Loader rotation now runs via API + worker jobs.
 - In multi-bot mode, `scripts/render-n8n-workflows.py` renders per-bot workflow JSON into `deploy/workflows/.rendered`.
 - Prompt templates come from `deploy/prompts/*.md` and render fails on missing or unresolved placeholders.
 - Render: `scripts/render-n8n-workflows.py --input deploy/workflows --output deploy/workflows/.rendered`.

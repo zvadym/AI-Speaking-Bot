@@ -5,6 +5,8 @@ export const QUEUE_ONBOARDING_COMPLETE_SCAN = 'onboarding-complete-scan';
 export const QUEUE_ONBOARDING_COMPLETE_SEND = 'onboarding-complete-send';
 export const QUEUE_BROADCAST_CAMPAIGN_ENQUEUE = 'broadcast-campaign-enqueue';
 export const QUEUE_BROADCAST_RECIPIENT_SEND = 'broadcast-recipient-send';
+export const QUEUE_LOADER_ROTATE = 'loader-rotate';
+export const QUEUE_LOADER_TIMEOUT_CLEANUP = 'loader-timeout-cleanup';
 
 const ssl = env.databaseSsl
   ? { rejectUnauthorized: env.databaseSslRejectUnauthorized }
@@ -24,6 +26,8 @@ async function ensureQueues(boss) {
   await boss.createQueue(QUEUE_ONBOARDING_COMPLETE_SEND, retryOptions);
   await boss.createQueue(QUEUE_BROADCAST_CAMPAIGN_ENQUEUE, retryOptions);
   await boss.createQueue(QUEUE_BROADCAST_RECIPIENT_SEND, retryOptions);
+  await boss.createQueue(QUEUE_LOADER_ROTATE);
+  await boss.createQueue(QUEUE_LOADER_TIMEOUT_CLEANUP);
 }
 
 function createBoss({ enableScheduling }) {
