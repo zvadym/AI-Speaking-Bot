@@ -135,12 +135,12 @@
         "reply_cta_voice": "ارسل رسالة صوتية قصيرة",
         "reply_cta_text": "اكتب جملة قصيرة واحدة",
         "d3_fallback_variants": [
-          "جاهز تكمل؟ {{reply_cta_label}} بـ {{target_language_label}} وأنا أساعدك بالخطوة التالية.",
-          "تحب ترجع للممارسة؟ {{reply_cta_label}} بـ {{target_language_label}}."
+          "هل نكمل؟ اكتب جملة قصيرة واحدة بهذه اللغة: {{target_language_label}} — وبعدها أساعدك.",
+          "هل نتابع؟ اكتب جملة قصيرة واحدة بهذه اللغة: {{target_language_label}} — وبعدها أساعدك."
         ],
         "d7_fallback_variants": [
-          "تحب بداية سهلة؟ {{reply_cta_label}} بـ {{target_language_label}} وأنا أساعدك.",
-          "نقدر نرجع بخطوة صغيرة. {{reply_cta_label}} بـ {{target_language_label}}."
+          "هل تريد أن تتدرّب من جديد؟ اكتب جملة قصيرة واحدة بهذه اللغة: {{target_language_label}} — وأنا أكمل معك.",
+          "هل تريد العودة إلى التدرّب؟ اكتب جملة قصيرة واحدة بهذه اللغة: {{target_language_label}} — وأنا أكمل معك."
         ],
         "d14": {
           "default": [
@@ -148,8 +148,8 @@
             "متى ما كنت جاهز نبدأ بداية جديدة. {{reply_cta_label}} بـ {{target_language_label}}."
           ],
           "topic": [
-            "تحب ترجع إلى موضوع {{topic_title}}؟ {{reply_cta_label}} بـ {{target_language_label}} ونبدأ بهدوء.",
-            "موضوع {{topic_title}} ما زال مناسبًا للرجوع. {{reply_cta_label}} بـ {{target_language_label}} وقت ما تريد."
+            "هل تريد العودة إلى موضوع «{{topic_title}}»؟ اكتب جملة قصيرة واحدة بهذه اللغة: {{target_language_label}} — ونكمل.",
+            "هل تريد الرجوع من جديد إلى موضوع «{{topic_title}}»؟ اكتب جملة قصيرة واحدة بهذه اللغة: {{target_language_label}} — ونكمل."
           ],
           "streak": [
             "أنت سبق وبنيت streak لمدة {{streak_best}} يومًا. نقدر نبدأ من جديد بخطوة صغيرة. {{reply_cta_label}} بـ {{target_language_label}}.",

@@ -1087,12 +1087,12 @@ const WINBACK_DEFAULT_LOCALE = {
   reply_cta_voice: 'send a short voice message',
   reply_cta_text: 'write one short sentence',
   d3_fallback_variants: [
-    'Ready to continue? {{reply_cta_label}} in {{target_language_label}} and I will take it from there.',
-    'Want to pick this back up? {{reply_cta_label}} in {{target_language_label}}.'
+    'Shall we continue? Write one short sentence in {{target_language_label}} — and I will help from there.',
+    'Shall we keep going? Write one short sentence in {{target_language_label}} — and I will help with the rest.'
   ],
   d7_fallback_variants: [
-    'Want an easy restart? {{reply_cta_label}} in {{target_language_label}} and I will help.',
-    'We can restart small. {{reply_cta_label}} in {{target_language_label}}.'
+    'Want to practice again? Write one short sentence in {{target_language_label}} — and I will pick it up from there.',
+    'Want to get back to practice? Write one short sentence in {{target_language_label}} — and I will pick it up.'
   ],
   d14: {
     default: [
@@ -1100,8 +1100,8 @@ const WINBACK_DEFAULT_LOCALE = {
       'Whenever you are ready, we can start fresh. {{reply_cta_label}} in {{target_language_label}}.'
     ],
     topic: [
-      'Want to come back to {{topic_title}}? {{reply_cta_label}} in {{target_language_label}} and we will restart gently.',
-      '{{topic_title}} is still a good place to restart. {{reply_cta_label}} in {{target_language_label}} when you want.'
+      'Want to come back to "{{topic_title}}"? Write one short sentence in {{target_language_label}} — and we will continue.',
+      'Want to return to "{{topic_title}}"? Write one short sentence in {{target_language_label}} — and we will continue.'
     ],
     streak: [
       'You already built a {{streak_best}}-day streak once. We can start again with one small step. {{reply_cta_label}} in {{target_language_label}}.',

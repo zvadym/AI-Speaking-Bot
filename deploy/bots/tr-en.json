@@ -135,12 +135,12 @@
         "reply_cta_voice": "kisa bir sesli mesaj gonder",
         "reply_cta_text": "tek kisa bir cumle yaz",
         "d3_fallback_variants": [
-          "Devam etmeye hazir misin? {{reply_cta_label}} {{target_language_label}} olarak gonder, sonraki adimda yardim edeyim.",
-          "Tekrar baslamak ister misin? {{reply_cta_label}} {{target_language_label}} olarak gonder."
+          "Hadi, devam edelim mi? {{target_language_label}} dilinde tek kısa bir cümle yaz — gerisinde ben yardım ederim.",
+          "Hadi, sürdürelim mi? {{target_language_label}} dilinde tek kısa bir cümle yaz — gerisinde ben yardım ederim."
         ],
         "d7_fallback_variants": [
-          "Kolay bir donus ister misin? {{reply_cta_label}} {{target_language_label}} olarak gonder, ben yardim ederim.",
-          "Kucuk bir adimla yeniden baslayabiliriz. {{reply_cta_label}} {{target_language_label}} olarak gonder."
+          "Yeniden biraz pratik yapmak ister misin? {{target_language_label}} dilinde tek kısa bir cümle yaz — ben devamını getiririm.",
+          "Pratiğe geri dönmek ister misin? {{target_language_label}} dilinde tek kısa bir cümle yaz — ben devamını getiririm."
         ],
         "d14": {
           "default": [
@@ -148,8 +148,8 @@
             "Hazir oldugunda taze bir baslangic yapabiliriz. {{reply_cta_label}} {{target_language_label}} olarak gonder."
           ],
           "topic": [
-            "{{topic_title}} konusuna donmek ister misin? {{reply_cta_label}} {{target_language_label}} olarak gonder, sakin sakin yeniden baslayalim.",
-            "{{topic_title}} hala yeniden baslamak icin iyi bir konu. Isteyince {{reply_cta_label}} {{target_language_label}} olarak gonder."
+            "“{{topic_title}}” konusuna yeniden dönmek ister misin? {{target_language_label}} dilinde tek kısa bir cümle yaz — devam edelim.",
+            "“{{topic_title}}” konusuna geri gelmek ister misin? {{target_language_label}} dilinde tek kısa bir cümle yaz — devam edelim."
           ],
           "streak": [
             "Bir zamanlar {{streak_best}} gunluk streak yapmistin. Tek kucuk adimla yeniden baslayabiliriz. {{reply_cta_label}} {{target_language_label}} olarak gonder.",

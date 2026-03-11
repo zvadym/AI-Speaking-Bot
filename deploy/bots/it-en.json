@@ -135,12 +135,12 @@
         "reply_cta_voice": "manda un breve vocale",
         "reply_cta_text": "scrivi una frase breve",
         "d3_fallback_variants": [
-          "Pronto/a a continuare? {{reply_cta_label}} in {{target_language_label}} e ti aiuto con il prossimo passo.",
-          "Vuoi riprendere da qui? {{reply_cta_label}} in {{target_language_label}}."
+          "Allora, continuiamo? Scrivi una frase breve in {{target_language_label}} — e poi ti aiuto io.",
+          "Allora, andiamo avanti? Scrivi una frase breve in {{target_language_label}} — e poi ti aiuto io."
         ],
         "d7_fallback_variants": [
-          "Ti va un restart semplice? {{reply_cta_label}} in {{target_language_label}} e ti aiuto io.",
-          "Possiamo ripartire in piccolo. {{reply_cta_label}} in {{target_language_label}}."
+          "Ti va di fare di nuovo pratica? Scrivi una frase breve in {{target_language_label}} — e riparto da lì.",
+          "Vuoi tornare a fare pratica? Scrivi una frase breve in {{target_language_label}} — e riparto da lì."
         ],
         "d14": {
           "default": [
@@ -148,8 +148,8 @@
             "Quando ti va, possiamo ripartire da capo. {{reply_cta_label}} in {{target_language_label}}."
           ],
           "topic": [
-            "Vuoi tornare sul tema {{topic_title}}? {{reply_cta_label}} in {{target_language_label}} e ripartiamo con calma.",
-            "{{topic_title}} resta un ottimo punto da cui ripartire. {{reply_cta_label}} in {{target_language_label}} quando vuoi."
+            "Vuoi tornare al tema “{{topic_title}}”? Scrivi una frase breve in {{target_language_label}} — e continuiamo.",
+            "Vuoi rientrare nel tema “{{topic_title}}”? Scrivi una frase breve in {{target_language_label}} — e continuiamo."
           ],
           "streak": [
             "Hai già costruito una streak di {{streak_best}} giorni. Possiamo ricominciare con un passo piccolo. {{reply_cta_label}} in {{target_language_label}}.",

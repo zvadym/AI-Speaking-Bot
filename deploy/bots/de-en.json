@@ -135,12 +135,12 @@
         "reply_cta_voice": "schick eine kurze Sprachnachricht",
         "reply_cta_text": "schreib einen kurzen Satz",
         "d3_fallback_variants": [
-          "Bereit weiterzumachen? {{reply_cta_label}} auf {{target_language_label}}, und ich helfe dir mit dem nächsten Schritt.",
-          "Willst du wieder einsteigen? {{reply_cta_label}} auf {{target_language_label}}."
+          "Na, machen wir weiter? Schreib einen kurzen Satz auf {{target_language_label}} — den Rest übernehme ich.",
+          "Na, weiter? Schreib einen kurzen Satz auf {{target_language_label}} — ich helfe dir dann."
         ],
         "d7_fallback_variants": [
-          "Lust auf einen leichten Neustart? {{reply_cta_label}} auf {{target_language_label}}, und ich helfe dir.",
-          "Wir können klein anfangen. {{reply_cta_label}} auf {{target_language_label}}."
+          "Willst du wieder üben? Schreib einen kurzen Satz auf {{target_language_label}} — und ich knüpfe daran an.",
+          "Willst du zurück zur Praxis? Schreib einen kurzen Satz auf {{target_language_label}} — und ich knüpfe daran an."
         ],
         "d14": {
           "default": [
@@ -148,8 +148,8 @@
             "Wenn du bereit bist, starten wir einfach neu. {{reply_cta_label}} auf {{target_language_label}}."
           ],
           "topic": [
-            "Willst du zu {{topic_title}} zurückkehren? {{reply_cta_label}} auf {{target_language_label}}, und wir starten ruhig wieder rein.",
-            "{{topic_title}} ist immer noch ein guter Wiedereinstieg. {{reply_cta_label}} auf {{target_language_label}}, wenn du magst."
+            "Willst du zum Thema „{{topic_title}}“ zurückkehren? Schreib einen kurzen Satz auf {{target_language_label}} — und wir machen weiter.",
+            "Willst du wieder zu „{{topic_title}}“ zurück? Schreib einen kurzen Satz auf {{target_language_label}} — und wir machen weiter."
           ],
           "streak": [
             "Du hattest schon einmal eine Serie von {{streak_best}} Tagen. Wir können mit einem kleinen Schritt neu anfangen. {{reply_cta_label}} auf {{target_language_label}}.",

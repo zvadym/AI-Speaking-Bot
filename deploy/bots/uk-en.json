@@ -134,12 +134,12 @@
         "reply_cta_voice": "надішли коротке голосове",
         "reply_cta_text": "напиши одне коротке речення",
         "d3_fallback_variants": [
-          "Готовий(-а) продовжити? {{reply_cta_label}} {{target_language_label}}, а я допоможу з наступним кроком.",
-          "Хочеш повернутись до практики? {{reply_cta_label}} {{target_language_label}}."
+          "Ну що, продовжимо? Напиши одне коротке речення цією мовою: {{target_language_label}} — а далі я допоможу.",
+          "Ну що, поїхали далі? Напиши одне коротке речення цією мовою: {{target_language_label}} — а далі я допоможу."
         ],
         "d7_fallback_variants": [
-          "Хочеш легкий рестарт? {{reply_cta_label}} {{target_language_label}}, і я підхоплю далі.",
-          "Можемо почати з малого. {{reply_cta_label}} {{target_language_label}}."
+          "Хочеш знову попрактикуватись? Напиши одне коротке речення цією мовою: {{target_language_label}} — і я підхоплю.",
+          "Хочеш повернутись до практики? Напиши одне коротке речення цією мовою: {{target_language_label}} — і я підхоплю."
         ],
         "d14": {
           "default": [
@@ -147,8 +147,8 @@
             "Коли будеш готовий(-а), почнемо спочатку. {{reply_cta_label}} {{target_language_label}}."
           ],
           "topic": [
-            "Хочеш повернутись до теми {{topic_title}}? {{reply_cta_label}} {{target_language_label}}, і спокійно перезапустимось.",
-            "Тема {{topic_title}} все ще добре підходить для повернення. {{reply_cta_label}} {{target_language_label}}, коли буде зручно."
+            "Хочеш знову повернутись до теми «{{topic_title}}»? Напиши одне коротке речення цією мовою: {{target_language_label}} — і продовжимо.",
+            "Хочеш знову до теми «{{topic_title}}»? Напиши одне коротке речення цією мовою: {{target_language_label}} — і продовжимо."
           ],
           "streak": [
             "У тебе вже була серія {{streak_best}} днів. Можемо почати знову з одного маленького кроку. {{reply_cta_label}} {{target_language_label}}.",

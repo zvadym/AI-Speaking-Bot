@@ -135,12 +135,12 @@
         "reply_cta_voice": "ek chhota voice message bhejo",
         "reply_cta_text": "ek chhota sentence likho",
         "d3_fallback_variants": [
-          "Dobara continue karna hai? {{reply_cta_label}} {{target_language_label}} me bhejo, agla step main sambhal lunga.",
-          "Phir se shuru karna chahte ho? {{reply_cta_label}} {{target_language_label}} me bhejo."
+          "तो, आगे बढ़ें? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — आगे मैं मदद करूँगी।",
+          "चलो, जारी रखें? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — आगे मैं मदद करूँगी।"
         ],
         "d7_fallback_variants": [
-          "Easy restart chahiye? {{reply_cta_label}} {{target_language_label}} me bhejo, main help karunga.",
-          "Chhote step se dobara shuru kar sakte hain. {{reply_cta_label}} {{target_language_label}} me bhejo."
+          "फिर से थोड़ा अभ्यास करना चाहोगे? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — आगे मैं संभाल लूँगी।",
+          "अभ्यास पर वापस आना चाहोगे? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — आगे मैं संभाल लूँगी।"
         ],
         "d14": {
           "default": [
@@ -148,8 +148,8 @@
             "Jab ready ho, fresh start karte hain. {{reply_cta_label}} {{target_language_label}} me bhejo."
           ],
           "topic": [
-            "{{topic_title}} par wapas aana hai? {{reply_cta_label}} {{target_language_label}} me bhejo, araam se restart karenge.",
-            "{{topic_title}} abhi bhi restart ke liye achha topic hai. Jab chaho {{reply_cta_label}} {{target_language_label}} me bhejo."
+            "क्या तुम फिर से “{{topic_title}}” विषय पर लौटना चाहोगे? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — और आगे बढ़ते हैं।",
+            "क्या तुम “{{topic_title}}” विषय पर वापस आना चाहोगे? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — और आगे बढ़ते हैं।"
           ],
           "streak": [
             "Tum pehle {{streak_best}} din ki streak bana chuke ho. Ek chhote step se phir se shuru kar sakte hain. {{reply_cta_label}} {{target_language_label}} me bhejo.",
