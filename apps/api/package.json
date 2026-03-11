@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "worker": "node src/worker.js"
+    "worker": "node src/worker.js",
+    "test": "node --test"
   },
   "dependencies": {
     "cors": "^2.8.5",

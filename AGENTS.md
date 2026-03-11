@@ -24,6 +24,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - API:
   - `scripts/dev-api.sh` (loads `deploy/.env.api` if present).
   - Or `cd apps/api && npm install && npm run dev`.
+  - Tests: `cd apps/api && npm test`.
 - Mini-app:
   - `scripts/dev-miniapp.sh` (loads `deploy/.env.miniapp` if present).
   - Or `cd apps/miniapp && npm install && npm run dev`.
@@ -33,7 +34,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Local n8n:
   - `scripts/dev-n8n-full.sh` renders, imports, and activates local workflows.
   - Individual steps: `scripts/dev-n8n-render.sh`, `scripts/dev-n8n-import.sh`, `scripts/dev-n8n-activate.sh`.
-- There are no automated tests configured yet.
+- API has a `node:test` suite; run it with `cd apps/api && npm test`.
 
 ## Env & Secrets
 - API required env vars (see `apps/api/src/env.js`):
