@@ -79,7 +79,7 @@ const WINBACK_STAGE_CONFIG = {
     taskType: 'winback_d14',
     testTaskType: 'winback_d14_test',
     minHours: 336,
-    maxHours: 360,
+    maxHours: null,
     usesLlm: false,
     persistToMessages: false
   }
@@ -1749,7 +1749,7 @@ async function scanEligibleWinbackUsers(reminderType) {
        AND u.inactive_reason IS NULL
        AND ${inactiveSinceSql} IS NOT NULL
        AND last_user.created_at <= ${inactiveSinceSql}
-       AND ${inactiveSinceSql} > NOW() - ($1::int * interval '1 hour')
+       AND ($1::int IS NULL OR ${inactiveSinceSql} > NOW() - ($1::int * interval '1 hour'))
        AND ${inactiveSinceSql} <= NOW() - ($2::int * interval '1 hour')
        AND ($3::bigint[] IS NULL OR ub.chat_id = ANY($3::bigint[]))
        AND NOT EXISTS (
@@ -1765,7 +1765,7 @@ async function scanEligibleWinbackUsers(reminderType) {
      ORDER BY ${inactiveSinceSql} ASC, ub.chat_id ASC, ub.bot_key ASC
      LIMIT $5::int`,
     [
-      stageConfig.maxHours,
+      Number.isFinite(Number(stageConfig.maxHours)) ? Number(stageConfig.maxHours) : null,
       stageConfig.minHours,
       testChatIds,
       stageConfig.taskType,
@@ -2019,7 +2019,12 @@ async function evaluateWinbackEligibility({
   }
 
   const inactivityHours = Number(context.inactivityHours);
-  if (!Number.isFinite(inactivityHours) || inactivityHours < stageConfig.minHours || inactivityHours >= stageConfig.maxHours) {
+  const hasUpperBound = Number.isFinite(Number(stageConfig.maxHours));
+  if (
+    !Number.isFinite(inactivityHours) ||
+    inactivityHours < stageConfig.minHours ||
+    (hasUpperBound && inactivityHours >= Number(stageConfig.maxHours))
+  ) {
     return { ok: false, code: 'outside_inactivity_window', context };
   }
 
