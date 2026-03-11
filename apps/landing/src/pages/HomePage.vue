@@ -126,9 +126,7 @@
             <div v-if="showPricingCurrencySelector" class="pricing-currency-panel">
               <div class="pricing-currency-head">
                 <span class="pricing-currency-label">{{ t('pricing.currency.label') }}</span>
-                <span class="pricing-currency-note">
-                  {{ pricingState.loading ? t('pricing.currency.loading') : pricingCurrencyNote }}
-                </span>
+                <span class="pricing-currency-note">{{ pricingCurrencyNote }}</span>
               </div>
               <div class="pricing-currency-row">
                 <button
@@ -324,7 +322,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import ChatConversationDemo from '../components/ChatConversationDemo.vue';
 import TeacherCard from '../components/TeacherCard.vue';
@@ -336,47 +334,13 @@ import { pricing } from '../generated/pricing.js';
 import { normalizeLocale, routeWithLocale, useI18n } from '../i18n.js';
 
 const { t, tm, locale } = useI18n();
-const runtimeConfig = useRuntimeConfig();
 const tryTeacherModalOpen = useState('tryTeacherModalOpen', () => false);
 const billingInterval = useState('pricingBillingInterval', () => 'year');
 const selectedPricingCurrency = useState(
   'pricingCurrency',
-  () => (pricing?.currency || 'EUR').toString().trim().toUpperCase() || 'EUR'
+  () => (pricing?.default_currency || pricing?.currency || 'EUR').toString().trim().toUpperCase() || 'EUR'
 );
 const pricingExpanded = useState('pricingCurrencyExpanded', () => false);
-const pricingState = reactive({
-  loading: false,
-  data: pricing,
-  availableCurrencies: [(pricing?.currency || 'EUR').toString().trim().toUpperCase() || 'EUR'],
-  currencyDetails: {},
-  lastBaseLanguage: ''
-});
-const runtimePricing = computed(() => pricingState.data || pricing);
-const pricingCurrency = computed(
-  () => (runtimePricing.value?.currency || selectedPricingCurrency.value || 'EUR').toString().trim().toUpperCase() || 'EUR'
-);
-const pricingApiBase = computed(() => normalizeBaseUrl(runtimeConfig.public?.pricingApiBase || ''));
-const pricingBaseLanguage = computed(() => normalizeLocale(locale.value) || 'en');
-const availablePricingCurrencies = computed(() => {
-  const values = Array.isArray(pricingState.availableCurrencies) ? pricingState.availableCurrencies : [];
-  const normalized = uniqueCurrencies(values);
-  return normalized.length ? normalized : [pricingCurrency.value];
-});
-const pricingCurrencyDetails = computed(() => (
-  pricingState.currencyDetails && typeof pricingState.currencyDetails === 'object'
-    ? pricingState.currencyDetails
-    : {}
-));
-const primaryPricingCurrencies = computed(() => availablePricingCurrencies.value.slice(0, 3));
-const overflowPricingCurrencies = computed(() => availablePricingCurrencies.value.slice(3));
-const hasOverflowPricingCurrencies = computed(() => overflowPricingCurrencies.value.length > 0);
-const showPricingCurrencySelector = computed(() => availablePricingCurrencies.value.length > 1);
-const pricingCurrencyNote = computed(() => {
-  const details = pricingCurrencyDetails.value[pricingCurrency.value];
-  return t('pricing.currency.shownIn', {
-    currency: details?.name || pricingCurrency.value
-  });
-});
 
 const posts = computed(() => blogPosts.slice(0, 3));
 const featureCards = computed(() => {
@@ -442,10 +406,6 @@ const featuredTeachers = computed(() => {
 
 function openTryModal() {
   tryTeacherModalOpen.value = true;
-}
-
-function normalizeBaseUrl(input) {
-  return (input || '').toString().trim().replace(/\/+$/, '');
 }
 
 function normalizeCurrencyCode(raw, fallback = null) {
@@ -515,154 +475,103 @@ function formatPrice(value) {
   }
 }
 
-function buildPricingFromPlans({ currency, plans, source = 'api/public_plans' }) {
-  const normalizedCurrency = normalizeCurrencyCode(currency, 'EUR');
-  const rows = Array.isArray(plans) ? plans : [];
-  const month = rows.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'month' && normalizeCurrencyCode(plan?.currency) === normalizedCurrency);
-  const year = rows.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'year' && normalizeCurrencyCode(plan?.currency) === normalizedCurrency);
-  const monthCents = Number(month?.amount_cents);
-  const yearCents = Number(year?.amount_cents);
-  const monthlyAmount = Number.isFinite(monthCents) ? monthCents : null;
-  const yearlyAmount = Number.isFinite(yearCents) ? yearCents : null;
-  const savingsPercent =
-    monthlyAmount != null && yearlyAmount != null && monthlyAmount > 0
-      ? Math.round((1 - yearlyAmount / (monthlyAmount * 12)) * 100)
-      : null;
+const pricingFallbackCurrency = computed(
+  () => normalizeCurrencyCode(pricing?.default_currency || pricing?.currency, 'EUR') || 'EUR'
+);
+const generatedCurrenciesByBaseLanguage = computed(() => {
+  const value = pricing?.currencies_by_base_language;
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+});
+const generatedCurrencyDetails = computed(() => {
+  const value = pricing?.currency_details;
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+});
+const generatedPlansByCurrency = computed(() => {
+  const value = pricing?.plans_by_currency;
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value;
+  const legacyCurrency = normalizeCurrencyCode(pricing?.currency, null);
+  if (legacyCurrency && pricing?.pro) {
+    return {
+      [legacyCurrency]: {
+        ...pricing,
+        currency: legacyCurrency
+      }
+    };
+  }
+  return {};
+});
+const pricingBaseLanguage = computed(() => normalizeLocale(locale.value) || 'en');
+const pricingCurrencyDetails = computed(() => generatedCurrencyDetails.value);
+
+function availablePricingCurrenciesFor(baseLanguageRaw) {
+  const baseLanguage = normalizeLocale(baseLanguageRaw) || '';
+  const configuredCurrencies = uniqueCurrencies(generatedCurrenciesByBaseLanguage.value?.[baseLanguage] || []);
+  const currenciesWithPrices = uniqueCurrencies(Object.keys(generatedPlansByCurrency.value || {}));
+  const filteredConfigured = configuredCurrencies.filter((currency) => currenciesWithPrices.includes(currency));
+  if (filteredConfigured.length) return filteredConfigured;
+  if (configuredCurrencies.length) return configuredCurrencies;
+  if (currenciesWithPrices.includes(pricingFallbackCurrency.value)) return [pricingFallbackCurrency.value];
+  return currenciesWithPrices.length ? currenciesWithPrices : [pricingFallbackCurrency.value];
+}
+
+const availablePricingCurrencies = computed(() => availablePricingCurrenciesFor(pricingBaseLanguage.value));
+const pricingCurrency = computed(() => {
+  const selected = normalizeCurrencyCode(selectedPricingCurrency.value, null);
+  if (selected && availablePricingCurrencies.value.includes(selected)) return selected;
+  return availablePricingCurrencies.value[0] || pricingFallbackCurrency.value;
+});
+const primaryPricingCurrencies = computed(() => availablePricingCurrencies.value.slice(0, 3));
+const overflowPricingCurrencies = computed(() => availablePricingCurrencies.value.slice(3));
+const hasOverflowPricingCurrencies = computed(() => overflowPricingCurrencies.value.length > 0);
+const showPricingCurrencySelector = computed(() => availablePricingCurrencies.value.length > 1);
+const runtimePricing = computed(() => {
+  const direct = generatedPlansByCurrency.value?.[pricingCurrency.value];
+  if (direct && typeof direct === 'object') return direct;
+
+  const fallback = generatedPlansByCurrency.value?.[pricingFallbackCurrency.value];
+  if (fallback && typeof fallback === 'object') return fallback;
 
   return {
-    generated_at: new Date().toISOString(),
-    source,
-    currency: normalizedCurrency,
+    currency: pricingCurrency.value,
     pro: {
-      month: monthlyAmount == null ? null : { amount_cents: monthlyAmount, billing_interval: 'month' },
-      year: yearlyAmount == null ? null : { amount_cents: yearlyAmount, billing_interval: 'year' },
-      savings_percent: Number.isFinite(Number(savingsPercent)) && savingsPercent > 0 ? savingsPercent : null
+      month: null,
+      year: null,
+      savings_percent: null
     }
   };
-}
-
-async function fetchPricingJson(url) {
-  const resp = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  return await resp.json().catch(() => ({}));
-}
-
-async function fetchPricingCatalog(baseLanguage) {
-  if (!pricingApiBase.value) return null;
-  const url = new URL(`${pricingApiBase.value}/public/billing/currencies`);
-  url.searchParams.set('base_language', baseLanguage);
-  return await fetchPricingJson(url.toString());
-}
-
-async function fetchPricingForCurrency(currency) {
-  if (!pricingApiBase.value) return false;
-  const url = new URL(`${pricingApiBase.value}/public/plans`);
-  url.searchParams.set('include_all_intervals', 'true');
-  url.searchParams.set('currency', currency);
-  const payload = await fetchPricingJson(url.toString());
-  pricingState.data = buildPricingFromPlans({
-    currency,
-    plans: payload?.plans,
-    source: 'api/public_plans'
+});
+const pricingCurrencyNote = computed(() => {
+  const details = pricingCurrencyDetails.value[pricingCurrency.value];
+  return t('pricing.currency.shownIn', {
+    currency: details?.name || pricingCurrency.value
   });
-  return true;
-}
+});
 
-async function refreshPricing(baseLanguage, requestedCurrency = null) {
-  const fallbackCurrency = normalizeCurrencyCode(pricingCurrency.value, 'EUR');
-  let availableCurrencies = pricingApiBase.value ? ['EUR'] : [fallbackCurrency];
-  let currencyDetails = {};
-
-  if (pricingApiBase.value) {
-    try {
-      const catalog = await fetchPricingCatalog(baseLanguage);
-      const options = Array.isArray(catalog?.currency_options) ? catalog.currency_options : [];
-      const catalogCurrencies = uniqueCurrencies(options.map((item) => item?.code));
-      if (catalogCurrencies.length) availableCurrencies = catalogCurrencies;
-      const detailsFromCatalog = catalog?.currency_details && typeof catalog.currency_details === 'object'
-        ? catalog.currency_details
-        : {};
-      currencyDetails = Object.fromEntries(
-        availableCurrencies
-          .filter((currency) => detailsFromCatalog[currency])
-          .map((currency) => [currency, detailsFromCatalog[currency]])
-      );
-    } catch (err) {
-      console.error('pricing currency catalog failed', err);
-      availableCurrencies = uniqueCurrencies([normalizeCurrencyCode(selectedPricingCurrency.value), fallbackCurrency, 'EUR']);
-    }
-  }
-
+function syncSelectedPricingCurrency(baseLanguageRaw, requestedCurrency = null) {
+  const availableCurrencies = availablePricingCurrenciesFor(baseLanguageRaw);
   const selectedCurrency = [
-    normalizeCurrencyCode(requestedCurrency),
-    readStoredPricingCurrency(baseLanguage),
-    normalizeCurrencyCode(selectedPricingCurrency.value),
+    normalizeCurrencyCode(requestedCurrency, null),
+    readStoredPricingCurrency(baseLanguageRaw),
+    normalizeCurrencyCode(selectedPricingCurrency.value, null),
     availableCurrencies[0],
-    fallbackCurrency,
+    pricingFallbackCurrency.value,
     'EUR'
-  ].find((currency) => currency && availableCurrencies.includes(currency)) || availableCurrencies[0] || 'EUR';
+  ].find((currency) => currency && availableCurrencies.includes(currency)) || availableCurrencies[0] || pricingFallbackCurrency.value;
 
-  pricingState.availableCurrencies = availableCurrencies;
-  pricingState.currencyDetails = currencyDetails;
-  pricingState.lastBaseLanguage = baseLanguage;
+  selectedPricingCurrency.value = selectedCurrency;
+  saveStoredPricingCurrency(baseLanguageRaw, selectedCurrency);
   if (overflowPricingCurrencies.value.length === 0) pricingExpanded.value = false;
-
-  if (!pricingApiBase.value) {
-    selectedPricingCurrency.value = selectedCurrency;
-    saveStoredPricingCurrency(baseLanguage, selectedCurrency);
-    pricingState.data = {
-      ...runtimePricing.value,
-      currency: selectedCurrency
-    };
-    return;
-  }
-
-  pricingState.loading = true;
-  try {
-    await fetchPricingForCurrency(selectedCurrency);
-    selectedPricingCurrency.value = selectedCurrency;
-    saveStoredPricingCurrency(baseLanguage, selectedCurrency);
-  } catch (err) {
-    console.error('pricing fetch failed', err);
-    const stableCurrency = normalizeCurrencyCode(pricingState.data?.currency, null)
-      || normalizeCurrencyCode(pricing?.currency, fallbackCurrency)
-      || fallbackCurrency;
-    selectedPricingCurrency.value = stableCurrency;
-    pricingState.availableCurrencies = uniqueCurrencies([stableCurrency, ...availableCurrencies]);
-    saveStoredPricingCurrency(baseLanguage, stableCurrency);
-  } finally {
-    pricingState.loading = false;
-  }
 }
 
-async function selectPricingCurrency(currencyRaw) {
+function selectPricingCurrency(currencyRaw) {
   const currency = normalizeCurrencyCode(currencyRaw, null);
   if (!currency) return;
   if (!availablePricingCurrencies.value.includes(currency)) return;
   if (currency === pricingCurrency.value) return;
 
+  selectedPricingCurrency.value = currency;
+  saveStoredPricingCurrency(pricingBaseLanguage.value, currency);
   if (hasOverflowPricingCurrencies.value) pricingExpanded.value = false;
-
-  if (!pricingApiBase.value) {
-    selectedPricingCurrency.value = currency;
-    saveStoredPricingCurrency(pricingBaseLanguage.value, currency);
-    pricingState.data = {
-      ...runtimePricing.value,
-      currency
-    };
-    return;
-  }
-
-  pricingState.loading = true;
-  try {
-    await fetchPricingForCurrency(currency);
-    selectedPricingCurrency.value = currency;
-    saveStoredPricingCurrency(pricingBaseLanguage.value, currency);
-  } catch (err) {
-    console.error('pricing fetch failed', err);
-  } finally {
-    pricingState.loading = false;
-  }
 }
 
 function togglePricingCurrencies() {
@@ -779,9 +688,8 @@ onMounted(() => {
   } catch {
     // ignore
   }
-  refreshPricing(pricingBaseLanguage.value).finally(() => {
-    syncBillingIntervalWithAvailability();
-  });
+  syncSelectedPricingCurrency(pricingBaseLanguage.value);
+  syncBillingIntervalWithAvailability();
 });
 
 watch(billingInterval, (next) => {
@@ -801,7 +709,7 @@ watch(
   () => pricingBaseLanguage.value,
   (next, prev) => {
     if (!next || next === prev) return;
-    refreshPricing(next);
+    syncSelectedPricingCurrency(next);
   }
 );
 </script>

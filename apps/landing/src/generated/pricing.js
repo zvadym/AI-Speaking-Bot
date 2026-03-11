@@ -2,12 +2,20 @@
 // Do not edit manually.
 
 export const pricing = {
-  "generated_at": "2026-03-09T21:03:31.470Z",
+  "generated_at": "2026-03-11T08:01:51.450Z",
   "source": "placeholder",
   "currency": "EUR",
-  "pro": {
-    "month": null,
-    "year": null,
-    "savings_percent": null
+  "default_currency": "EUR",
+  "currencies_by_base_language": {},
+  "currency_details": {},
+  "plans_by_currency": {
+    "EUR": {
+      "currency": "EUR",
+      "pro": {
+        "month": null,
+        "year": null,
+        "savings_percent": null
+      }
+    }
   }
 };

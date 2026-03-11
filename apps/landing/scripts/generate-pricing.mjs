@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const OUTPUT_PATH = resolve(process.cwd(), 'src/generated/pricing.js');
+const DEFAULT_CURRENCY = 'EUR';
 
 function envFlag(name) {
   return (process.env[name] || '').toString().trim().toLowerCase() === 'true';
@@ -9,6 +10,18 @@ function envFlag(name) {
 
 function normalizeBaseUrl(input) {
   return (input || '').toString().trim().replace(/\/+$/, '');
+}
+
+function normalizeCurrencyCode(raw, fallback = null) {
+  const value = (raw ?? '').toString().trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(value)) return fallback;
+  return value;
+}
+
+function uniqueCurrencies(values = []) {
+  return Array.from(
+    new Set((Array.isArray(values) ? values : []).map((value) => normalizeCurrencyCode(value)).filter(Boolean))
+  );
 }
 
 function parseJsonSafely(value) {
@@ -19,7 +32,8 @@ function parseJsonSafely(value) {
   }
 }
 
-function buildPricing({ currency, proMonthCents, proYearCents, source }) {
+function buildPlanSummary({ currency, proMonthCents, proYearCents }) {
+  const normalizedCurrency = normalizeCurrencyCode(currency, DEFAULT_CURRENCY) || DEFAULT_CURRENCY;
   const monthCents =
     proMonthCents == null ? null : Number.isFinite(Number(proMonthCents)) ? Number(proMonthCents) : null;
   const yearCents =
@@ -30,15 +44,70 @@ function buildPricing({ currency, proMonthCents, proYearCents, source }) {
       : null;
 
   return {
-    generated_at: new Date().toISOString(),
-    source,
-    currency,
+    currency: normalizedCurrency,
     pro: {
       month: monthCents == null ? null : { amount_cents: monthCents, billing_interval: 'month' },
       year: yearCents == null ? null : { amount_cents: yearCents, billing_interval: 'year' },
       savings_percent: Number.isFinite(Number(savingsPercent)) && savingsPercent > 0 ? savingsPercent : null
     }
   };
+}
+
+function sanitizeCurrenciesByBaseLanguage(raw) {
+  const input = raw && typeof raw === 'object' ? raw : {};
+  return Object.fromEntries(
+    Object.entries(input)
+      .map(([baseLanguage, currencies]) => [
+        String(baseLanguage || '').trim().toLowerCase(),
+        uniqueCurrencies(currencies)
+      ])
+      .filter(([baseLanguage, currencies]) => Boolean(baseLanguage) && currencies.length > 0)
+  );
+}
+
+function sanitizeCurrencyDetails(raw) {
+  const input = raw && typeof raw === 'object' ? raw : {};
+  return Object.fromEntries(
+    Object.entries(input)
+      .map(([currency, details]) => [normalizeCurrencyCode(currency, null), details])
+      .filter(([currency, details]) => Boolean(currency) && details && typeof details === 'object')
+  );
+}
+
+function buildPricingCatalog({
+  defaultCurrency = DEFAULT_CURRENCY,
+  source,
+  currenciesByBaseLanguage = {},
+  currencyDetails = {},
+  plansByCurrency = {}
+}) {
+  const normalizedDefaultCurrency = normalizeCurrencyCode(defaultCurrency, DEFAULT_CURRENCY) || DEFAULT_CURRENCY;
+  return {
+    generated_at: new Date().toISOString(),
+    source,
+    currency: normalizedDefaultCurrency,
+    default_currency: normalizedDefaultCurrency,
+    currencies_by_base_language: currenciesByBaseLanguage,
+    currency_details: currencyDetails,
+    plans_by_currency: plansByCurrency
+  };
+}
+
+function buildPlaceholderCatalog(defaultCurrency = DEFAULT_CURRENCY) {
+  const normalizedDefaultCurrency = normalizeCurrencyCode(defaultCurrency, DEFAULT_CURRENCY) || DEFAULT_CURRENCY;
+  return buildPricingCatalog({
+    defaultCurrency: normalizedDefaultCurrency,
+    source: 'placeholder',
+    currenciesByBaseLanguage: {},
+    currencyDetails: {},
+    plansByCurrency: {
+      [normalizedDefaultCurrency]: buildPlanSummary({
+        currency: normalizedDefaultCurrency,
+        proMonthCents: null,
+        proYearCents: null
+      })
+    }
+  });
 }
 
 function buildModule(pricing) {
@@ -61,49 +130,91 @@ async function readExistingPricingFile() {
   return parseJsonSafely(match[1]);
 }
 
+async function fetchJson(url) {
+  const resp = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return await resp.json().catch(() => ({}));
+}
+
+async function fetchCatalog(apiBase) {
+  const url = new URL(`${apiBase}/public/billing/currencies`);
+  return await fetchJson(url.toString());
+}
+
+async function fetchPlanSummary(apiBase, currency) {
+  const url = new URL(`${apiBase}/public/plans`);
+  url.searchParams.set('include_all_intervals', 'true');
+  url.searchParams.set('currency', currency);
+  const data = await fetchJson(url.toString());
+  const plans = Array.isArray(data?.plans) ? data.plans : [];
+  const month = plans.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'month');
+  const year = plans.find((plan) => plan?.tier === 'pro' && plan?.billing_interval === 'year');
+
+  return buildPlanSummary({
+    currency,
+    proMonthCents: month?.amount_cents,
+    proYearCents: year?.amount_cents
+  });
+}
+
 const isStrict = envFlag('PRICING_STRICT') || Boolean(process.env.VERCEL) || Boolean(process.env.CI);
-const allowStale = envFlag('PRICING_ALLOW_STALE');
-const currency = (process.env.PRICING_CURRENCY || 'EUR').toString().trim().toUpperCase();
+const allowStale = envFlag('PRICING_ALLOW_STALE') || Boolean(process.env.VERCEL);
+const defaultCurrency = normalizeCurrencyCode(process.env.PRICING_CURRENCY, DEFAULT_CURRENCY) || DEFAULT_CURRENCY;
 
 const apiBase =
+  normalizeBaseUrl(process.env.NUXT_PUBLIC_PRICING_API_BASE) ||
+  normalizeBaseUrl(process.env.NUXT_PUBLIC_API_BASE) ||
   normalizeBaseUrl(process.env.PRICING_API_BASE) ||
   normalizeBaseUrl(process.env.API_BASE_URL) ||
   normalizeBaseUrl(process.env.VITE_API_BASE);
 
 if (!apiBase) {
+  const existing = await readExistingPricingFile().catch(() => null);
+  if (existing && allowStale) {
+    console.warn('[pricing] Missing pricing API base env; keeping existing generated pricing file.');
+    process.exit(0);
+  }
   if (isStrict) {
-    console.error('[pricing] Missing PRICING_API_BASE (or API_BASE_URL/VITE_API_BASE).');
+    console.error('[pricing] Missing pricing API base env (PRICING_API_BASE preferred).');
     process.exit(1);
   }
-  console.warn('[pricing] Missing PRICING_API_BASE; generating placeholder pricing file.');
-  await writePricingFile(buildPricing({ currency, proMonthCents: null, proYearCents: null, source: 'placeholder' }));
+  console.warn('[pricing] Missing pricing API base env; generating placeholder pricing file.');
+  await writePricingFile(buildPlaceholderCatalog(defaultCurrency));
   process.exit(0);
 }
 
-const url = new URL(`${apiBase}/public/plans`);
-url.searchParams.set('include_all_intervals', 'true');
-url.searchParams.set('currency', currency);
-
 try {
-  const resp = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  const data = await resp.json().catch(() => ({}));
-  const plans = Array.isArray(data?.plans) ? data.plans : [];
-  const month = plans.find((p) => p?.tier === 'pro' && p?.billing_interval === 'month' && p?.currency === currency);
-  const year = plans.find((p) => p?.tier === 'pro' && p?.billing_interval === 'year' && p?.currency === currency);
+  const rawCatalog = await fetchCatalog(apiBase);
+  const currenciesByBaseLanguage = sanitizeCurrenciesByBaseLanguage(rawCatalog?.currencies_by_base_language);
+  const currencyDetails = sanitizeCurrencyDetails(rawCatalog?.currency_details);
+  const allCurrencies = uniqueCurrencies([
+    defaultCurrency,
+    ...Object.values(currenciesByBaseLanguage).flat()
+  ]);
 
-  const proMonthCents = Number(month?.amount_cents);
-  const proYearCents = Number(year?.amount_cents);
-  const pricing = buildPricing({
-    currency,
-    proMonthCents: Number.isFinite(proMonthCents) ? proMonthCents : null,
-    proYearCents: Number.isFinite(proYearCents) ? proYearCents : null,
-    source: 'api/public_plans'
+  const pricingEntries = await Promise.all(
+    allCurrencies.map(async (currency) => [currency, await fetchPlanSummary(apiBase, currency)])
+  );
+
+  const plansByCurrency = Object.fromEntries(pricingEntries);
+  const pricing = buildPricingCatalog({
+    defaultCurrency,
+    source: 'api/public_pricing_catalog',
+    currenciesByBaseLanguage,
+    currencyDetails,
+    plansByCurrency
   });
+
   await writePricingFile(pricing);
-  console.info('[pricing] Generated', { currency, hasMonth: Boolean(pricing.pro.month), hasYear: Boolean(pricing.pro.year) });
+  console.info('[pricing] Generated catalog', {
+    currencies: Object.keys(plansByCurrency).length,
+    baseLanguages: Object.keys(currenciesByBaseLanguage).length
+  });
 } catch (err) {
-  console.error('[pricing] Failed to fetch pricing', { url: url.toString(), message: err?.message || String(err) });
+  console.error('[pricing] Failed to generate pricing catalog', {
+    apiBase,
+    message: err?.message || String(err)
+  });
   if (allowStale) {
     const existing = await readExistingPricingFile().catch(() => null);
     if (existing) {

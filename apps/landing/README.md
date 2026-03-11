@@ -10,11 +10,13 @@ Teacher thumbnails are generated into `apps/landing/public/teachers/thumbnail/*.
 Optional:
 
 - `NUXT_PUBLIC_SITE_URL` — canonical site origin for SEO links and sitemap URLs (defaults to `https://ai-language-school.online`).
-- `PRICING_API_BASE` — API base URL used at build-time to generate `src/generated/pricing.js` (kept out of the client bundle).
-- `NUXT_PUBLIC_PRICING_API_BASE` — API base URL exposed to the browser so the landing can fetch live pricing and currency options at runtime.
+- `PRICING_API_BASE` — private API base URL used only at build-time to generate `src/generated/pricing.js` with all currencies and locale mappings. This is the preferred way to keep the API URL out of the public bundle.
+- `PRICING_CURRENCY` — optional default fallback currency for locales without explicit currency config (defaults to `EUR`).
 
 Temporary backwards-compatible fallbacks are supported:
 
+- `API_BASE_URL`
+- `VITE_API_BASE`
 - `VITE_SITE_URL`
 
 ## Local dev
@@ -47,6 +49,7 @@ This generates static, prerendered HTML under `.output/public`.
 - Root directory: `apps/landing`
 - Build command: `npm run build`
 - Output directory: `.output/public`
+- Recommended pricing env: set `PRICING_API_BASE` in Vercel project settings. The landing no longer fetches pricing from the browser at runtime.
 
 ### Deploy (CLI)
 

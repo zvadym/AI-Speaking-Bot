@@ -116,14 +116,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.VITE_SITE_URL || DEFAULT_SITE_URL,
-      ogImage: process.env.NUXT_PUBLIC_OG_IMAGE || process.env.VITE_OG_IMAGE || '/og_tag_img.png',
-      pricingApiBase:
-        process.env.NUXT_PUBLIC_PRICING_API_BASE ||
-        process.env.NUXT_PUBLIC_API_BASE ||
-        process.env.PRICING_API_BASE ||
-        process.env.API_BASE_URL ||
-        process.env.VITE_API_BASE ||
-        ''
+      ogImage: process.env.NUXT_PUBLIC_OG_IMAGE || process.env.VITE_OG_IMAGE || '/og_tag_img.png'
     }
   },
   nitro: {
