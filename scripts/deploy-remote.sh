@@ -15,6 +15,7 @@ HEALTH_TIMEOUT_SEC="${HEALTH_TIMEOUT_SEC:-5}"
 SKIP_HEALTHCHECKS="${SKIP_HEALTHCHECKS:-false}"
 SKIP_N8N="${SKIP_N8N:-false}"
 RESTART_ALL="${RESTART_ALL:-false}"
+OPENAI_MODELS_CONFIG="${OPENAI_MODELS_CONFIG:-deploy/workflows/openai-models.json}"
 
 # Override these when deploying to a new server before DNS is updated.
 # Set any of them to empty string to skip that check.
@@ -88,7 +89,7 @@ ssh_cmd -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >
 
 log "🚀 Step 2/9: Run remote deploy commands"
 ssh_cmd "${DEPLOY_HOST}" \
-  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' SKIP_N8N='${SKIP_N8N}' RESTART_ALL='${RESTART_ALL}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' HEALTHCHECK_N8N_URL='${HEALTHCHECK_N8N_URL}' HEALTHCHECK_N8N_LOCAL_URL='${HEALTHCHECK_N8N_LOCAL_URL}' bash -se" <<'REMOTE'
+  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' SKIP_N8N='${SKIP_N8N}' RESTART_ALL='${RESTART_ALL}' OPENAI_MODELS_CONFIG='${OPENAI_MODELS_CONFIG}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' HEALTHCHECK_N8N_URL='${HEALTHCHECK_N8N_URL}' HEALTHCHECK_N8N_LOCAL_URL='${HEALTHCHECK_N8N_LOCAL_URL}' bash -se" <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
@@ -172,8 +173,14 @@ set +a
 if [[ "${SKIP_N8N}" == "true" ]]; then
   step "⏭️ 2.3.3/10: Skip n8n workflow render (--skip-n8n)"
 else
-  step "🧩 2.3.3/10: Render n8n workflows"
-  python3 scripts/render-n8n-workflows.py --input deploy/workflows --output deploy/workflows/.rendered
+  step "🧠 2.3.3/10: Verify OpenAI models config"
+  if [[ ! -f "${OPENAI_MODELS_CONFIG}" ]]; then
+    echo "Missing ${OPENAI_MODELS_CONFIG} on server" >&2
+    exit 1
+  fi
+
+  step "🧩 2.3.4/10: Render n8n workflows"
+  python3 scripts/render-n8n-workflows.py --input deploy/workflows --output deploy/workflows/.rendered --models-config "${OPENAI_MODELS_CONFIG}"
 fi
 
 step "🗄️ 2.4/10: Run DB migrations"

@@ -24,6 +24,52 @@ BOT_TEMPLATES = {
     "ai-bot.json": "ai-bot",
 }
 
+OPENAI_MODELS_DEFAULT_PATH = "deploy/workflows/openai-models.json"
+
+OPENAI_MODEL_TARGETS = {
+    "transcribe_recording": {
+        "node": "Transcribe a recording",
+        "kind": "body_parameter",
+        "parameter_name": "model",
+    },
+    "message_a_model": {
+        "node": "Message a model",
+        "kind": "model_id",
+    },
+    "llm_precompute_translation": {
+        "node": "LLM: Precompute translation",
+        "kind": "model_id",
+    },
+    "llm_precompute_follow_up_hints": {
+        "node": "LLM: Precompute follow-up hints",
+        "kind": "model_id",
+    },
+    "make_summary": {
+        "node": "Make summary",
+        "kind": "model_id",
+    },
+    "llm_extract_vocab": {
+        "node": "LLM: Extract vocab",
+        "kind": "model_id",
+    },
+    "llm_translate_transcript": {
+        "node": "LLM: Translate transcript",
+        "kind": "model_id",
+    },
+    "llm_translate_assistant": {
+        "node": "LLM: Translate assistant",
+        "kind": "model_id",
+    },
+    "llm_generate_follow_up_hints": {
+        "node": "LLM: Generate follow-up hints",
+        "kind": "model_id",
+    },
+    "llm_generate_topic_pack": {
+        "node": "LLM: Generate topic pack",
+        "kind": "model_id",
+    },
+}
+
 PROMPT_KEYS = (
     "model_system_prompt",
     "model_support_prompt",
@@ -146,6 +192,37 @@ def load_prompt_templates(prompts_dir: Path) -> Dict[str, str]:
             raise ValueError(f"Prompt template file is empty: {path}")
         templates[key] = text
     return templates
+
+
+def load_openai_models_config(path: Path) -> Dict[str, str]:
+    if not path.exists():
+        raise ValueError(f"Missing OpenAI models config file: {path}")
+
+    data = load_json(path)
+    if not isinstance(data, dict):
+        raise ValueError(f"OpenAI models config must be a JSON object: {path}")
+
+    expected_keys = set(OPENAI_MODEL_TARGETS.keys())
+    actual_keys = set(data.keys())
+
+    missing = sorted(expected_keys - actual_keys)
+    unknown = sorted(actual_keys - expected_keys)
+    if missing or unknown:
+        parts: List[str] = []
+        if missing:
+            parts.append("missing keys: " + ", ".join(missing))
+        if unknown:
+            parts.append("unknown keys: " + ", ".join(unknown))
+        raise ValueError(f"OpenAI models config mismatch in {path} ({'; '.join(parts)})")
+
+    models: Dict[str, str] = {}
+    for key in sorted(expected_keys):
+        value = data.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"OpenAI model for {key!r} must be a non-empty string in {path}")
+        models[key] = value.strip()
+
+    return models
 
 
 def load_topic_templates(topics_dir: Path, base_language_code: str) -> List[Dict[str, Any]]:
@@ -556,6 +633,43 @@ def patch_loader_http_nodes(workflow_data: Dict[str, Any]) -> None:
             raise ValueError(f"{node_name} missing x-internal-secret header")
 
 
+def apply_openai_models(workflow_data: Dict[str, Any], models: Dict[str, str]) -> None:
+    for key, target in OPENAI_MODEL_TARGETS.items():
+        node = find_node(workflow_data, target["node"])
+        params = node.get("parameters")
+        if not isinstance(params, dict):
+            raise ValueError(f"{target['node']} parameters missing/invalid")
+
+        model = models[key]
+        kind = target["kind"]
+
+        if kind == "model_id":
+            model_id = params.get("modelId")
+            if not isinstance(model_id, dict):
+                raise ValueError(f"{target['node']} modelId missing/invalid")
+            model_id["value"] = model
+            if "cachedResultName" in model_id:
+                model_id["cachedResultName"] = model
+            continue
+
+        if kind == "body_parameter":
+            body_params = params.get("bodyParameters")
+            items = (body_params or {}).get("parameters") if isinstance(body_params, dict) else None
+            if not isinstance(items, list):
+                raise ValueError(f"{target['node']} bodyParameters missing/invalid")
+
+            parameter_name = target["parameter_name"]
+            for item in items:
+                if isinstance(item, dict) and item.get("name") == parameter_name:
+                    item["value"] = model
+                    break
+            else:
+                raise ValueError(f"{target['node']} missing body parameter {parameter_name!r}")
+            continue
+
+        raise ValueError(f"Unsupported OpenAI model target kind: {kind}")
+
+
 def find_required_env(files: List[Path], *, ignore_types: Optional[Set[str]] = None) -> Dict[str, Set[str]]:
     env_to_types: Dict[str, Set[str]] = {}
     ignore = ignore_types or set()
@@ -795,6 +909,11 @@ def main() -> int:
     parser.add_argument("--bots", default="deploy/bots", help="Directory with per-bot JSON configs (enables multi-bot mode if present)")
     parser.add_argument("--prompts", default="deploy/prompts", help="Directory with prompt template files")
     parser.add_argument("--topics", default="deploy/topics", help="Directory with shared topic template files")
+    parser.add_argument(
+        "--models-config",
+        default=OPENAI_MODELS_DEFAULT_PATH,
+        help="JSON file with centralized OpenAI model IDs for ai-bot workflow calls",
+    )
     args = parser.parse_args()
 
     input_dir = resolve_path(args.input)
@@ -802,6 +921,7 @@ def main() -> int:
     bots_dir = resolve_path(args.bots)
     prompts_dir = resolve_path(args.prompts)
     topics_dir = resolve_path(args.topics)
+    models_config_path = resolve_path(args.models_config)
 
     if not input_dir.exists():
         print(f"Input directory not found: {input_dir}", file=sys.stderr)
@@ -823,6 +943,11 @@ def main() -> int:
     bots = load_bot_configs(bots_dir)
     try:
         prompt_templates = load_prompt_templates(prompts_dir)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    try:
+        openai_models = load_openai_models_config(models_config_path)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 1
@@ -897,6 +1022,7 @@ def main() -> int:
         patch_settings_node(ai, bot_key, base, learn, bot_voice)
 
         patch_set_locale_node(ai, full_locale)
+        apply_openai_models(ai, openai_models)
         patch_message_model_node(ai, base, learn)
         patch_loader_http_nodes(ai)
 
