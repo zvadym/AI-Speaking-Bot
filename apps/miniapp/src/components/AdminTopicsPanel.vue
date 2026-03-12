@@ -76,7 +76,9 @@
                 <div class="topics-section-kicker">Catalog</div>
                 <h3>Published topics</h3>
               </div>
-              <div class="topics-section-note">Tap a card to edit, or start a new draft.</div>
+              <div class="topics-section-note">
+                Drag cards to reorder. Tap a card to edit, or start a new draft.
+              </div>
             </header>
 
             <div v-if="topics.length" class="topic-list">
@@ -84,11 +86,20 @@
                 v-for="topic in topics"
                 :key="topic.topic_id"
                 class="topic-card"
-                :class="{ active: editor.originalTopicId === topic.topic_id }"
+                :class="{
+                  active: editor.originalTopicId === topic.topic_id,
+                  dragging: draggingTopicId === topic.topic_id,
+                  'drop-target': dragOverTopicId === topic.topic_id && draggingTopicId !== topic.topic_id
+                }"
                 tabindex="0"
                 role="button"
+                draggable="true"
                 @click="editTopic(topic)"
                 @keydown.enter.prevent="editTopic(topic)"
+                @dragstart="startTopicDrag(topic, $event)"
+                @dragover.prevent="handleTopicDragOver(topic)"
+                @drop.prevent="handleTopicDrop(topic)"
+                @dragend="finishTopicDrag"
               >
                 <div class="topic-card-main">
                   <div class="topic-card-avatar">{{ topic.emoji }}</div>
@@ -121,8 +132,9 @@
                 </div>
 
                 <div class="topic-card-actions">
-                  <button class="btn" type="button" :disabled="loading" @click.stop="editTopic(topic)">Edit</button>
-                  <button class="btn danger" type="button" :disabled="loading" @click.stop="deleteTopic(topic)">Delete</button>
+                  <div class="topic-card-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</div>
+                  <button class="btn" type="button" :disabled="loading || reordering" @click.stop="editTopic(topic)">Edit</button>
+                  <button class="btn danger" type="button" :disabled="loading || reordering" @click.stop="deleteTopic(topic)">Delete</button>
                 </div>
               </article>
             </div>
@@ -406,6 +418,7 @@ const loading = ref(false);
 const saving = ref(false);
 const generating = ref(false);
 const assisting = ref(false);
+const reordering = ref(false);
 const errorText = ref('');
 const infoText = ref('');
 const saveError = ref('');
@@ -415,6 +428,8 @@ const bots = ref([]);
 const topics = ref([]);
 const selectedBotKey = ref('');
 const showGenerateDialog = ref(false);
+const draggingTopicId = ref('');
+const dragOverTopicId = ref('');
 
 const generateForm = reactive({
   bot_key: '',
@@ -513,6 +528,56 @@ function nextSortOrder() {
   return Math.max(...topics.value.map((topic) => Number(topic.sort_order || 0))) + 10;
 }
 
+function reorderTopics(list, sourceId, targetId) {
+  const next = Array.isArray(list) ? [...list] : [];
+  const sourceIndex = next.findIndex((topic) => topic.topic_id === sourceId);
+  const targetIndex = next.findIndex((topic) => topic.topic_id === targetId);
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return next;
+  const [moved] = next.splice(sourceIndex, 1);
+  next.splice(targetIndex, 0, moved);
+  return next;
+}
+
+function withNormalizedSortOrders(list) {
+  return (Array.isArray(list) ? list : []).map((topic, index) => ({
+    ...topic,
+    sort_order: index * 10
+  }));
+}
+
+function buildPayloadFromTopic(topic) {
+  return {
+    bot_key: selectedBotKey.value,
+    emoji: topic.emoji,
+    sort_order: Number(topic.sort_order || 0),
+    access_tier: topic.access_tier,
+    topic_id: topic.topic_id,
+    title_base: topic.title_base,
+    goal_base: topic.goal_base,
+    allowed_base: Array.isArray(topic.allowed_base) ? topic.allowed_base : [],
+    avoid_base: Array.isArray(topic.avoid_base) ? topic.avoid_base : [],
+    starter_questions_target: Array.isArray(topic.starter_questions_target) ? topic.starter_questions_target : [],
+    recovery_questions_target: Array.isArray(topic.recovery_questions_target) ? topic.recovery_questions_target : []
+  };
+}
+
+function syncEditorSortOrder(list = topics.value) {
+  if (!editor.originalTopicId) return;
+  const current = (Array.isArray(list) ? list : []).find((topic) => topic.topic_id === editor.originalTopicId);
+  if (!current) return;
+  const nextSortOrder = Number(current.sort_order || 0);
+  editor.sort_order = nextSortOrder;
+  try {
+    const snapshot = editorSnapshot.value ? JSON.parse(editorSnapshot.value) : null;
+    if (snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)) {
+      snapshot.sort_order = nextSortOrder;
+      editorSnapshot.value = JSON.stringify(snapshot);
+    }
+  } catch {
+    // Ignore invalid snapshot payloads and keep the live editor state.
+  }
+}
+
 function applyDraftToEditor(draft = {}, { botKey = selectedBotKey.value, originalTopicId = '' } = {}) {
   editor.originalTopicId = originalTopicId;
   editor.bot_key = botKey || '';
@@ -560,6 +625,77 @@ function editTopic(topic) {
   saveError.value = '';
 }
 
+function startTopicDrag(topic, event) {
+  if (loading.value || reordering.value || !topic?.topic_id) {
+    event?.preventDefault?.();
+    return;
+  }
+  draggingTopicId.value = topic.topic_id;
+  dragOverTopicId.value = topic.topic_id;
+  if (event?.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', topic.topic_id);
+  }
+}
+
+function handleTopicDragOver(topic) {
+  if (!draggingTopicId.value || !topic?.topic_id) return;
+  dragOverTopicId.value = topic.topic_id;
+}
+
+async function handleTopicDrop(topic) {
+  const sourceId = draggingTopicId.value;
+  const targetId = topic?.topic_id || '';
+  if (!sourceId || !targetId || sourceId === targetId || reordering.value) {
+    finishTopicDrag();
+    return;
+  }
+
+  const previousTopics = topics.value.map((item) => ({ ...item }));
+  const reorderedTopics = withNormalizedSortOrders(reorderTopics(previousTopics, sourceId, targetId));
+  topics.value = reorderedTopics;
+  syncEditorSortOrder(reorderedTopics);
+
+  reordering.value = true;
+  errorText.value = '';
+  infoText.value = 'Saving topic order…';
+
+  try {
+    const changedTopics = reorderedTopics.filter((topic, index) => {
+      const previous = previousTopics[index];
+      return !previous || previous.topic_id !== topic.topic_id || Number(previous.sort_order || 0) !== Number(topic.sort_order || 0);
+    });
+
+    await Promise.all(
+      changedTopics.map((topic) =>
+        apiJson(props.apiBase, `/admin/topics/${encodeURIComponent(topic.topic_id)}`, {
+          method: 'PUT',
+          headers: adminHeaders(),
+          body: buildPayloadFromTopic(topic)
+        })
+      )
+    );
+
+    infoText.value = 'Topic order saved.';
+    await refreshTopics();
+    syncEditorSortOrder();
+  } catch (err) {
+    const detail = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    topics.value = previousTopics;
+    syncEditorSortOrder(previousTopics);
+    errorText.value = `Reorder failed: ${detail}`;
+    infoText.value = '';
+  } finally {
+    reordering.value = false;
+    finishTopicDrag();
+  }
+}
+
+function finishTopicDrag() {
+  draggingTopicId.value = '';
+  dragOverTopicId.value = '';
+}
+
 function buildPayloadFromEditor() {
   return {
     bot_key: selectedBotKey.value,
@@ -594,6 +730,7 @@ async function refreshTopics() {
     bots.value = Array.isArray(data?.bots) ? data.bots : [];
     selectedBotKey.value = String(data?.selected_bot_key || bots.value[0]?.bot_key || '').trim();
     topics.value = Array.isArray(data?.items) ? data.items : [];
+    syncEditorSortOrder(topics.value);
     if (!selectedBotKey.value) {
       resetEditor();
     } else if (
@@ -1066,6 +1203,19 @@ watch(
   box-shadow: inset 0 0 0 1px rgba(183, 97, 42, 0.12), 0 18px 34px rgba(91, 57, 29, 0.16);
 }
 
+.topic-card.dragging {
+  opacity: 0.54;
+  transform: scale(0.985);
+}
+
+.topic-card.drop-target {
+  border-color: rgba(29, 111, 99, 0.3);
+  box-shadow:
+    inset 0 0 0 1px rgba(29, 111, 99, 0.14),
+    0 20px 38px rgba(49, 96, 87, 0.16);
+  background: linear-gradient(180deg, rgba(246, 253, 250, 0.98), rgba(230, 245, 241, 0.92));
+}
+
 .topic-card-main {
   gap: 0.95rem;
   min-width: 0;
@@ -1140,6 +1290,21 @@ watch(
   flex-direction: column;
   gap: 0.55rem;
   align-items: stretch;
+}
+
+.topic-card-handle {
+  align-self: flex-end;
+  padding: 0.15rem 0.4rem;
+  color: var(--topics-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  letter-spacing: -0.1em;
+  cursor: grab;
+  user-select: none;
+}
+
+.topic-card.dragging .topic-card-handle {
+  cursor: grabbing;
 }
 
 .topic-access-pill,
@@ -1417,6 +1582,11 @@ watch(
   .topic-card-actions {
     flex-direction: row;
     flex-wrap: wrap;
+  }
+
+  .topic-card-handle {
+    width: 100%;
+    text-align: right;
   }
 
   .topic-editor-grid,
