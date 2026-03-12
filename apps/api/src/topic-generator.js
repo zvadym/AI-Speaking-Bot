@@ -6,6 +6,7 @@ const TOPIC_GENERATION_SCHEMA = {
   additionalProperties: false,
   required: [
     'topic_id',
+    'access_tier',
     'emoji',
     'title_base',
     'goal_base',
@@ -16,6 +17,7 @@ const TOPIC_GENERATION_SCHEMA = {
   ],
   properties: {
     topic_id: { type: 'string' },
+    access_tier: { type: 'string', enum: ['all', 'free', 'pro'] },
     emoji: { type: 'string' },
     title_base: { type: 'string' },
     goal_base: { type: 'string' },
@@ -49,6 +51,7 @@ const TOPIC_GENERATION_SCHEMA = {
 const SYSTEM_PROMPT = [
   'You create pre-generated conversation topic packs for a language-learning tutor.',
   'Return only valid JSON matching the schema.',
+  'Always include access_tier as one of: all, free, pro.',
   'The base-language fields are for the learner UI: title_base, goal_base, allowed_base, avoid_base.',
   'The target-language fields are learner-facing conversation questions: starter_questions_target and recovery_questions_target.',
   'Every target-language question must be one natural question sentence.',
@@ -68,7 +71,8 @@ function buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate
     `base_language_code: ${String(baseLanguage || '').trim().toLowerCase()}`,
     `target_language_code: ${String(targetLanguage || '').trim().toLowerCase()}`,
     `suggested_topic_id: ${slugifyTopicId(topicName || baseTemplate?.topic_id || 'topic')}`,
-    `suggested_emoji: ${defaultEmojiForTopicId(baseTemplate?.topic_id || topicName)}`
+    `suggested_emoji: ${defaultEmojiForTopicId(baseTemplate?.topic_id || topicName)}`,
+    `required_access_tier: ${String(baseTemplate?.access_tier || 'all').trim().toLowerCase() || 'all'}`
   ];
   if (baseTemplate) {
     lines.push('Preserve the base-language topic meaning closely.');
@@ -80,6 +84,30 @@ function buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate
   } else {
     lines.push('Invent the full topic rules from the topic name.');
   }
+  return lines.join('\n');
+}
+
+function buildAssistPrompt({
+  instruction,
+  baseLanguage,
+  targetLanguage,
+  currentDraft
+}) {
+  const lines = [
+    `base_language_code: ${String(baseLanguage || '').trim().toLowerCase()}`,
+    `target_language_code: ${String(targetLanguage || '').trim().toLowerCase()}`,
+    `editor_instruction: ${String(instruction || '').trim()}`
+  ];
+
+  if (currentDraft) {
+    lines.push('Current draft JSON:');
+    lines.push(JSON.stringify(currentDraft, null, 2));
+    lines.push('Update the current draft in place unless the instruction clearly asks to rename, expand, or restructure it.');
+  } else {
+    lines.push('There is no current draft yet. Create the full topic pack from the instruction.');
+  }
+
+  lines.push('Keep the result practical, concise, and ready to save in the admin form.');
   return lines.join('\n');
 }
 
@@ -131,6 +159,51 @@ export async function generateTopicDraft({
   const normalized = normalizeTopicPayload({ ...parsed, sort_order: sortOrder, access_tier: accessTier });
   return {
     ...normalized,
+    access_tier: accessTier,
     topic_id: baseTemplate?.topic_id || normalized.topic_id
   };
+}
+
+export async function assistTopicDraft({
+  apiKey,
+  model,
+  instruction,
+  baseLanguage,
+  targetLanguage,
+  currentDraft = null
+}) {
+  if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
+  if (!String(instruction || '').trim()) throw new Error('Missing topic assistant instruction');
+  const client = getClient(apiKey);
+  const response = await client.responses.create({
+    model,
+    input: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      {
+        role: 'user',
+        content: buildAssistPrompt({
+          instruction,
+          baseLanguage,
+          targetLanguage,
+          currentDraft
+        })
+      }
+    ],
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'topic_pack_schema',
+        schema: TOPIC_GENERATION_SCHEMA,
+        verbosity: 'low'
+      }
+    }
+  });
+
+  const rawText = parseResponseOutput(response);
+  const parsed = JSON.parse(rawText);
+  return normalizeTopicPayload({
+    ...parsed,
+    sort_order: currentDraft?.sort_order ?? 0,
+    access_tier: parsed?.access_tier ?? currentDraft?.access_tier ?? 'all'
+  });
 }

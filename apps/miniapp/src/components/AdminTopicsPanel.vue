@@ -161,6 +161,46 @@
                 </div>
               </header>
 
+              <section class="editor-section topic-assistant">
+                <div class="editor-section-head compact">
+                  <div>
+                    <div class="topics-section-kicker">AI editor</div>
+                    <h4>Describe what to change</h4>
+                    <p class="topic-assistant-sub">
+                      The assistant uses the current form state, so you can refine or rewrite the draft step by step.
+                    </p>
+                  </div>
+                  <span v-if="editor.title_base || editor.topic_id" class="topic-count-pill">Current draft included</span>
+                </div>
+
+                <label class="field">
+                  <span>Instruction</span>
+                  <textarea
+                    v-model.trim="assistForm.instruction"
+                    rows="4"
+                    placeholder="Make the goal shorter, keep this topic beginner-friendly, and rewrite the starter questions to sound more natural."
+                    @keydown.meta.enter.prevent="assistWithAi"
+                    @keydown.ctrl.enter.prevent="assistWithAi"
+                  />
+                </label>
+
+                <p v-if="assistError" class="error">{{ assistError }}</p>
+
+                <div class="topic-editor-actions">
+                  <button class="btn ghost" type="button" :disabled="assisting" @click="assistForm.instruction = ''">
+                    Clear prompt
+                  </button>
+                  <button
+                    class="btn primary"
+                    type="button"
+                    :disabled="assisting || !password || !selectedBotKey || !assistForm.instruction.trim()"
+                    @click="assistWithAi"
+                  >
+                    {{ assisting ? 'Applying…' : 'Apply AI changes' }}
+                  </button>
+                </div>
+              </section>
+
               <div class="topic-editor-grid">
                 <section class="editor-section editor-span-2">
                   <div class="editor-section-head">
@@ -365,10 +405,12 @@ const emit = defineEmits(['stamp']);
 const loading = ref(false);
 const saving = ref(false);
 const generating = ref(false);
+const assisting = ref(false);
 const errorText = ref('');
 const infoText = ref('');
 const saveError = ref('');
 const generateError = ref('');
+const assistError = ref('');
 const bots = ref([]);
 const topics = ref([]);
 const selectedBotKey = ref('');
@@ -378,6 +420,10 @@ const generateForm = reactive({
   bot_key: '',
   topic_name: '',
   access_tier: 'all'
+});
+
+const assistForm = reactive({
+  instruction: ''
 });
 
 const editor = reactive({
@@ -499,6 +545,7 @@ function resetEditor() {
     recovery_questions_target: []
   }, { botKey: selectedBotKey.value, originalTopicId: '' });
   saveError.value = '';
+  assistError.value = '';
 }
 
 function openNewTopic() {
@@ -508,6 +555,7 @@ function openNewTopic() {
 
 function editTopic(topic) {
   infoText.value = '';
+  assistError.value = '';
   applyDraftToEditor(topic, { botKey: selectedBotKey.value, originalTopicId: topic.topic_id });
   saveError.value = '';
 }
@@ -568,6 +616,7 @@ async function refreshTopics() {
 
 async function saveTopic() {
   saveError.value = '';
+  assistError.value = '';
   infoText.value = '';
   saving.value = true;
   try {
@@ -617,6 +666,7 @@ async function deleteTopic(topic) {
 
 function openGenerateDialog() {
   generateError.value = '';
+  assistError.value = '';
   generateForm.bot_key = selectedBotKey.value || bots.value[0]?.bot_key || '';
   generateForm.topic_name = '';
   generateForm.access_tier = 'all';
@@ -630,6 +680,7 @@ function closeGenerateDialog() {
 
 async function generateDraft() {
   generateError.value = '';
+  assistError.value = '';
   generating.value = true;
   try {
     const data = await apiJson(props.apiBase, '/admin/topics/generate-draft', {
@@ -654,6 +705,34 @@ async function generateDraft() {
     generateError.value = `Generation failed: ${detail}`;
   } finally {
     generating.value = false;
+  }
+}
+
+async function assistWithAi() {
+  assistError.value = '';
+  infoText.value = '';
+  assisting.value = true;
+  try {
+    const data = await apiJson(props.apiBase, '/admin/topics/assist-draft', {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: {
+        bot_key: selectedBotKey.value,
+        instruction: assistForm.instruction,
+        draft: buildPayloadFromEditor()
+      }
+    });
+    applyDraftToEditor(data?.draft || {}, {
+      botKey: selectedBotKey.value,
+      originalTopicId: editor.originalTopicId
+    });
+    infoText.value = 'AI changes applied to the draft.';
+    assistForm.instruction = '';
+  } catch (err) {
+    const detail = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    assistError.value = `AI edit failed: ${detail}`;
+  } finally {
+    assisting.value = false;
   }
 }
 
@@ -1171,6 +1250,19 @@ watch(
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.95rem;
+}
+
+.topic-assistant {
+  background:
+    linear-gradient(180deg, rgba(255, 253, 250, 0.98), rgba(249, 242, 232, 0.92)),
+    radial-gradient(circle at top right, rgba(183, 97, 42, 0.08), transparent 16rem);
+}
+
+.topic-assistant-sub {
+  margin: 0.3rem 0 0;
+  max-width: 40rem;
+  color: var(--topics-muted);
+  line-height: 1.6;
 }
 
 .editor-section {

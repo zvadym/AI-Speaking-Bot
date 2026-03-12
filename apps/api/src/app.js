@@ -32,7 +32,7 @@ import {
   normalizeTopicRow,
   topicIsVisibleForTier
 } from './topic-catalog.js';
-import { generateTopicDraft } from './topic-generator.js';
+import { assistTopicDraft, generateTopicDraft } from './topic-generator.js';
 
 const app = express();
 
@@ -259,6 +259,31 @@ function normalizeTopicSeedList(raw, { maxItems = 6, maxItemLen = 80 } = {}) {
     .map((value) => value.slice(0, maxItemLen));
 }
 
+function normalizeTopicAssistDraft(raw) {
+  if (raw == null) return null;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw makeHttpError(400, 'bad_draft', 'draft must be an object');
+  }
+
+  const topicIdRaw = normalizeOptionalText(raw.topic_id, 64);
+  const titleBase = normalizeOptionalText(raw.title_base, 120);
+  const goalBase = normalizeOptionalText(raw.goal_base, 280);
+  const fallbackKey = topicIdRaw || titleBase || 'topic';
+
+  return {
+    topic_id: normalizeTopicId(fallbackKey),
+    emoji: normalizeTopicEmoji(raw.emoji, fallbackKey),
+    access_tier: normalizeTopicAccessTier(raw.access_tier ?? 'all'),
+    title_base: titleBase || fallbackKey,
+    goal_base: goalBase || fallbackKey,
+    allowed_base: normalizeTopicSeedList(raw.allowed_base, { maxItems: 6, maxItemLen: 80 }),
+    avoid_base: normalizeTopicSeedList(raw.avoid_base, { maxItems: 6, maxItemLen: 80 }),
+    starter_questions_target: normalizeTopicSeedList(raw.starter_questions_target, { maxItems: 10, maxItemLen: 220 }),
+    recovery_questions_target: normalizeTopicSeedList(raw.recovery_questions_target, { maxItems: 10, maxItemLen: 220 }),
+    sort_order: Number.isInteger(Number(raw.sort_order)) ? Number(raw.sort_order) : 0
+  };
+}
+
 function normalizeTopicBaseTemplate(raw, fallbackTopicName = '') {
   if (raw == null) return null;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -269,6 +294,7 @@ function normalizeTopicBaseTemplate(raw, fallbackTopicName = '') {
   return {
     topic_id: topicId,
     emoji: normalizeTopicEmoji(raw.emoji, topicId),
+    access_tier: normalizeTopicAccessTier(raw.access_tier ?? 'all'),
     title_base:
       normalizeOptionalText(raw.title_base ?? raw.title, 120) ||
       normalizeOptionalText(fallbackTopicName, 120) ||
@@ -4145,6 +4171,38 @@ app.post('/admin/topics/generate-draft', requireAdmin, async (req, res) => {
     return res.status(err?.status || 400).json({
       error: err?.code || 'topic_generation_failed',
       detail: err?.detail || err?.message || 'topic_generation_failed'
+    });
+  }
+});
+
+app.post('/admin/topics/assist-draft', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    if (!env.openaiApiKey) {
+      return res.status(503).json({ error: 'topic_generation_not_configured' });
+    }
+    const meta = requireTopicBotMeta(req.body?.bot_key);
+    const instruction = normalizeOptionalText(req.body?.instruction, 1600);
+    if (!instruction) return res.status(400).json({ error: 'bad_instruction' });
+    const currentDraft = normalizeTopicAssistDraft(req.body?.draft);
+    const draft = await assistTopicDraft({
+      apiKey: env.openaiApiKey,
+      model: env.topicGenerationModel,
+      instruction,
+      baseLanguage: meta.base_language || 'en',
+      targetLanguage: meta.learning_language || 'en',
+      currentDraft
+    });
+    return res.json({
+      bot_key: meta.bot_key,
+      base_language: meta.base_language || null,
+      learning_language: meta.learning_language || null,
+      draft
+    });
+  } catch (err) {
+    return res.status(err?.status || 400).json({
+      error: err?.code || 'topic_assist_failed',
+      detail: err?.detail || err?.message || 'topic_assist_failed'
     });
   }
 });
