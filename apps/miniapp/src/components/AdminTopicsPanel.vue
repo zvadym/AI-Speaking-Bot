@@ -136,16 +136,18 @@
           <aside class="topic-editor card">
             <div class="topic-editor-shell">
               <header class="topic-editor-hero">
-                <div class="topic-editor-avatar">{{ editor.emoji || '🧩' }}</div>
+                <div class="topic-editor-identity">
+                  <div class="topic-editor-avatar">{{ editor.emoji || '🧩' }}</div>
 
-                <div class="topic-editor-copy">
-                  <div class="panel-kicker">{{ editor.originalTopicId ? 'Update topic' : 'Create topic' }}</div>
-                  <h3>{{ editor.title_base || editor.topic_id || 'New topic draft' }}</h3>
-                  <p>
-                    {{ selectedBotLabel }}
-                    <span class="topic-editor-separator">•</span>
-                    {{ editor.originalTopicId ? 'Connected to a saved catalog entry' : 'Draft not saved yet' }}
-                  </p>
+                  <div class="topic-editor-copy">
+                    <div class="panel-kicker">{{ editor.originalTopicId ? 'Update topic' : 'Create topic' }}</div>
+                    <h3>{{ editor.title_base || editor.topic_id || 'New topic draft' }}</h3>
+                    <p>
+                      {{ selectedBotLabel }}
+                      <span class="topic-editor-separator">•</span>
+                      {{ editor.originalTopicId ? 'Connected to a saved catalog entry' : 'Draft not saved yet' }}
+                    </p>
+                  </div>
                 </div>
 
                 <div class="topic-editor-badges">
@@ -726,6 +728,7 @@ watch(
 .topic-card-heading,
 .topic-card-meta,
 .topic-card-actions,
+.topic-editor-identity,
 .topic-editor-hero,
 .topic-editor-badges,
 .editor-section-head,
@@ -1117,10 +1120,17 @@ watch(
 }
 
 .topic-editor-hero {
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.9rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--topics-line);
+}
+
+.topic-editor-identity {
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
 }
 
 .topic-editor-avatar {
@@ -1135,12 +1145,15 @@ watch(
 }
 
 .topic-editor-copy h3 {
+  max-width: 24rem;
   font-size: 2rem;
-  line-height: 0.98;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
 }
 
 .topic-editor-copy p {
   margin-top: 0.38rem;
+  max-width: 36rem;
 }
 
 .topic-editor-separator {
@@ -1151,7 +1164,7 @@ watch(
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .topic-editor-grid {
@@ -1267,8 +1280,7 @@ watch(
 
 @media (max-width: 960px) {
   .topics-hero,
-  .topics-toolbar,
-  .topic-editor-hero {
+  .topics-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
@@ -1277,6 +1289,10 @@ watch(
   .topic-editor-badges,
   .topics-toolbar-badges {
     justify-content: flex-start;
+  }
+
+  .topic-editor-identity {
+    align-items: flex-start;
   }
 
   .editor-fields-identity {
@@ -1299,6 +1315,11 @@ watch(
 
   .topic-card {
     grid-template-columns: 1fr;
+  }
+
+  .topic-editor-identity {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .topic-card-actions {
