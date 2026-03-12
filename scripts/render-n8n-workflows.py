@@ -82,8 +82,6 @@ PROMPT_TEMPLATE_FILES = {
     "model_vocab_prompt": "model_vocab_prompt.md",
 }
 
-TOPIC_LIBRARY_FALLBACK = "en"
-
 COMMON_DETECTED_LANGUAGE_CODES = ("en", "de", "it", "uk", "ru")
 
 PLACEHOLDER_RE = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
@@ -226,63 +224,6 @@ def load_openai_models_config(path: Path) -> Dict[str, str]:
         models[key] = value.strip()
 
     return models
-
-
-def load_topic_templates(topics_dir: Path, base_language_code: str) -> List[Dict[str, Any]]:
-    code = normalize_language_code(base_language_code) or TOPIC_LIBRARY_FALLBACK
-    candidates = [topics_dir / f"{code}.json"]
-    if code != TOPIC_LIBRARY_FALLBACK:
-        candidates.append(topics_dir / f"{TOPIC_LIBRARY_FALLBACK}.json")
-
-    source_path: Optional[Path] = None
-    for path in candidates:
-        if path.exists():
-            source_path = path
-            break
-
-    if source_path is None:
-        raise ValueError(
-            f"Missing topic template file for base language {code!r} in {topics_dir}"
-        )
-
-    try:
-        data = json.loads(source_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid topic template JSON in {source_path}: {e}") from e
-
-    templates = data.get("templates")
-    if not isinstance(templates, list) or not templates:
-        raise ValueError(f"Topic template file has no templates: {source_path}")
-
-    out: List[Dict[str, Any]] = []
-    seen_ids: Set[str] = set()
-    for entry in templates:
-        if not isinstance(entry, dict):
-            raise ValueError(f"Topic template entries must be objects in {source_path}")
-        topic_id = str(entry.get("id") or "").strip().lower()
-        title = str(entry.get("title") or "").strip()
-        goal = str(entry.get("goal") or "").strip()
-        allowed = entry.get("allowed")
-        avoid = entry.get("avoid")
-        if not topic_id or not title or not goal:
-            raise ValueError(f"Topic template is missing id/title/goal in {source_path}")
-        if topic_id in seen_ids:
-            raise ValueError(f"Duplicate topic template id {topic_id!r} in {source_path}")
-        if not isinstance(allowed, list) or not all(isinstance(x, str) and x.strip() for x in allowed):
-            raise ValueError(f"Topic template {topic_id!r} has invalid allowed list in {source_path}")
-        if not isinstance(avoid, list) or not all(isinstance(x, str) and x.strip() for x in avoid):
-            raise ValueError(f"Topic template {topic_id!r} has invalid avoid list in {source_path}")
-        seen_ids.add(topic_id)
-        out.append(
-            {
-                "id": topic_id,
-                "title": title,
-                "goal": goal,
-                "allowed": [str(x).strip() for x in allowed],
-                "avoid": [str(x).strip() for x in avoid],
-            }
-        )
-    return out
 
 
 def render_template_strict(template: str, context: Dict[str, str], *, template_name: str) -> str:
@@ -907,7 +848,6 @@ def main() -> int:
     parser.add_argument("--output", default="deploy/workflows/.rendered", help="Directory to write rendered workflows")
     parser.add_argument("--bots", default="deploy/bots", help="Directory with per-bot JSON configs (enables multi-bot mode if present)")
     parser.add_argument("--prompts", default="deploy/prompts", help="Directory with prompt template files")
-    parser.add_argument("--topics", default="deploy/topics", help="Directory with shared topic template files")
     parser.add_argument(
         "--models-config",
         default=OPENAI_MODELS_DEFAULT_PATH,
@@ -919,7 +859,6 @@ def main() -> int:
     output_dir = resolve_path(args.output)
     bots_dir = resolve_path(args.bots)
     prompts_dir = resolve_path(args.prompts)
-    topics_dir = resolve_path(args.topics)
     models_config_path = resolve_path(args.models_config)
 
     if not input_dir.exists():
