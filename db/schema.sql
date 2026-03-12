@@ -1090,7 +1090,9 @@ CREATE TABLE public.user_summaries (
     chat_id bigint NOT NULL,
     bot_key text NOT NULL,
     summary text DEFAULT ''::text NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    profile_summary text DEFAULT ''::text NOT NULL,
+    short_summary text DEFAULT ''::text NOT NULL
 );
 
 
@@ -1871,4 +1873,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260311110000'),
     ('20260311120000'),
     ('20260311124500'),
-    ('20260311143000');
+    ('20260311143000'),
+    ('20260312110000');
