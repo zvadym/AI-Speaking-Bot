@@ -41,6 +41,9 @@
       <button class="tab-btn" :class="{ active: activeTab === 'billing' }" type="button" role="tab" @click="activeTab = 'billing'">
         Billing
       </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'topics' }" type="button" role="tab" @click="activeTab = 'topics'">
+        Topics
+      </button>
       <button class="tab-btn" :class="{ active: activeTab === 'feedback' }" type="button" role="tab" @click="activeTab = 'feedback'">
         Feedback
       </button>
@@ -1458,6 +1461,13 @@
       </div>
     </section>
 
+    <AdminTopicsPanel
+      v-else-if="activeTab === 'topics'"
+      :api-base="props.apiBase"
+      :password="password"
+      @stamp="topicsUpdatedAt = $event"
+    />
+
     <section class="card panel" v-else-if="activeTab === 'feedback'">
       <header class="panel-head">
         <div>
@@ -1667,6 +1677,7 @@
       <span v-else-if="activeTab === 'feedback' && feedbackUpdatedAt" class="stamp">Updated: {{ feedbackUpdatedAt }}</span>
       <span v-else-if="activeTab === 'messaging' && previewUpdatedAt" class="stamp">Updated: {{ previewUpdatedAt }}</span>
       <span v-else-if="activeTab === 'billing' && billingUpdatedAt" class="stamp">Updated: {{ billingUpdatedAt }}</span>
+      <span v-else-if="activeTab === 'topics' && topicsUpdatedAt" class="stamp">Updated: {{ topicsUpdatedAt }}</span>
     </footer>
   </div>
 </template>
@@ -1675,6 +1686,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { apiJson } from '../lib/api.js';
 import AdminChart from '../components/AdminChart.vue';
+import AdminTopicsPanel from '../components/AdminTopicsPanel.vue';
 
 const props = defineProps({
   apiBase: { type: String, required: true }
@@ -1762,6 +1774,7 @@ const feedbackLimit = 40;
 const feedbackLoading = ref(false);
 const feedbackError = ref('');
 const feedbackUpdatedAt = ref('');
+const topicsUpdatedAt = ref('');
 const feedbackReplyDraft = reactive({});
 const feedbackReplyOpenId = ref(null);
 const feedbackReplySendingId = ref(null);
@@ -2009,6 +2022,7 @@ const activeStamp = computed(() => {
   if (activeTab.value === 'users') return usersUpdatedAt.value || '';
   if (activeTab.value === 'messaging') return previewUpdatedAt.value || '';
   if (activeTab.value === 'billing') return billingUpdatedAt.value || '';
+  if (activeTab.value === 'topics') return topicsUpdatedAt.value || '';
   if (activeTab.value === 'feedback') return feedbackUpdatedAt.value || '';
   return '';
 });
@@ -4283,6 +4297,7 @@ function clearPassword() {
   feedbackOffset.value = 0;
   feedbackError.value = '';
   feedbackUpdatedAt.value = '';
+  topicsUpdatedAt.value = '';
   clearFeedbackReplyState();
   usersRows.value = [];
   usersTotal.value = 0;

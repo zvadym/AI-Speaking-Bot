@@ -64,10 +64,6 @@ OPENAI_MODEL_TARGETS = {
         "node": "LLM: Generate follow-up hints",
         "kind": "model_id",
     },
-    "llm_generate_topic_pack": {
-        "node": "LLM: Generate topic pack",
-        "kind": "model_id",
-    },
 }
 
 PROMPT_KEYS = (
@@ -363,7 +359,6 @@ def compose_locale_with_generated_prompts(
     locale: Dict[str, Any],
     prompt_templates: Dict[str, str],
     prompt_context: Dict[str, str],
-    topic_templates: List[Dict[str, Any]],
     *,
     bot_key: str,
 ) -> Dict[str, Any]:
@@ -535,10 +530,6 @@ def compose_locale_with_generated_prompts(
         if not isinstance(current, str) or not current.strip():
             merged[key] = default_value
 
-    merged["topic_templates_json"] = json.dumps(
-        {"templates": topic_templates}, ensure_ascii=False
-    )
-
     deprecated_present = [k for k in PROMPT_KEYS if k in merged]
     if deprecated_present:
         print(
@@ -619,6 +610,7 @@ def patch_loader_http_nodes(workflow_data: Dict[str, Any]) -> None:
     for node_name, suffix in (
         ("Loader: Start", "/internal/loader/start"),
         ("Loader: Stop", "/internal/loader/stop"),
+        ("MSG: Topic menu", "/internal/topics/menu"),
     ):
         node = find_node(workflow_data, node_name)
         params = node.get("parameters")
@@ -1003,16 +995,10 @@ def main() -> int:
             base_language_code=base,
             target_language_code=learn,
         )
-        try:
-            topic_templates = load_topic_templates(topics_dir, base)
-        except ValueError as e:
-            print(str(e), file=sys.stderr)
-            return 1
         full_locale = compose_locale_with_generated_prompts(
             locale=locale,
             prompt_templates=prompt_templates,
             prompt_context=prompt_context,
-            topic_templates=topic_templates,
             bot_key=bot_key,
         )
 

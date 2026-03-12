@@ -23,6 +23,15 @@ import {
   sendAdminTestWinbackReminder
 } from './jobs.js';
 import { getApiBoss, stopApiBoss } from './queue.js';
+import {
+  normalizeEffectiveTopicAccessTier,
+  normalizeTopicAccessTier,
+  normalizeTopicId,
+  normalizeTopicPayload,
+  normalizeTopicRow,
+  topicIsVisibleForTier
+} from './topic-catalog.js';
+import { generateTopicDraft } from './topic-generator.js';
 
 const app = express();
 
@@ -163,6 +172,14 @@ function normalizeFeedbackCategory(raw) {
   return value;
 }
 
+function makeHttpError(status, code, detail = '') {
+  const err = new Error(detail || code);
+  err.status = status;
+  err.code = code;
+  err.detail = detail || code;
+  return err;
+}
+
 function normalizeStringArray(raw, { maxItems = 12, maxItemLen = 32 } = {}) {
   if (!Array.isArray(raw)) return null;
   const items = raw
@@ -171,6 +188,85 @@ function normalizeStringArray(raw, { maxItems = 12, maxItemLen = 32 } = {}) {
     .map((v) => v.slice(0, maxItemLen))
     .slice(0, maxItems);
   return items.length ? items : null;
+}
+
+function adminTopicBots() {
+  return publicBotCatalog.map((bot) => ({
+    bot_key: bot.bot_key,
+    base_language: bot.base_language || null,
+    learning_language: bot.learning_language || null,
+    bot_name: bot.bot_name || null
+  }));
+}
+
+function requireTopicBotMeta(botKeyRaw) {
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (!botKey) throw makeHttpError(400, 'bad_bot_key', 'bot_key is required');
+  const meta = publicBotMetaForKey(botKey);
+  if (!meta) throw makeHttpError(404, 'bot_not_found', `Unknown bot_key: ${botKey}`);
+  return meta;
+}
+
+function serializeTopicRow(row) {
+  return normalizeTopicRow(row);
+}
+
+async function fetchTopicCatalogRows(botKey, { userTier = null } = {}) {
+  const { rows } = await pool.query(
+    `SELECT
+       bot_key,
+       topic_id,
+       emoji,
+       access_tier,
+       title_base,
+       goal_base,
+       allowed_base,
+       avoid_base,
+       starter_questions_target,
+       recovery_questions_target,
+       sort_order,
+       created_at,
+       updated_at
+     FROM bot_topic_catalog
+     WHERE bot_key = $1
+     ORDER BY sort_order ASC, topic_id ASC`,
+    [botKey]
+  );
+  const items = rows.map(serializeTopicRow).filter(Boolean);
+  if (!userTier) return items;
+  return items.filter((row) => topicIsVisibleForTier(row, userTier));
+}
+
+function normalizeTopicRequestBody(body) {
+  const payload = normalizeTopicPayload(body || {});
+  return {
+    ...payload,
+    access_tier_value: payload.access_tier,
+    allowed_base_json: JSON.stringify(payload.allowed_base),
+    avoid_base_json: JSON.stringify(payload.avoid_base),
+    starter_questions_target_json: JSON.stringify(payload.starter_questions_target),
+    recovery_questions_target_json: JSON.stringify(payload.recovery_questions_target)
+  };
+}
+
+async function fetchEffectiveTierForChat(chatIdRaw) {
+  const chatId = Number(chatIdRaw);
+  if (!Number.isFinite(chatId) || chatId <= 0) return 'free';
+  const { rows } = await pool.query(
+    `SELECT
+       CASE
+         WHEN override_plan_tier IS NOT NULL AND override_expires_at IS NOT NULL AND NOW() < override_expires_at
+           THEN override_plan_tier
+         WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
+           THEN plan_tier
+         ELSE 'free'
+       END AS effective_tier
+     FROM users
+     WHERE chat_id = $1
+     LIMIT 1`,
+    [chatId]
+  );
+  return normalizeEffectiveTopicAccessTier(rows[0]?.effective_tier || 'free');
 }
 
 async function fetchLoaderState(chatId, botKey) {
@@ -279,7 +375,8 @@ function buildPublicBotCatalog(configMap = {}) {
   return catalog;
 }
 
-const publicBotCatalog = buildPublicBotCatalog(loadBotConfigs());
+const botConfigs = loadBotConfigs();
+const publicBotCatalog = buildPublicBotCatalog(botConfigs);
 const publicBotCatalogByKey = new Map(publicBotCatalog.map((bot) => [bot.bot_key, bot]));
 const billingCurrencyDetailsByCode = getBillingCurrencyDetails();
 const ACTIVE_STRIPE_BILLING_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid']);
@@ -289,6 +386,45 @@ function publicBotMetaForKey(botKeyRaw) {
   const botKey = normalizeBotKey(botKeyRaw);
   if (!botKey) return null;
   return publicBotCatalogByKey.get(botKey) || null;
+}
+
+function getBotLocale(botKeyRaw) {
+  const botKey = normalizeBotKey(botKeyRaw);
+  if (!botKey) return {};
+  const config = botConfigs[botKey] || botConfigs[botKeyRaw] || {};
+  return config?.locale && typeof config.locale === 'object' && !Array.isArray(config.locale)
+    ? config.locale
+    : {};
+}
+
+function normalizeTopicPackValue(raw) {
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  return raw;
+}
+
+function buildTopicMenuReplyMarkup(items = [], locale = {}) {
+  const keyboard = items.map((item) => ({
+    text: `${String(item.emoji || '🧩').trim()} ${String(item.title_base || item.topic_id || '').trim()}`.trim(),
+    callback_data: `topic:${String(item.topic_id || '').trim().toLowerCase()}`
+  }))
+    .filter((button) => button.text && button.callback_data !== 'topic:')
+    .map((button) => [button]);
+
+  keyboard.push([
+    {
+      text: `🧹 ${String(locale.topic_btn_clear || 'Clear topic').trim()}`.trim(),
+      callback_data: 'topic:clear'
+    }
+  ]);
+
+  return { inline_keyboard: keyboard };
 }
 
 function getAllowedBillingCurrencies(baseLanguageRaw) {
@@ -2490,6 +2626,60 @@ app.post('/internal/loader/stop', requireInternalApi, async (req, res) => {
   }
 });
 
+app.post('/internal/topics/menu', requireInternalApi, async (req, res) => {
+  const chatId = Number(req.body?.chat_id);
+  const botKey = normalizeBotKey(req.body?.bot_key);
+  if (!Number.isFinite(chatId) || chatId <= 0 || !botKey) {
+    return res.status(400).json({ error: 'bad_request' });
+  }
+
+  try {
+    const locale = getBotLocale(botKey);
+    const [userTier, stateResult] = await Promise.all([
+      fetchEffectiveTierForChat(chatId),
+      pool.query(
+        `SELECT topic_enabled, topic_template_id, topic_pack_json
+         FROM user_bots
+         WHERE chat_id = $1
+           AND bot_key = $2
+         LIMIT 1`,
+        [chatId, botKey]
+      )
+    ]);
+    const catalog = await fetchTopicCatalogRows(botKey, { userTier });
+    const state = stateResult.rows[0] || {};
+    const pack = normalizeTopicPackValue(state.topic_pack_json);
+    const topicTitle = state.topic_enabled && pack && typeof pack.title_base === 'string'
+      ? pack.title_base.trim()
+      : '';
+    const currentPrefix = String(locale.topic_menu_current_prefix || 'Current topic: ').trim() || 'Current topic: ';
+    const currentNone = String(locale.topic_menu_current_none || 'Current topic: none active.').trim() || 'Current topic: none active.';
+    const bodyText = [
+      String(locale.topic_menu_title || 'Choose a conversation topic 👇').trim() || 'Choose a conversation topic 👇',
+      '',
+      topicTitle ? `${currentPrefix}${topicTitle}` : currentNone
+    ].join('\n');
+
+    const telegramResult = await sendTelegramTextMessage(chatId, bodyText, {
+      botKey,
+      replyMarkup: buildTopicMenuReplyMarkup(catalog, locale)
+    });
+
+    return res.json({
+      ok: true,
+      message_id: Number(telegramResult?.message_id || 0) || null,
+      count: catalog.length
+    });
+  } catch (error) {
+    console.error('internal-topics-menu failed', {
+      chatId,
+      botKey,
+      error: error?.message || String(error)
+    });
+    return res.status(500).json({ error: 'topic_menu_failed' });
+  }
+});
+
 app.get('/admin/metrics/summary', requireAdmin, async (req, res) => {
   const range = parseAdminRange(req);
   if (!range.ok) return res.status(400).json({ error: range.error });
@@ -3871,6 +4061,177 @@ app.get('/admin/metrics/action-funnel', requireAdmin, async (req, res) => {
       { action: 'paywall_shown', count: paywallShownCount, pct: pct(paywallShownCount) }
     ]
   });
+});
+
+app.get('/admin/topics', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const bots = adminTopicBots();
+  if (!bots.length) {
+    return res.json({ bots: [], selected_bot_key: '', items: [] });
+  }
+
+  let selectedBotKey = normalizeBotKey(req.query?.bot_key);
+  if (!selectedBotKey || !publicBotMetaForKey(selectedBotKey)) {
+    selectedBotKey = bots[0].bot_key;
+  }
+
+  const items = await fetchTopicCatalogRows(selectedBotKey);
+  return res.json({ bots, selected_bot_key: selectedBotKey, items });
+});
+
+app.post('/admin/topics/generate-draft', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    if (!env.openaiApiKey) {
+      return res.status(503).json({ error: 'topic_generation_not_configured' });
+    }
+    const meta = requireTopicBotMeta(req.body?.bot_key);
+    const topicName = normalizeOptionalText(req.body?.topic_name, 120);
+    if (!topicName) return res.status(400).json({ error: 'bad_topic_name' });
+    const sortOrder = Number(req.body?.sort_order ?? 0);
+    const accessTier = normalizeTopicAccessTier(req.body?.access_tier ?? 'all');
+    const draft = await generateTopicDraft({
+      apiKey: env.openaiApiKey,
+      model: env.topicGenerationModel,
+      topicName,
+      baseLanguage: meta.base_language || 'en',
+      targetLanguage: meta.learning_language || 'en',
+      sortOrder: Number.isInteger(sortOrder) ? sortOrder : 0,
+      accessTier
+    });
+    return res.json({
+      bot_key: meta.bot_key,
+      base_language: meta.base_language || null,
+      learning_language: meta.learning_language || null,
+      draft
+    });
+  } catch (err) {
+    return res.status(err?.status || 400).json({
+      error: err?.code || 'topic_generation_failed',
+      detail: err?.detail || err?.message || 'topic_generation_failed'
+    });
+  }
+});
+
+app.post('/admin/topics', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const meta = requireTopicBotMeta(req.body?.bot_key);
+    const payload = normalizeTopicRequestBody(req.body);
+    const { rows } = await pool.query(
+      `INSERT INTO bot_topic_catalog (
+         bot_key,
+         topic_id,
+         emoji,
+         access_tier,
+         title_base,
+         goal_base,
+         allowed_base,
+         avoid_base,
+         starter_questions_target,
+         recovery_questions_target,
+         sort_order,
+         updated_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11, NOW())
+       RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, avoid_base,
+                 starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at`,
+      [
+        meta.bot_key,
+        payload.topic_id,
+        payload.emoji,
+        payload.access_tier_value,
+        payload.title_base,
+        payload.goal_base,
+        payload.allowed_base_json,
+        payload.avoid_base_json,
+        payload.starter_questions_target_json,
+        payload.recovery_questions_target_json,
+        payload.sort_order
+      ]
+    );
+    return res.status(201).json({ item: serializeTopicRow(rows[0]) });
+  } catch (err) {
+    if (err?.code === '23505') {
+      return res.status(409).json({ error: 'topic_already_exists' });
+    }
+    return res.status(err?.status || 400).json({
+      error: err?.code || 'bad_topic_payload',
+      detail: err?.detail || err?.message || 'bad_topic_payload'
+    });
+  }
+});
+
+app.put('/admin/topics/:id', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const currentTopicId = normalizeTopicId(req.params.id);
+    const meta = requireTopicBotMeta(req.body?.bot_key ?? req.query?.bot_key);
+    const payload = normalizeTopicRequestBody(req.body);
+    const { rows } = await pool.query(
+      `UPDATE bot_topic_catalog
+       SET topic_id = $3,
+           emoji = $4,
+           access_tier = $5,
+           title_base = $6,
+           goal_base = $7,
+           allowed_base = $8::jsonb,
+           avoid_base = $9::jsonb,
+           starter_questions_target = $10::jsonb,
+           recovery_questions_target = $11::jsonb,
+           sort_order = $12,
+           updated_at = NOW()
+       WHERE bot_key = $1
+         AND topic_id = $2
+       RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, avoid_base,
+                 starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at`,
+      [
+        meta.bot_key,
+        currentTopicId,
+        payload.topic_id,
+        payload.emoji,
+        payload.access_tier_value,
+        payload.title_base,
+        payload.goal_base,
+        payload.allowed_base_json,
+        payload.avoid_base_json,
+        payload.starter_questions_target_json,
+        payload.recovery_questions_target_json,
+        payload.sort_order
+      ]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'topic_not_found' });
+    return res.json({ item: serializeTopicRow(rows[0]) });
+  } catch (err) {
+    if (err?.code === '23505') {
+      return res.status(409).json({ error: 'topic_already_exists' });
+    }
+    return res.status(err?.status || 400).json({
+      error: err?.code || 'bad_topic_payload',
+      detail: err?.detail || err?.message || 'bad_topic_payload'
+    });
+  }
+});
+
+app.delete('/admin/topics/:id', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const topicId = normalizeTopicId(req.params.id);
+    const meta = requireTopicBotMeta(req.query?.bot_key);
+    const { rowCount } = await pool.query(
+      `DELETE FROM bot_topic_catalog
+       WHERE bot_key = $1
+         AND topic_id = $2`,
+      [meta.bot_key, topicId]
+    );
+    if (!rowCount) return res.status(404).json({ error: 'topic_not_found' });
+    return res.json({ ok: true, removed: true });
+  } catch (err) {
+    return res.status(err?.status || 400).json({
+      error: err?.code || 'bad_topic_request',
+      detail: err?.detail || err?.message || 'bad_topic_request'
+    });
+  }
 });
 
 app.get('/admin/stripe/product-prices', requireAdmin, async (req, res) => {

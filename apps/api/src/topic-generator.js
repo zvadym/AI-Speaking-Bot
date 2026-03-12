@@ -1,0 +1,136 @@
+import OpenAI from 'openai';
+import { defaultEmojiForTopicId, normalizeTopicPayload, slugifyTopicId } from './topic-catalog.js';
+
+const TOPIC_GENERATION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'topic_id',
+    'emoji',
+    'title_base',
+    'goal_base',
+    'allowed_base',
+    'avoid_base',
+    'starter_questions_target',
+    'recovery_questions_target'
+  ],
+  properties: {
+    topic_id: { type: 'string' },
+    emoji: { type: 'string' },
+    title_base: { type: 'string' },
+    goal_base: { type: 'string' },
+    allowed_base: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 6,
+      items: { type: 'string' }
+    },
+    avoid_base: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 6,
+      items: { type: 'string' }
+    },
+    starter_questions_target: {
+      type: 'array',
+      minItems: 6,
+      maxItems: 10,
+      items: { type: 'string' }
+    },
+    recovery_questions_target: {
+      type: 'array',
+      minItems: 6,
+      maxItems: 10,
+      items: { type: 'string' }
+    }
+  }
+};
+
+const SYSTEM_PROMPT = [
+  'You create pre-generated conversation topic packs for a language-learning tutor.',
+  'Return only valid JSON matching the schema.',
+  'The base-language fields are for the learner UI: title_base, goal_base, allowed_base, avoid_base.',
+  'The target-language fields are learner-facing conversation questions: starter_questions_target and recovery_questions_target.',
+  'Every target-language question must be one natural question sentence.',
+  'No greetings, no jokes, no roleplay, no references to bots, teachers, lessons, AI, sending messages, or recording voice.',
+  'No meta-instructions and no imperatives like say, tell me, send, or record.',
+  'Choose one fitting emoji for the topic menu button.',
+  'Keep allowed_base and avoid_base concrete and practical.'
+].join(' ');
+
+function getClient(apiKey) {
+  return new OpenAI({ apiKey });
+}
+
+function buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate }) {
+  const lines = [
+    `topic_name: ${String(topicName || '').trim()}`,
+    `base_language_code: ${String(baseLanguage || '').trim().toLowerCase()}`,
+    `target_language_code: ${String(targetLanguage || '').trim().toLowerCase()}`,
+    `suggested_topic_id: ${slugifyTopicId(topicName || baseTemplate?.topic_id || 'topic')}`,
+    `suggested_emoji: ${defaultEmojiForTopicId(baseTemplate?.topic_id || topicName)}`
+  ];
+  if (baseTemplate) {
+    lines.push('Preserve the base-language topic meaning closely.');
+    lines.push(`existing_topic_id: ${String(baseTemplate.topic_id || '').trim().toLowerCase()}`);
+    lines.push(`existing_title_base: ${String(baseTemplate.title_base || '').trim()}`);
+    lines.push(`existing_goal_base: ${String(baseTemplate.goal_base || '').trim()}`);
+    lines.push(`existing_allowed_base: ${JSON.stringify(baseTemplate.allowed_base || [])}`);
+    lines.push(`existing_avoid_base: ${JSON.stringify(baseTemplate.avoid_base || [])}`);
+  } else {
+    lines.push('Invent the full topic rules from the topic name.');
+  }
+  return lines.join('\n');
+}
+
+function parseResponseOutput(response) {
+  if (typeof response?.output_text === 'string' && response.output_text.trim()) {
+    return response.output_text.trim();
+  }
+  const item = Array.isArray(response?.output) ? response.output.find((entry) => entry?.type === 'message') : null;
+  const textPart = item && Array.isArray(item.content)
+    ? item.content.find((entry) => entry?.type === 'output_text' && typeof entry.text === 'string')
+    : null;
+  if (textPart?.text?.trim()) return textPart.text.trim();
+  throw new Error('OpenAI topic generation returned no text output');
+}
+
+export async function generateTopicDraft({
+  apiKey,
+  model,
+  topicName,
+  baseLanguage,
+  targetLanguage,
+  baseTemplate = null,
+  sortOrder = 0,
+  accessTier = 'all'
+}) {
+  if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
+  const client = getClient(apiKey);
+  const response = await client.responses.create({
+    model,
+    input: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      {
+        role: 'user',
+        content: buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate })
+      }
+    ],
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'topic_pack_schema',
+        schema: TOPIC_GENERATION_SCHEMA,
+        verbosity: 'low'
+      }
+    }
+  });
+
+  const rawText = parseResponseOutput(response);
+  const parsed = JSON.parse(rawText);
+  const normalized = normalizeTopicPayload({ ...parsed, sort_order: sortOrder, access_tier: accessTier });
+  return {
+    ...normalized,
+    topic_id: baseTemplate?.topic_id || normalized.topic_id
+  };
+}
