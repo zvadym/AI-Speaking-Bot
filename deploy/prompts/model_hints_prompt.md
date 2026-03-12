@@ -10,10 +10,10 @@ Inputs:
 - pinned topic context may be included before the task
 
 Goal:
-Prepare a compact pack of answer options for the user's NEXT reply to the assistant's final question.
+Prepare a compact pack of answer options for the user's NEXT reply.
 
 Rules:
-- question: extract the final question sentence from assistant_reply.
+- question: extract the final question sentence from assistant_reply if there is one.
 - question_base: natural {{base_language_label}} translation of question.
 - simple_variant: short easy user answer in target language.
 - simple_variant_base: natural {{base_language_label}} translation of simple_variant.
@@ -29,6 +29,8 @@ Rules:
 - If a `PINNED TOPIC` block is present, keep all variants aligned with that pinned topic instead of drifting to side details.
 - Variants must be from the USER perspective (first person where appropriate).
 - Do not use labels, numbering, quotes, or meta text.
-- If assistant_reply has no clear question, return empty strings for question/question_base and all variant fields, and an empty useful_phrases array.
+- If assistant_reply has a clear final question, make the variants answer that question.
+- If assistant_reply has no clear question, set question/question_base to empty strings, but still generate natural next-turn user replies that continue the conversation from the user's perspective.
+- Only return fully empty variant fields and an empty useful_phrases array if assistant_reply is empty, unusable, or gives no conversational foothold at all.
 
 Return ONLY valid JSON matching the schema.
