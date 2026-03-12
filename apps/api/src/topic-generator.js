@@ -111,6 +111,35 @@ function buildAssistPrompt({
   return lines.join('\n');
 }
 
+function buildClonePrompt({
+  sourceBaseLanguage,
+  sourceTargetLanguage,
+  targetBaseLanguage,
+  targetTargetLanguage,
+  currentDraft,
+  instruction
+}) {
+  const lines = [
+    `source_base_language_code: ${String(sourceBaseLanguage || '').trim().toLowerCase()}`,
+    `source_target_language_code: ${String(sourceTargetLanguage || '').trim().toLowerCase()}`,
+    `target_base_language_code: ${String(targetBaseLanguage || '').trim().toLowerCase()}`,
+    `target_target_language_code: ${String(targetTargetLanguage || '').trim().toLowerCase()}`,
+    'Clone the topic for the new language pair while preserving the same practical learning intent.',
+    'Translate and adapt the base-language guidance to the new base language.',
+    'Rewrite starter and recovery questions in the new target language.',
+    'Preserve topic_id and access_tier unless the instruction explicitly requests a rename or tier change.',
+    'Current source draft JSON:',
+    JSON.stringify(currentDraft || {}, null, 2)
+  ];
+
+  if (String(instruction || '').trim()) {
+    lines.push(`extra_instruction: ${String(instruction || '').trim()}`);
+  }
+
+  lines.push('Return the fully adapted topic pack for the target language pair.');
+  return lines.join('\n');
+}
+
 function parseResponseOutput(response) {
   if (typeof response?.output_text === 'string' && response.output_text.trim()) {
     return response.output_text.trim();
@@ -203,6 +232,57 @@ export async function assistTopicDraft({
   const parsed = JSON.parse(rawText);
   return normalizeTopicPayload({
     ...parsed,
+    sort_order: currentDraft?.sort_order ?? 0,
+    access_tier: parsed?.access_tier ?? currentDraft?.access_tier ?? 'all'
+  });
+}
+
+export async function cloneTopicDraftToBot({
+  apiKey,
+  model,
+  sourceBaseLanguage,
+  sourceTargetLanguage,
+  targetBaseLanguage,
+  targetTargetLanguage,
+  currentDraft,
+  instruction = ''
+}) {
+  if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
+  if (!currentDraft || typeof currentDraft !== 'object' || Array.isArray(currentDraft)) {
+    throw new Error('Missing current draft for clone');
+  }
+  const client = getClient(apiKey);
+  const response = await client.responses.create({
+    model,
+    input: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      {
+        role: 'user',
+        content: buildClonePrompt({
+          sourceBaseLanguage,
+          sourceTargetLanguage,
+          targetBaseLanguage,
+          targetTargetLanguage,
+          currentDraft,
+          instruction
+        })
+      }
+    ],
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'topic_pack_schema',
+        schema: TOPIC_GENERATION_SCHEMA,
+        verbosity: 'low'
+      }
+    }
+  });
+
+  const rawText = parseResponseOutput(response);
+  const parsed = JSON.parse(rawText);
+  return normalizeTopicPayload({
+    ...parsed,
+    topic_id: parsed?.topic_id || currentDraft?.topic_id,
     sort_order: currentDraft?.sort_order ?? 0,
     access_tier: parsed?.access_tier ?? currentDraft?.access_tier ?? 'all'
   });

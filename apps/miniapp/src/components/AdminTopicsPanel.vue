@@ -323,6 +323,14 @@
                 <button class="btn ghost" type="button" :disabled="saving" @click="resetEditor">
                   Clear draft
                 </button>
+                <button
+                  class="btn"
+                  type="button"
+                  :disabled="cloning || !password || !selectedBotKey || !cloneTargetBots.length"
+                  @click="openCloneDialog"
+                >
+                  Clone to…
+                </button>
                 <button class="btn primary" type="button" :disabled="!password || saving || !selectedBotKey" @click="saveTopic">
                   {{ saving ? 'Saving…' : (editor.originalTopicId ? 'Save changes' : 'Create topic') }}
                 </button>
@@ -394,6 +402,64 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showCloneDialog" class="topics-modal-backdrop" @click.self="closeCloneDialog">
+      <div class="topics-modal card">
+        <div class="topic-editor-shell">
+          <div class="editor-section-head">
+            <div>
+              <div class="panel-kicker">AI clone</div>
+              <h3>Adapt this topic to another bot</h3>
+              <p class="topics-modal-sub">
+                The current topic will be translated and adapted to the selected language pair, then saved into that bot’s catalog.
+              </p>
+            </div>
+            <button class="btn ghost" type="button" :disabled="cloning" @click="closeCloneDialog">Close</button>
+          </div>
+
+          <div class="topic-editor-grid">
+            <section class="editor-section editor-span-2">
+              <div class="editor-fields">
+                <label class="field">
+                  <span>Source bot</span>
+                  <input :value="selectedBotLabel" type="text" readonly />
+                </label>
+                <label class="field">
+                  <span>Target bot</span>
+                  <select v-model="cloneForm.target_bot_key" :disabled="cloning">
+                    <option v-for="bot in cloneTargetBots" :key="bot.bot_key" :value="bot.bot_key">
+                      {{ botLabel(bot) }}
+                    </option>
+                  </select>
+                </label>
+                <label class="field editor-span-2">
+                  <span>Extra instruction</span>
+                  <textarea
+                    v-model.trim="cloneForm.instruction"
+                    rows="4"
+                    placeholder="Keep this more formal for business learners, or simplify it for beginners."
+                  />
+                </label>
+              </div>
+            </section>
+          </div>
+
+          <p class="error" v-if="cloneError">{{ cloneError }}</p>
+
+          <div class="topic-editor-actions">
+            <button class="btn ghost" type="button" :disabled="cloning" @click="closeCloneDialog">Cancel</button>
+            <button
+              class="btn primary"
+              type="button"
+              :disabled="cloning || !cloneForm.target_bot_key || !selectedBotKey"
+              @click="cloneToBot"
+            >
+              {{ cloning ? 'Cloning…' : 'Clone with AI' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -419,15 +485,18 @@ const saving = ref(false);
 const generating = ref(false);
 const assisting = ref(false);
 const reordering = ref(false);
+const cloning = ref(false);
 const errorText = ref('');
 const infoText = ref('');
 const saveError = ref('');
 const generateError = ref('');
 const assistError = ref('');
+const cloneError = ref('');
 const bots = ref([]);
 const topics = ref([]);
 const selectedBotKey = ref('');
 const showGenerateDialog = ref(false);
+const showCloneDialog = ref(false);
 const draggingTopicId = ref('');
 const dragOverTopicId = ref('');
 
@@ -438,6 +507,11 @@ const generateForm = reactive({
 });
 
 const assistForm = reactive({
+  instruction: ''
+});
+
+const cloneForm = reactive({
+  target_bot_key: '',
   instruction: ''
 });
 
@@ -470,6 +544,8 @@ const catalogStats = computed(() => {
   const proOnly = topics.value.filter((topic) => String(topic.access_tier || '').trim().toLowerCase() === 'pro').length;
   return { freeVisible, proOnly };
 });
+
+const cloneTargetBots = computed(() => bots.value.filter((bot) => bot.bot_key !== selectedBotKey.value));
 
 const editorCounts = computed(() => ({
   allowed: splitLines(editor.allowed_base_text).length,
@@ -615,12 +691,14 @@ function resetEditor() {
 
 function openNewTopic() {
   infoText.value = '';
+  cloneError.value = '';
   resetEditor();
 }
 
 function editTopic(topic) {
   infoText.value = '';
   assistError.value = '';
+  cloneError.value = '';
   applyDraftToEditor(topic, { botKey: selectedBotKey.value, originalTopicId: topic.topic_id });
   saveError.value = '';
 }
@@ -804,6 +882,7 @@ async function deleteTopic(topic) {
 function openGenerateDialog() {
   generateError.value = '';
   assistError.value = '';
+  cloneError.value = '';
   generateForm.bot_key = selectedBotKey.value || bots.value[0]?.bot_key || '';
   generateForm.topic_name = '';
   generateForm.access_tier = 'all';
@@ -818,6 +897,7 @@ function closeGenerateDialog() {
 async function generateDraft() {
   generateError.value = '';
   assistError.value = '';
+  cloneError.value = '';
   generating.value = true;
   try {
     const data = await apiJson(props.apiBase, '/admin/topics/generate-draft', {
@@ -847,6 +927,7 @@ async function generateDraft() {
 
 async function assistWithAi() {
   assistError.value = '';
+  cloneError.value = '';
   infoText.value = '';
   assisting.value = true;
   try {
@@ -873,6 +954,49 @@ async function assistWithAi() {
   }
 }
 
+function openCloneDialog() {
+  cloneError.value = '';
+  cloneForm.target_bot_key = cloneTargetBots.value[0]?.bot_key || '';
+  cloneForm.instruction = '';
+  showCloneDialog.value = true;
+}
+
+function closeCloneDialog() {
+  if (cloning.value) return;
+  showCloneDialog.value = false;
+}
+
+async function cloneToBot() {
+  cloneError.value = '';
+  infoText.value = '';
+  cloning.value = true;
+  try {
+    const data = await apiJson(props.apiBase, '/admin/topics/clone-to-bot', {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: {
+        source_bot_key: selectedBotKey.value,
+        target_bot_key: cloneForm.target_bot_key,
+        instruction: cloneForm.instruction,
+        draft: buildPayloadFromEditor()
+      }
+    });
+    const targetBotKey = String(data?.target_bot_key || cloneForm.target_bot_key || '').trim();
+    selectedBotKey.value = targetBotKey;
+    await refreshTopics();
+    if (data?.item) {
+      editTopic(data.item);
+    }
+    infoText.value = `Topic cloned to ${botLabel(bots.value.find((bot) => bot.bot_key === targetBotKey))}.`;
+    showCloneDialog.value = false;
+  } catch (err) {
+    const detail = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    cloneError.value = `Clone failed: ${detail}`;
+  } finally {
+    cloning.value = false;
+  }
+}
+
 watch(
   () => props.password,
   (next) => {
@@ -881,6 +1005,7 @@ watch(
       topics.value = [];
       selectedBotKey.value = '';
       showGenerateDialog.value = false;
+      showCloneDialog.value = false;
       resetEditor();
       emit('stamp', '');
       return;

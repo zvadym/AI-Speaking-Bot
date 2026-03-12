@@ -32,7 +32,7 @@ import {
   normalizeTopicRow,
   topicIsVisibleForTier
 } from './topic-catalog.js';
-import { assistTopicDraft, generateTopicDraft } from './topic-generator.js';
+import { assistTopicDraft, cloneTopicDraftToBot, generateTopicDraft } from './topic-generator.js';
 
 const app = express();
 
@@ -4203,6 +4203,90 @@ app.post('/admin/topics/assist-draft', requireAdmin, async (req, res) => {
     return res.status(err?.status || 400).json({
       error: err?.code || 'topic_assist_failed',
       detail: err?.detail || err?.message || 'topic_assist_failed'
+    });
+  }
+});
+
+app.post('/admin/topics/clone-to-bot', requireAdmin, async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    if (!env.openaiApiKey) {
+      return res.status(503).json({ error: 'topic_generation_not_configured' });
+    }
+    const sourceMeta = requireTopicBotMeta(req.body?.source_bot_key ?? req.body?.bot_key);
+    const targetMeta = requireTopicBotMeta(req.body?.target_bot_key);
+    if (sourceMeta.bot_key === targetMeta.bot_key) {
+      return res.status(400).json({ error: 'bad_target_bot_key', detail: 'target_bot_key must differ from source bot' });
+    }
+    const currentDraft = normalizeTopicAssistDraft(req.body?.draft);
+    if (!currentDraft) {
+      return res.status(400).json({ error: 'bad_draft', detail: 'draft is required' });
+    }
+    const instruction = normalizeOptionalText(req.body?.instruction, 1600) || '';
+    const clonedDraft = await cloneTopicDraftToBot({
+      apiKey: env.openaiApiKey,
+      model: env.topicGenerationModel,
+      sourceBaseLanguage: sourceMeta.base_language || 'en',
+      sourceTargetLanguage: sourceMeta.learning_language || 'en',
+      targetBaseLanguage: targetMeta.base_language || 'en',
+      targetTargetLanguage: targetMeta.learning_language || 'en',
+      currentDraft,
+      instruction
+    });
+
+    const { rows } = await pool.query(
+      `INSERT INTO bot_topic_catalog (
+         bot_key,
+         topic_id,
+         emoji,
+         access_tier,
+         title_base,
+         goal_base,
+         allowed_base,
+         avoid_base,
+         starter_questions_target,
+         recovery_questions_target,
+         sort_order,
+         updated_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11, NOW())
+       ON CONFLICT (bot_key, topic_id) DO UPDATE SET
+         emoji = EXCLUDED.emoji,
+         access_tier = EXCLUDED.access_tier,
+         title_base = EXCLUDED.title_base,
+         goal_base = EXCLUDED.goal_base,
+         allowed_base = EXCLUDED.allowed_base,
+         avoid_base = EXCLUDED.avoid_base,
+         starter_questions_target = EXCLUDED.starter_questions_target,
+         recovery_questions_target = EXCLUDED.recovery_questions_target,
+         sort_order = EXCLUDED.sort_order,
+         updated_at = NOW()
+       RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, avoid_base,
+                 starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at`,
+      [
+        targetMeta.bot_key,
+        clonedDraft.topic_id,
+        clonedDraft.emoji,
+        clonedDraft.access_tier,
+        clonedDraft.title_base,
+        clonedDraft.goal_base,
+        JSON.stringify(clonedDraft.allowed_base),
+        JSON.stringify(clonedDraft.avoid_base),
+        JSON.stringify(clonedDraft.starter_questions_target),
+        JSON.stringify(clonedDraft.recovery_questions_target),
+        clonedDraft.sort_order
+      ]
+    );
+
+    return res.json({
+      source_bot_key: sourceMeta.bot_key,
+      target_bot_key: targetMeta.bot_key,
+      item: serializeTopicRow(rows[0])
+    });
+  } catch (err) {
+    return res.status(err?.status || 400).json({
+      error: err?.code || 'topic_clone_failed',
+      detail: err?.detail || err?.message || 'topic_clone_failed'
     });
   }
 });
