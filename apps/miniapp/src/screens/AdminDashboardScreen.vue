@@ -392,6 +392,57 @@
         </div>
       </section>
 
+      <section class="card panel">
+        <header class="panel-head">
+          <div>
+            <div class="panel-kicker">Notifications</div>
+            <h2 class="panel-title">Sent by day</h2>
+            <p class="panel-sub">{{ notificationChartSubtitle }}</p>
+          </div>
+          <div class="panel-actions notification-toolbar">
+            <label class="field notification-filter">
+              <span>Bot scope</span>
+              <select v-model="notificationBotFilter">
+                <option value="all">All bots</option>
+                <option
+                  v-for="bot in notificationBotOptions"
+                  :key="bot.bot_key"
+                  :value="bot.bot_key"
+                >
+                  {{ bot.bot_key }}
+                </option>
+              </select>
+            </label>
+          </div>
+        </header>
+
+        <div class="panel-body notification-panel-body">
+          <div class="notification-overview">
+            <article class="notification-overview-item">
+              <span class="notification-overview-label">Bot scope</span>
+              <strong class="notification-overview-value">{{ notificationBotFilterLabel }}</strong>
+            </article>
+            <article class="notification-overview-item">
+              <span class="notification-overview-label">Recipient sends</span>
+              <strong class="notification-overview-value">{{ fmt(notificationTotalSent) }}</strong>
+            </article>
+            <article class="notification-overview-item">
+              <span class="notification-overview-label">Active types</span>
+              <strong class="notification-overview-value">{{ fmt(notificationSeriesConfig.length) }}</strong>
+            </article>
+          </div>
+
+          <AdminChart
+            title="Notifications sent by day"
+            subtitle="Recipient-level sends stacked by notification type"
+            kind="bar"
+            x-labels="all"
+            :data="notificationChartSeries"
+            :series="notificationSeriesConfig"
+          />
+        </div>
+      </section>
+
       <section class="charts-grid">
         <AdminChart
           title="New users by day by bot"
@@ -1843,6 +1894,8 @@ const botSort = reactive({
   dir: 'desc' // 'asc' | 'desc'
 });
 
+const notificationRows = ref([]);
+const notificationBotFilter = ref('all');
 const newUsersByBotSeries = ref([]);
 const newUsersByBotSeriesConfig = ref([]);
 const newPaidSeries = ref([]);
@@ -1923,6 +1976,26 @@ const botSeriesPalette = [
 const botSeriesColors = {
   uk_en: botSeriesPalette[0],
   uk_de: botSeriesPalette[1]
+};
+const notificationSeriesPalette = [
+  'rgba(38, 84, 124, 0.88)',
+  'rgba(31, 107, 99, 0.88)',
+  'rgba(199, 90, 36, 0.88)',
+  'rgba(103, 78, 167, 0.88)',
+  'rgba(33, 124, 146, 0.88)',
+  'rgba(174, 43, 40, 0.86)',
+  'rgba(117, 156, 56, 0.88)',
+  'rgba(140, 87, 45, 0.88)'
+];
+const notificationTypeMeta = {
+  onboarding_complete: { label: 'Onboarding complete', color: notificationSeriesPalette[0], order: 0 },
+  free_limit_50: { label: '50% free limit', color: notificationSeriesPalette[1], order: 1 },
+  winback_d3: { label: 'Winback D3', color: notificationSeriesPalette[2], order: 2 },
+  winback_d7: { label: 'Winback D7', color: notificationSeriesPalette[3], order: 3 },
+  winback_d14: { label: 'Winback D14', color: notificationSeriesPalette[4], order: 4 },
+  broadcast_text: { label: 'Broadcast text', color: notificationSeriesPalette[5], order: 5 },
+  broadcast_photo: { label: 'Broadcast photo', color: notificationSeriesPalette[6], order: 6 },
+  broadcast_video: { label: 'Broadcast video', color: notificationSeriesPalette[7], order: 7 }
 };
 const actionSeriesConfig = [
   { key: 'start', label: 'start', color: 'rgba(31, 107, 99, 0.88)' },
@@ -2508,6 +2581,48 @@ const botStatsByKey = computed(() => {
   return map;
 });
 
+const notificationBotOptions = computed(() => {
+  const map = new Map();
+
+  for (const bot of botStatsTable.value) {
+    const botKey = normalizeBotKeyValue(bot?.bot_key);
+    if (!botKey) continue;
+    map.set(botKey, {
+      bot_key: botKey,
+      base_lang: (bot?.base_lang ?? '').toString().trim().toLowerCase(),
+      target_lang: (bot?.target_lang ?? '').toString().trim().toLowerCase()
+    });
+  }
+
+  for (const row of notificationRows.value) {
+    const botKey = normalizeBotKeyValue(row?.bot_key);
+    if (!botKey || map.has(botKey)) continue;
+    const langs = parseBotKeyLangs(botKey);
+    map.set(botKey, {
+      bot_key: botKey,
+      base_lang: langs.base_lang,
+      target_lang: langs.target_lang
+    });
+  }
+
+  return Array.from(map.values()).sort((a, b) => String(a.bot_key || '').localeCompare(String(b.bot_key || '')));
+});
+
+const notificationChartBundle = computed(() => transformNotificationData(notificationRows.value, notificationBotFilter.value));
+const notificationChartSeries = computed(() => notificationChartBundle.value.chartData);
+const notificationSeriesConfig = computed(() => notificationChartBundle.value.seriesConfig);
+const notificationTotalSent = computed(() => notificationChartBundle.value.totalSent);
+const notificationBotFilterLabel = computed(() => {
+  if (notificationBotFilter.value === 'all') return 'All bots';
+  return notificationBotOptions.value.find((bot) => bot.bot_key === notificationBotFilter.value)?.bot_key || notificationBotFilter.value;
+});
+const notificationChartSubtitle = computed(() => {
+  if (notificationBotFilter.value === 'all') {
+    return 'Recipient-level automated reminders and broadcasts across all bots.';
+  }
+  return `Recipient-level automated reminders and broadcasts for ${notificationBotFilterLabel.value}.`;
+});
+
 function sanitizeBroadcastBotKeys(botKeysRaw) {
   const next = [];
   let lockedBaseLang = '';
@@ -2732,6 +2847,22 @@ function colorForTopicSeries(safeKey, index) {
   return topicSeriesColors[safeKey] || topicSeriesPalette[index % topicSeriesPalette.length];
 }
 
+function notificationSeriesKey(type) {
+  return String(type || 'other').replace(/[^a-zA-Z0-9]+/g, '_');
+}
+
+function notificationTypeOrder(type) {
+  return Number.isFinite(notificationTypeMeta[type]?.order) ? notificationTypeMeta[type].order : 999;
+}
+
+function notificationTypeLabel(type) {
+  return notificationTypeMeta[type]?.label || String(type || 'other').replaceAll('_', ' ');
+}
+
+function colorForNotificationSeries(type, index) {
+  return notificationTypeMeta[type]?.color || notificationSeriesPalette[index % notificationSeriesPalette.length];
+}
+
 function transformByTopicData(rows) {
   const byDay = {};
   const topicsSet = new Set();
@@ -2765,6 +2896,47 @@ function transformByTopicData(rows) {
     });
 
   return { chartData, seriesConfig };
+}
+
+function transformNotificationData(rows, selectedBotKey = 'all') {
+  const byDay = {};
+  const totalsByType = new Map();
+  const filterBotKey = normalizeBotKeyValue(selectedBotKey);
+
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const day = String(row?.day || '').trim();
+    const botKey = normalizeBotKeyValue(row?.bot_key);
+    const type = String(row?.notification_type || '').trim() || 'other';
+    const count = safeNum(row?.count);
+    if (!day) continue;
+    if (filterBotKey && filterBotKey !== 'all' && botKey !== filterBotKey) continue;
+
+    if (!byDay[day]) byDay[day] = { day };
+
+    const safeKey = notificationSeriesKey(type);
+    byDay[day][safeKey] = safeNum(byDay[day][safeKey]) + count;
+    totalsByType.set(type, safeNum(totalsByType.get(type)) + count);
+  }
+
+  const chartData = Object.values(byDay).sort((a, b) => a.day.localeCompare(b.day));
+  const seriesConfig = Array.from(totalsByType.entries())
+    .filter(([, total]) => total > 0)
+    .sort((a, b) => {
+      const order = notificationTypeOrder(a[0]) - notificationTypeOrder(b[0]);
+      if (order !== 0) return order;
+      return String(a[0]).localeCompare(String(b[0]));
+    })
+    .map(([type], index) => ({
+      key: notificationSeriesKey(type),
+      label: notificationTypeLabel(type),
+      color: colorForNotificationSeries(type, index)
+    }));
+
+  return {
+    chartData,
+    seriesConfig,
+    totalSent: Array.from(totalsByType.values()).reduce((sum, value) => sum + safeNum(value), 0)
+  };
 }
 
 function query() {
@@ -3789,7 +3961,8 @@ async function refreshAnalytics() {
       userStreaks,
       xpDistribution,
       xpEarnedByDay,
-      payloads
+      payloads,
+      notificationsByDay
     ] = await Promise.all([
       apiJson(props.apiBase, '/admin/metrics/summary', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/bot-stats', { headers }),
@@ -3812,7 +3985,8 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/user-streaks', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/xp-distribution', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/xp-earned-by-day', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
+      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/notifications-by-day', { query: q, headers })
     ]);
 
     totals.value = summary?.totals || totals.value;
@@ -3849,6 +4023,7 @@ async function refreshAnalytics() {
     xpDistributionSeries.value = Array.isArray(xpDistribution?.series) ? xpDistribution.series : [];
     xpEarnedByDaySeries.value = Array.isArray(xpEarnedByDay?.series) ? xpEarnedByDay.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
+    notificationRows.value = Array.isArray(notificationsByDay?.series) ? notificationsByDay.series : [];
     // Users list is loaded in the Users tab (separate request).
     
     // Transform bot-specific data
@@ -4344,6 +4519,7 @@ function clearPassword() {
   };
   freeUsersUsageBuckets.value = [];
   freeUsersMessageBuckets.value = [];
+  notificationRows.value = [];
 }
 
 function usersNextPage() {
@@ -4475,6 +4651,9 @@ watch(
     }
     if (reminderTestBotKey.value && !reminderTestBotExists.value) {
       reminderTestBotKey.value = '';
+    }
+    if (notificationBotFilter.value !== 'all' && !notificationBotOptions.value.some((bot) => bot.bot_key === notificationBotFilter.value)) {
+      notificationBotFilter.value = 'all';
     }
   }
 );
@@ -5916,5 +6095,52 @@ h1 {
 .bot-meta {
   font-size: 12px;
   color: var(--muted);
+}
+
+.notification-toolbar {
+  align-items: flex-end;
+}
+
+.notification-filter {
+  min-width: 180px;
+}
+
+.notification-panel-body {
+  display: grid;
+  gap: 14px;
+}
+
+.notification-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.notification-overview-item {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.notification-overview-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.notification-overview-value {
+  font-size: 18px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+@media (max-width: 820px) {
+  .notification-overview {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

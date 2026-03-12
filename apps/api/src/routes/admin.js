@@ -35,6 +35,23 @@ const ACTION_EVENT_TYPES = [
   'purchase_success'
 ];
 const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
+const NOTIFICATION_TASK_TYPES = [
+  'onboarding_complete',
+  'free_limit_50',
+  'winback_d3',
+  'winback_d7',
+  'winback_d14'
+];
+const NOTIFICATION_SERIES_TYPES = [
+  'onboarding_complete',
+  'free_limit_50',
+  'winback_d3',
+  'winback_d7',
+  'winback_d14',
+  'broadcast_text',
+  'broadcast_photo',
+  'broadcast_video'
+];
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BROADCAST_MEDIA_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
 
@@ -504,6 +521,116 @@ export function createAdminRouter(ctx, helpers) {
        LEFT JOIN counts c ON c.day_utc = d.day_utc AND c.bot_key = bots.bot_key
        ORDER BY d.day_utc ASC, bots.bot_key ASC`,
       [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
+    );
+
+    return res.json({
+      tz: 'UTC',
+      from: range.from.toISOString(),
+      to: range.to.toISOString(),
+      payload: range.payload,
+      series: rows
+    });
+  });
+
+  router.get('/admin/metrics/notifications-by-day', requireAdmin, async (req, res) => {
+    const range = helpers.parseAdminRange(req);
+    if (!range.ok) return res.status(400).json({ error: range.error });
+    res.set('Cache-Control', 'no-store');
+
+    const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+    const { rows } = await ctx.pool.query(
+      `WITH params AS (
+         SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+       ),
+       days AS (
+         SELECT generate_series(
+           date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+           date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+           interval '1 day'
+         )::date AS day_utc
+       ),
+       filtered_users AS (
+         SELECT chat_id
+         FROM users
+         WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+           AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
+       ),
+       automated_counts AS (
+         SELECT
+           date_trunc('day', std.sent_at AT TIME ZONE 'UTC')::date AS day_utc,
+           std.bot_key,
+           std.task_type AS notification_type,
+           COUNT(*)::int AS count
+         FROM scheduled_task_dispatches std
+         JOIN filtered_users u ON u.chat_id = std.chat_id
+         WHERE std.status = 'sent'
+           AND std.sent_at IS NOT NULL
+           AND std.sent_at >= (SELECT from_ts FROM params)
+           AND std.sent_at < (SELECT to_ts FROM params)
+           AND std.task_type = ANY($5::text[])
+         GROUP BY 1, 2, 3
+       ),
+       broadcast_counts AS (
+         SELECT
+           date_trunc('day', r.sent_at AT TIME ZONE 'UTC')::date AS day_utc,
+           r.bot_key,
+           ('broadcast_' || c.message_kind)::text AS notification_type,
+           COUNT(*)::int AS count
+         FROM broadcast_recipients r
+         JOIN broadcast_campaigns c
+           ON c.id = r.campaign_id
+         JOIN filtered_users u
+           ON u.chat_id = r.chat_id
+         WHERE r.status = 'sent'
+           AND r.sent_at IS NOT NULL
+           AND r.sent_at >= (SELECT from_ts FROM params)
+           AND r.sent_at < (SELECT to_ts FROM params)
+         GROUP BY 1, 2, 3
+       ),
+       aggregated AS (
+         SELECT
+           combined.day_utc,
+           combined.bot_key,
+           combined.notification_type,
+           SUM(combined.count)::int AS count
+         FROM (
+           SELECT * FROM automated_counts
+           UNION ALL
+           SELECT * FROM broadcast_counts
+         ) combined
+         GROUP BY 1, 2, 3
+       ),
+       bots AS (
+         SELECT DISTINCT bot_key
+         FROM aggregated
+       ),
+       types AS (
+         SELECT UNNEST($6::text[]) AS notification_type
+       )
+       SELECT
+         d.day_utc::text AS day,
+         b.bot_key,
+         t.notification_type,
+         COALESCE(a.count, 0)::int AS count
+       FROM days d
+       CROSS JOIN bots b
+       CROSS JOIN types t
+       LEFT JOIN aggregated a
+         ON a.day_utc = d.day_utc
+        AND a.bot_key = b.bot_key
+        AND a.notification_type = t.notification_type
+       ORDER BY
+         d.day_utc ASC,
+         b.bot_key ASC,
+         array_position($6::text[], t.notification_type) ASC`,
+      [
+        range.from.toISOString(),
+        range.to.toISOString(),
+        range.payload,
+        excludeChatIds,
+        NOTIFICATION_TASK_TYPES,
+        NOTIFICATION_SERIES_TYPES
+      ]
     );
 
     return res.json({

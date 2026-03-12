@@ -10,12 +10,22 @@ process.env.STRIPE_WEBHOOK_SECRET ??= 'whsec_123';
 process.env.JWT_SECRET ??= 'jwt_secret_for_tests';
 process.env.ADMIN_DASHBOARD_PASSWORD ??= 'secret-admin';
 process.env.INTERNAL_API_SECRET ??= 'internal-secret';
+process.env.SENTRY_DSN ??= 'https://public@example.ingest.sentry.io/1';
+process.env.SENTRY_TEST_MODE ??= '1';
 
-const [{ createApp }, { pool }, { signSession }] = await Promise.all([
+const [{ createApp }, { pool }, { signSession }, { httpError }, sentryModule] = await Promise.all([
   import('../src/app.js'),
   import('../src/db.js'),
-  import('../src/auth.js')
+  import('../src/auth.js'),
+  import('../src/core/errors.js'),
+  import('../src/sentry.js')
 ]);
+const {
+  __getCapturedEventsForTests,
+  __resetCapturedEventsForTests,
+  captureException,
+  flushSentry
+} = sentryModule;
 
 async function request(app, { method = 'GET', path = '/', headers = {}, body } = {}) {
   const server = http.createServer(app);
@@ -329,6 +339,95 @@ test('createApp returns fresh app instances when apiBoss is injected', async () 
   assert.notEqual(appA, appB);
   assert.equal(appA.locals.apiBoss, bossA);
   assert.equal(appB.locals.apiBoss, bossB);
+});
+
+test('admin notifications metrics returns sent counts by bot and type', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('FROM scheduled_task_dispatches std') && source.includes('FROM broadcast_recipients r')) {
+      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+      assert.equal(params[1], '2026-03-04T00:00:00.000Z');
+      assert.equal(params[2], null);
+      assert.equal(params[3], null);
+      return {
+        rows: [
+          { day: '2026-03-01', bot_key: 'uk-de', notification_type: 'onboarding_complete', count: 2 },
+          { day: '2026-03-01', bot_key: 'uk-de', notification_type: 'broadcast_text', count: 3 },
+          { day: '2026-03-02', bot_key: 'uk-en', notification_type: 'winback_d3', count: 1 }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in admin notifications metrics test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/notifications-by-day?from=2026-03-01&to=2026-03-04',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
+    assert.deepEqual(response.json.series, [
+      { day: '2026-03-01', bot_key: 'uk-de', notification_type: 'onboarding_complete', count: 2 },
+      { day: '2026-03-01', bot_key: 'uk-de', notification_type: 'broadcast_text', count: 3 },
+      { day: '2026-03-02', bot_key: 'uk-en', notification_type: 'winback_d3', count: 1 }
+    ]);
+  });
+});
+
+test('uncaught async route errors reach the final sentry-backed 500 handler', async () => {
+  __resetCapturedEventsForTests();
+
+  const app = await createApp({
+    apiBoss: { publish: async () => null },
+    configureApp: ({ app: expressApp }) => {
+      expressApp.get('/__test/boom', async () => {
+        throw new Error('boom');
+      });
+    }
+  });
+
+  const response = await request(app, { path: '/__test/boom' });
+  await flushSentry(2000);
+
+  assert.equal(response.status, 500);
+  assert.equal(response.json.error, 'internal_server_error');
+  assert.equal(typeof response.json.eventId, 'string');
+});
+
+test('http errors keep their payloads and are filtered out of sentry', async () => {
+  __resetCapturedEventsForTests();
+
+  const app = await createApp({
+    apiBoss: { publish: async () => null },
+    configureApp: ({ app: expressApp }) => {
+      expressApp.get('/__test/http-error', async () => {
+        throw httpError(400, 'bad_request', 'bad_request');
+      });
+    }
+  });
+
+  const response = await request(app, { path: '/__test/http-error' });
+  await flushSentry(2000);
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(response.json, { error: 'bad_request', detail: 'bad_request' });
+  assert.equal(response.json.eventId, undefined);
+  assert.equal(__getCapturedEventsForTests().length, 0);
+});
+
+test('directly captured handled 5xx errors are reported to sentry', async () => {
+  __resetCapturedEventsForTests();
+  await createApp({ apiBoss: { publish: async () => null } });
+
+  const eventId = captureException(new Error('handled-route-failure'), {
+    tags: { route: 'test-handled' }
+  });
+  await flushSentry(2000);
+
+  assert.equal(typeof eventId, 'string');
 });
 
 test('miniapp read endpoints return personalized plans, dashboard, and bot catalog', async () => {
