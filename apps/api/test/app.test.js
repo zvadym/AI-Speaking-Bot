@@ -319,6 +319,18 @@ test('createApp serves smoke routes without infrastructure side effects', async 
   });
 });
 
+test('createApp returns fresh app instances when apiBoss is injected', async () => {
+  const bossA = { publish: async () => null };
+  const bossB = { publish: async () => null };
+
+  const appA = await createApp({ apiBoss: bossA });
+  const appB = await createApp({ apiBoss: bossB });
+
+  assert.notEqual(appA, appB);
+  assert.equal(appA.locals.apiBoss, bossA);
+  assert.equal(appB.locals.apiBoss, bossB);
+});
+
 test('miniapp read endpoints return personalized plans, dashboard, and bot catalog', async () => {
   await withMockedQuery(createMiniappQueryHandler(), async () => {
     const app = await createApp({ apiBoss: { publish: async () => null } });

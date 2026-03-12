@@ -12,6 +12,14 @@ export function createRuntimeDeps(overrides = {}) {
   const nextStripe = overrides.stripe || stripe;
   const botConfigs = overrides.botConfigs || loadBotConfigs();
   const botCatalog = overrides.botCatalog || createPublicBotCatalogLookup(botConfigs, nextEnv.telegramBotTokensByBotKey || {});
+  const getBotLocale = (botKeyRaw) => {
+    const botKey = botCatalog.metaForKey(botKeyRaw)?.bot_key || null;
+    if (!botKey) return {};
+    const config = botConfigs[botKey] || botConfigs[botKeyRaw] || {};
+    return config?.locale && typeof config.locale === 'object' && !Array.isArray(config.locale)
+      ? config.locale
+      : {};
+  };
   const telegramClient = overrides.telegramClient || createTelegramClient({
     env: nextEnv,
     fetchImpl: overrides.fetchImpl || fetch
@@ -25,9 +33,14 @@ export function createRuntimeDeps(overrides = {}) {
     stripe: nextStripe,
     botConfigs,
     botCatalog,
+    publicBotCatalog: botCatalog.catalog,
+    publicBotCatalogByKey: botCatalog.byKey,
+    publicBotMetaForKey: botCatalog.metaForKey,
+    getBotLocale,
     telegramClient,
     deliveryState,
     actionEvents,
+    apiBoss: overrides.apiBoss,
     ...overrides
   };
 }
