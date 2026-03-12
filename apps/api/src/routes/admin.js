@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { createRequireAdmin } from '../middleware/admin.js';
+import { captureException } from '../sentry.js';
 import {
   normalizeBotKey,
   normalizeCurrencyCode,
@@ -1852,6 +1853,7 @@ export function createAdminRouter(ctx, helpers) {
       return res.json(snapshot);
     } catch (err) {
       console.error('Admin Stripe product prices list failed', err);
+      captureException(err, { tags: { route: 'admin-stripe-product-prices-list' } });
       return billingRouteErrorResponse(res, err, 500);
     }
   });
@@ -1951,10 +1953,15 @@ export function createAdminRouter(ctx, helpers) {
           await client.query('ROLLBACK');
         } catch (rollbackErr) {
           console.error('Admin Stripe product price create rollback failed', rollbackErr);
+          captureException(rollbackErr, { tags: { route: 'admin-stripe-product-prices-create-rollback' } });
         }
       }
       await Promise.all(createdPriceIds.map((priceId) => helpers.archiveStripePriceSafely(priceId)));
       console.error('Admin Stripe product price create failed', err);
+      captureException(err, {
+        tags: { route: 'admin-stripe-product-prices-create' },
+        extra: { currency }
+      });
       if (err?.code === '23505') {
         return res.status(409).json({
           error: 'runtime_price_exists',
@@ -2030,6 +2037,10 @@ export function createAdminRouter(ctx, helpers) {
       });
     } catch (err) {
       console.error('Admin Stripe product price replace failed', err);
+      captureException(err, {
+        tags: { route: 'admin-stripe-product-prices-replace' },
+        extra: { priceId }
+      });
       return billingRouteErrorResponse(res, err, 500);
     }
   });
@@ -2066,6 +2077,10 @@ export function createAdminRouter(ctx, helpers) {
       });
     } catch (err) {
       console.error('Admin Stripe product price archive failed', err);
+      captureException(err, {
+        tags: { route: 'admin-stripe-product-prices-archive' },
+        extra: { priceId }
+      });
       return billingRouteErrorResponse(res, err, 500);
     }
   });
@@ -2219,9 +2234,11 @@ export function createAdminRouter(ctx, helpers) {
           await client.query('ROLLBACK');
         } catch (rollbackErr) {
           console.error('Admin Stripe product price sync rollback failed', rollbackErr);
+          captureException(rollbackErr, { tags: { route: 'admin-stripe-product-prices-sync-rollback' } });
         }
       }
       console.error('Admin Stripe product price sync failed', err);
+      captureException(err, { tags: { route: 'admin-stripe-product-prices-sync' } });
       return billingRouteErrorResponse(res, err, 500);
     } finally {
       client?.release();
@@ -2906,6 +2923,7 @@ export function createAdminRouter(ctx, helpers) {
       }
 
       console.error('Admin reminder test send failed', err);
+      captureException(err, { tags: { route: 'admin-reminder-test-send' } });
       return res.status(502).json({ error: 'request_failed', detail });
     }
   });

@@ -6,6 +6,7 @@ import {
 } from '../jobs.js';
 import { normalizeBotKey } from '../shared/normalization.js';
 import { createRequireInternalApi } from '../middleware/internal-api.js';
+import { captureException } from '../sentry.js';
 
 export function createInternalRouter(ctx, helpers) {
   const router = Router();
@@ -73,6 +74,10 @@ export function createInternalRouter(ctx, helpers) {
         botKey,
         error: error?.message || String(error)
       });
+      captureException(error, {
+        tags: { route: 'internal-loader-start' },
+        extra: { chatId, botKey }
+      });
       return res.status(500).json({ error: 'loader_start_failed' });
     }
   });
@@ -92,6 +97,10 @@ export function createInternalRouter(ctx, helpers) {
         chatId,
         botKey,
         error: error?.message || String(error)
+      });
+      captureException(error, {
+        tags: { route: 'internal-loader-stop' },
+        extra: { chatId, botKey }
       });
       return res.status(500).json({ error: 'loader_stop_failed' });
     }
@@ -146,6 +155,10 @@ export function createInternalRouter(ctx, helpers) {
         chatId,
         botKey,
         error: error?.message || String(error)
+      });
+      captureException(error, {
+        tags: { route: 'internal-topics-menu' },
+        extra: { chatId, botKey }
       });
       return res.status(500).json({ error: 'topic_menu_failed' });
     }

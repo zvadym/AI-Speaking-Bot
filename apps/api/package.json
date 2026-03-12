@@ -3,12 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
-    "worker": "node src/worker.js",
+    "dev": "node --import ./src/instrument-api.js --watch src/server.js",
+    "start": "node --import ./src/instrument-api.js src/server.js",
+    "worker": "node --import ./src/instrument-worker.js src/worker.js",
     "test": "node --test"
   },
   "dependencies": {
+    "@sentry/node": "^10.43.0",
+    "@sentry/profiling-node": "^10.43.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

@@ -6,6 +6,7 @@ import {
   normalizeRuntimeCurrencyCode,
   PURCHASE_ALLOWED_TIERS
 } from '../shared/normalization.js';
+import { captureException } from '../sentry.js';
 
 export function createBillingRouter(ctx, helpers) {
   const router = Router();
@@ -186,6 +187,10 @@ export function createBillingRouter(ctx, helpers) {
         });
       } else {
         console.error('Stripe checkout failed', err);
+        captureException(err, {
+          tags: { route: 'billing-checkout' },
+          extra: { chatId, tier: normalizedTier, billingCurrency, billingInterval: normalizedBillingInterval }
+        });
         return res.status(500).json({ error: 'stripe_error' });
       }
     }
@@ -287,12 +292,20 @@ export function createBillingRouter(ctx, helpers) {
         });
       } else {
         console.error('Stripe embedded checkout failed', err);
+        captureException(err, {
+          tags: { route: 'billing-checkout-embedded' },
+          extra: { chatId, tier: normalizedTier, billingCurrency, billingInterval: normalizedBillingInterval }
+        });
         return res.status(500).json({ error: 'stripe_error' });
       }
     }
 
     if (!session?.client_secret) {
       console.error('Stripe embedded checkout: missing client_secret', { id: session?.id });
+      captureException(new Error('Stripe embedded checkout missing client_secret'), {
+        tags: { route: 'billing-checkout-embedded' },
+        extra: { chatId, sessionId: session?.id || null }
+      });
       return res.status(500).json({ error: 'stripe_error' });
     }
 
@@ -389,6 +402,10 @@ export function createBillingRouter(ctx, helpers) {
         }
       } catch (err) {
         console.error('Stripe: failed to retrieve subscription for portal', err);
+        captureException(err, {
+          tags: { route: 'billing-portal' },
+          extra: { chatId, subscriptionId }
+        });
         return res.status(500).json({ error: 'stripe_error' });
       }
     }
@@ -409,6 +426,10 @@ export function createBillingRouter(ctx, helpers) {
       return res.json({ url: session.url });
     } catch (err) {
       console.error('Stripe: billing portal session create failed', err);
+      captureException(err, {
+        tags: { route: 'billing-portal' },
+        extra: { chatId, customerId }
+      });
       return res.status(500).json({ error: 'stripe_error' });
     }
   });
@@ -441,6 +462,10 @@ export function createBillingRouter(ctx, helpers) {
       });
     } catch (err) {
       console.error('Stripe: failed to retrieve subscription for upgrade preview', err);
+      captureException(err, {
+        tags: { route: 'billing-upgrade-preview' },
+        extra: { chatId, subscriptionId }
+      });
       return res.status(500).json({ error: 'stripe_error' });
     }
 
@@ -494,6 +519,10 @@ export function createBillingRouter(ctx, helpers) {
       });
     } catch (err) {
       console.error('Stripe: failed to preview upgrade invoice', err);
+      captureException(err, {
+        tags: { route: 'billing-upgrade-preview' },
+        extra: { chatId, subscriptionId, targetTier }
+      });
       return res.status(500).json({ error: 'stripe_error' });
     }
   });
@@ -530,6 +559,10 @@ export function createBillingRouter(ctx, helpers) {
       });
     } catch (err) {
       console.error('Stripe: failed to retrieve subscription for upgrade', err);
+      captureException(err, {
+        tags: { route: 'billing-upgrade' },
+        extra: { chatId, subscriptionId }
+      });
       return res.status(500).json({ error: 'stripe_error' });
     }
 
@@ -574,6 +607,10 @@ export function createBillingRouter(ctx, helpers) {
       updated = await ctx.stripe.subscriptions.update(subscriptionId, updateParams);
     } catch (err) {
       console.error('Stripe: upgrade failed', err);
+      captureException(err, {
+        tags: { route: 'billing-upgrade' },
+        extra: { chatId, subscriptionId, targetTier }
+      });
       return res.status(500).json({ error: 'stripe_error' });
     }
 

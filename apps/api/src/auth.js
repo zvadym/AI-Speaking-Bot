@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { env } from './env.js';
+import { setSentryUser } from './sentry.js';
 
 export function signSession(payload) {
   return jwt.sign(payload, env.jwtSecret, { expiresIn: '2h' });
@@ -15,6 +16,9 @@ export function createRequireAuth(authEnv = env) {
 
     try {
       req.auth = jwt.verify(token, authEnv.jwtSecret);
+      if (req.auth?.chatId !== undefined && req.auth?.chatId !== null) {
+        setSentryUser({ id: String(req.auth.chatId) });
+      }
       return next();
     } catch {
       return res.status(401).json({ error: 'invalid_token' });

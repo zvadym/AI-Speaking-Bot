@@ -52,6 +52,16 @@ function optionalInteger(name, fallback, { min = Number.MIN_SAFE_INTEGER, max = 
   return value;
 }
 
+function optionalNumber(name, fallback, { min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY } = {}) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === null || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < min || value > max) {
+    throw new Error(`Invalid number in env var: ${name}`);
+  }
+  return value;
+}
+
 function optionalBoolean(name, fallback = false) {
   const raw = (process.env[name] ?? '').toString().trim().toLowerCase();
   if (!raw) return fallback;
@@ -138,6 +148,11 @@ export const env = {
   adminDashboardPassword: process.env.ADMIN_DASHBOARD_PASSWORD || '',
   internalApiSecret: process.env.INTERNAL_API_SECRET || '',
   openaiApiKey: (process.env.OPENAI_API_KEY || '').toString().trim(),
+  sentryDsn: (process.env.SENTRY_DSN || '').toString().trim(),
+  sentryEnvironment: (process.env.SENTRY_ENVIRONMENT || '').toString().trim(),
+  sentryRelease: (process.env.SENTRY_RELEASE || '').toString().trim(),
+  sentryTracesSampleRate: optionalNumber('SENTRY_TRACES_SAMPLE_RATE', 0.1, { min: 0, max: 1 }),
+  sentryProfileSessionSampleRate: optionalNumber('SENTRY_PROFILE_SESSION_SAMPLE_RATE', 0, { min: 0, max: 1 }),
   topicGenerationModel: (process.env.TOPIC_GENERATION_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4',
   reminderLlmModel: (process.env.REMINDER_LLM_MODEL || 'gpt-5-mini').toString().trim() || 'gpt-5-mini',
   broadcastMaxRecipients: optionalInteger('BROADCAST_MAX_RECIPIENTS', 2000, { min: 1, max: 100000 }),

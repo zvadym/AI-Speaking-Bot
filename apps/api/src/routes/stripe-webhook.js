@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { captureException } from '../sentry.js';
 
 export function createStripeWebhookRouter(ctx, helpers) {
   const router = Router();
@@ -21,6 +22,7 @@ export function createStripeWebhookRouter(ctx, helpers) {
       return res.json({ received: true });
     } catch (err) {
       console.error('Stripe webhook handler failed', err);
+      captureException(err, { tags: { route: 'stripe-webhook' } });
       return res.status(500).json({ error: 'webhook_failed' });
     }
   });

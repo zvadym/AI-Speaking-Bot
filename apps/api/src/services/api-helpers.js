@@ -26,6 +26,7 @@ import {
   parseQueryBoolean
 } from '../shared/normalization.js';
 import { httpError } from '../core/errors.js';
+import { captureException } from '../sentry.js';
 import {
   classifyPermanentTelegramFailure,
   sanitizeErrorText
@@ -1992,6 +1993,7 @@ export function createApiHelpers(ctx) {
       }
     } catch (err) {
       console.error('Plan change webhook failed', err);
+      captureException(err, { tags: { subsystem: 'plan-change-webhook' } });
     }
   }
 

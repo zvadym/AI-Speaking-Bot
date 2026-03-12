@@ -1,5 +1,6 @@
 import { PgBoss } from 'pg-boss';
 import { env } from './env.js';
+import { captureException } from './sentry.js';
 
 export const QUEUE_ONBOARDING_COMPLETE_SCAN = 'onboarding-complete-scan';
 export const QUEUE_ONBOARDING_COMPLETE_SEND = 'onboarding-complete-send';
@@ -48,6 +49,7 @@ function createBoss({ enableScheduling }) {
 
   boss.on('error', (error) => {
     console.error('pg-boss error', { error: error?.message || String(error) });
+    captureException(error, { tags: { subsystem: 'pg-boss' } });
   });
 
   boss.on('warning', (warning) => {
