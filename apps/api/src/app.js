@@ -25,6 +25,7 @@ import {
 import { getApiBoss, stopApiBoss } from './queue.js';
 import {
   normalizeEffectiveTopicAccessTier,
+  normalizeTopicEmoji,
   normalizeTopicAccessTier,
   normalizeTopicId,
   normalizeTopicPayload,
@@ -246,6 +247,39 @@ function normalizeTopicRequestBody(body) {
     avoid_base_json: JSON.stringify(payload.avoid_base),
     starter_questions_target_json: JSON.stringify(payload.starter_questions_target),
     recovery_questions_target_json: JSON.stringify(payload.recovery_questions_target)
+  };
+}
+
+function normalizeTopicSeedList(raw, { maxItems = 6, maxItemLen = 80 } = {}) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .slice(0, maxItems)
+    .map((value) => value.slice(0, maxItemLen));
+}
+
+function normalizeTopicBaseTemplate(raw, fallbackTopicName = '') {
+  if (raw == null) return null;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw makeHttpError(400, 'bad_base_template', 'base_template must be an object');
+  }
+
+  const topicId = normalizeTopicId(raw.topic_id ?? fallbackTopicName);
+  return {
+    topic_id: topicId,
+    emoji: normalizeTopicEmoji(raw.emoji, topicId),
+    title_base:
+      normalizeOptionalText(raw.title_base ?? raw.title, 120) ||
+      normalizeOptionalText(fallbackTopicName, 120) ||
+      topicId,
+    goal_base:
+      normalizeOptionalText(raw.goal_base ?? raw.goal, 280) ||
+      normalizeOptionalText(fallbackTopicName, 280) ||
+      topicId,
+    allowed_base: normalizeTopicSeedList(raw.allowed_base ?? raw.allowed),
+    avoid_base: normalizeTopicSeedList(raw.avoid_base ?? raw.avoid),
+    sort_order: Number.isInteger(Number(raw.sort_order)) ? Number(raw.sort_order) : 0
   };
 }
 
@@ -4090,6 +4124,7 @@ app.post('/admin/topics/generate-draft', requireAdmin, async (req, res) => {
     if (!topicName) return res.status(400).json({ error: 'bad_topic_name' });
     const sortOrder = Number(req.body?.sort_order ?? 0);
     const accessTier = normalizeTopicAccessTier(req.body?.access_tier ?? 'all');
+    const baseTemplate = normalizeTopicBaseTemplate(req.body?.base_template, topicName);
     const draft = await generateTopicDraft({
       apiKey: env.openaiApiKey,
       model: env.topicGenerationModel,
@@ -4097,7 +4132,8 @@ app.post('/admin/topics/generate-draft', requireAdmin, async (req, res) => {
       baseLanguage: meta.base_language || 'en',
       targetLanguage: meta.learning_language || 'en',
       sortOrder: Number.isInteger(sortOrder) ? sortOrder : 0,
-      accessTier
+      accessTier,
+      baseTemplate
     });
     return res.json({
       bot_key: meta.bot_key,

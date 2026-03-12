@@ -9,6 +9,7 @@ process.env.STRIPE_SECRET_KEY ??= 'sk_test_123';
 process.env.STRIPE_WEBHOOK_SECRET ??= 'whsec_123';
 process.env.JWT_SECRET ??= 'jwt_secret_for_tests';
 process.env.ADMIN_DASHBOARD_PASSWORD ??= 'secret-admin';
+process.env.INTERNAL_API_SECRET ??= 'internal-secret';
 
 const [{ createApp }, { pool }, { signSession }] = await Promise.all([
   import('../src/app.js'),
@@ -54,6 +55,22 @@ async function withMockedQuery(handler, run) {
     await run();
   } finally {
     pool.query = originalQuery;
+  }
+}
+
+async function withMockedFetch(handler, run) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = typeof input === 'string' ? input : input?.url || '';
+    if (typeof url === 'string' && url.startsWith('https://api.telegram.org/')) {
+      return handler(url, init);
+    }
+    return originalFetch(input, init);
+  };
+  try {
+    await run();
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 }
 
@@ -403,5 +420,102 @@ test('miniapp mutation endpoints validate input and persist profile changes', as
     });
     assert.equal(level.status, 200);
     assert.equal(level.json.user.bot_key, 'uk-de');
+  });
+});
+
+test('internal topic menu renders only free-visible topics for free users', async () => {
+  const sentMessages = [];
+
+  await withMockedFetch(async (_url, init) => {
+    sentMessages.push(JSON.parse(String(init?.body || '{}')));
+    return new Response(JSON.stringify({
+      ok: true,
+      result: { message_id: 991 }
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }, async () => {
+    await withMockedQuery(async (source, params = []) => {
+      if (source.includes('CASE') && source.includes('FROM users') && source.includes('effective_tier')) {
+        return { rows: [{ effective_tier: 'free' }] };
+      }
+
+      if (source.includes('FROM user_bots') && source.includes('topic_pack_json')) {
+        return { rows: [{ topic_enabled: false, topic_template_id: null, topic_pack_json: null }] };
+      }
+
+      if (source.includes('FROM bot_topic_catalog')) {
+        assert.equal(params[0], 'uk-de');
+        return {
+          rows: [
+            {
+              bot_key: 'uk-de',
+              topic_id: 'all-topic',
+              emoji: '🧩',
+              access_tier: 'all',
+              title_base: 'All Topic',
+              goal_base: 'All goal',
+              allowed_base: ['one', 'two'],
+              avoid_base: ['three', 'four'],
+              starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
+              recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
+              sort_order: 10,
+              created_at: null,
+              updated_at: null
+            },
+            {
+              bot_key: 'uk-de',
+              topic_id: 'free-topic',
+              emoji: '🌱',
+              access_tier: 'free',
+              title_base: 'Free Topic',
+              goal_base: 'Free goal',
+              allowed_base: ['one', 'two'],
+              avoid_base: ['three', 'four'],
+              starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
+              recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
+              sort_order: 20,
+              created_at: null,
+              updated_at: null
+            },
+            {
+              bot_key: 'uk-de',
+              topic_id: 'pro-topic',
+              emoji: '🔒',
+              access_tier: 'pro',
+              title_base: 'Pro Topic',
+              goal_base: 'Pro goal',
+              allowed_base: ['one', 'two'],
+              avoid_base: ['three', 'four'],
+              starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
+              recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
+              sort_order: 30,
+              created_at: null,
+              updated_at: null
+            }
+          ]
+        };
+      }
+
+      throw new Error(`Unexpected query in internal topics menu test: ${source.slice(0, 160)}`);
+    }, async () => {
+      const app = await createApp({ apiBoss: { publish: async () => null } });
+      const response = await request(app, {
+        method: 'POST',
+        path: '/internal/topics/menu',
+        headers: { 'X-Internal-Secret': 'internal-secret' },
+        body: { chat_id: 42, bot_key: 'uk-de' }
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(response.json.ok, true);
+      assert.equal(response.json.count, 2);
+      assert.equal(sentMessages.length, 1);
+      assert.deepEqual(
+        sentMessages[0].reply_markup.inline_keyboard.map((row) => row[0].callback_data),
+        ['topic:all-topic', 'topic:free-topic', 'topic:clear']
+      );
+    });
   });
 });
