@@ -138,6 +138,43 @@ export function captureException(error, context = {}) {
   });
 }
 
+export function captureMessage(message, context = {}) {
+  if (!enabled) {
+    return null;
+  }
+
+  const normalizedMessage = String(message || '').trim();
+  if (!normalizedMessage) {
+    return null;
+  }
+
+  const { tags = {}, extra = {}, level } = context;
+  if (isTestMode()) {
+    testCapturedEvents.push({
+      message: normalizedMessage,
+      tags: { ...tags },
+      extra: { ...extra }
+    });
+  }
+
+  return SentrySdk.withScope((scope) => {
+    for (const [key, value] of Object.entries(tags)) {
+      if (value !== undefined && value !== null && value !== '') {
+        scope.setTag(key, String(value));
+      }
+    }
+    for (const [key, value] of Object.entries(extra)) {
+      if (value !== undefined) {
+        scope.setExtra(key, value);
+      }
+    }
+    if (level) {
+      scope.setLevel(level);
+    }
+    return SentrySdk.captureMessage(normalizedMessage);
+  });
+}
+
 export async function flushSentry(timeout = 2000) {
   if (!enabled) return true;
   return SentrySdk.flush(timeout);

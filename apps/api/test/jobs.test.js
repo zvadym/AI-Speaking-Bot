@@ -337,7 +337,9 @@ test('admin weekly digest reminder falls back to localized templates when LLM is
   assert.match(telegramBodies[0].text, /\b4\b/);
   const events = __getCapturedEventsForTests();
   assert.ok(events.some((event) =>
-    event?.tags?.subsystem === 'weekly-digest'
+    event?.message === 'weekly_digest_llm_fallback'
+    && event?.extra?.chat_id === 55
+    && event?.tags?.subsystem === 'weekly-digest'
     && event?.tags?.reminder_type === 'weekly_digest'
     && event?.tags?.generation_error === 'missing_openai_api_key'
   ));

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'crypto';
 import { env } from './env.js';
 import { pool } from './db.js';
 import { loadBotConfigs } from './bot-configs.js';
-import { captureException } from './sentry.js';
+import { captureMessage } from './sentry.js';
 import { createPublicBotCatalogLookup } from './shared/bot-catalog.js';
 import {
   BROADCAST_MESSAGE_KINDS,
@@ -1296,10 +1296,7 @@ function buildWeeklyDigestFallbackMessage(context, taskType) {
 }
 
 function reportWeeklyDigestFallback(context, generationError, fallback, origin) {
-  const error = new Error('weekly_digest_llm_fallback');
-  error.code = 'weekly_digest_llm_fallback';
-
-  captureException(error, {
+  captureMessage('weekly_digest_llm_fallback', {
     tags: {
       subsystem: 'weekly-digest',
       reminder_type: WEEKLY_DIGEST_TASK_TYPE,
