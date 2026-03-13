@@ -356,29 +356,29 @@ const WINBACK_DEFAULT_LOCALE = {
   reply_cta_voice: 'send a short voice message',
   reply_cta_text: 'write one short sentence',
   d3_fallback_variants: [
-    'Shall we continue? Write one short sentence in {{target_language_label}} — and I will help from there.',
-    'Shall we keep going? Write one short sentence in {{target_language_label}} — and I will help with the rest.'
+    'So, shall we continue? Write one short sentence — and then I will help.',
+    'Ready to keep going? Write one short sentence — and then I will help.'
   ],
   d7_fallback_variants: [
-    'Want to practice again? Write one short sentence in {{target_language_label}} — and I will pick it up from there.',
-    'Want to get back to practice? Write one short sentence in {{target_language_label}} — and I will pick it up.'
+    'Want to practice again? Write one short sentence — and I will pick it up from there.',
+    'Want to get back to practice? Write one short sentence — and I will pick it up.'
   ],
   d14: {
     default: [
-      'No pressure. We can restart from zero anytime. {{reply_cta_label}} in {{target_language_label}} when you want.',
-      'Whenever you are ready, we can start fresh. {{reply_cta_label}} in {{target_language_label}}.'
+      'No pressure. We can restart from zero anytime. {{reply_cta_label}} when you want.',
+      'Whenever you are ready, we can start fresh. {{reply_cta_label}}.'
     ],
     topic: [
-      'Want to come back to "{{topic_title}}"? Write one short sentence in {{target_language_label}} — and we will continue.',
-      'Want to return to "{{topic_title}}"? Write one short sentence in {{target_language_label}} — and we will continue.'
+      'Want to come back to "{{topic_title}}"? Write one short sentence — and we will continue.',
+      'Want to return to "{{topic_title}}"? Write one short sentence — and we will continue.'
     ],
     streak: [
-      'You already built a {{streak_best}}-day streak once. We can start again with one small step. {{reply_cta_label}} in {{target_language_label}}.',
-      'Your best streak was {{streak_best}} days. Restarting can be just one short message. {{reply_cta_label}} in {{target_language_label}}.'
+      'You already built a {{streak_best}}-day streak once. We can start again with one small step. {{reply_cta_label}}.',
+      'Your best streak was {{streak_best}} days. Restarting can be just one short message. {{reply_cta_label}}.'
     ],
     voice: [
-      'A quick voice reply is enough to restart. {{reply_cta_label}} in {{target_language_label}} when you feel like it.',
-      'We can make the comeback easy. {{reply_cta_label}} in {{target_language_label}} and we will go from there.'
+      'A quick voice reply is enough to restart. {{reply_cta_label}} when you feel like it.',
+      'We can make the comeback easy. {{reply_cta_label}} and we will go from there.'
     ]
   }
 };

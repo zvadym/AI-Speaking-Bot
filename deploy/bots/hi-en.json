@@ -135,29 +135,29 @@
         "reply_cta_voice": "ek chhota voice message bhejo",
         "reply_cta_text": "ek chhota sentence likho",
         "d3_fallback_variants": [
-          "तो, आगे बढ़ें? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — आगे मैं मदद करूँगी।",
-          "चलो, जारी रखें? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — आगे मैं मदद करूँगी।"
+          "तो, आगे बढ़ें? एक छोटा-सा वाक्य लिखो — आगे मैं मदद करूँगी।",
+          "चलो, जारी रखें? एक छोटा-सा वाक्य लिखो — आगे मैं मदद करूँगी।"
         ],
         "d7_fallback_variants": [
-          "फिर से थोड़ा अभ्यास करना चाहोगे? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — आगे मैं संभाल लूँगी।",
-          "अभ्यास पर वापस आना चाहोगे? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — आगे मैं संभाल लूँगी।"
+          "फिर से थोड़ा अभ्यास करना चाहोगे? एक छोटा-सा वाक्य लिखो — आगे मैं संभाल लूँगी।",
+          "अभ्यास पर वापस आना चाहोगे? एक छोटा-सा वाक्य लिखो — आगे मैं संभाल लूँगी।"
         ],
         "d14": {
           "default": [
-            "Bilkul pressure nahi. Jab chaho zero se restart kar sakte hain. {{reply_cta_label}} {{target_language_label}} me bhejo.",
-            "Jab ready ho, fresh start karte hain. {{reply_cta_label}} {{target_language_label}} me bhejo."
+            "Bilkul pressure nahi. Jab chaho zero se restart kar sakte hain. {{reply_cta_label}}.",
+            "Jab ready ho, fresh start karte hain. {{reply_cta_label}}."
           ],
           "topic": [
-            "क्या तुम फिर से “{{topic_title}}” विषय पर लौटना चाहोगे? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — और आगे बढ़ते हैं।",
-            "क्या तुम “{{topic_title}}” विषय पर वापस आना चाहोगे? {{target_language_label}} में एक छोटा-सा वाक्य लिखो — और आगे बढ़ते हैं।"
+            "क्या तुम फिर से “{{topic_title}}” विषय पर लौटना चाहोगे? एक छोटा-सा वाक्य लिखो — और आगे बढ़ते हैं।",
+            "क्या तुम “{{topic_title}}” विषय पर वापस आना चाहोगे? एक छोटा-सा वाक्य लिखो — और आगे बढ़ते हैं।"
           ],
           "streak": [
-            "Tum pehle {{streak_best}} din ki streak bana chuke ho. Ek chhote step se phir se shuru kar sakte hain. {{reply_cta_label}} {{target_language_label}} me bhejo.",
-            "Tumhari best streak {{streak_best}} din ki thi. Wapas aana sirf ek chhote message se shuru ho sakta hai. {{reply_cta_label}} {{target_language_label}} me bhejo."
+            "Tum pehle {{streak_best}} din ki streak bana chuke ho. Ek chhote step se phir se shuru kar sakte hain. {{reply_cta_label}}.",
+            "Tumhari best streak {{streak_best}} din ki thi. Wapas aana sirf ek chhote message se shuru ho sakta hai. {{reply_cta_label}}."
           ],
           "voice": [
-            "Restart ke liye ek chhota voice message kaafi hai. Jab man ho {{reply_cta_label}} {{target_language_label}} me bhejo.",
-            "Comeback ko easy banate hain. {{reply_cta_label}} {{target_language_label}} me bhejo, baaki main dekh lunga."
+            "Restart ke liye ek chhota voice message kaafi hai. Jab man ho {{reply_cta_label}}.",
+            "Comeback ko easy banate hain. {{reply_cta_label}}, baaki main dekh lunga."
           ]
         }
       },

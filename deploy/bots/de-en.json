@@ -135,29 +135,29 @@
         "reply_cta_voice": "schick eine kurze Sprachnachricht",
         "reply_cta_text": "schreib einen kurzen Satz",
         "d3_fallback_variants": [
-          "Na, machen wir weiter? Schreib einen kurzen Satz auf {{target_language_label}} — den Rest übernehme ich.",
-          "Na, weiter? Schreib einen kurzen Satz auf {{target_language_label}} — ich helfe dir dann."
+          "Na, machen wir weiter? Schreib einen kurzen Satz — den Rest übernehme ich.",
+          "Na, weiter? Schreib einen kurzen Satz — ich helfe dir dann."
         ],
         "d7_fallback_variants": [
-          "Willst du wieder üben? Schreib einen kurzen Satz auf {{target_language_label}} — und ich knüpfe daran an.",
-          "Willst du zurück zur Praxis? Schreib einen kurzen Satz auf {{target_language_label}} — und ich knüpfe daran an."
+          "Willst du wieder üben? Schreib einen kurzen Satz — und ich knüpfe daran an.",
+          "Willst du zurück zur Praxis? Schreib einen kurzen Satz — und ich knüpfe daran an."
         ],
         "d14": {
           "default": [
-            "Kein Druck. Wir können jederzeit wieder bei null anfangen. {{reply_cta_label}} auf {{target_language_label}}, wenn du magst.",
-            "Wenn du bereit bist, starten wir einfach neu. {{reply_cta_label}} auf {{target_language_label}}."
+            "Kein Druck. Wir können jederzeit wieder bei null anfangen. {{reply_cta_label}}, wenn du magst.",
+            "Wenn du bereit bist, starten wir einfach neu. {{reply_cta_label}}."
           ],
           "topic": [
-            "Willst du zum Thema „{{topic_title}}“ zurückkehren? Schreib einen kurzen Satz auf {{target_language_label}} — und wir machen weiter.",
-            "Willst du wieder zu „{{topic_title}}“ zurück? Schreib einen kurzen Satz auf {{target_language_label}} — und wir machen weiter."
+            "Willst du zum Thema „{{topic_title}}“ zurückkehren? Schreib einen kurzen Satz — und wir machen weiter.",
+            "Willst du wieder zu „{{topic_title}}“ zurück? Schreib einen kurzen Satz — und wir machen weiter."
           ],
           "streak": [
-            "Du hattest schon einmal eine Serie von {{streak_best}} Tagen. Wir können mit einem kleinen Schritt neu anfangen. {{reply_cta_label}} auf {{target_language_label}}.",
-            "Deine beste Serie waren {{streak_best}} Tage. Der Neustart kann mit nur einer kurzen Nachricht beginnen. {{reply_cta_label}} auf {{target_language_label}}."
+            "Du hattest schon einmal eine Serie von {{streak_best}} Tagen. Wir können mit einem kleinen Schritt neu anfangen. {{reply_cta_label}}.",
+            "Deine beste Serie waren {{streak_best}} Tage. Der Neustart kann mit nur einer kurzen Nachricht beginnen. {{reply_cta_label}}."
           ],
           "voice": [
-            "Für den Wiedereinstieg reicht eine kurze Sprachnachricht. {{reply_cta_label}} auf {{target_language_label}}, wenn du magst.",
-            "Wir machen das Comeback leicht. {{reply_cta_label}} auf {{target_language_label}}, und ich übernehme von dort."
+            "Für den Wiedereinstieg reicht eine kurze Sprachnachricht. {{reply_cta_label}}, wenn du magst.",
+            "Wir machen das Comeback leicht. {{reply_cta_label}}, und ich übernehme von dort."
           ]
         }
       },
