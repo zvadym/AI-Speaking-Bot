@@ -48,7 +48,7 @@ The repo already has most of the building blocks we need:
 
 - `user_bots.last_seen_at`, `is_active`, `level`, `reply_mode`, topic state, and nudge flags exist.
 - `user_progress` already stores `streak_current`, `streak_best`, `streak_last_day`, and XP totals.
-- `scheduled_task_dispatches` already exists and is currently used for onboarding completion sends.
+- `scheduled_task_dispatches` already exists and is currently used for onboarding completion, day1 return, free-limit, and win-back sends.
 - `broadcast_campaigns` and `broadcast_recipients` already support targeted sends with preview.
 - `action_events` already tracks several funnel and behavior milestones.
 
@@ -121,16 +121,22 @@ Message style:
 
 CTA:
 
-- Ask for one simple reply in the target language.
+- Ask for one short sentence or short voice note.
 
 Example copy:
 
-> Ready for a 3-minute practice? Send one sentence about your day in Italian.
+> Ready for a 2-minute practice? Write one short sentence.
 
 Notes:
 
 - This is one of the highest-value reminders in the system.
 - Existing `day1_return` analytics can help measure whether this is working.
+- Current v1 implementation is live:
+  - sent once per `chat_id + bot_key`
+  - anchored to `onboarding_complete.sent_at`
+  - sent after roughly 22 hours without return activity
+  - personalized only by `reply_mode` and optional active topic title
+  - does not quote prior messages and does not mention the target language explicitly
 
 ### 2. Continue Conversation
 
@@ -290,9 +296,10 @@ The scheduler should think in segments, not in one global reminder rule.
 
 ### Day 1 Return
 
-- Had onboarding completion or meaningful first session.
-- No user activity after that moment.
+- `onboarding_complete` was already sent.
+- No user activity after that send.
 - First reminder only.
+- Current implementation sends after roughly 22 hours of inactivity from the onboarding send time.
 
 ### Continue Conversation
 
@@ -361,9 +368,20 @@ Recommended structure:
 {
   "locale": {
     "notifications": {
-      "day1_return": [
-        "Ready for a 3-minute practice? Send one sentence about your day in Italian."
-      ],
+      "day1_return": {
+        "text_variants": [
+          "Ready for a 2-minute practice? Write one short sentence."
+        ],
+        "voice_variants": [
+          "Ready for a quick practice? Send a short voice note."
+        ],
+        "topic_text_variants": [
+          "Want a quick restart with {{topic_title}}? Write one short sentence."
+        ],
+        "topic_voice_variants": [
+          "Want a quick restart with {{topic_title}}? Send a short voice note."
+        ]
+      },
       "streak_saver": [
         "Your 4-day streak is still alive. Send one sentence now and keep it going 🔥"
       ],
@@ -517,7 +535,7 @@ Broadcast best practices:
 
 ### Phase 2: First Automated Nudges
 
-- Implement `day1_return`.
+- `day1_return` is implemented.
 - Implement `streak_saver`.
 - Implement `continue_conversation`.
 - Add basic cooldown logic and one-message-per-day rule.
@@ -531,14 +549,13 @@ Broadcast best practices:
 ### Phase 4: Retention Expansion
 
 - Add weekly digest.
-- Add win-back D3/D7/D14 sequence.
+- Win-back D3/D7/D14 is implemented.
 - Add attribution logging and experiment holdouts.
 
 ## Recommended First Scope
 
 If we want the smallest high-value scope, build this first:
 
-- `day1_return`
 - `streak_saver`
 - `continue_conversation`
 - Global anti-spam rules

@@ -1133,7 +1133,7 @@
         <div>
           <div class="panel-kicker">Messaging</div>
           <h2 class="panel-title">Reminder tests</h2>
-          <p class="panel-sub">Send an immediate D3, D7, D14, or 50% free limit reminder test to one selected user on one selected bot.</p>
+          <p class="panel-sub">Send an immediate weekly digest, D3, D7, D14, or 50% free limit reminder test to one selected user on one selected bot.</p>
         </div>
         <div class="panel-actions">
           <span class="status-pill" :class="{ warn: automatedMessageTestModeActive }">
@@ -1199,6 +1199,7 @@
           <label class="field">
             <span>Reminder type</span>
             <select v-model="reminderTestType">
+              <option value="weekly_digest">Weekly digest</option>
               <option value="d3">D3</option>
               <option value="d7">D7</option>
               <option value="d14">D14</option>
@@ -1989,17 +1990,19 @@ const notificationSeriesPalette = [
   'rgba(33, 124, 146, 0.88)',
   'rgba(174, 43, 40, 0.86)',
   'rgba(117, 156, 56, 0.88)',
-  'rgba(140, 87, 45, 0.88)'
+  'rgba(140, 87, 45, 0.88)',
+  'rgba(86, 104, 62, 0.88)'
 ];
 const notificationTypeMeta = {
   onboarding_complete: { label: 'Onboarding complete', color: notificationSeriesPalette[0], order: 0 },
-  free_limit_50: { label: '50% free limit', color: notificationSeriesPalette[1], order: 1 },
-  winback_d3: { label: 'Winback D3', color: notificationSeriesPalette[2], order: 2 },
-  winback_d7: { label: 'Winback D7', color: notificationSeriesPalette[3], order: 3 },
-  winback_d14: { label: 'Winback D14', color: notificationSeriesPalette[4], order: 4 },
-  broadcast_text: { label: 'Broadcast text', color: notificationSeriesPalette[5], order: 5 },
-  broadcast_photo: { label: 'Broadcast photo', color: notificationSeriesPalette[6], order: 6 },
-  broadcast_video: { label: 'Broadcast video', color: notificationSeriesPalette[7], order: 7 }
+  weekly_digest: { label: 'Weekly digest', color: notificationSeriesPalette[1], order: 1 },
+  free_limit_50: { label: '50% free limit', color: notificationSeriesPalette[2], order: 2 },
+  winback_d3: { label: 'Winback D3', color: notificationSeriesPalette[3], order: 3 },
+  winback_d7: { label: 'Winback D7', color: notificationSeriesPalette[4], order: 4 },
+  winback_d14: { label: 'Winback D14', color: notificationSeriesPalette[5], order: 5 },
+  broadcast_text: { label: 'Broadcast text', color: notificationSeriesPalette[6], order: 6 },
+  broadcast_photo: { label: 'Broadcast photo', color: notificationSeriesPalette[7], order: 7 },
+  broadcast_video: { label: 'Broadcast video', color: notificationSeriesPalette[8], order: 8 }
 };
 const actionSeriesConfig = [
   { key: 'start', label: 'start', color: 'rgba(31, 107, 99, 0.88)' },
@@ -2284,7 +2287,9 @@ const reminderTestInfo = ref('');
 const reminderTestResult = ref(null);
 
 function reminderTestTypeLabel(value) {
-  return value === 'free_limit_50' ? '50% free limit' : String(value || '').toUpperCase();
+  if (value === 'weekly_digest') return 'Weekly digest';
+  if (value === 'free_limit_50') return '50% free limit';
+  return String(value || '').toUpperCase();
 }
 
 const broadcastMediaAccept = computed(() => (broadcast.messageKind === 'photo' ? 'image/*' : 'video/*'));
@@ -2686,7 +2691,7 @@ const canSendReminderTest = computed(() => {
   if (!password.value) return false;
   if (!reminderTestSelectedChatId.value) return false;
   if (!normalizeBotKeyValue(reminderTestBotKey.value) || !reminderTestBotExists.value) return false;
-  if (!['d3', 'd7', 'd14', 'free_limit_50'].includes(reminderTestType.value)) return false;
+  if (!['weekly_digest', 'd3', 'd7', 'd14', 'free_limit_50'].includes(reminderTestType.value)) return false;
   if (reminderTestConfirm.value.trim().toUpperCase() !== 'TEST') return false;
   if (reminderTestAllowlistBlocked.value) return false;
   return true;

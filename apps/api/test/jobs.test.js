@@ -18,7 +18,9 @@ const [{ pool }, jobsModule] = await Promise.all([
 
 const {
   sendAdminTestDay1ReturnReminder,
-  sendDay1ReturnReminderCore
+  sendAdminTestWeeklyDigestReminder,
+  sendDay1ReturnReminderCore,
+  sendWeeklyDigestReminderCore
 } = jobsModule;
 
 async function withMockedQuery(handler, run) {
@@ -244,6 +246,135 @@ test('automated day1 return skips when user was active after onboarding', async 
     }, async () => {
       const result = await sendDay1ReturnReminderCore({
         chatId: 91,
+        botKey: 'en-de'
+      });
+
+      assert.equal(result, null);
+    });
+  });
+
+  assert.equal(telegramCalled, false);
+});
+
+test('admin weekly digest reminder falls back to localized templates when LLM is unavailable', async () => {
+  const telegramBodies = [];
+
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('COALESCE(up.streak_current, 0)::int AS streak_current') && source.includes('COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp')) {
+      assert.equal(params[0], 55);
+      assert.equal(params[1], 'en-de');
+      return {
+        rows: [{
+          chat_id: 55,
+          first_name: 'Nina',
+          username: 'nina',
+          inactive_reason: null,
+          bot_key: 'en-de',
+          is_active: true,
+          level: 'a2',
+          reply_mode: 'text',
+          topic_enabled: true,
+          topic_pack_json: { title: 'coffee chat' },
+          last_seen_at: '2026-03-09T10:00:00.000Z',
+          xp_total: 480,
+          streak_current: 3,
+          streak_best: 5,
+          profile_summary: 'Enjoys travel topics',
+          short_summary: 'Prefers short replies',
+          onboarding_sent_at: '2026-03-01T09:00:00.000Z',
+          weekly_xp: 118,
+          practice_days: 4
+        }]
+      };
+    }
+
+    if (source.includes('INSERT INTO scheduled_task_dispatches (')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    if (source.includes('UPDATE scheduled_task_dispatches')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    if (source.includes('UPDATE user_bots')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    if (source.includes('UPDATE users')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    throw new Error(`Unexpected query in admin weekly digest test: ${source.slice(0, 200)}`);
+  }, async () => {
+    await withMockedFetch(async (_url, init) => {
+      telegramBodies.push(JSON.parse(init.body));
+      return okTelegramResponse(904);
+    }, async () => {
+      const result = await sendAdminTestWeeklyDigestReminder({
+        chatId: 55,
+        botKey: 'en-de'
+      });
+
+      assert.equal(result.ok, true);
+      assert.equal(result.reminder_type, 'weekly_digest');
+      assert.equal(result.telegram_message_id, 904);
+      assert.match(result.message_text, /\b118\b/);
+      assert.match(result.message_text, /\b4\b/);
+      assert.match(result.message_text, /coffee chat/i);
+    });
+  });
+
+  assert.equal(telegramBodies.length, 1);
+  assert.match(telegramBodies[0].text, /\b118\b/);
+  assert.match(telegramBodies[0].text, /\b4\b/);
+});
+
+test('automated weekly digest skips users active in the last 8 hours', async () => {
+  let telegramCalled = false;
+
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('COALESCE(up.streak_current, 0)::int AS streak_current') && source.includes('COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp')) {
+      return {
+        rows: [{
+          chat_id: 88,
+          first_name: 'Lena',
+          username: 'lena',
+          inactive_reason: null,
+          bot_key: 'en-de',
+          is_active: true,
+          level: 'b1',
+          reply_mode: 'text',
+          topic_enabled: false,
+          topic_pack_json: null,
+          last_seen_at: new Date(Date.now() - (2 * 60 * 60 * 1000)).toISOString(),
+          xp_total: 620,
+          streak_current: 2,
+          streak_best: 7,
+          profile_summary: '',
+          short_summary: '',
+          onboarding_sent_at: '2026-03-01T09:00:00.000Z',
+          weekly_xp: 76,
+          practice_days: 3
+        }]
+      };
+    }
+
+    if (source.includes('INSERT INTO scheduled_task_dispatches (')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    if (source.includes('UPDATE scheduled_task_dispatches')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    throw new Error(`Unexpected query in automated weekly digest skip test: ${source.slice(0, 200)}`);
+  }, async () => {
+    await withMockedFetch(async () => {
+      telegramCalled = true;
+      return okTelegramResponse(905);
+    }, async () => {
+      const result = await sendWeeklyDigestReminderCore({
+        chatId: 88,
         botKey: 'en-de'
       });
 

@@ -33,6 +33,8 @@ import {
 import {
   QUEUE_DAY1_RETURN_SCAN,
   QUEUE_DAY1_RETURN_SEND,
+  QUEUE_WEEKLY_DIGEST_SCAN,
+  QUEUE_WEEKLY_DIGEST_SEND,
   QUEUE_FREE_LIMIT_HALF_SCAN,
   QUEUE_FREE_LIMIT_HALF_SEND,
   QUEUE_BROADCAST_CAMPAIGN_ENQUEUE,
@@ -56,6 +58,15 @@ const DAY1_RETURN_IDLE_HOURS = 22;
 const DAY1_RETURN_SCAN_LIMIT = 500;
 const DAY1_RETURN_MESSAGE_MAX_LEN = 180;
 const DAY1_RETURN_MESSAGE_MAX_SENTENCES = 2;
+const WEEKLY_DIGEST_TASK_TYPE = 'weekly_digest';
+const WEEKLY_DIGEST_TEST_TASK_TYPE = 'weekly_digest_test';
+const WEEKLY_DIGEST_SCAN_LIMIT = 500;
+const WEEKLY_DIGEST_MESSAGE_MAX_LEN = 220;
+const WEEKLY_DIGEST_MESSAGE_MAX_SENTENCES = 2;
+const WEEKLY_DIGEST_MIN_PRACTICE_DAYS = 2;
+const WEEKLY_DIGEST_RECENT_ACTIVITY_HOURS = 8;
+const WEEKLY_DIGEST_SCAN_WEEKDAY = 1;
+const WEEKLY_DIGEST_SCAN_HOUR_UTC = 16;
 const FREE_LIMIT_HALF_TASK_TYPE = 'free_limit_50';
 const FREE_LIMIT_HALF_TEST_TASK_TYPE = 'free_limit_50_test';
 const FREE_LIMIT_HALF_SCAN_LIMIT = 500;
@@ -68,6 +79,7 @@ const WINBACK_ADMIN_TEST_ORIGIN = 'admin_test';
 const WINBACK_AUTOMATED_ORIGIN = 'automated';
 const AUTOMATED_BEHAVIORAL_SUPPRESSION_TASK_TYPES = [
   DAY1_RETURN_TASK_TYPE,
+  WEEKLY_DIGEST_TASK_TYPE,
   'winback_d3',
   'winback_d7',
   'winback_d14',
@@ -184,6 +196,10 @@ function resolveDay1ReturnTaskType(origin = WINBACK_AUTOMATED_ORIGIN) {
   return origin === WINBACK_ADMIN_TEST_ORIGIN ? DAY1_RETURN_TEST_TASK_TYPE : DAY1_RETURN_TASK_TYPE;
 }
 
+function resolveWeeklyDigestTaskType(origin = WINBACK_AUTOMATED_ORIGIN) {
+  return origin === WINBACK_ADMIN_TEST_ORIGIN ? WEEKLY_DIGEST_TEST_TASK_TYPE : WEEKLY_DIGEST_TASK_TYPE;
+}
+
 function resolveWinbackStageConfig(reminderType) {
   const normalized = parseWinbackReminderType(reminderType);
   if (!normalized) return null;
@@ -217,6 +233,61 @@ function applyTemplateSlots(template, slots = {}) {
     const value = slots[key];
     return value === undefined || value === null ? '' : String(value);
   });
+}
+
+function addUtcDays(dateLike, days) {
+  const date = dateLike instanceof Date ? new Date(dateLike) : new Date(dateLike);
+  if (!Number.isFinite(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() + Number(days || 0));
+  return date;
+}
+
+function startOfUtcIsoWeek(dateLike) {
+  const date = dateLike instanceof Date ? new Date(dateLike) : new Date(dateLike);
+  if (!Number.isFinite(date.getTime())) return null;
+  const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = start.getUTCDay() || 7;
+  start.setUTCDate(start.getUTCDate() - (day - 1));
+  return start;
+}
+
+function buildIsoWeekParts(dateLike) {
+  const date = dateLike instanceof Date ? new Date(dateLike) : new Date(dateLike);
+  if (!Number.isFinite(date.getTime())) return null;
+
+  const day = date.getUTCDay() || 7;
+  const thursday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  thursday.setUTCDate(thursday.getUTCDate() + (4 - day));
+  const isoYear = thursday.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+  const week = Math.ceil((((thursday.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+
+  return { isoYear, isoWeek: week };
+}
+
+function buildWeeklyDigestScheduleKey(dateLike) {
+  const parts = buildIsoWeekParts(dateLike);
+  if (!parts) return null;
+  return `${parts.isoYear}-W${String(parts.isoWeek).padStart(2, '0')}`;
+}
+
+function currentWeeklyDigestWindow(now = new Date()) {
+  const currentWeekStart = startOfUtcIsoWeek(now);
+  if (!(currentWeekStart instanceof Date) || !Number.isFinite(currentWeekStart.getTime())) return null;
+
+  const weekStart = addUtcDays(currentWeekStart, -7);
+  const weekEnd = currentWeekStart;
+  const scheduleKey = buildWeeklyDigestScheduleKey(weekStart);
+  if (!(weekStart instanceof Date) || !(weekEnd instanceof Date) || !scheduleKey) return null;
+
+  return { weekStart, weekEnd, scheduleKey };
+}
+
+function isWeeklyDigestScanWindow(now = new Date()) {
+  const date = now instanceof Date ? now : new Date(now);
+  if (!Number.isFinite(date.getTime())) return false;
+  const weekday = date.getUTCDay() || 7;
+  return weekday === WEEKLY_DIGEST_SCAN_WEEKDAY && date.getUTCHours() === WEEKLY_DIGEST_SCAN_HOUR_UTC;
 }
 
 function normalizeConversationText(raw, maxLen = 280) {
@@ -428,6 +499,23 @@ const DAY1_RETURN_DEFAULT_LOCALE = {
   ]
 };
 
+const WEEKLY_DIGEST_DEFAULT_LOCALE = {
+  reply_cta_voice: 'send a short voice note',
+  reply_cta_text: 'write one short sentence',
+  default_variants: [
+    'Last week: {{practice_days}} practice days, {{weekly_xp}} XP. {{reply_cta_label}} and let’s keep it going.',
+    'You put in {{practice_days}} practice days and earned {{weekly_xp}} XP last week. {{reply_cta_label}} for a quick next step.'
+  ],
+  topic_variants: [
+    'Last week: {{practice_days}} practice days, {{weekly_xp}} XP. Quick challenge on {{topic_title}}: {{reply_cta_label}}.',
+    'You earned {{weekly_xp}} XP across {{practice_days}} practice days last week. Continue with {{topic_title}} by {{reply_cta_label}}.'
+  ],
+  streak_variants: [
+    'Last week: {{practice_days}} practice days, {{weekly_xp}} XP, and your streak is at {{streak_current}}. {{reply_cta_label}} to build on it.',
+    'You kept momentum last week: {{practice_days}} practice days, {{weekly_xp}} XP, streak {{streak_current}}. {{reply_cta_label}} and we’ll continue.'
+  ]
+};
+
 function normalizeWinbackVariantArray(raw, fallback) {
   const next = Array.isArray(raw)
     ? raw
@@ -439,6 +527,16 @@ function normalizeWinbackVariantArray(raw, fallback) {
 }
 
 function normalizeDay1ReturnVariantArray(raw, fallback) {
+  const next = Array.isArray(raw)
+    ? raw
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+        .slice(0, 12)
+    : [];
+  return next.length ? next : fallback.slice();
+}
+
+function normalizeWeeklyDigestVariantArray(raw, fallback) {
   const next = Array.isArray(raw)
     ? raw
         .map((value) => String(value ?? '').trim())
@@ -460,6 +558,24 @@ function resolveDay1ReturnLocale(botKeyRaw) {
     voice_variants: normalizeDay1ReturnVariantArray(raw.voice_variants, DAY1_RETURN_DEFAULT_LOCALE.voice_variants),
     topic_text_variants: normalizeDay1ReturnVariantArray(raw.topic_text_variants, DAY1_RETURN_DEFAULT_LOCALE.topic_text_variants),
     topic_voice_variants: normalizeDay1ReturnVariantArray(raw.topic_voice_variants, DAY1_RETURN_DEFAULT_LOCALE.topic_voice_variants)
+  };
+}
+
+function resolveWeeklyDigestLocale(botKeyRaw) {
+  const locale = getBotLocale(botKeyRaw);
+  const notifications = locale.notifications && typeof locale.notifications === 'object' ? locale.notifications : {};
+  const raw = notifications.weekly_digest && typeof notifications.weekly_digest === 'object'
+    ? notifications.weekly_digest
+    : {};
+
+  return {
+    reply_cta_voice: String(raw.reply_cta_voice || WEEKLY_DIGEST_DEFAULT_LOCALE.reply_cta_voice).trim()
+      || WEEKLY_DIGEST_DEFAULT_LOCALE.reply_cta_voice,
+    reply_cta_text: String(raw.reply_cta_text || WEEKLY_DIGEST_DEFAULT_LOCALE.reply_cta_text).trim()
+      || WEEKLY_DIGEST_DEFAULT_LOCALE.reply_cta_text,
+    default_variants: normalizeWeeklyDigestVariantArray(raw.default_variants, WEEKLY_DIGEST_DEFAULT_LOCALE.default_variants),
+    topic_variants: normalizeWeeklyDigestVariantArray(raw.topic_variants, WEEKLY_DIGEST_DEFAULT_LOCALE.topic_variants),
+    streak_variants: normalizeWeeklyDigestVariantArray(raw.streak_variants, WEEKLY_DIGEST_DEFAULT_LOCALE.streak_variants)
   };
 }
 
@@ -914,6 +1030,608 @@ function buildDay1ReturnMessage(context, taskType) {
       ? (context.replyMode === WINBACK_REPLY_MODE_VOICE ? 'topic_voice_variants' : 'topic_text_variants')
       : (context.replyMode === WINBACK_REPLY_MODE_VOICE ? 'voice_variants' : 'text_variants')
   };
+}
+
+async function scanEligibleWeeklyDigestUsers(now = new Date()) {
+  if (!isWeeklyDigestScanWindow(now)) {
+    return [];
+  }
+
+  const window = currentWeeklyDigestWindow(now);
+  if (!window) {
+    return [];
+  }
+
+  const testChatIds = automatedMessageTestChatIdsSqlParam();
+  const { rows } = await pool.query(
+    `SELECT
+       ub.chat_id,
+       ub.bot_key
+     FROM user_bots ub
+     JOIN users u
+       ON u.chat_id = ub.chat_id
+     JOIN LATERAL (
+       SELECT
+         COALESCE(SUM(e.xp_delta), 0)::int AS weekly_xp,
+         (COUNT(DISTINCT ((e.occurred_at AT TIME ZONE 'UTC')::date))
+           FILTER (WHERE COALESCE((e.meta->>'practice')::boolean, false)))::int AS practice_days
+       FROM xp_events e
+       WHERE e.chat_id = ub.chat_id
+         AND e.bot_key = ub.bot_key
+         AND e.occurred_at >= $1::timestamptz
+         AND e.occurred_at < $2::timestamptz
+     ) week_stats ON true
+     WHERE COALESCE(ub.is_active, true) = true
+       AND u.inactive_reason IS NULL
+       AND ub.last_seen_at >= NOW() - interval '7 days'
+       AND ub.last_seen_at <= NOW() - ($4::int * interval '1 hour')
+       AND week_stats.weekly_xp > 0
+       AND week_stats.practice_days >= $3::int
+       AND ($6::bigint[] IS NULL OR ub.chat_id = ANY($6::bigint[]))
+       AND EXISTS (
+         SELECT 1
+         FROM scheduled_task_dispatches onboarding
+         WHERE onboarding.task_type = $7::text
+           AND onboarding.schedule_key = $8::text
+           AND onboarding.bot_key = ub.bot_key
+           AND onboarding.chat_id = ub.chat_id
+           AND onboarding.status = 'sent'
+           AND onboarding.sent_at IS NOT NULL
+       )
+       AND NOT EXISTS (
+         SELECT 1
+         FROM scheduled_task_dispatches std
+         WHERE std.task_type = $5::text
+           AND std.schedule_key = $9::text
+           AND std.bot_key = ub.bot_key
+           AND std.chat_id = ub.chat_id
+           AND std.status = 'sent'
+           AND std.sent_at IS NOT NULL
+       )
+     ORDER BY ub.last_seen_at DESC, ub.chat_id ASC, ub.bot_key ASC
+     LIMIT $10::int`,
+    [
+      window.weekStart.toISOString(),
+      window.weekEnd.toISOString(),
+      WEEKLY_DIGEST_MIN_PRACTICE_DAYS,
+      WEEKLY_DIGEST_RECENT_ACTIVITY_HOURS,
+      WEEKLY_DIGEST_TASK_TYPE,
+      testChatIds,
+      ONBOARDING_TASK_TYPE,
+      ONBOARDING_SCHEDULE_KEY,
+      window.scheduleKey,
+      WEEKLY_DIGEST_SCAN_LIMIT
+    ]
+  );
+
+  return rows.map((row) => ({
+    chatId: Number(row.chat_id),
+    botKey: normalizeBotKey(row.bot_key),
+    scheduleKey: window.scheduleKey,
+    taskType: WEEKLY_DIGEST_TASK_TYPE
+  })).filter((row) => Number.isFinite(row.chatId) && row.chatId > 0 && row.botKey && row.scheduleKey);
+}
+
+async function loadWeeklyDigestContext(chatId, botKeyRaw, {
+  scheduleKey = null,
+  origin = WINBACK_AUTOMATED_ORIGIN,
+  now = new Date()
+} = {}) {
+  const botKey = normalizeBotKey(botKeyRaw);
+  const normalizedChatId = Number(chatId);
+  const window = currentWeeklyDigestWindow(now);
+  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !botKey || !window) return null;
+
+  const { rows } = await pool.query(
+    `SELECT
+       u.chat_id,
+       u.first_name,
+       u.username,
+       u.inactive_reason,
+       ub.bot_key,
+       COALESCE(ub.is_active, true) AS is_active,
+       ub.level,
+       ub.reply_mode,
+       COALESCE(ub.topic_enabled, false) AS topic_enabled,
+       ub.topic_pack_json,
+       ub.last_seen_at,
+       COALESCE(up.xp_total, 0)::int AS xp_total,
+       COALESCE(up.streak_current, 0)::int AS streak_current,
+       COALESCE(up.streak_best, 0)::int AS streak_best,
+       COALESCE(us.profile_summary, '') AS profile_summary,
+       COALESCE(us.short_summary, '') AS short_summary,
+       onboarding.sent_at AS onboarding_sent_at,
+       COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp,
+       COALESCE(week_stats.practice_days, 0)::int AS practice_days
+     FROM users u
+     JOIN user_bots ub
+       ON ub.chat_id = u.chat_id
+     LEFT JOIN user_progress up
+       ON up.chat_id = ub.chat_id
+      AND up.bot_key = ub.bot_key
+     LEFT JOIN user_summaries us
+       ON us.chat_id = ub.chat_id
+      AND us.bot_key = ub.bot_key
+     LEFT JOIN LATERAL (
+       SELECT sent_at
+       FROM scheduled_task_dispatches
+       WHERE chat_id = ub.chat_id
+         AND bot_key = ub.bot_key
+         AND task_type = $3::text
+         AND schedule_key = $4::text
+         AND status = 'sent'
+         AND sent_at IS NOT NULL
+       ORDER BY sent_at ASC
+       LIMIT 1
+     ) onboarding ON true
+     LEFT JOIN LATERAL (
+       SELECT
+         COALESCE(SUM(e.xp_delta), 0)::int AS weekly_xp,
+         (COUNT(DISTINCT ((e.occurred_at AT TIME ZONE 'UTC')::date))
+           FILTER (WHERE COALESCE((e.meta->>'practice')::boolean, false)))::int AS practice_days
+       FROM xp_events e
+       WHERE e.chat_id = ub.chat_id
+         AND e.bot_key = ub.bot_key
+         AND e.occurred_at >= $5::timestamptz
+         AND e.occurred_at < $6::timestamptz
+     ) week_stats ON true
+     WHERE u.chat_id = $1::bigint
+       AND ub.bot_key = $2::text
+     LIMIT 1`,
+    [
+      normalizedChatId,
+      botKey,
+      ONBOARDING_TASK_TYPE,
+      ONBOARDING_SCHEDULE_KEY,
+      window.weekStart.toISOString(),
+      window.weekEnd.toISOString()
+    ]
+  );
+
+  const row = rows[0];
+  if (!row) return null;
+
+  const locale = getBotLocale(botKey);
+  const weeklyDigestLocale = resolveWeeklyDigestLocale(botKey);
+  const effectiveScheduleKey = origin === WINBACK_ADMIN_TEST_ORIGIN
+    ? (String(scheduleKey || '').trim() || buildManualTestScheduleKey())
+    : window.scheduleKey;
+
+  return {
+    chatId: normalizedChatId,
+    botKey,
+    firstName: normalizeOptionalText(row.first_name, 80) || '',
+    username: normalizeOptionalText(row.username, 80) || '',
+    inactiveReason: normalizeOptionalText(row.inactive_reason, 80),
+    isActive: row.is_active === true || row.is_active === 1 || row.is_active === 't',
+    level: normalizeOptionalText(row.level, 16) || 'a1',
+    replyMode: normalizeReplyMode(row.reply_mode),
+    topicEnabled: row.topic_enabled === true || row.topic_enabled === 1 || row.topic_enabled === 't',
+    topicPackJson: normalizeTopicPack(row.topic_pack_json),
+    topicTitle: extractTopicTitle(row.topic_pack_json),
+    lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : null,
+    onboardingSentAt: row.onboarding_sent_at ? new Date(row.onboarding_sent_at) : null,
+    xpTotal: clampInteger(row.xp_total, { min: 0, max: 10000000, fallback: 0 }),
+    streakCurrent: clampInteger(row.streak_current, { min: 0, max: 100000, fallback: 0 }),
+    streakBest: clampInteger(row.streak_best, { min: 0, max: 100000, fallback: 0 }),
+    profileSummary: normalizeOptionalText(row.profile_summary, 2000) || '',
+    shortSummary: normalizeOptionalText(row.short_summary, 1200) || '',
+    weeklyXp: clampInteger(row.weekly_xp, { min: 0, max: 10000000, fallback: 0 }),
+    practiceDays: clampInteger(row.practice_days, { min: 0, max: 7, fallback: 0 }),
+    weekStart: window.weekStart,
+    weekEnd: window.weekEnd,
+    digestScheduleKey: window.scheduleKey,
+    scheduleKey: effectiveScheduleKey,
+    locale,
+    weeklyDigestLocale,
+    targetLanguageLabel: resolveTargetLanguageLabel(botKey, locale),
+    baseLanguageLabel: languageLabelForCode(publicBotMetaForKey(botKey)?.base_language || normalizeBotKey(botKey)?.split('-')?.[0] || ''),
+    replyCtaLabel: resolveReplyCtaLabel(row.reply_mode, weeklyDigestLocale)
+  };
+}
+
+function pickWeeklyDigestFallbackFamily(context) {
+  if (context.topicEnabled && context.topicTitle) {
+    return { family: 'topic_variants', variants: context.weeklyDigestLocale.topic_variants };
+  }
+  if (context.streakCurrent > 0) {
+    return { family: 'streak_variants', variants: context.weeklyDigestLocale.streak_variants };
+  }
+  return { family: 'default_variants', variants: context.weeklyDigestLocale.default_variants };
+}
+
+function validateWeeklyDigestMessageText(messageText, context = {}) {
+  const value = String(messageText ?? '').replace(/\s+/g, ' ').trim();
+  if (!value) return { ok: false, error: 'empty_message_text' };
+  if (value.length > WEEKLY_DIGEST_MESSAGE_MAX_LEN) return { ok: false, error: 'message_too_long' };
+  if (countSentences(value) > WEEKLY_DIGEST_MESSAGE_MAX_SENTENCES) return { ok: false, error: 'too_many_sentences' };
+  if (countEmoji(value) > 1) return { ok: false, error: 'too_many_emoji' };
+  if (containsHtmlLikeTags(value)) return { ok: false, error: 'html_not_allowed' };
+  if (/\{\{\s*[a-zA-Z0-9_]+\s*\}\}/.test(value)) return { ok: false, error: 'unresolved_placeholder' };
+  if (/\b(plan|subscription|billing|upgrade)\b/i.test(value)) return { ok: false, error: 'billing_language_not_allowed' };
+  if (/\bwe miss you\b/i.test(value) || /\bcome back now\b/i.test(value)) return { ok: false, error: 'spammy_phrase_not_allowed' };
+  if (Number.isFinite(Number(context.weeklyXp)) && !value.includes(String(context.weeklyXp))) {
+    return { ok: false, error: 'missing_weekly_xp_stat' };
+  }
+  if (Number.isFinite(Number(context.practiceDays)) && !value.includes(String(context.practiceDays))) {
+    return { ok: false, error: 'missing_practice_days_stat' };
+  }
+  return { ok: true, messageText: value };
+}
+
+function buildWeeklyDigestFallbackMessage(context, taskType) {
+  const { family, variants } = pickWeeklyDigestFallbackFamily(context);
+  const safeVariants = Array.isArray(variants) ? variants.filter(Boolean) : [];
+  if (safeVariants.length === 0) {
+    return { ok: false, error: 'missing_weekly_digest_templates' };
+  }
+
+  const variantIndex = stableVariantIndex(
+    `${context.chatId}:${context.botKey}:${context.digestScheduleKey}:${taskType}:${family}`,
+    safeVariants.length
+  );
+  const template = safeVariants[variantIndex] || safeVariants[0];
+  const messageText = applyTemplateSlots(template, {
+    first_name: context.firstName,
+    topic_title: context.topicTitle,
+    weekly_xp: context.weeklyXp,
+    practice_days: context.practiceDays,
+    streak_current: context.streakCurrent,
+    streak_best: context.streakBest,
+    reply_cta_label: context.replyCtaLabel
+  }).replace(/\s+/g, ' ').trim();
+  const validation = validateWeeklyDigestMessageText(messageText, context);
+  if (!validation.ok) {
+    return { ok: false, error: validation.error };
+  }
+
+  return {
+    ok: true,
+    messageText: validation.messageText,
+    source: 'fallback_template',
+    templateFamily: family,
+    variantIndex
+  };
+}
+
+async function generateWeeklyDigestMessageWithLlm(context, taskType) {
+  if (!env.openaiApiKey) {
+    throw createAppError('missing_openai_api_key', 502, 'missing_openai_api_key', { retryable: false });
+  }
+
+  const systemPrompt = [
+    'You write short weekly progress digest messages for a Telegram language-learning bot.',
+    `Write the message in ${context.baseLanguageLabel}.`,
+    `The target practice language is ${context.targetLanguageLabel}.`,
+    'This is a celebratory, useful recap of the previous completed week.',
+    'Return JSON only with a single field: message_text.',
+    'Rules:',
+    `- Max ${WEEKLY_DIGEST_MESSAGE_MAX_LEN} characters`,
+    `- Max ${WEEKLY_DIGEST_MESSAGE_MAX_SENTENCES} sentences`,
+    '- Mention the concrete weekly practice-days and XP numbers',
+    '- One clear CTA only',
+    '- Plain text only, no HTML or markdown',
+    '- At most one emoji',
+    '- Helpful teacher tone, never guilt or pressure',
+    '- Do not mention billing, plans, upgrades, or inactivity',
+    '- Do not say "we miss you" or "come back now"'
+  ].join('\n');
+
+  const payload = {
+    reminder_type: WEEKLY_DIGEST_TASK_TYPE,
+    bot_key: context.botKey,
+    week: {
+      schedule_key: context.digestScheduleKey,
+      start_utc: context.weekStart?.toISOString?.() || null,
+      end_utc: context.weekEnd?.toISOString?.() || null
+    },
+    user: {
+      first_name: context.firstName || null,
+      level: context.level,
+      reply_mode: context.replyMode,
+      topic_enabled: context.topicEnabled,
+      topic_title: context.topicTitle || null,
+      profile_summary: context.profileSummary || null,
+      short_summary: context.shortSummary || null,
+      xp_total: context.xpTotal,
+      streak_current: context.streakCurrent,
+      streak_best: context.streakBest
+    },
+    progress: {
+      weekly_xp: context.weeklyXp,
+      practice_days: context.practiceDays
+    },
+    cta: {
+      label: context.replyCtaLabel
+    }
+  };
+
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.openaiApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: env.reminderLlmModel,
+      input: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: JSON.stringify(payload) }
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'weekly_digest_message',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              message_text: {
+                type: 'string',
+                minLength: 1,
+                maxLength: WEEKLY_DIGEST_MESSAGE_MAX_LEN
+              }
+            },
+            required: ['message_text'],
+            additionalProperties: false
+          }
+        }
+      }
+    })
+  });
+
+  let payloadJson = null;
+  try {
+    payloadJson = await response.json();
+  } catch {
+    payloadJson = null;
+  }
+
+  if (!response.ok) {
+    const detail = sanitizeErrorText(payloadJson?.error?.message || `openai_http_${response.status}`) || `openai_http_${response.status}`;
+    throw createAppError('openai_request_failed', 502, detail, { retryable: response.status >= 500 });
+  }
+
+  const outputText = String(payloadJson?.output_text || '').trim();
+  if (!outputText) {
+    throw createAppError('openai_empty_output', 502, 'openai_empty_output', { retryable: false });
+  }
+
+  let parsed = null;
+  try {
+    parsed = JSON.parse(outputText);
+  } catch {
+    throw createAppError('openai_invalid_json', 502, 'openai_invalid_json', { retryable: false });
+  }
+
+  const validation = validateWeeklyDigestMessageText(String(parsed?.message_text || '').trim(), context);
+  if (!validation.ok) {
+    throw createAppError('weekly_digest_invalid_llm_output', 502, validation.error, { retryable: false });
+  }
+
+  return {
+    messageText: validation.messageText,
+    source: 'llm',
+    model: String(payloadJson?.model || env.reminderLlmModel || '').trim() || env.reminderLlmModel,
+    responseId: String(payloadJson?.id || '').trim() || null,
+    usage: payloadJson?.usage || null,
+    taskType
+  };
+}
+
+async function evaluateWeeklyDigestEligibility({
+  chatId,
+  botKey,
+  origin = WINBACK_AUTOMATED_ORIGIN,
+  scheduleKey = null,
+  now = new Date()
+}) {
+  if (!isAutomatedMessageTestChatAllowed(chatId)) {
+    throw createAppError('chat_not_allowed_in_test_mode', 403, 'chat_not_allowed_in_test_mode', { retryable: false });
+  }
+
+  const window = currentWeeklyDigestWindow(now);
+  if (!window) {
+    return { ok: false, code: 'weekly_window_unavailable', context: null };
+  }
+
+  const context = await loadWeeklyDigestContext(chatId, botKey, { scheduleKey, origin, now });
+  if (!context) {
+    if (origin === WINBACK_ADMIN_TEST_ORIGIN) {
+      throw createAppError('user_bot_not_found', 404, 'user_bot_not_found', { retryable: false });
+    }
+    return { ok: false, code: 'user_bot_not_found', context: null };
+  }
+
+  if (origin === WINBACK_ADMIN_TEST_ORIGIN) {
+    return { ok: true, code: null, context };
+  }
+
+  if (scheduleKey && scheduleKey !== window.scheduleKey) {
+    return { ok: false, code: 'weekly_window_changed', context };
+  }
+  if (!context.isActive) return { ok: false, code: 'user_bot_inactive', context };
+  if (context.inactiveReason) return { ok: false, code: 'permanent_telegram_inactive', context };
+  if (!(context.onboardingSentAt instanceof Date) || !Number.isFinite(context.onboardingSentAt.getTime())) {
+    return { ok: false, code: 'onboarding_not_sent', context };
+  }
+  if (!(context.lastSeenAt instanceof Date) || !Number.isFinite(context.lastSeenAt.getTime())) {
+    return { ok: false, code: 'missing_last_seen_at', context };
+  }
+  if (context.lastSeenAt.getTime() < Date.now() - (7 * 24 * 60 * 60 * 1000)) {
+    return { ok: false, code: 'not_active_in_last_7_days', context };
+  }
+  if (context.lastSeenAt.getTime() > Date.now() - (WEEKLY_DIGEST_RECENT_ACTIVITY_HOURS * 60 * 60 * 1000)) {
+    return { ok: false, code: 'recent_user_activity', context };
+  }
+  if (context.weeklyXp <= 0) return { ok: false, code: 'no_weekly_xp', context };
+  if (context.practiceDays < WEEKLY_DIGEST_MIN_PRACTICE_DAYS) {
+    return { ok: false, code: 'insufficient_practice_days', context };
+  }
+  if (await hasSentScheduledDispatch(WEEKLY_DIGEST_TASK_TYPE, context.chatId, context.botKey, context.digestScheduleKey)) {
+    return { ok: false, code: 'already_sent', context };
+  }
+
+  const suppression = await hasRecentAutomatedBehavioralSuppression(context.chatId);
+  if (suppression.suppressed) {
+    return { ok: false, code: suppression.code, context };
+  }
+
+  return { ok: true, code: null, context };
+}
+
+export async function sendWeeklyDigestReminderCore({
+  chatId,
+  botKey,
+  origin = WINBACK_AUTOMATED_ORIGIN,
+  taskType = resolveWeeklyDigestTaskType(origin),
+  scheduleKey = null,
+  now = new Date()
+} = {}) {
+  const normalizedChatId = Number(chatId);
+  const normalizedBotKey = normalizeBotKey(botKey);
+  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey) {
+    throw createAppError('bad_request', 400, 'bad_request', { retryable: false });
+  }
+
+  const window = currentWeeklyDigestWindow(now);
+  const effectiveScheduleKey = origin === WINBACK_ADMIN_TEST_ORIGIN
+    ? (String(scheduleKey || '').trim() || buildManualTestScheduleKey())
+    : (window?.scheduleKey || String(scheduleKey || '').trim());
+
+  const eligibility = await evaluateWeeklyDigestEligibility({
+    chatId: normalizedChatId,
+    botKey: normalizedBotKey,
+    origin,
+    scheduleKey: effectiveScheduleKey,
+    now
+  });
+
+  if (!eligibility.ok) {
+    await markScheduledDispatchAttemptStarted(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      origin,
+      reminder_type: WEEKLY_DIGEST_TASK_TYPE
+    });
+    await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      status: 'failed',
+      lastError: eligibility.code,
+      payloadJson: {
+        origin,
+        reminder_type: WEEKLY_DIGEST_TASK_TYPE,
+        skipped_reason: eligibility.code
+      }
+    });
+    return null;
+  }
+
+  const context = eligibility.context;
+  await markScheduledDispatchAttemptStarted(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+    origin,
+    reminder_type: WEEKLY_DIGEST_TASK_TYPE,
+    digest_schedule_key: context.digestScheduleKey
+  });
+
+  let generation = null;
+  let generationError = null;
+  try {
+    generation = await generateWeeklyDigestMessageWithLlm(context, taskType);
+  } catch (error) {
+    generationError = sanitizeErrorText(error?.detail || error?.message || String(error)) || 'llm_generation_failed';
+    generation = null;
+  }
+
+  if (!generation) {
+    const fallback = buildWeeklyDigestFallbackMessage(context, taskType);
+    if (!fallback.ok) {
+      await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+        status: 'failed',
+        lastError: generationError || fallback.error || 'weekly_digest_build_failed',
+        payloadJson: {
+          origin,
+          reminder_type: WEEKLY_DIGEST_TASK_TYPE,
+          generation_error: generationError || fallback.error || 'weekly_digest_build_failed'
+        }
+      });
+      throw createAppError(
+        'weekly_digest_build_failed',
+        502,
+        generationError || fallback.error || 'weekly_digest_build_failed',
+        { retryable: false }
+      );
+    }
+    generation = fallback;
+  }
+
+  try {
+    const telegramResult = await sendTelegramTextMessage(normalizedChatId, generation.messageText, {
+      botKey: normalizedBotKey
+    });
+    const messageIdRaw = Number(telegramResult?.message_id ?? 0);
+    const telegramMessageId = Number.isFinite(messageIdRaw) && messageIdRaw > 0 ? messageIdRaw : null;
+
+    await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      status: 'sent',
+      telegramMessageId,
+      payloadJson: {
+        origin,
+        reminder_type: WEEKLY_DIGEST_TASK_TYPE,
+        digest_schedule_key: context.digestScheduleKey,
+        week_start_utc: context.weekStart ? context.weekStart.toISOString() : null,
+        week_end_utc: context.weekEnd ? context.weekEnd.toISOString() : null,
+        weekly_xp: context.weeklyXp,
+        practice_days: context.practiceDays,
+        message_source: generation.source,
+        template_family: generation.templateFamily || null,
+        variant_index: Number.isInteger(generation.variantIndex) ? generation.variantIndex : null,
+        llm_model: generation.model || null,
+        llm_response_id: generation.responseId || null,
+        message_text: generation.messageText
+      }
+    });
+    await updateUserDeliveryState(normalizedChatId, {
+      status: 'sent',
+      lastError: null,
+      inactiveReason: null,
+      botKey: normalizedBotKey
+    });
+
+    return {
+      ok: true,
+      chatId: normalizedChatId,
+      botKey: normalizedBotKey,
+      taskType,
+      scheduleKey: effectiveScheduleKey,
+      digestScheduleKey: context.digestScheduleKey,
+      telegramMessageId,
+      messageText: generation.messageText,
+      allowlistActive: getAutomatedMessageTestState().active
+    };
+  } catch (error) {
+    const lastError = sanitizeErrorText(error?.detail || error?.message || String(error)) || 'telegram_send_failed';
+    const inactiveReason = classifyPermanentTelegramFailure(error);
+    await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      status: 'failed',
+      lastError,
+      payloadJson: {
+        origin,
+        reminder_type: WEEKLY_DIGEST_TASK_TYPE,
+        generation_error: generationError,
+        inactive_reason: inactiveReason || null
+      }
+    });
+    await updateUserDeliveryState(normalizedChatId, {
+      status: 'failed',
+      lastError,
+      inactiveReason,
+      botKey: normalizedBotKey
+    });
+
+    throw createAppError('telegram_send_failed', 502, lastError, {
+      retryable: !inactiveReason,
+      inactiveReason,
+      cause: error
+    });
+  }
 }
 
 function createAppError(code, statusCode, detail = code, extras = {}) {
@@ -1846,6 +2564,33 @@ export async function sendAdminTestDay1ReturnReminder({ chatId, botKey }) {
   };
 }
 
+export async function sendAdminTestWeeklyDigestReminder({ chatId, botKey }) {
+  const result = await sendWeeklyDigestReminderCore({
+    chatId,
+    botKey,
+    origin: WINBACK_ADMIN_TEST_ORIGIN,
+    taskType: resolveWeeklyDigestTaskType(WINBACK_ADMIN_TEST_ORIGIN),
+    scheduleKey: buildManualTestScheduleKey()
+  });
+
+  if (!result) {
+    throw createAppError('weekly_digest_send_failed', 502, 'weekly_digest_send_failed', { retryable: false });
+  }
+
+  return {
+    ok: true,
+    chat_id: result.chatId,
+    bot_key: result.botKey,
+    reminder_type: WEEKLY_DIGEST_TASK_TYPE,
+    telegram_message_id: result.telegramMessageId,
+    message_text: result.messageText,
+    allowlist_active: result.allowlistActive,
+    task_type: result.taskType,
+    schedule_key: result.scheduleKey,
+    digest_schedule_key: result.digestScheduleKey
+  };
+}
+
 async function scanEligibleWinbackUsers(reminderType) {
   const stageConfig = resolveWinbackStageConfig(reminderType);
   if (!stageConfig) return [];
@@ -2594,6 +3339,20 @@ async function enqueueDay1ReturnSend(
   );
 }
 
+async function enqueueWeeklyDigestSend(
+  boss,
+  { chatId, botKey, scheduleKey, taskType = WEEKLY_DIGEST_TASK_TYPE }
+) {
+  return boss.send(
+    QUEUE_WEEKLY_DIGEST_SEND,
+    { chatId, botKey, scheduleKey, taskType },
+    {
+      ...defaultRetryOptions(),
+      singletonKey: `weekly_digest:${taskType}:${botKey}:${chatId}:${scheduleKey}`
+    }
+  );
+}
+
 async function enqueueFreeLimitHalfSend(boss, { chatId, botKey, scheduleKey, taskType = FREE_LIMIT_HALF_TASK_TYPE }) {
   return boss.send(
     QUEUE_FREE_LIMIT_HALF_SEND,
@@ -2928,6 +3687,79 @@ async function handleDay1ReturnSend(jobs) {
       const detail = sanitizeErrorText(error?.detail || error?.message || String(error)) || 'day1_return_send_failed';
 
       console.warn('day1-return-send:failed', {
+        jobId: job.id,
+        chatId,
+        botKey,
+        taskType,
+        scheduleKey,
+        inactiveReason: error?.inactiveReason || null,
+        isFinalAttempt,
+        error: detail
+      });
+
+      if (error?.retryable && !error?.inactiveReason && !isFinalAttempt) {
+        throw error.cause || error;
+      }
+    }
+  }
+}
+
+async function handleWeeklyDigestScan(jobs, boss) {
+  for (const job of jobs) {
+    const eligibleUsers = await scanEligibleWeeklyDigestUsers();
+    console.log('weekly-digest-scan', {
+      jobId: job.id,
+      eligibleCount: eligibleUsers.length
+    });
+
+    for (const user of eligibleUsers) {
+      await enqueueWeeklyDigestSend(boss, user);
+    }
+  }
+}
+
+async function handleWeeklyDigestSend(jobs) {
+  for (const job of jobs) {
+    const chatId = Number(job.data?.chatId);
+    const botKey = normalizeBotKey(job.data?.botKey);
+    const taskType = String(job.data?.taskType || '').trim() || WEEKLY_DIGEST_TASK_TYPE;
+    const scheduleKey = String(job.data?.scheduleKey || '').trim();
+    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || !scheduleKey) {
+      continue;
+    }
+
+    try {
+      const result = await sendWeeklyDigestReminderCore({
+        chatId,
+        botKey,
+        origin: WINBACK_AUTOMATED_ORIGIN,
+        taskType,
+        scheduleKey
+      });
+
+      if (!result) {
+        console.log('weekly-digest-send:skipped', {
+          jobId: job.id,
+          chatId,
+          botKey,
+          scheduleKey
+        });
+        continue;
+      }
+
+      console.log('weekly-digest-send:sent', {
+        jobId: job.id,
+        chatId,
+        botKey,
+        taskType,
+        digestScheduleKey: result.digestScheduleKey,
+        telegramMessageId: result.telegramMessageId
+      });
+    } catch (error) {
+      const isFinalAttempt = Number(job.retryCount ?? 0) + 1 >= Number(job.retryLimit ?? env.jobRetryMaxAttempts);
+      const detail = sanitizeErrorText(error?.detail || error?.message || String(error)) || 'weekly_digest_send_failed';
+
+      console.warn('weekly-digest-send:failed', {
         jobId: job.id,
         chatId,
         botKey,
@@ -3296,6 +4128,18 @@ export async function registerWorkerHandlers(boss) {
     QUEUE_DAY1_RETURN_SEND,
     { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
     handleDay1ReturnSend
+  );
+
+  await boss.work(
+    QUEUE_WEEKLY_DIGEST_SCAN,
+    { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
+    (jobs) => handleWeeklyDigestScan(jobs, boss)
+  );
+
+  await boss.work(
+    QUEUE_WEEKLY_DIGEST_SEND,
+    { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
+    handleWeeklyDigestSend
   );
 
   await boss.work(

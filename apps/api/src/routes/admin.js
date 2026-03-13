@@ -19,6 +19,7 @@ import {
   getAutomatedMessageTestState,
   sendAdminTestDay1ReturnReminder,
   sendAdminTestFreeLimitHalfReminder,
+  sendAdminTestWeeklyDigestReminder,
   sendAdminTestWinbackReminder
 } from '../jobs.js';
 import { billingRouteErrorResponse } from '../core/errors.js';
@@ -40,6 +41,7 @@ const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
 const NOTIFICATION_TASK_TYPES = [
   'onboarding_complete',
   'day1_return',
+  'weekly_digest',
   'free_limit_50',
   'winback_d3',
   'winback_d7',
@@ -48,6 +50,7 @@ const NOTIFICATION_TASK_TYPES = [
 const NOTIFICATION_SERIES_TYPES = [
   'onboarding_complete',
   'day1_return',
+  'weekly_digest',
   'free_limit_50',
   'winback_d3',
   'winback_d7',
@@ -2992,10 +2995,11 @@ export function createAdminRouter(ctx, helpers) {
     const botKey = normalizeBotKey(req.body?.botKey ?? req.body?.bot_key);
     const reminderType = String(req.body?.reminderType ?? req.body?.reminder_type ?? '').trim().toLowerCase();
     const isDay1ReturnType = reminderType === 'day1_return';
+    const isWeeklyDigestType = reminderType === 'weekly_digest';
     const isWinbackType = ['d3', 'd7', 'd14'].includes(reminderType);
     const isFreeLimitHalfType = reminderType === 'free_limit_50';
 
-    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || (!isDay1ReturnType && !isWinbackType && !isFreeLimitHalfType)) {
+    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || (!isDay1ReturnType && !isWeeklyDigestType && !isWinbackType && !isFreeLimitHalfType)) {
       return res.status(400).json({ error: 'bad_request' });
     }
 
@@ -3005,6 +3009,11 @@ export function createAdminRouter(ctx, helpers) {
             chatId,
             botKey
           })
+        : isWeeklyDigestType
+          ? await sendAdminTestWeeklyDigestReminder({
+              chatId,
+              botKey
+            })
         : isFreeLimitHalfType
           ? await sendAdminTestFreeLimitHalfReminder({
               chatId,
@@ -3030,6 +3039,8 @@ export function createAdminRouter(ctx, helpers) {
         errorCode === 'missing_free_limit_half_message'
         || errorCode === 'missing_free_limit_half_cta'
         || errorCode === 'free_limit_half_send_failed'
+        || errorCode === 'weekly_digest_build_failed'
+        || errorCode === 'weekly_digest_send_failed'
       ) {
         return res.status(502).json({ error: errorCode, detail });
       }
