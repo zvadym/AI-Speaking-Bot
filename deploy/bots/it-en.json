@@ -131,6 +131,24 @@
     "xp_streak_bonus_label": "Bonus streak",
     "xp_streak_bonus_pending": "Il moltiplicatore streak non viene ancora applicato agli XP.",
     "notifications": {
+      "day1_return": {
+        "text_variants": [
+          "Pronto per 2 minuti di pratica? Scrivi una frase breve.",
+          "Vuoi riprendere con una pratica veloce? Scrivi una frase breve."
+        ],
+        "voice_variants": [
+          "Pronto per una pratica veloce? Invia un breve messaggio vocale.",
+          "Vuoi rientrare in pratica? Invia un breve messaggio vocale."
+        ],
+        "topic_text_variants": [
+          "Vuoi ripartire con {{topic_title}}? Scrivi una frase breve.",
+          "Pronto a tornare su {{topic_title}}? Scrivi una frase breve."
+        ],
+        "topic_voice_variants": [
+          "Vuoi ripartire con {{topic_title}}? Invia un breve messaggio vocale.",
+          "Pronto a tornare su {{topic_title}}? Invia un breve messaggio vocale."
+        ]
+      },
       "winback": {
         "reply_cta_voice": "manda un breve vocale",
         "reply_cta_text": "scrivi una frase breve",

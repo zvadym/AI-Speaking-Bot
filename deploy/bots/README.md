@@ -93,6 +93,7 @@ The `/xp` workflow also expects these `locale` keys for the expanded progress ca
 
 The API automated notifications also read these locale keys when present:
 
+- `locale.notifications.day1_return.*`
 - `locale.notifications.winback.*`
 - `locale.notifications.free_limit_50.message_html`
 

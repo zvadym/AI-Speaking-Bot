@@ -131,6 +131,24 @@
     "xp_streak_bonus_label": "स्ट्रीक बोनस",
     "xp_streak_bonus_pending": "स्ट्रीक मल्टिप्लायर अभी XP पर लागू नहीं होता।",
     "notifications": {
+      "day1_return": {
+        "text_variants": [
+          "2 minute ki practice ke liye ready ho? Ek chhota sentence likho.",
+          "Jaldi se practice me wapas aana hai? Ek chhota sentence likho."
+        ],
+        "voice_variants": [
+          "Quick practice ke liye ready ho? Ek chhota voice note bhejo.",
+          "Practice me wapas aana hai? Ek chhota voice note bhejo."
+        ],
+        "topic_text_variants": [
+          "{{topic_title}} par wapas aana hai? Ek chhota sentence likho.",
+          "{{topic_title}} ko phir se shuru karein? Ek chhota sentence likho."
+        ],
+        "topic_voice_variants": [
+          "{{topic_title}} par wapas aana hai? Ek chhota voice note bhejo.",
+          "{{topic_title}} ko phir se shuru karein? Ek chhota voice note bhejo."
+        ]
+      },
       "winback": {
         "reply_cta_voice": "ek chhota voice message bhejo",
         "reply_cta_text": "ek chhota sentence likho",

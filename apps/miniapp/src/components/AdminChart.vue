@@ -204,7 +204,10 @@ function buildDatasets() {
         tension: 0.18,
         fill: false,
         yAxisID,
-        valueFormat
+        valueFormat,
+        tooltipExtraKey: series?.tooltipExtraKey,
+        tooltipExtraLabel: series?.tooltipExtraLabel,
+        tooltipExtraFormat: series?.tooltipExtraFormat
       };
     }
 
@@ -229,14 +232,26 @@ function buildDatasets() {
       grouped: series?.grouped === false ? false : true,
       order: Number.isFinite(Number(series?.order)) ? Number(series.order) : 0,
       yAxisID,
-      valueFormat
+      valueFormat,
+      tooltipExtraKey: series?.tooltipExtraKey,
+      tooltipExtraLabel: series?.tooltipExtraLabel,
+      tooltipExtraFormat: series?.tooltipExtraFormat
     };
   });
 }
 
 function tooltipLabel(context) {
   const parsed = typeof context.parsed === 'object' ? context.parsed?.y : context.parsed;
-  return `${context.dataset.label}: ${formatMetric(parsed, context.dataset?.valueFormat)}`;
+  const baseLabel = `${context.dataset.label}: ${formatMetric(parsed, context.dataset?.valueFormat)}`;
+  const extraKey = context.dataset?.tooltipExtraKey;
+  if (!extraKey) return baseLabel;
+  const row = props.data?.[context.dataIndex] || null;
+  const extraValue = row?.[extraKey];
+  if (extraValue === null || extraValue === undefined || extraValue === '') return baseLabel;
+  const extraLabel = String(context.dataset?.tooltipExtraLabel || '').trim();
+  const extraValueFormat = context.dataset?.tooltipExtraFormat || null;
+  const formattedExtra = formatMetric(extraValue, extraValueFormat);
+  return extraLabel ? `${baseLabel} (${formattedExtra} ${extraLabel})` : `${baseLabel} (${formattedExtra})`;
 }
 
 function buildOptions() {

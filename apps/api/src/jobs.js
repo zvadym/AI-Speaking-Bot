@@ -31,6 +31,8 @@ import {
   parseChatIdList
 } from './shared/normalization.js';
 import {
+  QUEUE_DAY1_RETURN_SCAN,
+  QUEUE_DAY1_RETURN_SEND,
   QUEUE_FREE_LIMIT_HALF_SCAN,
   QUEUE_FREE_LIMIT_HALF_SEND,
   QUEUE_BROADCAST_CAMPAIGN_ENQUEUE,
@@ -47,6 +49,13 @@ import {
 const botConfigs = loadBotConfigs();
 const ONBOARDING_TASK_TYPE = 'onboarding_complete';
 const ONBOARDING_SCHEDULE_KEY = 'once';
+const DAY1_RETURN_TASK_TYPE = 'day1_return';
+const DAY1_RETURN_TEST_TASK_TYPE = 'day1_return_test';
+const DAY1_RETURN_SCHEDULE_KEY = 'once';
+const DAY1_RETURN_IDLE_HOURS = 22;
+const DAY1_RETURN_SCAN_LIMIT = 500;
+const DAY1_RETURN_MESSAGE_MAX_LEN = 180;
+const DAY1_RETURN_MESSAGE_MAX_SENTENCES = 2;
 const FREE_LIMIT_HALF_TASK_TYPE = 'free_limit_50';
 const FREE_LIMIT_HALF_TEST_TASK_TYPE = 'free_limit_50_test';
 const FREE_LIMIT_HALF_SCAN_LIMIT = 500;
@@ -57,7 +66,13 @@ const WINBACK_MESSAGE_MAX_SENTENCES = 2;
 const WINBACK_CONTEXT_TURN_LIMIT = 4;
 const WINBACK_ADMIN_TEST_ORIGIN = 'admin_test';
 const WINBACK_AUTOMATED_ORIGIN = 'automated';
-const AUTOMATED_BEHAVIORAL_SUPPRESSION_TASK_TYPES = ['winback_d3', 'winback_d7', 'winback_d14', FREE_LIMIT_HALF_TASK_TYPE];
+const AUTOMATED_BEHAVIORAL_SUPPRESSION_TASK_TYPES = [
+  DAY1_RETURN_TASK_TYPE,
+  'winback_d3',
+  'winback_d7',
+  'winback_d14',
+  FREE_LIMIT_HALF_TASK_TYPE
+];
 const WINBACK_REMINDER_TYPES = new Set(['d3', 'd7', 'd14']);
 const WINBACK_REPLY_MODE_TEXT = 'text';
 const WINBACK_REPLY_MODE_VOICE = 'voice';
@@ -108,7 +123,10 @@ const LOADER_TIMEOUT_MS = LOADER_TIMEOUT_SECONDS * 1000;
 const LOADER_ROTATE_CONCURRENCY = 10;
 const botCatalog = createPublicBotCatalogLookup(botConfigs, env.telegramBotTokensByBotKey || {});
 const { metaForKey: publicBotMetaForKey } = botCatalog;
-const telegramClient = createTelegramClient({ env });
+const telegramClient = createTelegramClient({
+  env,
+  fetchImpl: (...args) => fetch(...args)
+});
 const { updateUserDeliveryState } = createTelegramDeliveryState({ pool });
 const {
   resolveTelegramBotToken,
@@ -160,6 +178,10 @@ function parseWinbackReminderType(raw) {
 
 function resolveFreeLimitHalfTaskType(origin = WINBACK_AUTOMATED_ORIGIN) {
   return origin === WINBACK_ADMIN_TEST_ORIGIN ? FREE_LIMIT_HALF_TEST_TASK_TYPE : FREE_LIMIT_HALF_TASK_TYPE;
+}
+
+function resolveDay1ReturnTaskType(origin = WINBACK_AUTOMATED_ORIGIN) {
+  return origin === WINBACK_ADMIN_TEST_ORIGIN ? DAY1_RETURN_TEST_TASK_TYPE : DAY1_RETURN_TASK_TYPE;
 }
 
 function resolveWinbackStageConfig(reminderType) {
@@ -387,6 +409,25 @@ const FREE_LIMIT_HALF_DEFAULT_LOCALE = {
   message_html: '<b>You’re already halfway through your free limit ✨</b>\nIf you want to keep going, PRO costs less than 2 cups of coffee per month.\n\nIt unlocks extra features like new topics, tone settings, and more updates in the future.'
 };
 
+const DAY1_RETURN_DEFAULT_LOCALE = {
+  text_variants: [
+    'Ready for a 2-minute practice? Write one short sentence.',
+    'Want to do a quick practice? Write one short sentence.'
+  ],
+  voice_variants: [
+    'Ready for a quick practice? Send a short voice note.',
+    'Want to get back into practice? Send a short voice note.'
+  ],
+  topic_text_variants: [
+    'Want a quick restart with {{topic_title}}? Write one short sentence.',
+    'Ready to jump back into {{topic_title}}? Write one short sentence.'
+  ],
+  topic_voice_variants: [
+    'Want a quick restart with {{topic_title}}? Send a short voice note.',
+    'Ready to jump back into {{topic_title}}? Send a short voice note.'
+  ]
+};
+
 function normalizeWinbackVariantArray(raw, fallback) {
   const next = Array.isArray(raw)
     ? raw
@@ -395,6 +436,31 @@ function normalizeWinbackVariantArray(raw, fallback) {
         .slice(0, 12)
     : [];
   return next.length ? next : fallback.slice();
+}
+
+function normalizeDay1ReturnVariantArray(raw, fallback) {
+  const next = Array.isArray(raw)
+    ? raw
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+        .slice(0, 12)
+    : [];
+  return next.length ? next : fallback.slice();
+}
+
+function resolveDay1ReturnLocale(botKeyRaw) {
+  const locale = getBotLocale(botKeyRaw);
+  const notifications = locale.notifications && typeof locale.notifications === 'object' ? locale.notifications : {};
+  const raw = notifications.day1_return && typeof notifications.day1_return === 'object'
+    ? notifications.day1_return
+    : {};
+
+  return {
+    text_variants: normalizeDay1ReturnVariantArray(raw.text_variants, DAY1_RETURN_DEFAULT_LOCALE.text_variants),
+    voice_variants: normalizeDay1ReturnVariantArray(raw.voice_variants, DAY1_RETURN_DEFAULT_LOCALE.voice_variants),
+    topic_text_variants: normalizeDay1ReturnVariantArray(raw.topic_text_variants, DAY1_RETURN_DEFAULT_LOCALE.topic_text_variants),
+    topic_voice_variants: normalizeDay1ReturnVariantArray(raw.topic_voice_variants, DAY1_RETURN_DEFAULT_LOCALE.topic_voice_variants)
+  };
 }
 
 function resolveWinbackLocale(botKeyRaw) {
@@ -685,6 +751,169 @@ async function loadOnboardingState(chatId, botKey) {
   );
 
   return rows[0] || null;
+}
+
+async function scanEligibleDay1ReturnUsers() {
+  const testChatIds = automatedMessageTestChatIdsSqlParam();
+  const { rows } = await pool.query(
+    `SELECT
+       ub.chat_id,
+       ub.bot_key
+     FROM user_bots ub
+     JOIN users u
+       ON u.chat_id = ub.chat_id
+     JOIN scheduled_task_dispatches onboarding
+       ON onboarding.chat_id = ub.chat_id
+      AND onboarding.bot_key = ub.bot_key
+      AND onboarding.task_type = $1
+      AND onboarding.schedule_key = $2
+      AND onboarding.status = 'sent'
+      AND onboarding.sent_at IS NOT NULL
+     WHERE COALESCE(ub.is_active, true) = true
+       AND u.inactive_reason IS NULL
+       AND onboarding.sent_at <= NOW() - ($3::int * interval '1 hour')
+       AND COALESCE(ub.last_seen_at, onboarding.sent_at) <= onboarding.sent_at
+       AND ($5::bigint[] IS NULL OR ub.chat_id = ANY($5::bigint[]))
+       AND NOT EXISTS (
+         SELECT 1
+         FROM scheduled_task_dispatches std
+         WHERE std.task_type = $4
+           AND std.schedule_key = $2
+           AND std.bot_key = ub.bot_key
+           AND std.chat_id = ub.chat_id
+           AND std.status = 'sent'
+           AND std.sent_at IS NOT NULL
+       )
+     ORDER BY onboarding.sent_at ASC, ub.chat_id ASC, ub.bot_key ASC
+     LIMIT $6::int`,
+    [
+      ONBOARDING_TASK_TYPE,
+      DAY1_RETURN_SCHEDULE_KEY,
+      DAY1_RETURN_IDLE_HOURS,
+      DAY1_RETURN_TASK_TYPE,
+      testChatIds,
+      DAY1_RETURN_SCAN_LIMIT
+    ]
+  );
+
+  return rows.map((row) => ({
+    chatId: Number(row.chat_id),
+    botKey: normalizeBotKey(row.bot_key),
+    scheduleKey: DAY1_RETURN_SCHEDULE_KEY,
+    taskType: DAY1_RETURN_TASK_TYPE
+  })).filter((row) => Number.isFinite(row.chatId) && row.chatId > 0 && row.botKey);
+}
+
+async function loadDay1ReturnContext(chatId, botKeyRaw, { origin = WINBACK_AUTOMATED_ORIGIN } = {}) {
+  const botKey = normalizeBotKey(botKeyRaw);
+  const normalizedChatId = Number(chatId);
+  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !botKey) return null;
+
+  const { rows } = await pool.query(
+    `SELECT
+       u.chat_id,
+       u.first_name,
+       u.inactive_reason,
+       ub.bot_key,
+       COALESCE(ub.is_active, true) AS is_active,
+       ub.reply_mode,
+       COALESCE(ub.topic_enabled, false) AS topic_enabled,
+       ub.topic_pack_json,
+       ub.last_seen_at,
+       onboarding.sent_at AS onboarding_sent_at
+     FROM users u
+     JOIN user_bots ub
+       ON ub.chat_id = u.chat_id
+     LEFT JOIN scheduled_task_dispatches onboarding
+       ON onboarding.chat_id = ub.chat_id
+      AND onboarding.bot_key = ub.bot_key
+      AND onboarding.task_type = $3
+      AND onboarding.schedule_key = $4
+      AND onboarding.status = 'sent'
+      AND onboarding.sent_at IS NOT NULL
+     WHERE u.chat_id = $1::bigint
+       AND ub.bot_key = $2::text
+     LIMIT 1`,
+    [
+      normalizedChatId,
+      botKey,
+      ONBOARDING_TASK_TYPE,
+      ONBOARDING_SCHEDULE_KEY
+    ]
+  );
+
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    chatId: normalizedChatId,
+    botKey,
+    firstName: normalizeOptionalText(row.first_name, 80) || '',
+    inactiveReason: normalizeOptionalText(row.inactive_reason, 80),
+    isActive: row.is_active === true || row.is_active === 1 || row.is_active === 't',
+    replyMode: normalizeReplyMode(row.reply_mode),
+    topicEnabled: row.topic_enabled === true || row.topic_enabled === 1 || row.topic_enabled === 't',
+    topicPackJson: normalizeTopicPack(row.topic_pack_json),
+    topicTitle: extractTopicTitle(row.topic_pack_json),
+    lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : null,
+    onboardingSentAt: origin === WINBACK_ADMIN_TEST_ORIGIN
+      ? (row.onboarding_sent_at ? new Date(row.onboarding_sent_at) : null)
+      : (row.onboarding_sent_at ? new Date(row.onboarding_sent_at) : null),
+    locale: resolveDay1ReturnLocale(botKey)
+  };
+}
+
+function pickDay1ReturnVariants(context) {
+  if (context.topicEnabled && context.topicTitle) {
+    return context.replyMode === WINBACK_REPLY_MODE_VOICE
+      ? context.locale.topic_voice_variants
+      : context.locale.topic_text_variants;
+  }
+
+  return context.replyMode === WINBACK_REPLY_MODE_VOICE
+    ? context.locale.voice_variants
+    : context.locale.text_variants;
+}
+
+function validateDay1ReturnMessageText(messageText) {
+  const value = String(messageText ?? '').replace(/\s+/g, ' ').trim();
+  if (!value) return { ok: false, error: 'empty_message_text' };
+  if (value.length > DAY1_RETURN_MESSAGE_MAX_LEN) return { ok: false, error: 'message_too_long' };
+  if (countSentences(value) > DAY1_RETURN_MESSAGE_MAX_SENTENCES) return { ok: false, error: 'too_many_sentences' };
+  if (countEmoji(value) > 1) return { ok: false, error: 'too_many_emoji' };
+  if (containsHtmlLikeTags(value)) return { ok: false, error: 'html_not_allowed' };
+  if (/\{\{\s*[a-zA-Z0-9_]+\s*\}\}/.test(value)) return { ok: false, error: 'unresolved_placeholder' };
+  return { ok: true, messageText: value };
+}
+
+function buildDay1ReturnMessage(context, taskType) {
+  const safeVariants = pickDay1ReturnVariants(context).filter(Boolean);
+  if (safeVariants.length === 0) {
+    return { ok: false, error: 'missing_day1_return_templates' };
+  }
+
+  const variantIndex = stableVariantIndex(
+    `${context.chatId}:${context.botKey}:${taskType}:${context.replyMode}:${context.topicTitle || ''}`,
+    safeVariants.length
+  );
+  const template = safeVariants[variantIndex] || safeVariants[0];
+  const messageText = applyTemplateSlots(template, {
+    first_name: context.firstName,
+    topic_title: context.topicTitle
+  }).replace(/\s+/g, ' ').trim();
+  const validation = validateDay1ReturnMessageText(messageText);
+  if (!validation.ok) {
+    return { ok: false, error: validation.error };
+  }
+
+  return {
+    ok: true,
+    messageText: validation.messageText,
+    variantIndex,
+    variantFamily: context.topicEnabled && context.topicTitle
+      ? (context.replyMode === WINBACK_REPLY_MODE_VOICE ? 'topic_voice_variants' : 'topic_text_variants')
+      : (context.replyMode === WINBACK_REPLY_MODE_VOICE ? 'voice_variants' : 'text_variants')
+  };
 }
 
 function createAppError(code, statusCode, detail = code, extras = {}) {
@@ -1411,6 +1640,210 @@ async function hasRecentAutomatedBehavioralSuppression(chatId) {
     return { suppressed: true, code: 'suppressed_recent_broadcast' };
   }
   return { suppressed: false, code: null };
+}
+
+async function evaluateDay1ReturnEligibility({
+  chatId,
+  botKey,
+  origin = WINBACK_AUTOMATED_ORIGIN
+}) {
+  if (!isAutomatedMessageTestChatAllowed(chatId)) {
+    throw createAppError('chat_not_allowed_in_test_mode', 403, 'chat_not_allowed_in_test_mode', { retryable: false });
+  }
+
+  const context = await loadDay1ReturnContext(chatId, botKey, { origin });
+  if (!context) {
+    if (origin === WINBACK_ADMIN_TEST_ORIGIN) {
+      throw createAppError('user_bot_not_found', 404, 'user_bot_not_found', { retryable: false });
+    }
+    return { ok: false, code: 'user_bot_not_found', context: null };
+  }
+
+  if (origin === WINBACK_ADMIN_TEST_ORIGIN) {
+    return { ok: true, code: null, context };
+  }
+
+  if (!context.isActive) return { ok: false, code: 'user_bot_inactive', context };
+  if (context.inactiveReason) return { ok: false, code: 'permanent_telegram_inactive', context };
+  if (!(context.onboardingSentAt instanceof Date) || !Number.isFinite(context.onboardingSentAt.getTime())) {
+    return { ok: false, code: 'onboarding_not_sent', context };
+  }
+
+  if (context.onboardingSentAt.getTime() > Date.now() - (DAY1_RETURN_IDLE_HOURS * 60 * 60 * 1000)) {
+    return { ok: false, code: 'outside_inactivity_window', context };
+  }
+
+  if (
+    context.lastSeenAt instanceof Date
+    && Number.isFinite(context.lastSeenAt.getTime())
+    && context.lastSeenAt.getTime() > context.onboardingSentAt.getTime() + 1000
+  ) {
+    return { ok: false, code: 'user_active_after_onboarding', context };
+  }
+
+  if (await hasSentScheduledDispatch(DAY1_RETURN_TASK_TYPE, context.chatId, context.botKey, DAY1_RETURN_SCHEDULE_KEY)) {
+    return { ok: false, code: 'already_sent', context };
+  }
+
+  const suppression = await hasRecentAutomatedBehavioralSuppression(context.chatId);
+  if (suppression.suppressed) {
+    return { ok: false, code: suppression.code, context };
+  }
+
+  return { ok: true, code: null, context };
+}
+
+export async function sendDay1ReturnReminderCore({
+  chatId,
+  botKey,
+  origin = WINBACK_AUTOMATED_ORIGIN,
+  taskType = resolveDay1ReturnTaskType(origin),
+  scheduleKey = null
+} = {}) {
+  const normalizedChatId = Number(chatId);
+  const normalizedBotKey = normalizeBotKey(botKey);
+  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey) {
+    throw createAppError('bad_request', 400, 'bad_request', { retryable: false });
+  }
+
+  const effectiveScheduleKey = origin === WINBACK_ADMIN_TEST_ORIGIN
+    ? (String(scheduleKey || '').trim() || buildManualTestScheduleKey())
+    : DAY1_RETURN_SCHEDULE_KEY;
+
+  const eligibility = await evaluateDay1ReturnEligibility({
+    chatId: normalizedChatId,
+    botKey: normalizedBotKey,
+    origin
+  });
+
+  if (!eligibility.ok) {
+    await markScheduledDispatchAttemptStarted(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      origin,
+      reminder_type: DAY1_RETURN_TASK_TYPE
+    });
+    await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      status: 'failed',
+      lastError: eligibility.code,
+      payloadJson: {
+        origin,
+        reminder_type: DAY1_RETURN_TASK_TYPE,
+        skipped_reason: eligibility.code
+      }
+    });
+    return null;
+  }
+
+  const context = eligibility.context;
+  const message = buildDay1ReturnMessage(context, taskType);
+  if (!message.ok) {
+    await markScheduledDispatchAttemptStarted(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      origin,
+      reminder_type: DAY1_RETURN_TASK_TYPE
+    });
+    await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      status: 'failed',
+      lastError: message.error,
+      payloadJson: {
+        origin,
+        reminder_type: DAY1_RETURN_TASK_TYPE,
+        generation_error: message.error
+      }
+    });
+    throw createAppError('day1_return_build_failed', 502, message.error, { retryable: false });
+  }
+
+  await markScheduledDispatchAttemptStarted(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+    origin,
+    reminder_type: DAY1_RETURN_TASK_TYPE
+  });
+
+  try {
+    const telegramResult = await sendTelegramTextMessage(normalizedChatId, message.messageText, {
+      botKey: normalizedBotKey
+    });
+    const messageIdRaw = Number(telegramResult?.message_id ?? 0);
+    const telegramMessageId = Number.isFinite(messageIdRaw) && messageIdRaw > 0 ? messageIdRaw : null;
+
+    await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      status: 'sent',
+      telegramMessageId,
+      payloadJson: {
+        origin,
+        reminder_type: DAY1_RETURN_TASK_TYPE,
+        onboarding_sent_at: context.onboardingSentAt ? context.onboardingSentAt.toISOString() : null,
+        message_text: message.messageText,
+        variant_family: message.variantFamily,
+        variant_index: message.variantIndex
+      }
+    });
+    await updateUserDeliveryState(normalizedChatId, {
+      status: 'sent',
+      lastError: null,
+      inactiveReason: null,
+      botKey: normalizedBotKey
+    });
+
+    return {
+      ok: true,
+      chatId: normalizedChatId,
+      botKey: normalizedBotKey,
+      taskType,
+      scheduleKey: effectiveScheduleKey,
+      telegramMessageId,
+      messageText: message.messageText,
+      allowlistActive: getAutomatedMessageTestState().active
+    };
+  } catch (error) {
+    const lastError = sanitizeErrorText(error?.detail || error?.message || String(error)) || 'telegram_send_failed';
+    const inactiveReason = classifyPermanentTelegramFailure(error);
+    await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      status: 'failed',
+      lastError,
+      payloadJson: {
+        origin,
+        reminder_type: DAY1_RETURN_TASK_TYPE,
+        inactive_reason: inactiveReason || null
+      }
+    });
+    await updateUserDeliveryState(normalizedChatId, {
+      status: 'failed',
+      lastError,
+      inactiveReason,
+      botKey: normalizedBotKey
+    });
+
+    throw createAppError('telegram_send_failed', 502, lastError, {
+      retryable: !inactiveReason,
+      inactiveReason,
+      cause: error
+    });
+  }
+}
+
+export async function sendAdminTestDay1ReturnReminder({ chatId, botKey }) {
+  const result = await sendDay1ReturnReminderCore({
+    chatId,
+    botKey,
+    origin: WINBACK_ADMIN_TEST_ORIGIN,
+    taskType: resolveDay1ReturnTaskType(WINBACK_ADMIN_TEST_ORIGIN),
+    scheduleKey: buildManualTestScheduleKey()
+  });
+
+  if (!result) {
+    throw createAppError('day1_return_send_failed', 502, 'day1_return_send_failed', { retryable: false });
+  }
+
+  return {
+    ok: true,
+    chat_id: result.chatId,
+    bot_key: result.botKey,
+    reminder_type: DAY1_RETURN_TASK_TYPE,
+    telegram_message_id: result.telegramMessageId,
+    message_text: result.messageText,
+    allowlist_active: result.allowlistActive,
+    task_type: result.taskType,
+    schedule_key: result.scheduleKey
+  };
 }
 
 async function scanEligibleWinbackUsers(reminderType) {
@@ -2147,6 +2580,20 @@ async function enqueueOnboardingSend(boss, { chatId, botKey }) {
   );
 }
 
+async function enqueueDay1ReturnSend(
+  boss,
+  { chatId, botKey, scheduleKey = DAY1_RETURN_SCHEDULE_KEY, taskType = DAY1_RETURN_TASK_TYPE }
+) {
+  return boss.send(
+    QUEUE_DAY1_RETURN_SEND,
+    { chatId, botKey, scheduleKey, taskType },
+    {
+      ...defaultRetryOptions(),
+      singletonKey: `day1_return:${taskType}:${botKey}:${chatId}:${scheduleKey}`
+    }
+  );
+}
+
 async function enqueueFreeLimitHalfSend(boss, { chatId, botKey, scheduleKey, taskType = FREE_LIMIT_HALF_TASK_TYPE }) {
   return boss.send(
     QUEUE_FREE_LIMIT_HALF_SEND,
@@ -2421,6 +2868,78 @@ async function handleOnboardingCompleteSend(jobs) {
 
       if (!inactiveReason && !isFinalAttempt) {
         throw error;
+      }
+    }
+  }
+}
+
+async function handleDay1ReturnScan(jobs, boss) {
+  for (const job of jobs) {
+    const eligibleUsers = await scanEligibleDay1ReturnUsers();
+    console.log('day1-return-scan', {
+      jobId: job.id,
+      eligibleCount: eligibleUsers.length
+    });
+
+    for (const user of eligibleUsers) {
+      await enqueueDay1ReturnSend(boss, user);
+    }
+  }
+}
+
+async function handleDay1ReturnSend(jobs) {
+  for (const job of jobs) {
+    const chatId = Number(job.data?.chatId);
+    const botKey = normalizeBotKey(job.data?.botKey);
+    const taskType = String(job.data?.taskType || '').trim() || DAY1_RETURN_TASK_TYPE;
+    const scheduleKey = String(job.data?.scheduleKey || '').trim() || DAY1_RETURN_SCHEDULE_KEY;
+    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey) {
+      continue;
+    }
+
+    try {
+      const result = await sendDay1ReturnReminderCore({
+        chatId,
+        botKey,
+        origin: WINBACK_AUTOMATED_ORIGIN,
+        taskType,
+        scheduleKey
+      });
+
+      if (!result) {
+        console.log('day1-return-send:skipped', {
+          jobId: job.id,
+          chatId,
+          botKey,
+          scheduleKey
+        });
+        continue;
+      }
+
+      console.log('day1-return-send:sent', {
+        jobId: job.id,
+        chatId,
+        botKey,
+        taskType,
+        telegramMessageId: result.telegramMessageId
+      });
+    } catch (error) {
+      const isFinalAttempt = Number(job.retryCount ?? 0) + 1 >= Number(job.retryLimit ?? env.jobRetryMaxAttempts);
+      const detail = sanitizeErrorText(error?.detail || error?.message || String(error)) || 'day1_return_send_failed';
+
+      console.warn('day1-return-send:failed', {
+        jobId: job.id,
+        chatId,
+        botKey,
+        taskType,
+        scheduleKey,
+        inactiveReason: error?.inactiveReason || null,
+        isFinalAttempt,
+        error: detail
+      });
+
+      if (error?.retryable && !error?.inactiveReason && !isFinalAttempt) {
+        throw error.cause || error;
       }
     }
   }
@@ -2765,6 +3284,18 @@ export async function registerWorkerHandlers(boss) {
     QUEUE_ONBOARDING_COMPLETE_SEND,
     { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
     handleOnboardingCompleteSend
+  );
+
+  await boss.work(
+    QUEUE_DAY1_RETURN_SCAN,
+    { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
+    (jobs) => handleDay1ReturnScan(jobs, boss)
+  );
+
+  await boss.work(
+    QUEUE_DAY1_RETURN_SEND,
+    { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
+    handleDay1ReturnSend
   );
 
   await boss.work(

@@ -131,6 +131,24 @@
     "xp_streak_bonus_label": "Seri bonusu",
     "xp_streak_bonus_pending": "Seri çarpanı henüz XP ödüllerine uygulanmıyor.",
     "notifications": {
+      "day1_return": {
+        "text_variants": [
+          "2 dakikalik bir pratik yapmaya hazir misin? Bir kisa cumle yaz.",
+          "Pratige hizli bir donus ister misin? Bir kisa cumle yaz."
+        ],
+        "voice_variants": [
+          "Kisa bir pratik yapmaya hazir misin? Kisa bir sesli mesaj gonder.",
+          "Pratige geri donmek ister misin? Kisa bir sesli mesaj gonder."
+        ],
+        "topic_text_variants": [
+          "{{topic_title}} ile yeniden baslamak ister misin? Bir kisa cumle yaz.",
+          "{{topic_title}} konusuna hizli bir donus yapalim mi? Bir kisa cumle yaz."
+        ],
+        "topic_voice_variants": [
+          "{{topic_title}} ile yeniden baslamak ister misin? Kisa bir sesli mesaj gonder.",
+          "{{topic_title}} konusuna hizli bir donus yapalim mi? Kisa bir sesli mesaj gonder."
+        ]
+      },
       "winback": {
         "reply_cta_voice": "kisa bir sesli mesaj gonder",
         "reply_cta_text": "tek kisa bir cumle yaz",

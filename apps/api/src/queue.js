@@ -4,6 +4,8 @@ import { captureException } from './sentry.js';
 
 export const QUEUE_ONBOARDING_COMPLETE_SCAN = 'onboarding-complete-scan';
 export const QUEUE_ONBOARDING_COMPLETE_SEND = 'onboarding-complete-send';
+export const QUEUE_DAY1_RETURN_SCAN = 'day1-return-scan';
+export const QUEUE_DAY1_RETURN_SEND = 'day1-return-send';
 export const QUEUE_FREE_LIMIT_HALF_SCAN = 'free-limit-half-scan';
 export const QUEUE_FREE_LIMIT_HALF_SEND = 'free-limit-half-send';
 export const QUEUE_BROADCAST_CAMPAIGN_ENQUEUE = 'broadcast-campaign-enqueue';
@@ -29,6 +31,8 @@ let workerBossPromise = null;
 async function ensureQueues(boss) {
   await boss.createQueue(QUEUE_ONBOARDING_COMPLETE_SCAN);
   await boss.createQueue(QUEUE_ONBOARDING_COMPLETE_SEND, retryOptions);
+  await boss.createQueue(QUEUE_DAY1_RETURN_SCAN);
+  await boss.createQueue(QUEUE_DAY1_RETURN_SEND, retryOptions);
   await boss.createQueue(QUEUE_FREE_LIMIT_HALF_SCAN);
   await boss.createQueue(QUEUE_FREE_LIMIT_HALF_SEND, retryOptions);
   await boss.createQueue(QUEUE_BROADCAST_CAMPAIGN_ENQUEUE, retryOptions);
@@ -95,6 +99,12 @@ export async function startWorkerBoss() {
       await boss.schedule(
         QUEUE_ONBOARDING_COMPLETE_SCAN,
         '*/2 * * * *',
+        {},
+        { key: 'default' }
+      );
+      await boss.schedule(
+        QUEUE_DAY1_RETURN_SCAN,
+        '10 * * * *',
         {},
         { key: 'default' }
       );

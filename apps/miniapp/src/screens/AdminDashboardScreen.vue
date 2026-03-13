@@ -483,8 +483,8 @@
         />
 
         <AdminChart
-          title="Onboarding funnel: last_30_days vs last_7_days"
-          subtitle="Rolling windows with the current payload and exclusion filters."
+          title="Onboarding funnel"
+          subtitle="Each stage is the share of Started users in that window. Hover for percent and user count."
           kind="bar"
           x-labels="all"
           :stacked="false"
@@ -2023,21 +2023,25 @@ const actionFunnelStageMeta = {
 const actionFunnelComparisonChartSeries = [
   {
     key: 'last_30_days_pct',
-    label: 'last_30_days',
+    label: 'Last 30d',
     color: 'rgba(38, 84, 124, 0.88)',
     barPercentage: 0.56,
     categoryPercentage: 0.78,
     maxBarThickness: 28,
+    tooltipExtraKey: 'last_30_days_count',
+    tooltipExtraLabel: 'users',
     order: 1
   },
   {
     key: 'last_7_days_pct',
-    label: 'last_7_days',
+    label: 'Last 7d',
     color: 'rgba(199, 90, 36, 0.88)',
     barPercentage: 0.56,
     categoryPercentage: 0.78,
     maxBarThickness: 28,
     format: 'percent',
+    tooltipExtraKey: 'last_7_days_count',
+    tooltipExtraLabel: 'users',
     order: 2
   }
 ];

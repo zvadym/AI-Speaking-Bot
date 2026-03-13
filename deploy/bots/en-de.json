@@ -131,6 +131,24 @@
     "xp_streak_bonus_label": "Streak bonus",
     "xp_streak_bonus_pending": "Streak multiplier is not applied to awards yet.",
     "notifications": {
+      "day1_return": {
+        "text_variants": [
+          "Ready for a 2-minute practice? Write one short sentence.",
+          "Want to do a quick practice? Write one short sentence."
+        ],
+        "voice_variants": [
+          "Ready for a quick practice? Send a short voice note.",
+          "Want to get back into practice? Send a short voice note."
+        ],
+        "topic_text_variants": [
+          "Want a quick restart with {{topic_title}}? Write one short sentence.",
+          "Ready to jump back into {{topic_title}}? Write one short sentence."
+        ],
+        "topic_voice_variants": [
+          "Want a quick restart with {{topic_title}}? Send a short voice note.",
+          "Ready to jump back into {{topic_title}}? Send a short voice note."
+        ]
+      },
       "winback": {
         "reply_cta_voice": "send a short voice message",
         "reply_cta_text": "write one short sentence",

@@ -131,6 +131,24 @@
     "xp_streak_bonus_label": "Streak-Bonus",
     "xp_streak_bonus_pending": "Der Streak-Multiplikator wird aktuell noch nicht auf XP angewendet.",
     "notifications": {
+      "day1_return": {
+        "text_variants": [
+          "Bereit fuer 2 Minuten Uebung? Schreib einen kurzen Satz.",
+          "Willst du kurz weiterueben? Schreib einen kurzen Satz."
+        ],
+        "voice_variants": [
+          "Bereit fuer eine kurze Uebung? Schick eine kurze Sprachnachricht.",
+          "Willst du wieder kurz einsteigen? Schick eine kurze Sprachnachricht."
+        ],
+        "topic_text_variants": [
+          "Willst du wieder mit {{topic_title}} einsteigen? Schreib einen kurzen Satz.",
+          "Bereit fuer einen schnellen Neustart mit {{topic_title}}? Schreib einen kurzen Satz."
+        ],
+        "topic_voice_variants": [
+          "Willst du wieder mit {{topic_title}} einsteigen? Schick eine kurze Sprachnachricht.",
+          "Bereit fuer einen schnellen Neustart mit {{topic_title}}? Schick eine kurze Sprachnachricht."
+        ]
+      },
       "winback": {
         "reply_cta_voice": "schick eine kurze Sprachnachricht",
         "reply_cta_text": "schreib einen kurzen Satz",
