@@ -632,6 +632,69 @@ test('internal topic menu renders all topics and marks pro topics for free users
   });
 });
 
+test('internal topic menu marks pro topics with an open lock for pro users', async () => {
+  const sentMessages = [];
+
+  await withMockedFetch(async (_url, init) => {
+    sentMessages.push(JSON.parse(String(init?.body || '{}')));
+    return new Response(JSON.stringify({
+      ok: true,
+      result: { message_id: 992 }
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }, async () => {
+    await withMockedQuery(async (source, params = []) => {
+      if (source.includes('CASE') && source.includes('FROM users') && source.includes('effective_tier')) {
+        return { rows: [{ effective_tier: 'pro' }] };
+      }
+
+      if (source.includes('FROM user_bots') && source.includes('topic_pack_json')) {
+        return { rows: [{ topic_enabled: false, topic_template_id: null, topic_pack_json: null }] };
+      }
+
+      if (source.includes('FROM bot_topic_catalog')) {
+        assert.equal(params[0], 'uk-de');
+        return {
+          rows: [
+            {
+              bot_key: 'uk-de',
+              topic_id: 'pro-topic',
+              emoji: '🔒',
+              access_tier: 'pro',
+              title_base: 'Pro Topic',
+              goal_base: 'Pro goal',
+              allowed_base: ['one', 'two'],
+              avoid_base: ['three', 'four'],
+              starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
+              recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
+              sort_order: 30,
+              created_at: null,
+              updated_at: null
+            }
+          ]
+        };
+      }
+
+      throw new Error(`Unexpected query in internal topics menu pro badge test: ${source.slice(0, 160)}`);
+    }, async () => {
+      const app = await createApp({ apiBoss: { publish: async () => null } });
+      const response = await request(app, {
+        method: 'POST',
+        path: '/internal/topics/menu',
+        headers: { 'X-Internal-Secret': 'internal-secret' },
+        body: { chat_id: 42, bot_key: 'uk-de' }
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(response.json.ok, true);
+      assert.equal(sentMessages.length, 1);
+      assert.equal(sentMessages[0].reply_markup.inline_keyboard[0][0].text, '🔒 Pro Topic ✅ PRO');
+    });
+  });
+});
+
 test('admin topics list returns v2 topic fields', async () => {
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('FROM bot_topic_catalog')) {

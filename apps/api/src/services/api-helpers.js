@@ -332,20 +332,22 @@ export function createApiHelpers(ctx) {
     return raw;
   }
 
-  function formatTopicMenuLabel(item = {}, locale = {}) {
+  function formatTopicMenuLabel(item = {}, locale = {}, { userTier = null } = {}) {
     const emoji = String(item.emoji || '🧩').trim();
     const title = String(item.title_base || item.topic_id || '').trim();
     if (!emoji && !title) return '';
     const base = `${emoji} ${title}`.trim();
     const accessTier = String(item.access_tier || 'all').trim().toLowerCase();
     if (accessTier !== 'pro') return base;
-    const suffix = String(locale.topic_menu_pro_suffix || '🔒 PRO').trim() || '🔒 PRO';
+    const effectiveTier = userTier == null ? null : normalizeEffectiveTopicAccessTier(userTier);
+    const fallbackSuffix = effectiveTier === 'pro' ? '✅ PRO' : '🔒 PRO';
+    const suffix = String(locale.topic_menu_pro_suffix || fallbackSuffix).trim() || fallbackSuffix;
     return `${base} ${suffix}`.trim();
   }
 
-  function buildTopicMenuReplyMarkup(items = [], locale = {}) {
+  function buildTopicMenuReplyMarkup(items = [], locale = {}, { userTier = null } = {}) {
     const keyboard = items.map((item) => ({
-      text: formatTopicMenuLabel(item, locale),
+      text: formatTopicMenuLabel(item, locale, { userTier }),
       callback_data: `topic:${String(item.topic_id || '').trim().toLowerCase()}`
     }))
       .filter((button) => button.text && button.callback_data !== 'topic:')

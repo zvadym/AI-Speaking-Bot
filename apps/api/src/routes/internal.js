@@ -133,7 +133,7 @@ export function createInternalRouter(ctx, helpers) {
       const activeTopic = state.topic_enabled
         ? { ...(catalogTopic || {}), ...(pack || {}) }
         : null;
-      const topicTitle = activeTopic ? helpers.formatTopicMenuLabel(activeTopic, locale) : '';
+      const topicTitle = activeTopic ? helpers.formatTopicMenuLabel(activeTopic, locale, { userTier }) : '';
       const currentPrefix = String(locale.topic_menu_current_prefix || 'Current topic: ').trim() || 'Current topic: ';
       const currentNone = String(locale.topic_menu_current_none || 'Current topic: none active.').trim() || 'Current topic: none active.';
       const bodyText = [
@@ -144,7 +144,7 @@ export function createInternalRouter(ctx, helpers) {
 
       const telegramResult = await helpers.sendTelegramTextMessage(chatId, bodyText, {
         botKey,
-        replyMarkup: helpers.buildTopicMenuReplyMarkup(catalog, locale)
+        replyMarkup: helpers.buildTopicMenuReplyMarkup(catalog, locale, { userTier })
       });
 
       return res.json({

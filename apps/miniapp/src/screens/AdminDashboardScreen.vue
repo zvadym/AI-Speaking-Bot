@@ -488,7 +488,7 @@
           kind="bar"
           x-labels="all"
           :stacked="false"
-          :axis-formats="{ y1: 'percent' }"
+          :axis-formats="{ y: 'percent' }"
           :data="actionFunnelComparisonSeries"
           :series="actionFunnelComparisonChartSeries"
         />
@@ -2021,8 +2021,8 @@ const actionFunnelStageMeta = {
 };
 const actionFunnelComparisonChartSeries = [
   {
-    key: 'last_30_days_count',
-    label: 'last_30_days users',
+    key: 'last_30_days_pct',
+    label: 'last_30_days',
     color: 'rgba(38, 84, 124, 0.88)',
     barPercentage: 0.56,
     categoryPercentage: 0.78,
@@ -2030,31 +2030,14 @@ const actionFunnelComparisonChartSeries = [
     order: 1
   },
   {
-    key: 'last_7_days_count',
-    label: 'last_7_days users',
+    key: 'last_7_days_pct',
+    label: 'last_7_days',
     color: 'rgba(199, 90, 36, 0.88)',
     barPercentage: 0.56,
     categoryPercentage: 0.78,
     maxBarThickness: 28,
+    format: 'percent',
     order: 2
-  },
-  {
-    key: 'last_30_days_pct',
-    label: 'last_30_days % of start',
-    color: 'rgba(38, 84, 124, 1)',
-    type: 'line',
-    yAxisId: 'y1',
-    format: 'percent',
-    order: 3
-  },
-  {
-    key: 'last_7_days_pct',
-    label: 'last_7_days % of start',
-    color: 'rgba(199, 90, 36, 1)',
-    type: 'line',
-    yAxisId: 'y1',
-    format: 'percent',
-    order: 4
   }
 ];
 const topicSeriesPalette = [
