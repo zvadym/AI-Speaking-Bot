@@ -483,36 +483,14 @@
         />
 
         <AdminChart
-          title="Onboarding funnel"
-          subtitle="Current query with stage counts and % of start."
+          title="Onboarding funnel: last_30_days vs last_7_days"
+          subtitle="Rolling windows with the current payload and exclusion filters."
           kind="bar"
           x-labels="all"
           :stacked="false"
           :axis-formats="{ y1: 'percent' }"
-          :data="actionFunnelOverallSeries"
-          :series="actionFunnelChartSeries"
-        />
-
-        <AdminChart
-          title="Onboarding funnel: last month"
-          subtitle="Previous calendar month with the current payload and exclusion filters."
-          kind="bar"
-          x-labels="all"
-          :stacked="false"
-          :axis-formats="{ y1: 'percent' }"
-          :data="actionFunnelLastMonthSeries"
-          :series="actionFunnelChartSeries"
-        />
-
-        <AdminChart
-          title="Onboarding funnel: last week"
-          subtitle="Previous Monday through Sunday with the current payload and exclusion filters."
-          kind="bar"
-          x-labels="all"
-          :stacked="false"
-          :axis-formats="{ y1: 'percent' }"
-          :data="actionFunnelLastWeekSeries"
-          :series="actionFunnelChartSeries"
+          :data="actionFunnelComparisonSeries"
+          :series="actionFunnelComparisonChartSeries"
         />
 
         <AdminChart
@@ -1777,6 +1755,10 @@ function toExclusiveBoundaryYmd(inclusiveYmd) {
 function rangeForPreset(preset) {
   const now = new Date();
   const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  if (preset === 'last_7_days') {
+    const from = new Date(todayUtc.getTime() - 6 * DAY_MS);
+    return { from: dateToYmdUtc(from), to: dateToYmdUtc(todayUtc) };
+  }
   if (preset === 'last_week') {
     const day = todayUtc.getUTCDay();
     const daysFromMonday = (day + 6) % 7;
@@ -1901,9 +1883,8 @@ const newUsersByBotSeriesConfig = ref([]);
 const newPaidSeries = ref([]);
 const actionEventsSeries = ref([]);
 const actionTotalsSeries = ref([]);
-const actionFunnelOverallSeries = ref([]);
-const actionFunnelLastMonthSeries = ref([]);
-const actionFunnelLastWeekSeries = ref([]);
+const actionFunnelLast30DaysSeries = ref([]);
+const actionFunnelLast7DaysSeries = ref([]);
 const topicUsageSeries = ref([]);
 const topicUsageSeriesConfig = ref([]);
 const activeUsersSeries = ref([]);
@@ -1939,6 +1920,28 @@ const activeUsersChartSeries = computed(() => {
     return {
       ...row,
       overall: totalUsersByDay.get(day) ?? 0
+    };
+  });
+});
+const actionFunnelComparisonSeries = computed(() => {
+  const stageKeys = Object.keys(actionFunnelStageMeta);
+  const last30ByAction = new Map(
+    actionFunnelLast30DaysSeries.value.map((row) => [String(row?.action ?? '').trim(), row])
+  );
+  const last7ByAction = new Map(
+    actionFunnelLast7DaysSeries.value.map((row) => [String(row?.action ?? '').trim(), row])
+  );
+
+  return stageKeys.map((action) => {
+    const stageMeta = actionFunnelStageMeta[action];
+    const last30 = last30ByAction.get(action);
+    const last7 = last7ByAction.get(action);
+    return {
+      day: stageMeta?.label || actionLabel(action),
+      last_30_days_count: safeNum(last30?.count),
+      last_7_days_count: safeNum(last7?.count),
+      last_30_days_pct: safeNum(last30?.pct),
+      last_7_days_pct: safeNum(last7?.pct)
     };
   });
 });
@@ -2016,23 +2019,42 @@ const actionFunnelStageMeta = {
   free_limit_half: { label: '50% free limit', color: 'rgba(207, 150, 56, 0.9)' },
   paywall_shown: { label: 'Paywall shown', color: 'rgba(174, 43, 40, 0.86)' }
 };
-const actionFunnelChartSeries = [
+const actionFunnelComparisonChartSeries = [
   {
-    key: 'count',
-    label: 'Users',
+    key: 'last_30_days_count',
+    label: 'last_30_days users',
     color: 'rgba(38, 84, 124, 0.88)',
-    colorKey: 'barColor',
-    barPercentage: 0.64,
+    barPercentage: 0.56,
     categoryPercentage: 0.78,
-    maxBarThickness: 42
+    maxBarThickness: 28,
+    order: 1
   },
   {
-    key: 'pct',
-    label: '% of start',
-    color: 'rgba(31, 107, 99, 0.96)',
+    key: 'last_7_days_count',
+    label: 'last_7_days users',
+    color: 'rgba(199, 90, 36, 0.88)',
+    barPercentage: 0.56,
+    categoryPercentage: 0.78,
+    maxBarThickness: 28,
+    order: 2
+  },
+  {
+    key: 'last_30_days_pct',
+    label: 'last_30_days % of start',
+    color: 'rgba(38, 84, 124, 1)',
     type: 'line',
     yAxisId: 'y1',
-    format: 'percent'
+    format: 'percent',
+    order: 3
+  },
+  {
+    key: 'last_7_days_pct',
+    label: 'last_7_days % of start',
+    color: 'rgba(199, 90, 36, 1)',
+    type: 'line',
+    yAxisId: 'y1',
+    format: 'percent',
+    order: 4
   }
 ];
 const topicSeriesPalette = [
@@ -3397,17 +3419,11 @@ function analyticsQueryForRange(range) {
   };
 }
 
-function actionFunnelColor(rawAction) {
-  const action = (rawAction || '').toString().trim();
-  return actionFunnelStageMeta[action]?.color || 'rgba(87, 60, 127, 0.86)';
-}
-
 function buildActionFunnelSeries(rawSeries) {
   return (Array.isArray(rawSeries) ? rawSeries : []).map((row) => ({
-    day: actionFunnelStageMeta[String(row?.action || '').trim()]?.label || actionLabel(row?.action),
+    action: String(row?.action || '').trim(),
     count: Number(row?.count || 0),
-    pct: Number(row?.pct || 0),
-    barColor: actionFunnelColor(row?.action)
+    pct: Number(row?.pct || 0)
   }));
 }
 
@@ -3934,9 +3950,8 @@ async function refreshAnalytics() {
   try {
     const q = analyticsQuery();
     const funnelComparisonQueries = {
-      overall: q,
-      lastMonth: analyticsQueryForRange(rangeForPreset('last_month')),
-      lastWeek: analyticsQueryForRange(rangeForPreset('last_week'))
+      last30Days: analyticsQueryForRange(rangeForPreset('last_30_days')),
+      last7Days: analyticsQueryForRange(rangeForPreset('last_7_days'))
     };
     const headers = adminHeaders();
     const [
@@ -3946,9 +3961,8 @@ async function refreshAnalytics() {
       newPaid,
       actionEvents,
       actionTotals,
-      actionFunnelOverall,
-      actionFunnelLastMonth,
-      actionFunnelLastWeek,
+      actionFunnelLast30Days,
+      actionFunnelLast7Days,
       topicsByDay,
       activeUsers,
       totalUsers,
@@ -3970,9 +3984,8 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/new-paid-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/actions-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.overall, headers }),
-      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.lastMonth, headers }),
-      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.lastWeek, headers }),
+      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last30Days, headers }),
+      apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last7Days, headers }),
       apiJson(props.apiBase, '/admin/metrics/topics-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/total-users-by-day', { query: q, headers }),
@@ -4003,9 +4016,8 @@ async function refreshAnalytics() {
           count: Number(row?.count || 0)
         }))
       : [];
-    actionFunnelOverallSeries.value = buildActionFunnelSeries(actionFunnelOverall?.series);
-    actionFunnelLastMonthSeries.value = buildActionFunnelSeries(actionFunnelLastMonth?.series);
-    actionFunnelLastWeekSeries.value = buildActionFunnelSeries(actionFunnelLastWeek?.series);
+    actionFunnelLast30DaysSeries.value = buildActionFunnelSeries(actionFunnelLast30Days?.series);
+    actionFunnelLast7DaysSeries.value = buildActionFunnelSeries(actionFunnelLast7Days?.series);
     const topicsByDayRawRows = Array.isArray(topicsByDay?.series) ? topicsByDay.series : [];
     const { chartData: topicChartData, seriesConfig: topicChartConfig } = transformByTopicData(topicsByDayRawRows);
     topicUsageSeries.value = topicChartData;

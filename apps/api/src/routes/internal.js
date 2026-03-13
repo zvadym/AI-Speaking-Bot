@@ -129,9 +129,11 @@ export function createInternalRouter(ctx, helpers) {
       const catalog = await helpers.fetchTopicCatalogRows(botKey, { userTier });
       const state = stateResult.rows[0] || {};
       const pack = helpers.normalizeTopicPackValue(state.topic_pack_json);
-      const topicTitle = state.topic_enabled && pack && typeof pack.title_base === 'string'
-        ? pack.title_base.trim()
-        : '';
+      const catalogTopic = catalog.find((item) => item.topic_id === String(state.topic_template_id || '').trim().toLowerCase()) || null;
+      const activeTopic = state.topic_enabled
+        ? { ...(catalogTopic || {}), ...(pack || {}) }
+        : null;
+      const topicTitle = activeTopic ? helpers.formatTopicMenuLabel(activeTopic, locale) : '';
       const currentPrefix = String(locale.topic_menu_current_prefix || 'Current topic: ').trim() || 'Current topic: ';
       const currentNone = String(locale.topic_menu_current_none || 'Current topic: none active.').trim() || 'Current topic: none active.';
       const bodyText = [

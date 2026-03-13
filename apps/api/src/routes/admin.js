@@ -825,7 +825,7 @@ export function createAdminRouter(ctx, helpers) {
        labeled AS (
          SELECT
            CASE
-             WHEN xp_total <= 49 THEN '0–49'
+             WHEN xp_total <= 49 THEN '1–49'
              WHEN xp_total <= 99 THEN '50–99'
              WHEN xp_total <= 199 THEN '100–199'
              WHEN xp_total <= 499 THEN '200–499'
@@ -837,13 +837,14 @@ export function createAdminRouter(ctx, helpers) {
            END AS bucket,
            COUNT(*)::int AS users
          FROM per_user
+         WHERE xp_total > 0
          GROUP BY 1
        ),
        buckets AS (
          SELECT *
          FROM (
            VALUES
-             (1, '0–49'),
+             (1, '1–49'),
              (2, '50–99'),
              (3, '100–199'),
              (4, '200–499'),
@@ -1599,7 +1600,7 @@ export function createAdminRouter(ctx, helpers) {
         bot_key: meta.bot_key,
         base_language: meta.base_language || null,
         learning_language: meta.learning_language || null,
-        draft
+        draft: helpers.serializeTopicRow({ bot_key: meta.bot_key, ...draft })
       });
     } catch (err) {
       return res.status(err?.status || 400).json({
@@ -1631,7 +1632,7 @@ export function createAdminRouter(ctx, helpers) {
         bot_key: meta.bot_key,
         base_language: meta.base_language || null,
         learning_language: meta.learning_language || null,
-        draft
+        draft: helpers.serializeTopicRow({ bot_key: meta.bot_key, ...draft })
       });
     } catch (err) {
       return res.status(err?.status || 400).json({
@@ -1667,6 +1668,7 @@ export function createAdminRouter(ctx, helpers) {
         currentDraft,
         instruction
       });
+      const payload = helpers.normalizeTopicRequestBody(clonedDraft);
 
       const { rows } = await ctx.pool.query(
         `INSERT INTO bot_topic_catalog (
@@ -1680,10 +1682,26 @@ export function createAdminRouter(ctx, helpers) {
            avoid_base,
            starter_questions_target,
            recovery_questions_target,
+           topic_mode,
+           speech_acts_base,
+           lexical_anchors_target,
+           grammar_targets_json,
+           starter_questions_by_level_target,
+           recovery_questions_by_level_target,
+           bridge_patterns_target,
+           hard_block_base,
+           soft_redirect_base,
+           opening_prompt_target,
            sort_order,
            updated_at
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11, NOW())
+         VALUES (
+           $1, $2, $3, $4, $5, $6,
+           $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb,
+           $11, $12::jsonb, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb,
+           $17::jsonb, $18::jsonb, $19::jsonb, $20,
+           $21, NOW()
+         )
          ON CONFLICT (bot_key, topic_id) DO UPDATE SET
            emoji = EXCLUDED.emoji,
            access_tier = EXCLUDED.access_tier,
@@ -1693,22 +1711,45 @@ export function createAdminRouter(ctx, helpers) {
            avoid_base = EXCLUDED.avoid_base,
            starter_questions_target = EXCLUDED.starter_questions_target,
            recovery_questions_target = EXCLUDED.recovery_questions_target,
+           topic_mode = EXCLUDED.topic_mode,
+           speech_acts_base = EXCLUDED.speech_acts_base,
+           lexical_anchors_target = EXCLUDED.lexical_anchors_target,
+           grammar_targets_json = EXCLUDED.grammar_targets_json,
+           starter_questions_by_level_target = EXCLUDED.starter_questions_by_level_target,
+           recovery_questions_by_level_target = EXCLUDED.recovery_questions_by_level_target,
+           bridge_patterns_target = EXCLUDED.bridge_patterns_target,
+           hard_block_base = EXCLUDED.hard_block_base,
+           soft_redirect_base = EXCLUDED.soft_redirect_base,
+           opening_prompt_target = EXCLUDED.opening_prompt_target,
            sort_order = EXCLUDED.sort_order,
            updated_at = NOW()
          RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, avoid_base,
-                   starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at`,
+                   starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at,
+                   topic_mode, speech_acts_base, lexical_anchors_target, grammar_targets_json,
+                   starter_questions_by_level_target, recovery_questions_by_level_target,
+                   bridge_patterns_target, hard_block_base, soft_redirect_base, opening_prompt_target`,
         [
           targetMeta.bot_key,
-          clonedDraft.topic_id,
-          clonedDraft.emoji,
-          clonedDraft.access_tier,
-          clonedDraft.title_base,
-          clonedDraft.goal_base,
-          JSON.stringify(clonedDraft.allowed_base),
-          JSON.stringify(clonedDraft.avoid_base),
-          JSON.stringify(clonedDraft.starter_questions_target),
-          JSON.stringify(clonedDraft.recovery_questions_target),
-          clonedDraft.sort_order
+          payload.topic_id,
+          payload.emoji,
+          payload.access_tier_value,
+          payload.title_base,
+          payload.goal_base,
+          payload.allowed_base_json,
+          payload.avoid_base_json,
+          payload.starter_questions_target_json,
+          payload.recovery_questions_target_json,
+          payload.topic_mode_value,
+          payload.speech_acts_base_json,
+          payload.lexical_anchors_target_json,
+          payload.grammar_targets_json_value,
+          payload.starter_questions_by_level_target_json,
+          payload.recovery_questions_by_level_target_json,
+          payload.bridge_patterns_target_json,
+          payload.hard_block_base_json,
+          payload.soft_redirect_base_json,
+          payload.opening_prompt_target_value,
+          payload.sort_order
         ]
       );
 
@@ -1742,12 +1783,31 @@ export function createAdminRouter(ctx, helpers) {
            avoid_base,
            starter_questions_target,
            recovery_questions_target,
+           topic_mode,
+           speech_acts_base,
+           lexical_anchors_target,
+           grammar_targets_json,
+           starter_questions_by_level_target,
+           recovery_questions_by_level_target,
+           bridge_patterns_target,
+           hard_block_base,
+           soft_redirect_base,
+           opening_prompt_target,
            sort_order,
            updated_at
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11, NOW())
+         VALUES (
+           $1, $2, $3, $4, $5, $6,
+           $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb,
+           $11, $12::jsonb, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb,
+           $17::jsonb, $18::jsonb, $19::jsonb, $20,
+           $21, NOW()
+         )
          RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, avoid_base,
-                   starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at`,
+                   starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at,
+                   topic_mode, speech_acts_base, lexical_anchors_target, grammar_targets_json,
+                   starter_questions_by_level_target, recovery_questions_by_level_target,
+                   bridge_patterns_target, hard_block_base, soft_redirect_base, opening_prompt_target`,
         [
           meta.bot_key,
           payload.topic_id,
@@ -1759,6 +1819,16 @@ export function createAdminRouter(ctx, helpers) {
           payload.avoid_base_json,
           payload.starter_questions_target_json,
           payload.recovery_questions_target_json,
+          payload.topic_mode_value,
+          payload.speech_acts_base_json,
+          payload.lexical_anchors_target_json,
+          payload.grammar_targets_json_value,
+          payload.starter_questions_by_level_target_json,
+          payload.recovery_questions_by_level_target_json,
+          payload.bridge_patterns_target_json,
+          payload.hard_block_base_json,
+          payload.soft_redirect_base_json,
+          payload.opening_prompt_target_value,
           payload.sort_order
         ]
       );
@@ -1779,7 +1849,9 @@ export function createAdminRouter(ctx, helpers) {
     try {
       const currentTopicId = normalizeTopicId(req.params.id);
       const meta = helpers.requireTopicBotMeta(req.body?.bot_key ?? req.query?.bot_key);
-      const payload = helpers.normalizeTopicRequestBody(req.body);
+      const existingTopic = await helpers.fetchTopicCatalogItem(meta.bot_key, currentTopicId);
+      if (!existingTopic) return res.status(404).json({ error: 'topic_not_found' });
+      const payload = helpers.normalizeTopicRequestBody(req.body, { existingTopic });
       const { rows } = await ctx.pool.query(
         `UPDATE bot_topic_catalog
          SET topic_id = $3,
@@ -1791,12 +1863,25 @@ export function createAdminRouter(ctx, helpers) {
              avoid_base = $9::jsonb,
              starter_questions_target = $10::jsonb,
              recovery_questions_target = $11::jsonb,
-             sort_order = $12,
+             topic_mode = $12,
+             speech_acts_base = $13::jsonb,
+             lexical_anchors_target = $14::jsonb,
+             grammar_targets_json = $15::jsonb,
+             starter_questions_by_level_target = $16::jsonb,
+             recovery_questions_by_level_target = $17::jsonb,
+             bridge_patterns_target = $18::jsonb,
+             hard_block_base = $19::jsonb,
+             soft_redirect_base = $20::jsonb,
+             opening_prompt_target = $21,
+             sort_order = $22,
              updated_at = NOW()
          WHERE bot_key = $1
            AND topic_id = $2
          RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, avoid_base,
-                   starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at`,
+                   starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at,
+                   topic_mode, speech_acts_base, lexical_anchors_target, grammar_targets_json,
+                   starter_questions_by_level_target, recovery_questions_by_level_target,
+                   bridge_patterns_target, hard_block_base, soft_redirect_base, opening_prompt_target`,
         [
           meta.bot_key,
           currentTopicId,
@@ -1809,6 +1894,16 @@ export function createAdminRouter(ctx, helpers) {
           payload.avoid_base_json,
           payload.starter_questions_target_json,
           payload.recovery_questions_target_json,
+          payload.topic_mode_value,
+          payload.speech_acts_base_json,
+          payload.lexical_anchors_target_json,
+          payload.grammar_targets_json_value,
+          payload.starter_questions_by_level_target_json,
+          payload.recovery_questions_by_level_target_json,
+          payload.bridge_patterns_target_json,
+          payload.hard_block_base_json,
+          payload.soft_redirect_base_json,
+          payload.opening_prompt_target_value,
           payload.sort_order
         ]
       );

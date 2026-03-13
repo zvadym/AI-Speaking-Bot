@@ -534,7 +534,7 @@ test('miniapp mutation endpoints validate input and persist profile changes', as
   });
 });
 
-test('internal topic menu renders only free-visible topics for free users', async () => {
+test('internal topic menu renders all topics and marks pro topics for free users', async () => {
   const sentMessages = [];
 
   await withMockedFetch(async (_url, init) => {
@@ -621,12 +621,164 @@ test('internal topic menu renders only free-visible topics for free users', asyn
 
       assert.equal(response.status, 200);
       assert.equal(response.json.ok, true);
-      assert.equal(response.json.count, 2);
+      assert.equal(response.json.count, 3);
       assert.equal(sentMessages.length, 1);
       assert.deepEqual(
         sentMessages[0].reply_markup.inline_keyboard.map((row) => row[0].callback_data),
-        ['topic:all-topic', 'topic:free-topic', 'topic:clear']
+        ['topic:all-topic', 'topic:free-topic', 'topic:pro-topic', 'topic:clear']
       );
+      assert.equal(sentMessages[0].reply_markup.inline_keyboard[2][0].text, '🔒 Pro Topic 🔒 PRO');
     });
+  });
+});
+
+test('admin topics list returns v2 topic fields', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('FROM bot_topic_catalog')) {
+      assert.equal(params[0], 'uk-de');
+      return {
+        rows: [
+          {
+            bot_key: 'uk-de',
+            topic_id: 'coffee',
+            emoji: '☕',
+            access_tier: 'all',
+            title_base: 'Coffee shop',
+            goal_base: 'Practice a short cafe order.',
+            allowed_base: ['ordering drinks', 'asking for milk'],
+            avoid_base: ['politics', 'weather'],
+            starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
+            recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
+            sort_order: 10,
+            created_at: null,
+            updated_at: null,
+            topic_mode: 'roleplay',
+            speech_acts_base: ['ordering', 'clarifying'],
+            lexical_anchors_target: ['latte', 'oat milk'],
+            grammar_targets_json: { tense: ['present simple'] },
+            starter_questions_by_level_target: { default: ['Q1?'], a1: ['A1 starter?'] },
+            recovery_questions_by_level_target: { default: ['R1?'] },
+            bridge_patterns_target: ['How about...'],
+            hard_block_base: ['politics'],
+            soft_redirect_base: ['weather'],
+            opening_prompt_target: 'Do you want a latte or cappuccino?'
+          }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in admin topics list test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      method: 'GET',
+      path: '/admin/topics?bot_key=uk-de',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.selected_bot_key, 'uk-de');
+    assert.equal(response.json.items.length, 1);
+    assert.equal(response.json.items[0].topic_mode, 'roleplay');
+    assert.equal(response.json.items[0].opening_prompt_target, 'Do you want a latte or cappuccino?');
+    assert.deepEqual(response.json.items[0].lexical_anchors_target, ['latte', 'oat milk']);
+    assert.deepEqual(response.json.items[0].starter_questions_by_level_target, {
+      default: ['Q1?'],
+      a1: ['A1 starter?']
+    });
+  });
+});
+
+test('admin topic update preserves existing v2 fields when legacy form omits them', async () => {
+  const existingRow = {
+    bot_key: 'uk-de',
+    topic_id: 'coffee',
+    emoji: '☕',
+    access_tier: 'all',
+    title_base: 'Coffee shop',
+    goal_base: 'Practice a short cafe order.',
+    allowed_base: ['ordering drinks', 'asking for milk'],
+    avoid_base: ['politics', 'weather'],
+    starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
+    recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
+    sort_order: 10,
+    created_at: null,
+    updated_at: null,
+    topic_mode: 'roleplay',
+    speech_acts_base: ['ordering', 'clarifying'],
+    lexical_anchors_target: ['latte', 'oat milk'],
+    grammar_targets_json: { tense: ['present simple'] },
+    starter_questions_by_level_target: { default: ['Q1?'], a1: ['A1 starter?'] },
+    recovery_questions_by_level_target: { default: ['R1?'] },
+    bridge_patterns_target: ['How about...'],
+    hard_block_base: ['politics'],
+    soft_redirect_base: ['weather'],
+    opening_prompt_target: 'Do you want a latte or cappuccino?'
+  };
+
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('FROM bot_topic_catalog') && source.includes('LIMIT 1')) {
+      assert.deepEqual(params, ['uk-de', 'coffee']);
+      return { rows: [existingRow] };
+    }
+
+    if (source.includes('UPDATE bot_topic_catalog')) {
+      assert.equal(params[0], 'uk-de');
+      assert.equal(params[1], 'coffee');
+      assert.equal(params[2], 'coffee');
+      assert.equal(params[11], 'roleplay');
+      assert.equal(params[12], JSON.stringify(['ordering', 'clarifying']));
+      assert.equal(params[13], JSON.stringify(['latte', 'oat milk']));
+      assert.equal(params[14], JSON.stringify({ tense: ['present simple'] }));
+      assert.equal(params[15], JSON.stringify({ default: ['Q1?'], a1: ['A1 starter?'] }));
+      assert.equal(params[16], JSON.stringify({ default: ['R1?'] }));
+      assert.equal(params[17], JSON.stringify(['How about...']));
+      assert.equal(params[18], JSON.stringify(['politics']));
+      assert.equal(params[19], JSON.stringify(['weather']));
+      assert.equal(params[20], 'Do you want a latte or cappuccino?');
+      return {
+        rows: [
+          {
+            ...existingRow,
+            title_base: params[5],
+            goal_base: params[6],
+            allowed_base: JSON.parse(params[7]),
+            avoid_base: JSON.parse(params[8]),
+            starter_questions_target: JSON.parse(params[9]),
+            recovery_questions_target: JSON.parse(params[10]),
+            sort_order: params[21]
+          }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in admin topic update test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      method: 'PUT',
+      path: '/admin/topics/coffee',
+      headers: { 'X-Admin-Password': 'secret-admin' },
+      body: {
+        bot_key: 'uk-de',
+        topic_id: 'coffee',
+        emoji: '☕',
+        access_tier: 'all',
+        title_base: 'Coffee shop updated',
+        goal_base: 'Practice updated cafe orders.',
+        allowed_base: ['ordering drinks', 'asking about desserts'],
+        avoid_base: ['politics', 'religion'],
+        starter_questions_target: ['New Q1?', 'New Q2?', 'New Q3?', 'New Q4?', 'New Q5?', 'New Q6?'],
+        recovery_questions_target: ['New R1?', 'New R2?', 'New R3?', 'New R4?', 'New R5?', 'New R6?'],
+        sort_order: 12
+      }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.item.title_base, 'Coffee shop updated');
+    assert.equal(response.json.item.topic_mode, 'roleplay');
+    assert.equal(response.json.item.opening_prompt_target, 'Do you want a latte or cappuccino?');
+    assert.deepEqual(response.json.item.lexical_anchors_target, ['latte', 'oat milk']);
+    assert.deepEqual(response.json.item.bridge_patterns_target, ['How about...']);
   });
 });

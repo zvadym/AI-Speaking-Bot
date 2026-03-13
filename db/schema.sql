@@ -682,7 +682,18 @@ CREATE TABLE public.bot_topic_catalog (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     access_tier text DEFAULT 'all'::text NOT NULL,
-    CONSTRAINT bot_topic_catalog_access_tier_check CHECK ((access_tier = ANY (ARRAY['all'::text, 'free'::text, 'pro'::text])))
+    topic_mode text DEFAULT 'open_chat'::text NOT NULL,
+    speech_acts_base jsonb DEFAULT '[]'::jsonb NOT NULL,
+    lexical_anchors_target jsonb DEFAULT '[]'::jsonb NOT NULL,
+    grammar_targets_json jsonb DEFAULT '{}'::jsonb NOT NULL,
+    starter_questions_by_level_target jsonb DEFAULT '{}'::jsonb NOT NULL,
+    recovery_questions_by_level_target jsonb DEFAULT '{}'::jsonb NOT NULL,
+    bridge_patterns_target jsonb DEFAULT '[]'::jsonb NOT NULL,
+    hard_block_base jsonb DEFAULT '[]'::jsonb NOT NULL,
+    soft_redirect_base jsonb DEFAULT '[]'::jsonb NOT NULL,
+    opening_prompt_target text DEFAULT ''::text NOT NULL,
+    CONSTRAINT bot_topic_catalog_access_tier_check CHECK ((access_tier = ANY (ARRAY['all'::text, 'free'::text, 'pro'::text]))),
+    CONSTRAINT bot_topic_catalog_topic_mode_check CHECK ((topic_mode = ANY (ARRAY['open_chat'::text, 'roleplay'::text, 'rehearsal'::text])))
 );
 
 
@@ -1874,4 +1885,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260311124500'),
     ('20260311143000'),
     ('20260312110000'),
-    ('20260312113000');
+    ('20260312113000'),
+    ('20260313100000');

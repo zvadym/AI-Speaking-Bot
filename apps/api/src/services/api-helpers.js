@@ -164,6 +164,41 @@ export function createApiHelpers(ctx) {
     return normalizeTopicRow(row);
   }
 
+  async function fetchTopicCatalogItem(botKey, topicId) {
+    const { rows } = await pool.query(
+      `SELECT
+         bot_key,
+         topic_id,
+         emoji,
+         access_tier,
+         title_base,
+         goal_base,
+         allowed_base,
+         avoid_base,
+         starter_questions_target,
+         recovery_questions_target,
+         sort_order,
+         created_at,
+         updated_at,
+         topic_mode,
+         speech_acts_base,
+         lexical_anchors_target,
+         grammar_targets_json,
+         starter_questions_by_level_target,
+         recovery_questions_by_level_target,
+         bridge_patterns_target,
+         hard_block_base,
+         soft_redirect_base,
+         opening_prompt_target
+       FROM bot_topic_catalog
+       WHERE bot_key = $1
+         AND topic_id = $2
+       LIMIT 1`,
+      [botKey, topicId]
+    );
+    return serializeTopicRow(rows[0]);
+  }
+
   async function fetchTopicCatalogRows(botKey, { userTier = null } = {}) {
     const { rows } = await pool.query(
       `SELECT
@@ -179,7 +214,17 @@ export function createApiHelpers(ctx) {
          recovery_questions_target,
          sort_order,
          created_at,
-         updated_at
+         updated_at,
+         topic_mode,
+         speech_acts_base,
+         lexical_anchors_target,
+         grammar_targets_json,
+         starter_questions_by_level_target,
+         recovery_questions_by_level_target,
+         bridge_patterns_target,
+         hard_block_base,
+         soft_redirect_base,
+         opening_prompt_target
        FROM bot_topic_catalog
        WHERE bot_key = $1
        ORDER BY sort_order ASC, topic_id ASC`,
@@ -190,15 +235,25 @@ export function createApiHelpers(ctx) {
     return items.filter((row) => topicIsVisibleForTier(row, userTier));
   }
 
-  function normalizeTopicRequestBody(body) {
-    const payload = normalizeTopicPayload(body || {});
+  function normalizeTopicRequestBody(body, { existingTopic = null } = {}) {
+    const payload = normalizeTopicPayload(body || {}, { existingTopic });
     return {
       ...payload,
       access_tier_value: payload.access_tier,
       allowed_base_json: JSON.stringify(payload.allowed_base),
       avoid_base_json: JSON.stringify(payload.avoid_base),
       starter_questions_target_json: JSON.stringify(payload.starter_questions_target),
-      recovery_questions_target_json: JSON.stringify(payload.recovery_questions_target)
+      recovery_questions_target_json: JSON.stringify(payload.recovery_questions_target),
+      speech_acts_base_json: JSON.stringify(payload.speech_acts_base),
+      lexical_anchors_target_json: JSON.stringify(payload.lexical_anchors_target),
+      grammar_targets_json_value: JSON.stringify(payload.grammar_targets_json),
+      starter_questions_by_level_target_json: JSON.stringify(payload.starter_questions_by_level_target),
+      recovery_questions_by_level_target_json: JSON.stringify(payload.recovery_questions_by_level_target),
+      bridge_patterns_target_json: JSON.stringify(payload.bridge_patterns_target),
+      hard_block_base_json: JSON.stringify(payload.hard_block_base),
+      soft_redirect_base_json: JSON.stringify(payload.soft_redirect_base),
+      opening_prompt_target_value: payload.opening_prompt_target,
+      topic_mode_value: payload.topic_mode
     };
   }
 
@@ -277,9 +332,20 @@ export function createApiHelpers(ctx) {
     return raw;
   }
 
+  function formatTopicMenuLabel(item = {}, locale = {}) {
+    const emoji = String(item.emoji || '🧩').trim();
+    const title = String(item.title_base || item.topic_id || '').trim();
+    if (!emoji && !title) return '';
+    const base = `${emoji} ${title}`.trim();
+    const accessTier = String(item.access_tier || 'all').trim().toLowerCase();
+    if (accessTier !== 'pro') return base;
+    const suffix = String(locale.topic_menu_pro_suffix || '🔒 PRO').trim() || '🔒 PRO';
+    return `${base} ${suffix}`.trim();
+  }
+
   function buildTopicMenuReplyMarkup(items = [], locale = {}) {
     const keyboard = items.map((item) => ({
-      text: `${String(item.emoji || '🧩').trim()} ${String(item.title_base || item.topic_id || '').trim()}`.trim(),
+      text: formatTopicMenuLabel(item, locale),
       callback_data: `topic:${String(item.topic_id || '').trim().toLowerCase()}`
     }))
       .filter((button) => button.text && button.callback_data !== 'topic:')
@@ -2440,10 +2506,12 @@ export function createApiHelpers(ctx) {
     buildBillingCurrencyCatalog: (options) => buildBillingCurrencyCatalog(publicBotCatalog, options),
     buildPlanCatalogResponse,
     buildTopicMenuReplyMarkup,
+    formatTopicMenuLabel,
     classifyPermanentTelegramFailure,
     clampInteger,
     compareBillingRows,
     fetchEffectiveTierForChat,
+    fetchTopicCatalogItem,
     fetchTopicCatalogRows,
     getAllowedBillingCurrencies,
     getBotLocale,
