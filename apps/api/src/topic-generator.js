@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { defaultEmojiForTopicId, normalizeTopicPayload, slugifyTopicId } from './topic-catalog.js';
+import { renderLlmPrompt } from './llm-prompts/index.js';
 
 const TOPIC_GENERATION_SCHEMA = {
   type: 'object',
@@ -48,43 +49,31 @@ const TOPIC_GENERATION_SCHEMA = {
   }
 };
 
-const SYSTEM_PROMPT = [
-  'You create pre-generated conversation topic packs for a language-learning tutor.',
-  'Return only valid JSON matching the schema.',
-  'Always include access_tier as one of: all, free, pro.',
-  'The base-language fields are for the learner UI: title_base, goal_base, allowed_base, avoid_base.',
-  'The target-language fields are learner-facing conversation questions: starter_questions_target and recovery_questions_target.',
-  'Every target-language question must be one natural question sentence.',
-  'No greetings, no jokes, no roleplay, no references to bots, teachers, lessons, AI, sending messages, or recording voice.',
-  'No meta-instructions and no imperatives like say, tell me, send, or record.',
-  'Choose one fitting emoji for the topic menu button.',
-  'Keep allowed_base and avoid_base concrete and practical.'
-].join(' ');
-
 function getClient(apiKey) {
   return new OpenAI({ apiKey });
 }
 
 function buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate }) {
-  const lines = [
-    `topic_name: ${String(topicName || '').trim()}`,
-    `base_language_code: ${String(baseLanguage || '').trim().toLowerCase()}`,
-    `target_language_code: ${String(targetLanguage || '').trim().toLowerCase()}`,
-    `suggested_topic_id: ${slugifyTopicId(topicName || baseTemplate?.topic_id || 'topic')}`,
-    `suggested_emoji: ${defaultEmojiForTopicId(baseTemplate?.topic_id || topicName)}`,
-    `required_access_tier: ${String(baseTemplate?.access_tier || 'all').trim().toLowerCase() || 'all'}`
-  ];
-  if (baseTemplate) {
-    lines.push('Preserve the base-language topic meaning closely.');
-    lines.push(`existing_topic_id: ${String(baseTemplate.topic_id || '').trim().toLowerCase()}`);
-    lines.push(`existing_title_base: ${String(baseTemplate.title_base || '').trim()}`);
-    lines.push(`existing_goal_base: ${String(baseTemplate.goal_base || '').trim()}`);
-    lines.push(`existing_allowed_base: ${JSON.stringify(baseTemplate.allowed_base || [])}`);
-    lines.push(`existing_avoid_base: ${JSON.stringify(baseTemplate.avoid_base || [])}`);
-  } else {
-    lines.push('Invent the full topic rules from the topic name.');
-  }
-  return lines.join('\n');
+  const baseTemplateBlock = baseTemplate
+    ? [
+        'Preserve the base-language topic meaning closely.',
+        `existing_topic_id: ${String(baseTemplate.topic_id || '').trim().toLowerCase()}`,
+        `existing_title_base: ${String(baseTemplate.title_base || '').trim()}`,
+        `existing_goal_base: ${String(baseTemplate.goal_base || '').trim()}`,
+        `existing_allowed_base: ${JSON.stringify(baseTemplate.allowed_base || [])}`,
+        `existing_avoid_base: ${JSON.stringify(baseTemplate.avoid_base || [])}`
+      ].join('\n')
+    : 'Invent the full topic rules from the topic name.';
+
+  return renderLlmPrompt('topic-generator-user', {
+    topic_name: String(topicName || '').trim(),
+    base_language_code: String(baseLanguage || '').trim().toLowerCase(),
+    target_language_code: String(targetLanguage || '').trim().toLowerCase(),
+    suggested_topic_id: slugifyTopicId(topicName || baseTemplate?.topic_id || 'topic'),
+    suggested_emoji: defaultEmojiForTopicId(baseTemplate?.topic_id || topicName),
+    required_access_tier: String(baseTemplate?.access_tier || 'all').trim().toLowerCase() || 'all',
+    base_template_block: baseTemplateBlock
+  });
 }
 
 function buildAssistPrompt({
@@ -93,22 +82,20 @@ function buildAssistPrompt({
   targetLanguage,
   currentDraft
 }) {
-  const lines = [
-    `base_language_code: ${String(baseLanguage || '').trim().toLowerCase()}`,
-    `target_language_code: ${String(targetLanguage || '').trim().toLowerCase()}`,
-    `editor_instruction: ${String(instruction || '').trim()}`
-  ];
+  const currentDraftBlock = currentDraft
+    ? [
+        'Current draft JSON:',
+        JSON.stringify(currentDraft, null, 2),
+        'Update the current draft in place unless the instruction clearly asks to rename, expand, or restructure it.'
+      ].join('\n')
+    : 'There is no current draft yet. Create the full topic pack from the instruction.';
 
-  if (currentDraft) {
-    lines.push('Current draft JSON:');
-    lines.push(JSON.stringify(currentDraft, null, 2));
-    lines.push('Update the current draft in place unless the instruction clearly asks to rename, expand, or restructure it.');
-  } else {
-    lines.push('There is no current draft yet. Create the full topic pack from the instruction.');
-  }
-
-  lines.push('Keep the result practical, concise, and ready to save in the admin form.');
-  return lines.join('\n');
+  return renderLlmPrompt('topic-generator-assist', {
+    base_language_code: String(baseLanguage || '').trim().toLowerCase(),
+    target_language_code: String(targetLanguage || '').trim().toLowerCase(),
+    instruction: String(instruction || '').trim(),
+    current_draft_block: currentDraftBlock
+  });
 }
 
 function buildClonePrompt({
@@ -119,25 +106,15 @@ function buildClonePrompt({
   currentDraft,
   instruction
 }) {
-  const lines = [
-    `source_base_language_code: ${String(sourceBaseLanguage || '').trim().toLowerCase()}`,
-    `source_target_language_code: ${String(sourceTargetLanguage || '').trim().toLowerCase()}`,
-    `target_base_language_code: ${String(targetBaseLanguage || '').trim().toLowerCase()}`,
-    `target_target_language_code: ${String(targetTargetLanguage || '').trim().toLowerCase()}`,
-    'Clone the topic for the new language pair while preserving the same practical learning intent.',
-    'Translate and adapt the base-language guidance to the new base language.',
-    'Rewrite starter and recovery questions in the new target language.',
-    'Preserve topic_id and access_tier unless the instruction explicitly requests a rename or tier change.',
-    'Current source draft JSON:',
-    JSON.stringify(currentDraft || {}, null, 2)
-  ];
-
-  if (String(instruction || '').trim()) {
-    lines.push(`extra_instruction: ${String(instruction || '').trim()}`);
-  }
-
-  lines.push('Return the fully adapted topic pack for the target language pair.');
-  return lines.join('\n');
+  const extraInstruction = String(instruction || '').trim();
+  return renderLlmPrompt('topic-generator-clone', {
+    source_base_language_code: String(sourceBaseLanguage || '').trim().toLowerCase(),
+    source_target_language_code: String(sourceTargetLanguage || '').trim().toLowerCase(),
+    target_base_language_code: String(targetBaseLanguage || '').trim().toLowerCase(),
+    target_target_language_code: String(targetTargetLanguage || '').trim().toLowerCase(),
+    current_draft_json: JSON.stringify(currentDraft || {}, null, 2),
+    extra_instruction_block: extraInstruction ? `extra_instruction: ${extraInstruction}` : ''
+  });
 }
 
 function parseResponseOutput(response) {
@@ -167,11 +144,8 @@ export async function generateTopicDraft({
   const response = await client.responses.create({
     model,
     input: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate })
-      }
+      { role: 'system', content: renderLlmPrompt('topic-generator-system') },
+      { role: 'user', content: buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate }) }
     ],
     text: {
       format: {
@@ -207,16 +181,8 @@ export async function assistTopicDraft({
   const response = await client.responses.create({
     model,
     input: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: buildAssistPrompt({
-          instruction,
-          baseLanguage,
-          targetLanguage,
-          currentDraft
-        })
-      }
+      { role: 'system', content: renderLlmPrompt('topic-generator-system') },
+      { role: 'user', content: buildAssistPrompt({ instruction, baseLanguage, targetLanguage, currentDraft }) }
     ],
     text: {
       format: {
@@ -255,18 +221,15 @@ export async function cloneTopicDraftToBot({
   const response = await client.responses.create({
     model,
     input: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: buildClonePrompt({
-          sourceBaseLanguage,
-          sourceTargetLanguage,
-          targetBaseLanguage,
-          targetTargetLanguage,
-          currentDraft,
-          instruction
-        })
-      }
+      { role: 'system', content: renderLlmPrompt('topic-generator-system') },
+      { role: 'user', content: buildClonePrompt({
+        sourceBaseLanguage,
+        sourceTargetLanguage,
+        targetBaseLanguage,
+        targetTargetLanguage,
+        currentDraft,
+        instruction
+      }) }
     ],
     text: {
       format: {

@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'crypto';
 import { env } from './env.js';
 import { pool } from './db.js';
 import { loadBotConfigs } from './bot-configs.js';
+import { renderLlmPrompt } from './llm-prompts/index.js';
 import { captureMessage } from './sentry.js';
 import { createPublicBotCatalogLookup } from './shared/bot-catalog.js';
 import {
@@ -1394,23 +1395,12 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
     throw createAppError('missing_openai_api_key', 502, 'missing_openai_api_key', { retryable: false });
   }
 
-  const systemPrompt = [
-    'You write short weekly progress digest messages for a Telegram language-learning bot.',
-    `Write the message in ${context.baseLanguageLabel}.`,
-    `The target practice language is ${context.targetLanguageLabel}.`,
-    'This is a celebratory, useful recap of the previous completed week.',
-    'Return JSON only with a single field: message_text.',
-    'Rules:',
-    `- Max ${WEEKLY_DIGEST_MESSAGE_MAX_LEN} characters`,
-    `- Max ${WEEKLY_DIGEST_MESSAGE_MAX_SENTENCES} sentences`,
-    '- Mention the concrete weekly practice-days and XP numbers',
-    '- One clear CTA only',
-    '- Plain text only, no HTML or markdown',
-    '- At most one emoji',
-    '- Helpful teacher tone, never guilt or pressure',
-    '- Do not mention billing, plans, upgrades, or inactivity',
-    '- Do not say "we miss you" or "come back now"'
-  ].join('\n');
+  const systemPrompt = renderLlmPrompt('weekly-digest-system', {
+    base_language_label: context.baseLanguageLabel,
+    target_language_label: context.targetLanguageLabel,
+    message_max_len: WEEKLY_DIGEST_MESSAGE_MAX_LEN,
+    message_max_sentences: WEEKLY_DIGEST_MESSAGE_MAX_SENTENCES
+  });
 
   const payload = {
     reminder_type: WEEKLY_DIGEST_TASK_TYPE,
@@ -1440,6 +1430,9 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
       label: context.replyCtaLabel
     }
   };
+  const userPrompt = renderLlmPrompt('weekly-digest-user', {
+    context_json: JSON.stringify(payload, null, 2)
+  });
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -1451,7 +1444,7 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
       model: env.reminderLlmModel,
       input: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: JSON.stringify(payload) }
+        { role: 'user', content: userPrompt }
       ],
       text: {
         format: {
@@ -2838,23 +2831,13 @@ async function generateWinbackMessageWithLlm(context, taskType) {
   const reminderGoal = context.reminderType === 'd3'
     ? 'resume the practice naturally'
     : 'offer an easy restart, not a continuation';
-  const systemPrompt = [
-    'You write short win-back reminder messages for a Telegram language-learning bot.',
-    `Write the message in ${context.baseLanguageLabel}.`,
-    `The target practice language is ${context.targetLanguageLabel}.`,
-    `Goal: ${reminderGoal}.`,
-    'Return JSON only with a single field: message_text.',
-    'Rules:',
-    `- Max ${WINBACK_MESSAGE_MAX_LEN} characters`,
-    `- Max ${WINBACK_MESSAGE_MAX_SENTENCES} sentences`,
-    '- One clear CTA only',
-    '- Plain text only, no HTML or markdown',
-    '- At most one emoji',
-    '- Helpful teacher tone, never guilt or pressure',
-    '- Do not say that you noticed inactivity',
-    '- Do not mention billing, plans, or upgrades',
-    '- Do not quote old user messages verbatim'
-  ].join('\n');
+  const systemPrompt = renderLlmPrompt('winback-system', {
+    base_language_label: context.baseLanguageLabel,
+    target_language_label: context.targetLanguageLabel,
+    reminder_goal: reminderGoal,
+    message_max_len: WINBACK_MESSAGE_MAX_LEN,
+    message_max_sentences: WINBACK_MESSAGE_MAX_SENTENCES
+  });
 
   const payload = {
     reminder_type: context.reminderType,
@@ -2882,6 +2865,9 @@ async function generateWinbackMessageWithLlm(context, taskType) {
       recent_turns: context.reminderType === 'd3' ? context.recentTurns : []
     }
   };
+  const userPrompt = renderLlmPrompt('winback-user', {
+    context_json: JSON.stringify(payload, null, 2)
+  });
 
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -2893,7 +2879,7 @@ async function generateWinbackMessageWithLlm(context, taskType) {
       model: env.reminderLlmModel,
       input: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: JSON.stringify(payload) }
+        { role: 'user', content: userPrompt }
       ],
       text: {
         format: {
