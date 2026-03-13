@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'crypto';
 import { env } from './env.js';
 import { pool } from './db.js';
 import { loadBotConfigs } from './bot-configs.js';
+import { captureException } from './sentry.js';
 import { createPublicBotCatalogLookup } from './shared/bot-catalog.js';
 import {
   BROADCAST_MESSAGE_KINDS,
@@ -1294,6 +1295,35 @@ function buildWeeklyDigestFallbackMessage(context, taskType) {
   };
 }
 
+function reportWeeklyDigestFallback(context, generationError, fallback, origin) {
+  const error = new Error('weekly_digest_llm_fallback');
+  error.code = 'weekly_digest_llm_fallback';
+
+  captureException(error, {
+    tags: {
+      subsystem: 'weekly-digest',
+      reminder_type: WEEKLY_DIGEST_TASK_TYPE,
+      origin: String(origin || '').trim() || WINBACK_AUTOMATED_ORIGIN,
+      bot_key: context?.botKey || '',
+      template_family: fallback?.templateFamily || '',
+      generation_error: generationError || 'unknown'
+    },
+    extra: {
+      chat_id: context?.chatId || null,
+      schedule_key: context?.scheduleKey || null,
+      digest_schedule_key: context?.digestScheduleKey || null,
+      weekly_xp: context?.weeklyXp ?? null,
+      practice_days: context?.practiceDays ?? null,
+      streak_current: context?.streakCurrent ?? null,
+      reply_mode: context?.replyMode || null,
+      topic_enabled: Boolean(context?.topicEnabled),
+      topic_title: context?.topicTitle || null,
+      fallback_message_text: fallback?.messageText || null
+    },
+    level: 'warning'
+  });
+}
+
 async function generateWeeklyDigestMessageWithLlm(context, taskType) {
   if (!env.openaiApiKey) {
     throw createAppError('missing_openai_api_key', 502, 'missing_openai_api_key', { retryable: false });
@@ -1559,6 +1589,7 @@ export async function sendWeeklyDigestReminderCore({
         { retryable: false }
       );
     }
+    reportWeeklyDigestFallback(context, generationError, fallback, origin);
     generation = fallback;
   }
 

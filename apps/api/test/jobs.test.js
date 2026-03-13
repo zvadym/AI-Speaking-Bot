@@ -15,6 +15,13 @@ const [{ pool }, jobsModule] = await Promise.all([
   import('../src/db.js'),
   import('../src/jobs.js')
 ]);
+const {
+  __getCapturedEventsForTests,
+  __resetCapturedEventsForTests,
+  ensureSentryInitialized
+} = await import('../src/sentry.js');
+
+ensureSentryInitialized({ processName: 'worker' });
 
 const {
   sendAdminTestDay1ReturnReminder,
@@ -258,6 +265,7 @@ test('automated day1 return skips when user was active after onboarding', async 
 
 test('admin weekly digest reminder falls back to localized templates when LLM is unavailable', async () => {
   const telegramBodies = [];
+  __resetCapturedEventsForTests();
 
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('COALESCE(up.streak_current, 0)::int AS streak_current') && source.includes('COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp')) {
@@ -327,6 +335,12 @@ test('admin weekly digest reminder falls back to localized templates when LLM is
   assert.equal(telegramBodies.length, 1);
   assert.match(telegramBodies[0].text, /\b118\b/);
   assert.match(telegramBodies[0].text, /\b4\b/);
+  const events = __getCapturedEventsForTests();
+  assert.ok(events.some((event) =>
+    event?.tags?.subsystem === 'weekly-digest'
+    && event?.tags?.reminder_type === 'weekly_digest'
+    && event?.tags?.generation_error === 'missing_openai_api_key'
+  ));
 });
 
 test('automated weekly digest skips users active in the last 8 hours', async () => {
