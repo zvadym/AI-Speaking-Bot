@@ -495,13 +495,14 @@
 
         <AdminChart
           title="Active users by day"
-          subtitle="Daily active users in UTC with total users present in the database that day"
+          subtitle="Daily active users in UTC split into first-day and returning users, with total users present in the database that day"
           kind="bar"
           x-labels="all"
           :data="activeUsersChartSeries"
           :series="[
-            { key: 'count', label: 'Active users by day', color: 'rgba(31, 107, 99, 0.78)' },
-            { key: 'overall', label: 'Users overall', color: 'rgba(199, 90, 36, 0.94)', type: 'line', yAxisId: 'y1' }
+            { key: 'new_users', label: 'New users', color: 'rgba(199, 90, 36, 0.88)' },
+            { key: 'returned_users', label: 'Returned users', color: 'rgba(31, 107, 99, 0.78)' },
+            { key: 'overall', label: 'Users overall', color: 'rgba(99, 74, 47, 0.94)', type: 'line', yAxisId: 'y1' }
           ]"
         />
 

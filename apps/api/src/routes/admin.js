@@ -318,17 +318,38 @@ export function createAdminRouter(ctx, helpers) {
          WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
            AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
        ),
-       counts AS (
+       first_activity AS (
          SELECT
+           v.chat_id,
+           MIN(date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date) AS first_day_utc
+         FROM voice_usage_events v
+         JOIN filtered_users u ON u.chat_id = v.chat_id
+         GROUP BY v.chat_id
+       ),
+       daily_active AS (
+         SELECT DISTINCT
            date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
-           COUNT(DISTINCT v.chat_id)::int AS count
+           v.chat_id
          FROM voice_usage_events v
          JOIN filtered_users u ON u.chat_id = v.chat_id
          WHERE v.occurred_at >= (SELECT from_ts FROM params)
            AND v.occurred_at < (SELECT to_ts FROM params)
+       ),
+       counts AS (
+         SELECT
+           a.day_utc,
+           COUNT(*)::int AS count,
+           COUNT(*) FILTER (WHERE f.first_day_utc = a.day_utc)::int AS new_users,
+           COUNT(*) FILTER (WHERE f.first_day_utc < a.day_utc)::int AS returned_users
+         FROM daily_active a
+         JOIN first_activity f ON f.chat_id = a.chat_id
          GROUP BY 1
        )
-       SELECT d.day_utc::text AS day, COALESCE(c.count, 0)::int AS count
+       SELECT
+         d.day_utc::text AS day,
+         COALESCE(c.count, 0)::int AS count,
+         COALESCE(c.new_users, 0)::int AS new_users,
+         COALESCE(c.returned_users, 0)::int AS returned_users
        FROM days d
        LEFT JOIN counts c USING (day_utc)
        ORDER BY d.day_utc ASC`,

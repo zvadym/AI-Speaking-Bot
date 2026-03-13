@@ -377,6 +377,42 @@ test('admin notifications metrics returns sent counts by bot and type', async ()
   });
 });
 
+test('admin active users by day returns first-day and returning user splits', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('first_activity AS') && source.includes('returned_users')) {
+      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+      assert.equal(params[1], '2026-03-04T00:00:00.000Z');
+      assert.equal(params[2], null);
+      assert.equal(params[3], null);
+      return {
+        rows: [
+          { day: '2026-03-01', count: 5, new_users: 3, returned_users: 2 },
+          { day: '2026-03-02', count: 4, new_users: 1, returned_users: 3 },
+          { day: '2026-03-03', count: 0, new_users: 0, returned_users: 0 }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in active users by day test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/active-users-by-day?from=2026-03-01&to=2026-03-04',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
+    assert.deepEqual(response.json.series, [
+      { day: '2026-03-01', count: 5, new_users: 3, returned_users: 2 },
+      { day: '2026-03-02', count: 4, new_users: 1, returned_users: 3 },
+      { day: '2026-03-03', count: 0, new_users: 0, returned_users: 0 }
+    ]);
+  });
+});
+
 test('uncaught async route errors reach the final sentry-backed 500 handler', async () => {
   __resetCapturedEventsForTests();
 
