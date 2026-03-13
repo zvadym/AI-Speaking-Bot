@@ -20,8 +20,8 @@ Keep only durable facts that are likely to remain useful:
 2) short_summary
 A temporary working context for the next turns.
 Keep only recent, actionable context:
-- what has been discussed recently
-- what thread is active or unresolved
+- the current active local thread first
+- at most one secondary live thread if it is still clearly unresolved
 - recent user answers that may matter soon
 - recently mentioned places/people/projects if they may be referenced again soon
 
@@ -29,6 +29,8 @@ Rules:
 - Merge existing summaries with older_messages_text.
 - Prioritize USER messages over ASSISTANT messages.
 - Treat assistant messages mainly as scaffolding; do not store assistant wording unless it changes user intent or defines an explicit agreement.
+- Prefer the newest user-opened branch over older nearby branches.
+- If a newer local thread is clearly active, drop stale adjacent topics instead of keeping a mini-history dump.
 - Do not invent facts.
 - Do not copy long dialogue verbatim.
 - Do not store pure control chatter unless it affects immediate context.
@@ -37,7 +39,7 @@ Rules:
 - If a detail looks recent/situational, put it in short_summary.
 - If unsure, prefer short_summary over profile_summary.
 - Keep profile_summary concise and structured (aim 400-900 chars).
-- Keep short_summary compact and current (aim 150-500 chars).
+- Keep short_summary compact and current (aim 80-300 chars).
 - Write in clean, reusable {{base_language_label}}.
 
 Return ONLY JSON matching the schema.
