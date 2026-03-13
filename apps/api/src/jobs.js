@@ -1321,6 +1321,74 @@ function reportWeeklyDigestFallback(context, generationError, fallback, origin) 
   });
 }
 
+function extractResponseJsonSchemaCandidate(payloadJson) {
+  if (!payloadJson || typeof payloadJson !== 'object') {
+    return { text: '', source: 'none' };
+  }
+
+  const directOutputText = String(payloadJson.output_text || '').trim();
+  if (directOutputText) {
+    return { text: directOutputText, source: 'output_text' };
+  }
+
+  if (payloadJson.output_parsed && typeof payloadJson.output_parsed === 'object') {
+    return {
+      text: JSON.stringify(payloadJson.output_parsed),
+      source: 'output_parsed'
+    };
+  }
+
+  const outputItems = Array.isArray(payloadJson.output) ? payloadJson.output : [];
+  for (const item of outputItems) {
+    if (item?.parsed && typeof item.parsed === 'object') {
+      return {
+        text: JSON.stringify(item.parsed),
+        source: 'output_item.parsed'
+      };
+    }
+
+    const contentItems = Array.isArray(item?.content) ? item.content : [];
+    for (const content of contentItems) {
+      if (content?.parsed && typeof content.parsed === 'object') {
+        return {
+          text: JSON.stringify(content.parsed),
+          source: `output_content.${String(content.type || 'parsed')}.parsed`
+        };
+      }
+
+      const blockText = String(content?.text || content?.output_text || content?.value || '').trim();
+      if (blockText) {
+        return {
+          text: blockText,
+          source: `output_content.${String(content.type || 'text')}`
+        };
+      }
+    }
+  }
+
+  return { text: '', source: 'empty' };
+}
+
+function parseResponseJsonSchemaPayload(payloadJson) {
+  const candidate = extractResponseJsonSchemaCandidate(payloadJson);
+  const outputText = String(candidate.text || '').trim();
+  if (!outputText) {
+    throw createAppError('openai_empty_output', 502, `openai_empty_output:${candidate.source}`, { retryable: false });
+  }
+
+  let parsed = null;
+  try {
+    parsed = JSON.parse(outputText);
+  } catch {
+    throw createAppError('openai_invalid_json', 502, `openai_invalid_json:${candidate.source}`, { retryable: false });
+  }
+
+  return {
+    parsed,
+    outputSource: candidate.source
+  };
+}
+
 async function generateWeeklyDigestMessageWithLlm(context, taskType) {
   if (!env.openaiApiKey) {
     throw createAppError('missing_openai_api_key', 502, 'missing_openai_api_key', { retryable: false });
@@ -1419,17 +1487,7 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
     throw createAppError('openai_request_failed', 502, detail, { retryable: response.status >= 500 });
   }
 
-  const outputText = String(payloadJson?.output_text || '').trim();
-  if (!outputText) {
-    throw createAppError('openai_empty_output', 502, 'openai_empty_output', { retryable: false });
-  }
-
-  let parsed = null;
-  try {
-    parsed = JSON.parse(outputText);
-  } catch {
-    throw createAppError('openai_invalid_json', 502, 'openai_invalid_json', { retryable: false });
-  }
+  const { parsed, outputSource } = parseResponseJsonSchemaPayload(payloadJson);
 
   const validation = validateWeeklyDigestMessageText(String(parsed?.message_text || '').trim(), context);
   if (!validation.ok) {
@@ -1439,6 +1497,7 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
   return {
     messageText: validation.messageText,
     source: 'llm',
+    outputSource,
     model: String(payloadJson?.model || env.reminderLlmModel || '').trim() || env.reminderLlmModel,
     responseId: String(payloadJson?.id || '').trim() || null,
     usage: payloadJson?.usage || null,
@@ -1609,10 +1668,12 @@ export async function sendWeeklyDigestReminderCore({
         weekly_xp: context.weeklyXp,
         practice_days: context.practiceDays,
         message_source: generation.source,
+        generation_error: generation.source === 'llm' ? null : (generationError || null),
         template_family: generation.templateFamily || null,
         variant_index: Number.isInteger(generation.variantIndex) ? generation.variantIndex : null,
         llm_model: generation.model || null,
         llm_response_id: generation.responseId || null,
+        llm_output_source: generation.outputSource || null,
         message_text: generation.messageText
       }
     });
@@ -1632,6 +1693,9 @@ export async function sendWeeklyDigestReminderCore({
       digestScheduleKey: context.digestScheduleKey,
       telegramMessageId,
       messageText: generation.messageText,
+      messageSource: generation.source,
+      generationError: generation.source === 'llm' ? null : (generationError || null),
+      llmResponseId: generation.responseId || null,
       allowlistActive: getAutomatedMessageTestState().active
     };
   } catch (error) {
@@ -2612,6 +2676,9 @@ export async function sendAdminTestWeeklyDigestReminder({ chatId, botKey }) {
     reminder_type: WEEKLY_DIGEST_TASK_TYPE,
     telegram_message_id: result.telegramMessageId,
     message_text: result.messageText,
+    message_source: result.messageSource || null,
+    generation_error: result.generationError || null,
+    llm_response_id: result.llmResponseId || null,
     allowlist_active: result.allowlistActive,
     task_type: result.taskType,
     schedule_key: result.scheduleKey,
@@ -2862,21 +2929,12 @@ async function generateWinbackMessageWithLlm(context, taskType) {
     throw createAppError('openai_request_failed', 502, detail, { retryable: response.status >= 500 });
   }
 
-  const outputText = String(payloadJson?.output_text || '').trim();
-  if (!outputText) {
-    throw createAppError('openai_empty_output', 502, 'openai_empty_output', { retryable: false });
-  }
-
-  let parsed = null;
-  try {
-    parsed = JSON.parse(outputText);
-  } catch {
-    throw createAppError('openai_invalid_json', 502, 'openai_invalid_json', { retryable: false });
-  }
+  const { parsed, outputSource } = parseResponseJsonSchemaPayload(payloadJson);
 
   return {
     messageText: String(parsed?.message_text || '').trim(),
     source: 'llm',
+    outputSource,
     model: String(payloadJson?.model || env.reminderLlmModel || '').trim() || env.reminderLlmModel,
     responseId: String(payloadJson?.id || '').trim() || null,
     usage: payloadJson?.usage || null,

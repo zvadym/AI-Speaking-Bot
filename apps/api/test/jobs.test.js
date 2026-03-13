@@ -20,6 +20,7 @@ const {
   __resetCapturedEventsForTests,
   ensureSentryInitialized
 } = await import('../src/sentry.js');
+const { env } = await import('../src/env.js');
 
 ensureSentryInitialized({ processName: 'worker' });
 
@@ -399,4 +400,118 @@ test('automated weekly digest skips users active in the last 8 hours', async () 
   });
 
   assert.equal(telegramCalled, false);
+});
+
+test('admin weekly digest reads structured Responses API output when output_text is empty', async () => {
+  const originalOpenAiKey = env.openaiApiKey;
+  const telegramBodies = [];
+  env.openaiApiKey = 'test-openai-key';
+
+  try {
+    await withMockedQuery(async (source, params = []) => {
+      if (source.includes('COALESCE(up.streak_current, 0)::int AS streak_current') && source.includes('COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp')) {
+        assert.equal(params[0], 56);
+        assert.equal(params[1], 'en-de');
+        return {
+          rows: [{
+            chat_id: 56,
+            first_name: 'Mira',
+            username: 'mira',
+            inactive_reason: null,
+            bot_key: 'en-de',
+            is_active: true,
+            level: 'a2',
+            reply_mode: 'text',
+            topic_enabled: false,
+            topic_pack_json: null,
+            last_seen_at: '2026-03-09T10:00:00.000Z',
+            xp_total: 510,
+            streak_current: 2,
+            streak_best: 6,
+            profile_summary: 'Likes short practical prompts',
+            short_summary: 'Consistent learner',
+            onboarding_sent_at: '2026-03-01T09:00:00.000Z',
+            weekly_xp: 118,
+            practice_days: 4
+          }]
+        };
+      }
+
+      if (source.includes('INSERT INTO scheduled_task_dispatches (')) {
+        return { rowCount: 1, rows: [] };
+      }
+
+      if (source.includes('UPDATE scheduled_task_dispatches')) {
+        return { rowCount: 1, rows: [] };
+      }
+
+      if (source.includes('UPDATE user_bots')) {
+        return { rowCount: 1, rows: [] };
+      }
+
+      if (source.includes('UPDATE users')) {
+        return { rowCount: 1, rows: [] };
+      }
+
+      throw new Error(`Unexpected query in structured weekly digest test: ${source.slice(0, 200)}`);
+    }, async () => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = async (input, init) => {
+        const url = typeof input === 'string' ? input : input?.url || '';
+        if (typeof url === 'string' && url.startsWith('https://api.openai.com/')) {
+          return new Response(
+            JSON.stringify({
+              id: 'resp_test_1',
+              model: 'gpt-5-mini',
+              output: [
+                {
+                  type: 'message',
+                  content: [
+                    {
+                      type: 'output_text',
+                      text: JSON.stringify({
+                        message_text: 'Last week: 4 practice days, 118 XP. Write one short sentence and let\'s continue.'
+                      })
+                    }
+                  ]
+                }
+              ]
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+        }
+        if (typeof url === 'string' && url.startsWith('https://api.telegram.org/')) {
+          telegramBodies.push(JSON.parse(init.body));
+          return okTelegramResponse(906);
+        }
+        return originalFetch(input, init);
+      };
+
+      try {
+        const result = await sendAdminTestWeeklyDigestReminder({
+          chatId: 56,
+          botKey: 'en-de'
+        });
+
+        assert.equal(result.ok, true);
+        assert.equal(result.telegram_message_id, 906);
+        assert.equal(result.message_source, 'llm');
+        assert.equal(result.generation_error, null);
+        assert.equal(result.llm_response_id, 'resp_test_1');
+        assert.match(result.message_text, /\b118\b/);
+        assert.match(result.message_text, /\b4\b/);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    assert.equal(telegramBodies.length, 1);
+    assert.match(telegramBodies[0].text, /\b118\b/);
+    assert.match(telegramBodies[0].text, /\b4\b/);
+  } finally {
+    env.openaiApiKey = originalOpenAiKey;
+  }
 });
