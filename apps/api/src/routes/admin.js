@@ -905,8 +905,9 @@ export function createAdminRouter(ctx, helpers) {
     if (!range.ok) return res.status(400).json({ error: range.error });
     res.set('Cache-Control', 'no-store');
 
+    const botKey = normalizeBotKey(req.query?.bot_key);
     const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
-    const params = [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds];
+    const params = [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, botKey];
 
     const [totalsRes, usageBucketsRes, messageBucketsRes] = await Promise.all([
       ctx.pool.query(
@@ -923,6 +924,7 @@ export function createAdminRouter(ctx, helpers) {
                FROM user_bots ub
                WHERE ub.chat_id = u.chat_id
                  AND COALESCE(ub.is_active, true) = true
+                 AND ($5::text IS NULL OR ub.bot_key = $5)
              )
              AND CASE
                WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
@@ -942,6 +944,7 @@ export function createAdminRouter(ctx, helpers) {
              ON v.chat_id = f.chat_id
             AND v.occurred_at >= (SELECT from_ts FROM params)
             AND v.occurred_at < (SELECT to_ts FROM params)
+            AND ($5::text IS NULL OR v.bot_key = $5)
            GROUP BY f.chat_id
          ),
          message_per_user AS (
@@ -954,6 +957,7 @@ export function createAdminRouter(ctx, helpers) {
              ON m.chat_id = f.chat_id
             AND m.created_at >= (SELECT from_ts FROM params)
             AND m.created_at < (SELECT to_ts FROM params)
+            AND ($5::text IS NULL OR m.bot_key = $5)
            GROUP BY f.chat_id
          )
          SELECT
@@ -984,6 +988,7 @@ export function createAdminRouter(ctx, helpers) {
                FROM user_bots ub
                WHERE ub.chat_id = u.chat_id
                  AND COALESCE(ub.is_active, true) = true
+                 AND ($5::text IS NULL OR ub.bot_key = $5)
              )
              AND CASE
                WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
@@ -1005,6 +1010,7 @@ export function createAdminRouter(ctx, helpers) {
              ON v.chat_id = f.chat_id
             AND v.occurred_at >= (SELECT from_ts FROM params)
             AND v.occurred_at < (SELECT to_ts FROM params)
+            AND ($5::text IS NULL OR v.bot_key = $5)
            GROUP BY f.chat_id
          ),
          buckets AS (
@@ -1045,6 +1051,7 @@ export function createAdminRouter(ctx, helpers) {
                FROM user_bots ub
                WHERE ub.chat_id = u.chat_id
                  AND COALESCE(ub.is_active, true) = true
+                 AND ($5::text IS NULL OR ub.bot_key = $5)
              )
              AND CASE
                WHEN u.override_plan_tier IS NOT NULL AND u.override_expires_at IS NOT NULL AND NOW() < u.override_expires_at
@@ -1063,6 +1070,7 @@ export function createAdminRouter(ctx, helpers) {
              ON m.chat_id = f.chat_id
             AND m.created_at >= (SELECT from_ts FROM params)
             AND m.created_at < (SELECT to_ts FROM params)
+            AND ($5::text IS NULL OR m.bot_key = $5)
            GROUP BY f.chat_id
          ),
          buckets AS (
@@ -1095,6 +1103,7 @@ export function createAdminRouter(ctx, helpers) {
       from: range.from.toISOString(),
       to: range.to.toISOString(),
       payload: range.payload,
+      bot_key: botKey,
       totals: totalsRes.rows[0] || {
         free_users_all_time: 0,
         free_users_with_voice_in_range: 0,

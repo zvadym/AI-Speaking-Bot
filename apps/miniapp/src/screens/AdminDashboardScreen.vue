@@ -239,11 +239,29 @@
           <div>
             <div class="panel-kicker">Free users</div>
             <h2 class="panel-title">Usage distribution</h2>
-            <p class="panel-sub">Current effective tier = free and user is active. Range-based metrics below use the selected UTC dates and optional payload filter.</p>
+            <p class="panel-sub">{{ freeUsersPanelSubtitle }}</p>
+          </div>
+          <div class="panel-actions notification-toolbar">
+            <label class="field notification-filter">
+              <span>Bot scope</span>
+              <select v-model="freeUsersBotFilter" :disabled="loading || freeUsersLoading">
+                <option value="all">All bots</option>
+                <option
+                  v-for="bot in botScopeOptions"
+                  :key="bot.bot_key"
+                  :value="bot.bot_key"
+                >
+                  {{ bot.bot_key }}
+                </option>
+              </select>
+            </label>
           </div>
         </header>
 
         <div class="panel-body free-users-body">
+          <p v-if="freeUsersLoading && !loading" class="hint">Updating free-user usage scope…</p>
+          <p v-if="freeUsersError" class="error">{{ freeUsersError }}</p>
+
           <section class="kpi-grid">
             <article class="kpi">
               <div class="kpi-label">Current free users</div>
@@ -405,7 +423,7 @@
               <select v-model="notificationBotFilter">
                 <option value="all">All bots</option>
                 <option
-                  v-for="bot in notificationBotOptions"
+                  v-for="bot in botScopeOptions"
                   :key="bot.bot_key"
                   :value="bot.bot_key"
                 >
@@ -1880,6 +1898,9 @@ const botSort = reactive({
 
 const notificationRows = ref([]);
 const notificationBotFilter = ref('all');
+const freeUsersBotFilter = ref('all');
+const freeUsersLoading = ref(false);
+const freeUsersError = ref('');
 const newUsersByBotSeries = ref([]);
 const newUsersByBotSeriesConfig = ref([]);
 const newPaidSeries = ref([]);
@@ -2596,7 +2617,7 @@ const botStatsByKey = computed(() => {
   return map;
 });
 
-const notificationBotOptions = computed(() => {
+const botScopeOptions = computed(() => {
   const map = new Map();
 
   for (const bot of botStatsTable.value) {
@@ -2629,13 +2650,23 @@ const notificationSeriesConfig = computed(() => notificationChartBundle.value.se
 const notificationTotalSent = computed(() => notificationChartBundle.value.totalSent);
 const notificationBotFilterLabel = computed(() => {
   if (notificationBotFilter.value === 'all') return 'All bots';
-  return notificationBotOptions.value.find((bot) => bot.bot_key === notificationBotFilter.value)?.bot_key || notificationBotFilter.value;
+  return botScopeOptions.value.find((bot) => bot.bot_key === notificationBotFilter.value)?.bot_key || notificationBotFilter.value;
 });
 const notificationChartSubtitle = computed(() => {
   if (notificationBotFilter.value === 'all') {
     return 'Recipient-level automated reminders and broadcasts across all bots.';
   }
   return `Recipient-level automated reminders and broadcasts for ${notificationBotFilterLabel.value}.`;
+});
+const freeUsersBotFilterLabel = computed(() => {
+  if (freeUsersBotFilter.value === 'all') return 'All bots';
+  return botScopeOptions.value.find((bot) => bot.bot_key === freeUsersBotFilter.value)?.bot_key || freeUsersBotFilter.value;
+});
+const freeUsersPanelSubtitle = computed(() => {
+  if (freeUsersBotFilter.value === 'all') {
+    return 'Current effective tier = free and user is active. Range-based metrics below use the selected UTC dates and optional payload filter.';
+  }
+  return `Current effective tier = free and user is active in ${freeUsersBotFilterLabel.value}. Range-based metrics below use the selected UTC dates and optional payload filter.`;
 });
 
 function sanitizeBroadcastBotKeys(botKeysRaw) {
@@ -2972,6 +3003,14 @@ function analyticsQuery() {
   const base = query();
   const exclude = excludedChatIds.value.length ? excludedChatIds.value.join(',') : undefined;
   return { ...base, exclude_chat_ids: exclude };
+}
+
+function freeUsersInsightsQuery() {
+  const base = analyticsQuery();
+  return {
+    ...base,
+    bot_key: freeUsersBotFilter.value !== 'all' ? freeUsersBotFilter.value : undefined
+  };
 }
 
 function safeParseJson(raw, fallback) {
@@ -3418,6 +3457,21 @@ function buildActionFunnelSeries(rawSeries) {
     count: Number(row?.count || 0),
     pct: Number(row?.pct || 0)
   }));
+}
+
+function applyFreeUsersInsightsData(freeUsersInsights) {
+  freeUserTotals.value = freeUsersInsights?.totals || {
+    free_users_all_time: 0,
+    free_users_with_voice_in_range: 0,
+    free_users_with_messages_in_range: 0,
+    engaged_free_users_in_range: 0,
+    in_seconds: 0,
+    out_seconds: 0,
+    sent_messages: 0,
+    assistant_messages: 0
+  };
+  freeUsersUsageBuckets.value = Array.isArray(freeUsersInsights?.usage_buckets) ? freeUsersInsights.usage_buckets : [];
+  freeUsersMessageBuckets.value = Array.isArray(freeUsersInsights?.message_buckets) ? freeUsersInsights.message_buckets : [];
 }
 
 function topicLabel(rawTopicId) {
@@ -3940,6 +3994,7 @@ async function refreshAnalytics() {
   if (!canFetch.value) return;
   loading.value = true;
   errorText.value = '';
+  freeUsersError.value = '';
   try {
     const q = analyticsQuery();
     const funnelComparisonQueries = {
@@ -3985,7 +4040,7 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/inactive-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/usage-seconds-by-day', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/free-users-insights', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/free-users-insights', { query: freeUsersInsightsQuery(), headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload, exclude_chat_ids: q.exclude_chat_ids }, headers }),
       apiJson(props.apiBase, '/admin/metrics/user-streaks', { query: q, headers }),
@@ -4019,9 +4074,7 @@ async function refreshAnalytics() {
     totalUsersSeries.value = Array.isArray(totalUsers?.series) ? totalUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
     usageSecondsSeries.value = Array.isArray(usageSeconds?.series) ? usageSeconds.series : [];
-    freeUserTotals.value = freeUsersInsights?.totals || freeUserTotals.value;
-    freeUsersUsageBuckets.value = Array.isArray(freeUsersInsights?.usage_buckets) ? freeUsersInsights.usage_buckets : [];
-    freeUsersMessageBuckets.value = Array.isArray(freeUsersInsights?.message_buckets) ? freeUsersInsights.message_buckets : [];
+    applyFreeUsersInsightsData(freeUsersInsights);
     activeUsersByHourSeries.value = Array.isArray(byHour?.series) ? byHour.series : [];
     activeUsersByHourTodaySeries.value = Array.isArray(byHourToday?.series) ? byHourToday.series : [];
     userStreakSeries.value = Array.isArray(userStreaks?.series) ? userStreaks.series : [];
@@ -4049,6 +4102,25 @@ async function refreshAnalytics() {
     errorText.value = `Failed to load: ${msg}`;
   } finally {
     loading.value = false;
+  }
+}
+
+async function refreshFreeUsersInsights() {
+  if (!canFetch.value) return;
+  freeUsersLoading.value = true;
+  freeUsersError.value = '';
+  try {
+    const data = await apiJson(props.apiBase, '/admin/metrics/free-users-insights', {
+      query: freeUsersInsightsQuery(),
+      headers: adminHeaders()
+    });
+    applyFreeUsersInsightsData(data);
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    freeUsersError.value = `Failed to load free-user usage: ${msg}`;
+  } finally {
+    freeUsersLoading.value = false;
   }
 }
 
@@ -4512,6 +4584,8 @@ function clearPassword() {
   reminderTestError.value = '';
   reminderTestInfo.value = '';
   reminderTestResult.value = null;
+  freeUsersLoading.value = false;
+  freeUsersError.value = '';
   freeUserTotals.value = {
     free_users_all_time: 0,
     free_users_with_voice_in_range: 0,
@@ -4657,9 +4731,21 @@ watch(
     if (reminderTestBotKey.value && !reminderTestBotExists.value) {
       reminderTestBotKey.value = '';
     }
-    if (notificationBotFilter.value !== 'all' && !notificationBotOptions.value.some((bot) => bot.bot_key === notificationBotFilter.value)) {
+    if (notificationBotFilter.value !== 'all' && !botScopeOptions.value.some((bot) => bot.bot_key === notificationBotFilter.value)) {
       notificationBotFilter.value = 'all';
     }
+    if (freeUsersBotFilter.value !== 'all' && !botScopeOptions.value.some((bot) => bot.bot_key === freeUsersBotFilter.value)) {
+      freeUsersBotFilter.value = 'all';
+    }
+  }
+);
+
+watch(
+  () => freeUsersBotFilter.value,
+  (next, prev) => {
+    if (next === prev) return;
+    if (!password.value) return;
+    refreshFreeUsersInsights();
   }
 );
 

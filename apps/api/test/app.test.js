@@ -379,6 +379,104 @@ test('admin notifications metrics returns sent counts by bot and type', async ()
   });
 });
 
+test('admin free users insights applies bot scope to all aggregates', async () => {
+  let queryCount = 0;
+
+  await withMockedQuery(async (source, params = []) => {
+    assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+    assert.equal(params[1], '2026-03-04T00:00:00.000Z');
+    assert.equal(params[2], null);
+    assert.equal(params[3], null);
+    assert.equal(params[4], 'uk-de');
+
+    if (source.includes('free_users_with_voice_in_range') && source.includes('COUNT(*) FROM free_users')) {
+      queryCount += 1;
+      return {
+        rows: [{
+          free_users_all_time: 12,
+          free_users_with_voice_in_range: 5,
+          free_users_with_messages_in_range: 7,
+          engaged_free_users_in_range: 8,
+          in_seconds: 320,
+          out_seconds: 180,
+          sent_messages: 21,
+          assistant_messages: 13
+        }]
+      };
+    }
+
+    if (source.includes("'<30s'::text") && source.includes('LEFT JOIN usage_per_user u ON true')) {
+      queryCount += 1;
+      return {
+        rows: [
+          { day: '<30s', users: 2 },
+          { day: '<1m', users: 1 },
+          { day: '<2m', users: 0 },
+          { day: '<5m', users: 1 },
+          { day: '<10m', users: 0 },
+          { day: '10m+', users: 1 }
+        ]
+      };
+    }
+
+    if (source.includes("'31+'::text") && source.includes('LEFT JOIN message_per_user m ON true')) {
+      queryCount += 1;
+      return {
+        rows: [
+          { day: '1', users: 3 },
+          { day: '2-3', users: 2 },
+          { day: '4-7', users: 1 },
+          { day: '8-15', users: 1 },
+          { day: '16-30', users: 0 },
+          { day: '31+', users: 0 }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in free users insights test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/free-users-insights?from=2026-03-01&to=2026-03-04&bot_key=uk-de',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
+    assert.equal(response.json.bot_key, 'uk-de');
+    assert.deepEqual(response.json.totals, {
+      free_users_all_time: 12,
+      free_users_with_voice_in_range: 5,
+      free_users_with_messages_in_range: 7,
+      engaged_free_users_in_range: 8,
+      in_seconds: 320,
+      out_seconds: 180,
+      sent_messages: 21,
+      assistant_messages: 13
+    });
+    assert.deepEqual(response.json.usage_buckets, [
+      { day: '<30s', users: 2 },
+      { day: '<1m', users: 1 },
+      { day: '<2m', users: 0 },
+      { day: '<5m', users: 1 },
+      { day: '<10m', users: 0 },
+      { day: '10m+', users: 1 }
+    ]);
+    assert.deepEqual(response.json.message_buckets, [
+      { day: '1', users: 3 },
+      { day: '2-3', users: 2 },
+      { day: '4-7', users: 1 },
+      { day: '8-15', users: 1 },
+      { day: '16-30', users: 0 },
+      { day: '31+', users: 0 }
+    ]);
+  });
+
+  assert.equal(queryCount, 3);
+});
+
 test('admin active users by day returns first-day and returning user splits', async () => {
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('first_activity AS') && source.includes('returned_users')) {
