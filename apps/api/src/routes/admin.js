@@ -269,26 +269,46 @@ export function createAdminRouter(ctx, helpers) {
          WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
            AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
        ),
-       counts AS (
+       first_paid_users AS (
          SELECT
-           date_trunc('day', u.plan_started_at AT TIME ZONE 'UTC')::date AS day_utc,
-           u.plan_started_tier AS tier,
-           COUNT(*)::int AS count
+           u.chat_id,
+           date_trunc('day', u.plan_started_at AT TIME ZONE 'UTC')::date AS day_utc
          FROM filtered_users u, params
          WHERE u.plan_started_at IS NOT NULL
            AND u.plan_started_at >= (SELECT from_ts FROM params)
            AND u.plan_started_at < (SELECT to_ts FROM params)
            AND u.plan_started_tier IN ('plus', 'pro')
+       ),
+       first_bot AS (
+         SELECT
+           pu.chat_id,
+           pu.day_utc,
+           COALESCE(ub.bot_key, 'unknown') AS bot_key
+         FROM first_paid_users pu
+         LEFT JOIN LATERAL (
+           SELECT b.bot_key
+           FROM user_bots b
+           WHERE b.chat_id = pu.chat_id
+           ORDER BY COALESCE(b.first_seen_at, b.created_at) ASC, b.bot_key ASC
+           LIMIT 1
+         ) ub ON true
+       ),
+       counts AS (
+         SELECT
+           fb.day_utc,
+           fb.bot_key,
+           COUNT(*)::int AS count
+         FROM first_bot fb
          GROUP BY 1, 2
        )
        SELECT
          d.day_utc::text AS day,
-         COALESCE(SUM(c.count) FILTER (WHERE c.tier = 'plus'), 0)::int AS plus,
-         COALESCE(SUM(c.count) FILTER (WHERE c.tier = 'pro'), 0)::int AS pro
+         bots.bot_key,
+         COALESCE(c.count, 0)::int AS count
        FROM days d
-       LEFT JOIN counts c USING (day_utc)
-       GROUP BY d.day_utc
-       ORDER BY d.day_utc ASC`,
+       CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots
+       LEFT JOIN counts c ON c.day_utc = d.day_utc AND c.bot_key = bots.bot_key
+       ORDER BY d.day_utc ASC, bots.bot_key ASC`,
       [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
     );
 
@@ -1715,6 +1735,7 @@ export function createAdminRouter(ctx, helpers) {
            title_base,
            goal_base,
            allowed_base,
+           subareas_json,
            avoid_base,
            starter_questions_target,
            recovery_questions_target,
@@ -1733,10 +1754,10 @@ export function createAdminRouter(ctx, helpers) {
          )
          VALUES (
            $1, $2, $3, $4, $5, $6,
-           $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb,
-           $11, $12::jsonb, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb,
-           $17::jsonb, $18::jsonb, $19::jsonb, $20,
-           $21, NOW()
+           $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb,
+           $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb,
+           $18::jsonb, $19::jsonb, $20::jsonb, $21,
+           $22, NOW()
          )
          ON CONFLICT (bot_key, topic_id) DO UPDATE SET
            emoji = EXCLUDED.emoji,
@@ -1744,6 +1765,7 @@ export function createAdminRouter(ctx, helpers) {
            title_base = EXCLUDED.title_base,
            goal_base = EXCLUDED.goal_base,
            allowed_base = EXCLUDED.allowed_base,
+           subareas_json = EXCLUDED.subareas_json,
            avoid_base = EXCLUDED.avoid_base,
            starter_questions_target = EXCLUDED.starter_questions_target,
            recovery_questions_target = EXCLUDED.recovery_questions_target,
@@ -1759,7 +1781,7 @@ export function createAdminRouter(ctx, helpers) {
            opening_prompt_target = EXCLUDED.opening_prompt_target,
            sort_order = EXCLUDED.sort_order,
            updated_at = NOW()
-         RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, avoid_base,
+         RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, subareas_json, avoid_base,
                    starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at,
                    topic_mode, speech_acts_base, lexical_anchors_target, grammar_targets_json,
                    starter_questions_by_level_target, recovery_questions_by_level_target,
@@ -1772,6 +1794,7 @@ export function createAdminRouter(ctx, helpers) {
           payload.title_base,
           payload.goal_base,
           payload.allowed_base_json,
+          payload.subareas_json_json,
           payload.avoid_base_json,
           payload.starter_questions_target_json,
           payload.recovery_questions_target_json,
@@ -1816,6 +1839,7 @@ export function createAdminRouter(ctx, helpers) {
            title_base,
            goal_base,
            allowed_base,
+           subareas_json,
            avoid_base,
            starter_questions_target,
            recovery_questions_target,
@@ -1834,12 +1858,12 @@ export function createAdminRouter(ctx, helpers) {
          )
          VALUES (
            $1, $2, $3, $4, $5, $6,
-           $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb,
-           $11, $12::jsonb, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb,
-           $17::jsonb, $18::jsonb, $19::jsonb, $20,
-           $21, NOW()
+           $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb,
+           $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb,
+           $18::jsonb, $19::jsonb, $20::jsonb, $21,
+           $22, NOW()
          )
-         RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, avoid_base,
+         RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, subareas_json, avoid_base,
                    starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at,
                    topic_mode, speech_acts_base, lexical_anchors_target, grammar_targets_json,
                    starter_questions_by_level_target, recovery_questions_by_level_target,
@@ -1852,6 +1876,7 @@ export function createAdminRouter(ctx, helpers) {
           payload.title_base,
           payload.goal_base,
           payload.allowed_base_json,
+          payload.subareas_json_json,
           payload.avoid_base_json,
           payload.starter_questions_target_json,
           payload.recovery_questions_target_json,
@@ -1896,24 +1921,25 @@ export function createAdminRouter(ctx, helpers) {
              title_base = $6,
              goal_base = $7,
              allowed_base = $8::jsonb,
-             avoid_base = $9::jsonb,
-             starter_questions_target = $10::jsonb,
-             recovery_questions_target = $11::jsonb,
-             topic_mode = $12,
-             speech_acts_base = $13::jsonb,
-             lexical_anchors_target = $14::jsonb,
-             grammar_targets_json = $15::jsonb,
-             starter_questions_by_level_target = $16::jsonb,
-             recovery_questions_by_level_target = $17::jsonb,
-             bridge_patterns_target = $18::jsonb,
-             hard_block_base = $19::jsonb,
-             soft_redirect_base = $20::jsonb,
-             opening_prompt_target = $21,
-             sort_order = $22,
+             subareas_json = $9::jsonb,
+             avoid_base = $10::jsonb,
+             starter_questions_target = $11::jsonb,
+             recovery_questions_target = $12::jsonb,
+             topic_mode = $13,
+             speech_acts_base = $14::jsonb,
+             lexical_anchors_target = $15::jsonb,
+             grammar_targets_json = $16::jsonb,
+             starter_questions_by_level_target = $17::jsonb,
+             recovery_questions_by_level_target = $18::jsonb,
+             bridge_patterns_target = $19::jsonb,
+             hard_block_base = $20::jsonb,
+             soft_redirect_base = $21::jsonb,
+             opening_prompt_target = $22,
+             sort_order = $23,
              updated_at = NOW()
          WHERE bot_key = $1
            AND topic_id = $2
-         RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, avoid_base,
+         RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, subareas_json, avoid_base,
                    starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at,
                    topic_mode, speech_acts_base, lexical_anchors_target, grammar_targets_json,
                    starter_questions_by_level_target, recovery_questions_by_level_target,
@@ -1927,6 +1953,7 @@ export function createAdminRouter(ctx, helpers) {
           payload.title_base,
           payload.goal_base,
           payload.allowed_base_json,
+          payload.subareas_json_json,
           payload.avoid_base_json,
           payload.starter_questions_target_json,
           payload.recovery_questions_target_json,

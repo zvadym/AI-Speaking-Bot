@@ -76,24 +76,7 @@ function normalizeTopicAssistDraft(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     throw makeHttpError(400, 'bad_draft', 'draft must be an object');
   }
-
-  const topicIdRaw = normalizeOptionalText(raw.topic_id, 64);
-  const titleBase = normalizeOptionalText(raw.title_base, 120);
-  const goalBase = normalizeOptionalText(raw.goal_base, 280);
-  const fallbackKey = topicIdRaw || titleBase || 'topic';
-
-  return {
-    topic_id: normalizeTopicId(fallbackKey),
-    emoji: normalizeTopicEmoji(raw.emoji, fallbackKey),
-    access_tier: normalizeTopicAccessTier(raw.access_tier ?? 'all'),
-    title_base: titleBase || fallbackKey,
-    goal_base: goalBase || fallbackKey,
-    allowed_base: normalizeTopicSeedList(raw.allowed_base, { maxItems: 6, maxItemLen: 80 }),
-    avoid_base: normalizeTopicSeedList(raw.avoid_base, { maxItems: 6, maxItemLen: 80 }),
-    starter_questions_target: normalizeTopicSeedList(raw.starter_questions_target, { maxItems: 10, maxItemLen: 220 }),
-    recovery_questions_target: normalizeTopicSeedList(raw.recovery_questions_target, { maxItems: 10, maxItemLen: 220 }),
-    sort_order: Number.isInteger(Number(raw.sort_order)) ? Number(raw.sort_order) : 0
-  };
+  return normalizeTopicPayload(raw, { requireAll: true });
 }
 
 function normalizeTopicBaseTemplate(raw, fallbackTopicName = '') {
@@ -174,6 +157,7 @@ export function createApiHelpers(ctx) {
          title_base,
          goal_base,
          allowed_base,
+         subareas_json,
          avoid_base,
          starter_questions_target,
          recovery_questions_target,
@@ -209,6 +193,7 @@ export function createApiHelpers(ctx) {
          title_base,
          goal_base,
          allowed_base,
+         subareas_json,
          avoid_base,
          starter_questions_target,
          recovery_questions_target,
@@ -241,6 +226,7 @@ export function createApiHelpers(ctx) {
       ...payload,
       access_tier_value: payload.access_tier,
       allowed_base_json: JSON.stringify(payload.allowed_base),
+      subareas_json_json: JSON.stringify(payload.subareas_json),
       avoid_base_json: JSON.stringify(payload.avoid_base),
       starter_questions_target_json: JSON.stringify(payload.starter_questions_target),
       recovery_questions_target_json: JSON.stringify(payload.recovery_questions_target),

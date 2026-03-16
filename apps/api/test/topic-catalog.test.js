@@ -20,6 +20,10 @@ function makeTopic(accessTier, overrides = {}) {
     title_base: `${accessTier} title`,
     goal_base: `${accessTier} goal`,
     allowed_base: ['one', 'two'],
+    subareas_json: [
+      { id: 'one', label_base: 'one', keywords_target: ['first'], keywords_base: ['one'] },
+      { id: 'two', label_base: 'two', keywords_target: ['second'], keywords_base: ['two'] }
+    ],
     avoid_base: ['three', 'four'],
     starter_questions_target: [
       'Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'
@@ -40,6 +44,10 @@ test('topic payload normalization accepts and preserves access tiers', () => {
 
   assert.equal(payload.access_tier, 'pro');
   assert.equal(payload.topic_mode, 'open_chat');
+  assert.deepEqual(payload.subareas_json, [
+    { id: 'one', label_base: 'one', keywords_target: ['first'], keywords_base: ['one'] },
+    { id: 'two', label_base: 'two', keywords_target: ['second'], keywords_base: ['two'] }
+  ]);
   assert.deepEqual(payload.starter_questions_by_level_target, {
     default: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?']
   });
@@ -53,6 +61,10 @@ test('topic payload normalization preserves existing v2 fields when legacy admin
   const existingTopic = normalizeTopicPayload({
     ...makeTopic('all', { topic_id: 'coffee' }),
     topic_mode: 'roleplay',
+    subareas_json: [
+      { id: 'drink-type', label_base: 'ordering drinks', keywords_target: ['coffee'], keywords_base: ['ordering drinks'] },
+      { id: 'milk', label_base: 'asking for milk', keywords_target: ['milk'], keywords_base: ['asking for milk'] }
+    ],
     speech_acts_base: ['ordering', 'clarifying'],
     lexical_anchors_target: ['latte', 'oat milk'],
     grammar_targets_json: { tense: ['present simple'] },
@@ -86,6 +98,10 @@ test('topic payload normalization preserves existing v2 fields when legacy admin
   );
 
   assert.equal(updated.topic_mode, 'roleplay');
+  assert.deepEqual(updated.subareas_json, [
+    { id: 'drink-type', label_base: 'ordering drinks', keywords_target: ['coffee'], keywords_base: ['ordering drinks'] },
+    { id: 'milk', label_base: 'asking for milk', keywords_target: ['milk'], keywords_base: ['asking for milk'] }
+  ]);
   assert.deepEqual(updated.speech_acts_base, ['ordering', 'clarifying']);
   assert.deepEqual(updated.lexical_anchors_target, ['latte', 'oat milk']);
   assert.deepEqual(updated.grammar_targets_json, { tense: ['present simple'] });
@@ -121,6 +137,7 @@ test('topic pack builder selects level-specific starters and opening prompt', ()
   );
 
   assert.equal(pack.topic_mode, 'rehearsal');
+  assert.equal(pack.subareas_json.length, 2);
   assert.deepEqual(pack.starter_questions_target, ['Tell me about your last role?']);
   assert.deepEqual(pack.recovery_questions_target, ['What projects are you most proud of?']);
   assert.equal(pack.opening_prompt_target, 'Walk me through your recent experience.');
@@ -180,6 +197,7 @@ test('topic pack builder includes access tier in stored snapshot payload', () =>
   const pack = buildTopicPackFromRow(makeTopic('pro'));
   assert.equal(pack.access_tier, 'pro');
   assert.equal(pack.topic_id, 'pro-topic');
+  assert.equal(pack.subareas_json.length, 2);
   assert.equal(pack.starter_questions_target.length, 6);
   assert.equal(pack.opening_prompt_target, 'Q1?');
 });

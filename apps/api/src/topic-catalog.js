@@ -1,3 +1,8 @@
+import {
+  normalizeStoredSubareas,
+  normalizeTopicSubareas
+} from './topic-subareas.js';
+
 const TOPIC_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const TOPIC_LEVEL_KEYS = new Set(['a1', 'a2', 'b1', 'b2', 'c1', 'c2', 'default']);
 const TOPIC_MODE_FALLBACKS = {
@@ -192,6 +197,17 @@ function normalizeOptionalArrayField(raw, existingValue, limits, field, fallback
   return normalizeOptionalList(raw, limits, field);
 }
 
+function normalizeSubareasField(raw, existingValue, allowedBase) {
+  try {
+    if (raw === undefined) {
+      return normalizeTopicSubareas(existingValue ?? [], { allowedBase, field: 'subareas_json' });
+    }
+    return normalizeTopicSubareas(raw, { allowedBase, field: 'subareas_json' });
+  } catch (error) {
+    throw makeError('bad_subareas_json', error?.message || 'subareas_json is invalid');
+  }
+}
+
 export function slugifyTopicId(value, fallback = 'topic') {
   const text = (value ?? '')
     .toString()
@@ -334,6 +350,11 @@ export function normalizeTopicPayload(raw, { requireAll = true, existingTopic = 
     TOPIC_RECOVERY_LIMITS,
     'recovery_questions_target'
   );
+  const subareasJson = normalizeSubareasField(
+    hasOwn(raw, 'subareas_json') ? raw.subareas_json : undefined,
+    existing?.subareas_json,
+    allowedBase
+  );
 
   const starterQuestionsByLevelTarget = normalizeLevelQuestionMap(
     chooseValue(raw, existing?.starter_questions_by_level_target, starterQuestionsTarget, 'starter_questions_by_level_target'),
@@ -392,6 +413,7 @@ export function normalizeTopicPayload(raw, { requireAll = true, existingTopic = 
     title_base: titleBase,
     goal_base: goalBase,
     allowed_base: allowedBase,
+    subareas_json: subareasJson,
     avoid_base: avoidBase,
     starter_questions_target: starterQuestionsTarget,
     recovery_questions_target: recoveryQuestionsTarget,
@@ -447,6 +469,7 @@ export function normalizeTopicRow(row) {
     title_base: normalizeText(row.title_base, { maxLen: 120, field: 'title_base' }),
     goal_base: normalizeText(row.goal_base, { maxLen: 280, field: 'goal_base' }),
     allowed_base: allowedBase,
+    subareas_json: normalizeStoredSubareas(row.subareas_json, { allowedBase }),
     avoid_base: avoidBase,
     starter_questions_target: starterQuestionsTarget,
     recovery_questions_target: recoveryQuestionsTarget,
@@ -513,6 +536,7 @@ export function buildTopicPackFromRow(row, { level = '' } = {}) {
     title_base: topic.title_base,
     goal_base: topic.goal_base,
     allowed_base: topic.allowed_base,
+    subareas_json: topic.subareas_json,
     avoid_base: topic.avoid_base,
     starter_questions_target: starterQuestions,
     recovery_questions_target: recoveryQuestions,

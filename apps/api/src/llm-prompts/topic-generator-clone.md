@@ -9,4 +9,5 @@ Preserve topic_id and access_tier unless the instruction explicitly requests a r
 Current source draft JSON:
 {{current_draft_json}}
 {{extra_instruction_block}}
+Preserve topic structure and subarea IDs where possible, but translate label_base and all target-language fields.
 Return the fully adapted topic pack for the target language pair.

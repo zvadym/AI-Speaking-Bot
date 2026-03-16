@@ -473,13 +473,11 @@
 
         <AdminChart
           title="New paid users by day (first time)"
-          subtitle="Pro activations by day"
+          subtitle="First-time plus/pro activations split by first associated bot"
           kind="bar"
           x-labels="all"
           :data="newPaidSeries"
-          :series="[
-            { key: 'pro', label: 'Pro', color: 'rgba(199, 90, 36, 0.88)' }
-          ]"
+          :series="newPaidSeriesConfig"
         />
 
         <AdminChart
@@ -1904,6 +1902,7 @@ const freeUsersError = ref('');
 const newUsersByBotSeries = ref([]);
 const newUsersByBotSeriesConfig = ref([]);
 const newPaidSeries = ref([]);
+const newPaidSeriesConfig = ref([]);
 const actionEventsSeries = ref([]);
 const actionTotalsSeries = ref([]);
 const actionFunnelLast30DaysSeries = ref([]);
@@ -4056,7 +4055,10 @@ async function refreshAnalytics() {
     automatedMessageTestChatIds.value = Array.isArray(botStatsData?.automated_message_test_chat_ids)
       ? botStatsData.automated_message_test_chat_ids
       : [];
-    newPaidSeries.value = Array.isArray(newPaid?.series) ? newPaid.series : [];
+    const newPaidRawRows = Array.isArray(newPaid?.series) ? newPaid.series : [];
+    const { chartData: newPaidData, seriesConfig: newPaidConfig } = transformByBotData(newPaidRawRows);
+    newPaidSeries.value = newPaidData;
+    newPaidSeriesConfig.value = newPaidConfig;
     actionEventsSeries.value = Array.isArray(actionEvents?.series) ? actionEvents.series : [];
     actionTotalsSeries.value = Array.isArray(actionTotals?.series)
       ? actionTotals.series.map((row) => ({

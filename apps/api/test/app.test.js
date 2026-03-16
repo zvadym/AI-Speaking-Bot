@@ -379,6 +379,48 @@ test('admin notifications metrics returns sent counts by bot and type', async ()
   });
 });
 
+test('admin new paid users by day returns first-time paid users split by first associated bot', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('first_paid_users AS') && source.includes('CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots')) {
+      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+      assert.equal(params[1], '2026-03-04T00:00:00.000Z');
+      assert.equal(params[2], null);
+      assert.equal(params[3], null);
+      return {
+        rows: [
+          { day: '2026-03-01', bot_key: 'uk-de', count: 2 },
+          { day: '2026-03-01', bot_key: 'uk-en', count: 1 },
+          { day: '2026-03-02', bot_key: 'uk-de', count: 0 },
+          { day: '2026-03-02', bot_key: 'uk-en', count: 3 },
+          { day: '2026-03-03', bot_key: 'uk-de', count: 1 },
+          { day: '2026-03-03', bot_key: 'uk-en', count: 0 }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in admin new paid users test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/new-paid-by-day?from=2026-03-01&to=2026-03-04',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
+    assert.deepEqual(response.json.series, [
+      { day: '2026-03-01', bot_key: 'uk-de', count: 2 },
+      { day: '2026-03-01', bot_key: 'uk-en', count: 1 },
+      { day: '2026-03-02', bot_key: 'uk-de', count: 0 },
+      { day: '2026-03-02', bot_key: 'uk-en', count: 3 },
+      { day: '2026-03-03', bot_key: 'uk-de', count: 1 },
+      { day: '2026-03-03', bot_key: 'uk-en', count: 0 }
+    ]);
+  });
+});
+
 test('admin free users insights applies bot scope to all aggregates', async () => {
   let queryCount = 0;
 
@@ -845,6 +887,10 @@ test('admin topics list returns v2 topic fields', async () => {
             title_base: 'Coffee shop',
             goal_base: 'Practice a short cafe order.',
             allowed_base: ['ordering drinks', 'asking for milk'],
+            subareas_json: [
+              { id: 'drink-type', label_base: 'ordering drinks', keywords_target: ['coffee'], keywords_base: ['ordering drinks'] },
+              { id: 'milk', label_base: 'asking for milk', keywords_target: ['milk'], keywords_base: ['asking for milk'] }
+            ],
             avoid_base: ['politics', 'weather'],
             starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
             recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
@@ -879,6 +925,7 @@ test('admin topics list returns v2 topic fields', async () => {
     assert.equal(response.json.selected_bot_key, 'uk-de');
     assert.equal(response.json.items.length, 1);
     assert.equal(response.json.items[0].topic_mode, 'roleplay');
+    assert.equal(response.json.items[0].subareas_json.length, 2);
     assert.equal(response.json.items[0].opening_prompt_target, 'Do you want a latte or cappuccino?');
     assert.deepEqual(response.json.items[0].lexical_anchors_target, ['latte', 'oat milk']);
     assert.deepEqual(response.json.items[0].starter_questions_by_level_target, {
@@ -897,6 +944,10 @@ test('admin topic update preserves existing v2 fields when legacy form omits the
     title_base: 'Coffee shop',
     goal_base: 'Practice a short cafe order.',
     allowed_base: ['ordering drinks', 'asking for milk'],
+    subareas_json: [
+      { id: 'drink-type', label_base: 'ordering drinks', keywords_target: ['coffee'], keywords_base: ['ordering drinks'] },
+      { id: 'milk', label_base: 'asking for milk', keywords_target: ['milk'], keywords_base: ['asking for milk'] }
+    ],
     avoid_base: ['politics', 'weather'],
     starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
     recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
@@ -925,16 +976,17 @@ test('admin topic update preserves existing v2 fields when legacy form omits the
       assert.equal(params[0], 'uk-de');
       assert.equal(params[1], 'coffee');
       assert.equal(params[2], 'coffee');
-      assert.equal(params[11], 'roleplay');
-      assert.equal(params[12], JSON.stringify(['ordering', 'clarifying']));
-      assert.equal(params[13], JSON.stringify(['latte', 'oat milk']));
-      assert.equal(params[14], JSON.stringify({ tense: ['present simple'] }));
-      assert.equal(params[15], JSON.stringify({ default: ['Q1?'], a1: ['A1 starter?'] }));
-      assert.equal(params[16], JSON.stringify({ default: ['R1?'] }));
-      assert.equal(params[17], JSON.stringify(['How about...']));
-      assert.equal(params[18], JSON.stringify(['politics']));
-      assert.equal(params[19], JSON.stringify(['weather']));
-      assert.equal(params[20], 'Do you want a latte or cappuccino?');
+      assert.equal(params[8], JSON.stringify(existingRow.subareas_json));
+      assert.equal(params[12], 'roleplay');
+      assert.equal(params[13], JSON.stringify(['ordering', 'clarifying']));
+      assert.equal(params[14], JSON.stringify(['latte', 'oat milk']));
+      assert.equal(params[15], JSON.stringify({ tense: ['present simple'] }));
+      assert.equal(params[16], JSON.stringify({ default: ['Q1?'], a1: ['A1 starter?'] }));
+      assert.equal(params[17], JSON.stringify({ default: ['R1?'] }));
+      assert.equal(params[18], JSON.stringify(['How about...']));
+      assert.equal(params[19], JSON.stringify(['politics']));
+      assert.equal(params[20], JSON.stringify(['weather']));
+      assert.equal(params[21], 'Do you want a latte or cappuccino?');
       return {
         rows: [
           {
@@ -942,10 +994,11 @@ test('admin topic update preserves existing v2 fields when legacy form omits the
             title_base: params[5],
             goal_base: params[6],
             allowed_base: JSON.parse(params[7]),
-            avoid_base: JSON.parse(params[8]),
-            starter_questions_target: JSON.parse(params[9]),
-            recovery_questions_target: JSON.parse(params[10]),
-            sort_order: params[21]
+            subareas_json: JSON.parse(params[8]),
+            avoid_base: JSON.parse(params[9]),
+            starter_questions_target: JSON.parse(params[10]),
+            recovery_questions_target: JSON.parse(params[11]),
+            sort_order: params[22]
           }
         ]
       };
@@ -976,6 +1029,7 @@ test('admin topic update preserves existing v2 fields when legacy form omits the
     assert.equal(response.status, 200);
     assert.equal(response.json.item.title_base, 'Coffee shop updated');
     assert.equal(response.json.item.topic_mode, 'roleplay');
+    assert.equal(response.json.item.subareas_json.length, 2);
     assert.equal(response.json.item.opening_prompt_target, 'Do you want a latte or cappuccino?');
     assert.deepEqual(response.json.item.lexical_anchors_target, ['latte', 'oat milk']);
     assert.deepEqual(response.json.item.bridge_patterns_target, ['How about...']);

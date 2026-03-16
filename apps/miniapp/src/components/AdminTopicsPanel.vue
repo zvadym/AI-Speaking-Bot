@@ -239,6 +239,14 @@
                       </select>
                     </label>
                     <label class="field">
+                      <span>Mode</span>
+                      <select v-model="editor.topic_mode">
+                        <option v-for="option in TOPIC_MODE_OPTIONS" :key="option.value" :value="option.value">
+                          {{ option.label }}
+                        </option>
+                      </select>
+                    </label>
+                    <label class="field">
                       <span>Sort order</span>
                       <input v-model.number="editor.sort_order" type="number" min="0" max="100000" />
                     </label>
@@ -311,6 +319,84 @@
                     <span>Use these when the conversation stalls</span>
                     <textarea v-model="editor.recovery_questions_target_text" rows="8" placeholder="One question per line" />
                   </label>
+                </section>
+
+                <section class="editor-section editor-span-2">
+                  <div class="editor-section-head compact">
+                    <div>
+                      <div class="topics-section-kicker">Runtime</div>
+                      <h4>Opening prompt and focus</h4>
+                    </div>
+                  </div>
+                  <div class="editor-fields editor-fields-identity">
+                    <label class="field editor-span-2">
+                      <span>Opening prompt (target language)</span>
+                      <textarea
+                        v-model.trim="editor.opening_prompt_target"
+                        rows="3"
+                        placeholder="A short opening prompt used when the topic becomes active."
+                      />
+                    </label>
+                    <label class="field">
+                      <span>Speech acts (base language)</span>
+                      <textarea v-model="editor.speech_acts_base_text" rows="6" placeholder="One item per line" />
+                    </label>
+                    <label class="field">
+                      <span>Lexical anchors (target language)</span>
+                      <textarea v-model="editor.lexical_anchors_target_text" rows="6" placeholder="One item per line" />
+                    </label>
+                    <label class="field">
+                      <span>Bridge patterns (target language)</span>
+                      <textarea v-model="editor.bridge_patterns_target_text" rows="6" placeholder="One item per line" />
+                    </label>
+                    <label class="field">
+                      <span>Hard block (base language)</span>
+                      <textarea v-model="editor.hard_block_base_text" rows="6" placeholder="One item per line" />
+                    </label>
+                    <label class="field editor-span-2">
+                      <span>Soft redirect (base language)</span>
+                      <textarea v-model="editor.soft_redirect_base_text" rows="4" placeholder="One item per line" />
+                    </label>
+                  </div>
+                </section>
+
+                <section class="editor-section editor-span-2">
+                  <div class="editor-section-head compact">
+                    <div>
+                      <div class="topics-section-kicker">Advanced JSON</div>
+                      <h4>Structured subareas and level maps</h4>
+                    </div>
+                  </div>
+                  <div class="editor-fields editor-fields-identity">
+                    <label class="field editor-span-2">
+                      <span>Subareas JSON</span>
+                      <textarea
+                        v-model="editor.subareas_json_text"
+                        rows="10"
+                        placeholder='[{"id":"payment","label_base":"Оплата","keywords_target":["card","cash"],"keywords_base":["оплата"]}]'
+                      />
+                    </label>
+                    <label class="field editor-span-2">
+                      <span>Grammar targets JSON</span>
+                      <textarea v-model="editor.grammar_targets_json_text" rows="7" placeholder='{"focus":["present simple","polite requests"]}' />
+                    </label>
+                    <label class="field">
+                      <span>Starter questions by level JSON</span>
+                      <textarea
+                        v-model="editor.starter_questions_by_level_target_text"
+                        rows="8"
+                        placeholder='{"default":["Can I help you?"],"a1":["What would you like?"],"b1":["How often do you order this?"]}'
+                      />
+                    </label>
+                    <label class="field">
+                      <span>Recovery questions by level JSON</span>
+                      <textarea
+                        v-model="editor.recovery_questions_by_level_target_text"
+                        rows="8"
+                        placeholder='{"default":["Anything else?"],"a1":["Do you want sugar?"],"b1":["Would you change anything about the order?"]}'
+                      />
+                    </label>
+                  </div>
                 </section>
               </div>
 
@@ -473,6 +559,12 @@ const TOPIC_ACCESS_OPTIONS = [
   { value: 'pro', label: 'Pro only' }
 ];
 
+const TOPIC_MODE_OPTIONS = [
+  { value: 'open_chat', label: 'Open chat' },
+  { value: 'roleplay', label: 'Roleplay' },
+  { value: 'rehearsal', label: 'Rehearsal' }
+];
+
 const props = defineProps({
   apiBase: { type: String, required: true },
   password: { type: String, default: '' }
@@ -521,13 +613,24 @@ const editor = reactive({
   emoji: '🧩',
   sort_order: 0,
   access_tier: 'all',
+  topic_mode: 'open_chat',
   topic_id: '',
   title_base: '',
   goal_base: '',
   allowed_base_text: '',
+  speech_acts_base_text: '',
+  lexical_anchors_target_text: '',
+  bridge_patterns_target_text: '',
+  hard_block_base_text: '',
+  soft_redirect_base_text: '',
   avoid_base_text: '',
   starter_questions_target_text: '',
-  recovery_questions_target_text: ''
+  recovery_questions_target_text: '',
+  opening_prompt_target: '',
+  subareas_json_text: '[]',
+  grammar_targets_json_text: '{}',
+  starter_questions_by_level_target_text: '{}',
+  recovery_questions_by_level_target_text: '{}'
 });
 
 const editorSnapshot = ref('');
@@ -567,6 +670,35 @@ function splitLines(raw) {
 
 function joinLines(items) {
   return (Array.isArray(items) ? items : []).map((item) => String(item || '').trim()).filter(Boolean).join('\n');
+}
+
+function prettyJson(value, fallbackText = '{}') {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return fallbackText;
+  }
+}
+
+function parseEditorJson(raw, label, { kind = 'object' } = {}) {
+  const source = String(raw || '').trim();
+  if (!source) return kind === 'array' ? [] : {};
+  let parsed;
+  try {
+    parsed = JSON.parse(source);
+  } catch {
+    throw new Error(`${label} must be valid JSON.`);
+  }
+
+  if (kind === 'array') {
+    if (!Array.isArray(parsed)) throw new Error(`${label} must be a JSON array.`);
+    return parsed;
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`${label} must be a JSON object.`);
+  }
+  return parsed;
 }
 
 function isoStampNow() {
@@ -627,13 +759,30 @@ function buildPayloadFromTopic(topic) {
     emoji: topic.emoji,
     sort_order: Number(topic.sort_order || 0),
     access_tier: topic.access_tier,
+    topic_mode: topic.topic_mode,
     topic_id: topic.topic_id,
     title_base: topic.title_base,
     goal_base: topic.goal_base,
     allowed_base: Array.isArray(topic.allowed_base) ? topic.allowed_base : [],
+    subareas_json: Array.isArray(topic.subareas_json) ? topic.subareas_json : [],
     avoid_base: Array.isArray(topic.avoid_base) ? topic.avoid_base : [],
     starter_questions_target: Array.isArray(topic.starter_questions_target) ? topic.starter_questions_target : [],
-    recovery_questions_target: Array.isArray(topic.recovery_questions_target) ? topic.recovery_questions_target : []
+    recovery_questions_target: Array.isArray(topic.recovery_questions_target) ? topic.recovery_questions_target : [],
+    speech_acts_base: Array.isArray(topic.speech_acts_base) ? topic.speech_acts_base : [],
+    lexical_anchors_target: Array.isArray(topic.lexical_anchors_target) ? topic.lexical_anchors_target : [],
+    grammar_targets_json: topic.grammar_targets_json && typeof topic.grammar_targets_json === 'object' && !Array.isArray(topic.grammar_targets_json)
+      ? topic.grammar_targets_json
+      : {},
+    starter_questions_by_level_target: topic.starter_questions_by_level_target && typeof topic.starter_questions_by_level_target === 'object' && !Array.isArray(topic.starter_questions_by_level_target)
+      ? topic.starter_questions_by_level_target
+      : {},
+    recovery_questions_by_level_target: topic.recovery_questions_by_level_target && typeof topic.recovery_questions_by_level_target === 'object' && !Array.isArray(topic.recovery_questions_by_level_target)
+      ? topic.recovery_questions_by_level_target
+      : {},
+    bridge_patterns_target: Array.isArray(topic.bridge_patterns_target) ? topic.bridge_patterns_target : [],
+    hard_block_base: Array.isArray(topic.hard_block_base) ? topic.hard_block_base : [],
+    soft_redirect_base: Array.isArray(topic.soft_redirect_base) ? topic.soft_redirect_base : [],
+    opening_prompt_target: String(topic.opening_prompt_target || '').trim()
   };
 }
 
@@ -662,13 +811,41 @@ function applyDraftToEditor(draft = {}, { botKey = selectedBotKey.value, origina
   editor.access_tier = TOPIC_ACCESS_OPTIONS.some((option) => option.value === String(draft.access_tier || '').trim().toLowerCase())
     ? String(draft.access_tier || '').trim().toLowerCase()
     : 'all';
+  editor.topic_mode = TOPIC_MODE_OPTIONS.some((option) => option.value === String(draft.topic_mode || '').trim().toLowerCase())
+    ? String(draft.topic_mode || '').trim().toLowerCase()
+    : 'open_chat';
   editor.topic_id = String(draft.topic_id || '').trim();
   editor.title_base = String(draft.title_base || '').trim();
   editor.goal_base = String(draft.goal_base || '').trim();
   editor.allowed_base_text = joinLines(draft.allowed_base);
+  editor.speech_acts_base_text = joinLines(draft.speech_acts_base);
+  editor.lexical_anchors_target_text = joinLines(draft.lexical_anchors_target);
+  editor.bridge_patterns_target_text = joinLines(draft.bridge_patterns_target);
+  editor.hard_block_base_text = joinLines(draft.hard_block_base);
+  editor.soft_redirect_base_text = joinLines(draft.soft_redirect_base);
   editor.avoid_base_text = joinLines(draft.avoid_base);
   editor.starter_questions_target_text = joinLines(draft.starter_questions_target);
   editor.recovery_questions_target_text = joinLines(draft.recovery_questions_target);
+  editor.opening_prompt_target = String(draft.opening_prompt_target || '').trim();
+  editor.subareas_json_text = prettyJson(Array.isArray(draft.subareas_json) ? draft.subareas_json : [], '[]');
+  editor.grammar_targets_json_text = prettyJson(
+    draft.grammar_targets_json && typeof draft.grammar_targets_json === 'object' && !Array.isArray(draft.grammar_targets_json)
+      ? draft.grammar_targets_json
+      : {},
+    '{}'
+  );
+  editor.starter_questions_by_level_target_text = prettyJson(
+    draft.starter_questions_by_level_target && typeof draft.starter_questions_by_level_target === 'object' && !Array.isArray(draft.starter_questions_by_level_target)
+      ? draft.starter_questions_by_level_target
+      : {},
+    '{}'
+  );
+  editor.recovery_questions_by_level_target_text = prettyJson(
+    draft.recovery_questions_by_level_target && typeof draft.recovery_questions_by_level_target === 'object' && !Array.isArray(draft.recovery_questions_by_level_target)
+      ? draft.recovery_questions_by_level_target
+      : {},
+    '{}'
+  );
   editorSnapshot.value = JSON.stringify(editor);
 }
 
@@ -677,13 +854,24 @@ function resetEditor() {
     emoji: '🧩',
     sort_order: nextSortOrder(),
     access_tier: 'all',
+    topic_mode: 'open_chat',
     topic_id: '',
     title_base: '',
     goal_base: '',
     allowed_base: [],
+    subareas_json: [],
     avoid_base: [],
     starter_questions_target: [],
-    recovery_questions_target: []
+    recovery_questions_target: [],
+    speech_acts_base: [],
+    lexical_anchors_target: [],
+    grammar_targets_json: {},
+    starter_questions_by_level_target: {},
+    recovery_questions_by_level_target: {},
+    bridge_patterns_target: [],
+    hard_block_base: [],
+    soft_redirect_base: [],
+    opening_prompt_target: ''
   }, { botKey: selectedBotKey.value, originalTopicId: '' });
   saveError.value = '';
   assistError.value = '';
@@ -780,13 +968,30 @@ function buildPayloadFromEditor() {
     emoji: editor.emoji,
     sort_order: Number(editor.sort_order || 0),
     access_tier: editor.access_tier,
+    topic_mode: editor.topic_mode,
     topic_id: editor.topic_id,
     title_base: editor.title_base,
     goal_base: editor.goal_base,
     allowed_base: splitLines(editor.allowed_base_text),
+    subareas_json: parseEditorJson(editor.subareas_json_text, 'Subareas JSON', { kind: 'array' }),
     avoid_base: splitLines(editor.avoid_base_text),
     starter_questions_target: splitLines(editor.starter_questions_target_text),
-    recovery_questions_target: splitLines(editor.recovery_questions_target_text)
+    recovery_questions_target: splitLines(editor.recovery_questions_target_text),
+    speech_acts_base: splitLines(editor.speech_acts_base_text),
+    lexical_anchors_target: splitLines(editor.lexical_anchors_target_text),
+    grammar_targets_json: parseEditorJson(editor.grammar_targets_json_text, 'Grammar targets JSON'),
+    starter_questions_by_level_target: parseEditorJson(
+      editor.starter_questions_by_level_target_text,
+      'Starter questions by level JSON'
+    ),
+    recovery_questions_by_level_target: parseEditorJson(
+      editor.recovery_questions_by_level_target_text,
+      'Recovery questions by level JSON'
+    ),
+    bridge_patterns_target: splitLines(editor.bridge_patterns_target_text),
+    hard_block_base: splitLines(editor.hard_block_base_text),
+    soft_redirect_base: splitLines(editor.soft_redirect_base_text),
+    opening_prompt_target: editor.opening_prompt_target
   };
 }
 

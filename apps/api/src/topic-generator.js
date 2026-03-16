@@ -2,6 +2,28 @@ import OpenAI from 'openai';
 import { defaultEmojiForTopicId, normalizeTopicPayload, slugifyTopicId } from './topic-catalog.js';
 import { renderLlmPrompt } from './llm-prompts/index.js';
 
+const SUBAREA_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['id', 'label_base', 'keywords_target', 'keywords_base'],
+  properties: {
+    id: { type: 'string' },
+    label_base: { type: 'string' },
+    keywords_target: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 12,
+      items: { type: 'string' }
+    },
+    keywords_base: {
+      type: 'array',
+      minItems: 0,
+      maxItems: 12,
+      items: { type: 'string' }
+    }
+  }
+};
+
 const TOPIC_GENERATION_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -12,9 +34,20 @@ const TOPIC_GENERATION_SCHEMA = {
     'title_base',
     'goal_base',
     'allowed_base',
+    'subareas_json',
     'avoid_base',
     'starter_questions_target',
-    'recovery_questions_target'
+    'recovery_questions_target',
+    'topic_mode',
+    'speech_acts_base',
+    'lexical_anchors_target',
+    'grammar_targets_json',
+    'starter_questions_by_level_target',
+    'recovery_questions_by_level_target',
+    'bridge_patterns_target',
+    'hard_block_base',
+    'soft_redirect_base',
+    'opening_prompt_target'
   ],
   properties: {
     topic_id: { type: 'string' },
@@ -27,6 +60,12 @@ const TOPIC_GENERATION_SCHEMA = {
       minItems: 2,
       maxItems: 6,
       items: { type: 'string' }
+    },
+    subareas_json: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 6,
+      items: SUBAREA_SCHEMA
     },
     avoid_base: {
       type: 'array',
@@ -45,26 +84,88 @@ const TOPIC_GENERATION_SCHEMA = {
       minItems: 6,
       maxItems: 10,
       items: { type: 'string' }
-    }
+    },
+    topic_mode: { type: 'string', enum: ['open_chat', 'roleplay', 'rehearsal'] },
+    speech_acts_base: {
+      type: 'array',
+      minItems: 0,
+      maxItems: 10,
+      items: { type: 'string' }
+    },
+    lexical_anchors_target: {
+      type: 'array',
+      minItems: 0,
+      maxItems: 10,
+      items: { type: 'string' }
+    },
+    grammar_targets_json: {
+      type: 'object',
+      additionalProperties: true
+    },
+    starter_questions_by_level_target: {
+      type: 'object',
+      additionalProperties: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 10,
+        items: { type: 'string' }
+      }
+    },
+    recovery_questions_by_level_target: {
+      type: 'object',
+      additionalProperties: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 10,
+        items: { type: 'string' }
+      }
+    },
+    bridge_patterns_target: {
+      type: 'array',
+      minItems: 0,
+      maxItems: 10,
+      items: { type: 'string' }
+    },
+    hard_block_base: {
+      type: 'array',
+      minItems: 0,
+      maxItems: 10,
+      items: { type: 'string' }
+    },
+    soft_redirect_base: {
+      type: 'array',
+      minItems: 0,
+      maxItems: 10,
+      items: { type: 'string' }
+    },
+    opening_prompt_target: { type: 'string' }
   }
 };
+
+function buildBaseTemplateBlock(baseTemplate) {
+  if (!baseTemplate) return 'Invent the full topic rules from the topic name.';
+  return [
+    'Preserve the base-language topic meaning closely.',
+    `existing_topic_id: ${String(baseTemplate.topic_id || '').trim().toLowerCase()}`,
+    `existing_title_base: ${String(baseTemplate.title_base || '').trim()}`,
+    `existing_goal_base: ${String(baseTemplate.goal_base || '').trim()}`,
+    `existing_allowed_base: ${JSON.stringify(baseTemplate.allowed_base || [])}`,
+    `existing_subareas_json: ${JSON.stringify(baseTemplate.subareas_json || [])}`,
+    `existing_avoid_base: ${JSON.stringify(baseTemplate.avoid_base || [])}`,
+    `existing_topic_mode: ${String(baseTemplate.topic_mode || '').trim()}`,
+    `existing_lexical_anchors_target: ${JSON.stringify(baseTemplate.lexical_anchors_target || [])}`,
+    `existing_bridge_patterns_target: ${JSON.stringify(baseTemplate.bridge_patterns_target || [])}`,
+    `existing_grammar_targets_json: ${JSON.stringify(baseTemplate.grammar_targets_json || {})}`,
+    `existing_starter_questions_by_level_target: ${JSON.stringify(baseTemplate.starter_questions_by_level_target || {})}`,
+    `existing_recovery_questions_by_level_target: ${JSON.stringify(baseTemplate.recovery_questions_by_level_target || {})}`
+  ].join('\n');
+}
 
 function getClient(apiKey) {
   return new OpenAI({ apiKey });
 }
 
 function buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate }) {
-  const baseTemplateBlock = baseTemplate
-    ? [
-        'Preserve the base-language topic meaning closely.',
-        `existing_topic_id: ${String(baseTemplate.topic_id || '').trim().toLowerCase()}`,
-        `existing_title_base: ${String(baseTemplate.title_base || '').trim()}`,
-        `existing_goal_base: ${String(baseTemplate.goal_base || '').trim()}`,
-        `existing_allowed_base: ${JSON.stringify(baseTemplate.allowed_base || [])}`,
-        `existing_avoid_base: ${JSON.stringify(baseTemplate.avoid_base || [])}`
-      ].join('\n')
-    : 'Invent the full topic rules from the topic name.';
-
   return renderLlmPrompt('topic-generator-user', {
     topic_name: String(topicName || '').trim(),
     base_language_code: String(baseLanguage || '').trim().toLowerCase(),
@@ -72,7 +173,7 @@ function buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate
     suggested_topic_id: slugifyTopicId(topicName || baseTemplate?.topic_id || 'topic'),
     suggested_emoji: defaultEmojiForTopicId(baseTemplate?.topic_id || topicName),
     required_access_tier: String(baseTemplate?.access_tier || 'all').trim().toLowerCase() || 'all',
-    base_template_block: baseTemplateBlock
+    base_template_block: buildBaseTemplateBlock(baseTemplate)
   });
 }
 
@@ -86,7 +187,8 @@ function buildAssistPrompt({
     ? [
         'Current draft JSON:',
         JSON.stringify(currentDraft, null, 2),
-        'Update the current draft in place unless the instruction clearly asks to rename, expand, or restructure it.'
+        'Update the current draft in place unless the instruction clearly asks to rename, expand, or restructure it.',
+        'Preserve existing subareas_json IDs unless the instruction explicitly changes topic structure.'
       ].join('\n')
     : 'There is no current draft yet. Create the full topic pack from the instruction.';
 
