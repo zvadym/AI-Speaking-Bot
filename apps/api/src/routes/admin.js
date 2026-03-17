@@ -37,6 +37,12 @@ const ACTION_EVENT_TYPES = [
   'paywall_shown',
   'purchase_success'
 ];
+const REPLY_KEYBOARD_ACTION_TYPES = [
+  'reply_kbd_topic_click',
+  'reply_kbd_level_click',
+  'reply_kbd_voice_click',
+  'reply_kbd_xp_click'
+];
 const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
 const NOTIFICATION_TASK_TYPES = [
   'onboarding_complete',
@@ -1478,6 +1484,138 @@ export function createAdminRouter(ctx, helpers) {
       to: range.to.toISOString(),
       payload: range.payload,
       series: rows
+    });
+  });
+
+  router.get('/admin/metrics/reply-keyboard-clicks-by-day', requireAdmin, async (req, res) => {
+    const range = helpers.parseAdminRange(req);
+    if (!range.ok) return res.status(400).json({ error: range.error });
+    res.set('Cache-Control', 'no-store');
+
+    const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+    const { rows } = await ctx.pool.query(
+      `WITH params AS (
+         SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+       ),
+       days AS (
+         SELECT generate_series(
+           date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+           date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+           interval '1 day'
+         )::date AS day_utc
+       ),
+       filtered_users AS (
+         SELECT chat_id
+         FROM users
+         WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+           AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
+       ),
+       counts AS (
+         SELECT
+           date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+           e.action_type,
+           COUNT(*)::int AS count
+         FROM action_events e
+         JOIN filtered_users u ON u.chat_id = e.chat_id
+         WHERE e.occurred_at >= (SELECT from_ts FROM params)
+           AND e.occurred_at < (SELECT to_ts FROM params)
+           AND e.action_type = ANY($5::text[])
+         GROUP BY 1, 2
+       )
+       SELECT
+         d.day_utc::text AS day,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_topic_click'), 0)::int AS reply_kbd_topic_click,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_level_click'), 0)::int AS reply_kbd_level_click,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_voice_click'), 0)::int AS reply_kbd_voice_click,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_xp_click'), 0)::int AS reply_kbd_xp_click
+       FROM days d
+       LEFT JOIN counts c USING (day_utc)
+       GROUP BY d.day_utc
+       ORDER BY d.day_utc ASC`,
+      [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, REPLY_KEYBOARD_ACTION_TYPES]
+    );
+
+    return res.json({
+      tz: 'UTC',
+      from: range.from.toISOString(),
+      to: range.to.toISOString(),
+      payload: range.payload,
+      series: rows
+    });
+  });
+
+  router.get('/admin/metrics/reply-keyboard-click-totals', requireAdmin, async (req, res) => {
+    const range = helpers.parseAdminRange(req);
+    if (!range.ok) return res.status(400).json({ error: range.error });
+    res.set('Cache-Control', 'no-store');
+
+    const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+    const { rows } = await ctx.pool.query(
+      `WITH filtered_users AS (
+         SELECT chat_id
+         FROM users
+         WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+           AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
+       ),
+       filtered_events AS (
+         SELECT e.chat_id, e.action_type
+         FROM action_events e
+         JOIN filtered_users u ON u.chat_id = e.chat_id
+         WHERE e.occurred_at >= $1::timestamptz
+           AND e.occurred_at < $2::timestamptz
+           AND e.action_type = ANY($5::text[])
+       ),
+       summary AS (
+         SELECT
+           COUNT(*)::int AS total_clicks,
+           COUNT(DISTINCT chat_id)::int AS unique_users
+         FROM filtered_events
+       ),
+       action_types AS (
+         SELECT unnest($5::text[]) AS action_type
+       ),
+       counts AS (
+         SELECT
+           action_type,
+           COUNT(*)::int AS clicks,
+           COUNT(DISTINCT chat_id)::int AS unique_users
+         FROM filtered_events
+         GROUP BY action_type
+       )
+       SELECT
+         a.action_type AS action,
+         COALESCE(c.clicks, 0)::int AS clicks,
+         COALESCE(c.unique_users, 0)::int AS unique_users,
+         COALESCE(s.total_clicks, 0)::int AS total_clicks,
+         COALESCE(s.unique_users, 0)::int AS summary_unique_users
+       FROM action_types a
+       CROSS JOIN summary s
+       LEFT JOIN counts c ON c.action_type = a.action_type
+       ORDER BY array_position($5::text[], a.action_type) ASC`,
+      [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, REPLY_KEYBOARD_ACTION_TYPES]
+    );
+
+    const summary = rows[0]
+      ? {
+          total_clicks: Number(rows[0].total_clicks || 0),
+          unique_users: Number(rows[0].summary_unique_users || 0)
+        }
+      : {
+          total_clicks: 0,
+          unique_users: 0
+        };
+
+    return res.json({
+      tz: 'UTC',
+      from: range.from.toISOString(),
+      to: range.to.toISOString(),
+      payload: range.payload,
+      summary,
+      series: rows.map((row) => ({
+        action: row.action,
+        clicks: Number(row.clicks || 0),
+        unique_users: Number(row.unique_users || 0)
+      }))
     });
   });
 

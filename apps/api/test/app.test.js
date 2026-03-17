@@ -380,6 +380,142 @@ test('admin notifications metrics returns sent counts by bot and type', async ()
   });
 });
 
+test('admin reply keyboard click metrics return daily click counts', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes("reply_kbd_topic_click") && source.includes('GROUP BY d.day_utc')) {
+      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+      assert.equal(params[1], '2026-03-04T00:00:00.000Z');
+      assert.equal(params[2], null);
+      assert.equal(params[3], null);
+      assert.deepEqual(params[4], [
+        'reply_kbd_topic_click',
+        'reply_kbd_level_click',
+        'reply_kbd_voice_click',
+        'reply_kbd_xp_click'
+      ]);
+      return {
+        rows: [
+          {
+            day: '2026-03-01',
+            reply_kbd_topic_click: 4,
+            reply_kbd_level_click: 2,
+            reply_kbd_voice_click: 6,
+            reply_kbd_xp_click: 1
+          },
+          {
+            day: '2026-03-02',
+            reply_kbd_topic_click: 3,
+            reply_kbd_level_click: 0,
+            reply_kbd_voice_click: 5,
+            reply_kbd_xp_click: 2
+          }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in admin reply keyboard clicks by day test: ${source.slice(0, 180)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/reply-keyboard-clicks-by-day?from=2026-03-01&to=2026-03-04',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
+    assert.deepEqual(response.json.series, [
+      {
+        day: '2026-03-01',
+        reply_kbd_topic_click: 4,
+        reply_kbd_level_click: 2,
+        reply_kbd_voice_click: 6,
+        reply_kbd_xp_click: 1
+      },
+      {
+        day: '2026-03-02',
+        reply_kbd_topic_click: 3,
+        reply_kbd_level_click: 0,
+        reply_kbd_voice_click: 5,
+        reply_kbd_xp_click: 2
+      }
+    ]);
+  });
+});
+
+test('admin reply keyboard click totals return clicks and unique users', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('filtered_events AS') && source.includes('summary_unique_users')) {
+      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+      assert.equal(params[1], '2026-03-04T00:00:00.000Z');
+      assert.equal(params[2], null);
+      assert.equal(params[3], null);
+      assert.deepEqual(params[4], [
+        'reply_kbd_topic_click',
+        'reply_kbd_level_click',
+        'reply_kbd_voice_click',
+        'reply_kbd_xp_click'
+      ]);
+      return {
+        rows: [
+          {
+            action: 'reply_kbd_topic_click',
+            clicks: 7,
+            unique_users: 5,
+            total_clicks: 19,
+            summary_unique_users: 9
+          },
+          {
+            action: 'reply_kbd_level_click',
+            clicks: 2,
+            unique_users: 2,
+            total_clicks: 19,
+            summary_unique_users: 9
+          },
+          {
+            action: 'reply_kbd_voice_click',
+            clicks: 8,
+            unique_users: 6,
+            total_clicks: 19,
+            summary_unique_users: 9
+          },
+          {
+            action: 'reply_kbd_xp_click',
+            clicks: 2,
+            unique_users: 2,
+            total_clicks: 19,
+            summary_unique_users: 9
+          }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in admin reply keyboard click totals test: ${source.slice(0, 180)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/reply-keyboard-click-totals?from=2026-03-01&to=2026-03-04',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
+    assert.deepEqual(response.json.summary, {
+      total_clicks: 19,
+      unique_users: 9
+    });
+    assert.deepEqual(response.json.series, [
+      { action: 'reply_kbd_topic_click', clicks: 7, unique_users: 5 },
+      { action: 'reply_kbd_level_click', clicks: 2, unique_users: 2 },
+      { action: 'reply_kbd_voice_click', clicks: 8, unique_users: 6 },
+      { action: 'reply_kbd_xp_click', clicks: 2, unique_users: 2 }
+    ]);
+  });
+});
+
 test('admin new paid users by day returns first-time paid users split by first associated bot', async () => {
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('first_paid_users AS') && source.includes('CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots')) {

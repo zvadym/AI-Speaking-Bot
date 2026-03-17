@@ -461,6 +461,42 @@
         </div>
       </section>
 
+      <section class="card panel">
+        <header class="panel-head">
+          <div>
+            <div class="panel-kicker">Reply keyboard</div>
+            <h2 class="panel-title">Usage</h2>
+            <p class="panel-sub">Raw taps on the persistent Telegram reply keyboard. Slash commands are excluded.</p>
+          </div>
+        </header>
+
+        <div class="panel-body notification-panel-body">
+          <div class="notification-overview">
+            <article class="notification-overview-item">
+              <span class="notification-overview-label">Total clicks</span>
+              <strong class="notification-overview-value">{{ fmt(replyKeyboardSummary.total_clicks) }}</strong>
+            </article>
+            <article class="notification-overview-item">
+              <span class="notification-overview-label">Unique users</span>
+              <strong class="notification-overview-value">{{ fmt(replyKeyboardSummary.unique_users) }}</strong>
+            </article>
+            <article class="notification-overview-item">
+              <span class="notification-overview-label">Top button</span>
+              <strong class="notification-overview-value">{{ replyKeyboardTopActionLabel }}</strong>
+            </article>
+          </div>
+
+          <AdminChart
+            title="Reply keyboard clicks by day"
+            subtitle="Raw click count by button type"
+            kind="bar"
+            x-labels="all"
+            :data="replyKeyboardClicksSeries"
+            :series="replyKeyboardSeriesConfig"
+          />
+        </div>
+      </section>
+
       <section class="charts-grid">
         <AdminChart
           title="New users by day by bot"
@@ -1907,6 +1943,12 @@ const actionEventsSeries = ref([]);
 const actionTotalsSeries = ref([]);
 const actionFunnelLast30DaysSeries = ref([]);
 const actionFunnelLast7DaysSeries = ref([]);
+const replyKeyboardClicksSeries = ref([]);
+const replyKeyboardTotalsSeries = ref([]);
+const replyKeyboardSummary = ref({
+  total_clicks: 0,
+  unique_users: 0
+});
 const topicUsageSeries = ref([]);
 const topicUsageSeriesConfig = ref([]);
 const activeUsersSeries = ref([]);
@@ -2036,6 +2078,19 @@ const actionSeriesConfig = [
   { key: 'paywall_shown', label: 'paywall_shown', color: 'rgba(174, 43, 40, 0.86)' },
   { key: 'purchase_success', label: 'purchase_success', color: 'rgba(187, 64, 122, 0.88)' }
 ];
+const replyKeyboardActionMeta = {
+  reply_kbd_topic_click: { label: 'Topic', color: 'rgba(31, 107, 99, 0.88)', order: 0 },
+  reply_kbd_level_click: { label: 'Level', color: 'rgba(199, 90, 36, 0.88)', order: 1 },
+  reply_kbd_voice_click: { label: 'Voice', color: 'rgba(46, 88, 142, 0.88)', order: 2 },
+  reply_kbd_xp_click: { label: 'XP', color: 'rgba(103, 78, 167, 0.88)', order: 3 }
+};
+const replyKeyboardSeriesConfig = Object.entries(replyKeyboardActionMeta)
+  .sort((a, b) => a[1].order - b[1].order)
+  .map(([key, meta]) => ({
+    key,
+    label: meta.label,
+    color: meta.color
+  }));
 const actionFunnelStageMeta = {
   start: { label: 'Started', color: 'rgba(38, 84, 124, 0.88)' },
   first_message: { label: 'First message', color: 'rgba(52, 118, 128, 0.88)' },
@@ -3440,6 +3495,12 @@ function actionLabel(rawAction) {
   return action.replaceAll('_', ' ');
 }
 
+function replyKeyboardActionLabel(rawAction) {
+  const action = (rawAction || '').toString().trim();
+  return replyKeyboardActionMeta[action]?.label
+    || action.replace(/^reply_kbd_/, '').replace(/_click$/, '').replaceAll('_', ' ');
+}
+
 function analyticsQueryForRange(range) {
   const exclude = excludedChatIds.value.length ? excludedChatIds.value.join(',') : undefined;
   return {
@@ -3457,6 +3518,24 @@ function buildActionFunnelSeries(rawSeries) {
     pct: Number(row?.pct || 0)
   }));
 }
+
+const replyKeyboardTopActionLabel = computed(() => {
+  const rows = Array.isArray(replyKeyboardTotalsSeries.value) ? replyKeyboardTotalsSeries.value : [];
+  let best = null;
+
+  for (const row of rows) {
+    const clicks = Number(row?.clicks || 0);
+    if (!best || clicks > best.clicks) {
+      best = {
+        action: String(row?.action || '').trim(),
+        clicks
+      };
+    }
+  }
+
+  if (!best || best.clicks <= 0) return 'No data';
+  return `${replyKeyboardActionLabel(best.action)} (${fmt(best.clicks)})`;
+});
 
 function applyFreeUsersInsightsData(freeUsersInsights) {
   freeUserTotals.value = freeUsersInsights?.totals || {
@@ -4008,6 +4087,8 @@ async function refreshAnalytics() {
       newPaid,
       actionEvents,
       actionTotals,
+      replyKeyboardClicks,
+      replyKeyboardTotals,
       actionFunnelLast30Days,
       actionFunnelLast7Days,
       topicsByDay,
@@ -4031,6 +4112,8 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/new-paid-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/actions-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/reply-keyboard-clicks-by-day', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/reply-keyboard-click-totals', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last30Days, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last7Days, headers }),
       apiJson(props.apiBase, '/admin/metrics/topics-by-day', { query: q, headers }),
@@ -4066,6 +4149,12 @@ async function refreshAnalytics() {
           count: Number(row?.count || 0)
         }))
       : [];
+    replyKeyboardClicksSeries.value = Array.isArray(replyKeyboardClicks?.series) ? replyKeyboardClicks.series : [];
+    replyKeyboardSummary.value = replyKeyboardTotals?.summary || {
+      total_clicks: 0,
+      unique_users: 0
+    };
+    replyKeyboardTotalsSeries.value = Array.isArray(replyKeyboardTotals?.series) ? replyKeyboardTotals.series : [];
     actionFunnelLast30DaysSeries.value = buildActionFunnelSeries(actionFunnelLast30Days?.series);
     actionFunnelLast7DaysSeries.value = buildActionFunnelSeries(actionFunnelLast7Days?.series);
     const topicsByDayRawRows = Array.isArray(topicsByDay?.series) ? topicsByDay.series : [];
@@ -4601,6 +4690,12 @@ function clearPassword() {
   freeUsersUsageBuckets.value = [];
   freeUsersMessageBuckets.value = [];
   notificationRows.value = [];
+  replyKeyboardClicksSeries.value = [];
+  replyKeyboardTotalsSeries.value = [];
+  replyKeyboardSummary.value = {
+    total_clicks: 0,
+    unique_users: 0
+  };
 }
 
 function usersNextPage() {
