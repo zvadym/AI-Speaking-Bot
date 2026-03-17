@@ -31,6 +31,7 @@ import {
   classifyPermanentTelegramFailure,
   sanitizeErrorText
 } from '../shared/telegram-delivery.js';
+import { enqueueDiscordEventNotificationJob } from '../jobs.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LOADER_MESSAGE_MAX_LEN = 4096;
@@ -116,7 +117,8 @@ export function createApiHelpers(ctx) {
     getBotLocale,
     telegramClient,
     deliveryState,
-    actionEvents
+    actionEvents,
+    apiBoss
   } = ctx;
   const { recordActionEventSafe } = actionEvents;
   const {
@@ -133,6 +135,24 @@ export function createApiHelpers(ctx) {
       learning_language: bot.learning_language || null,
       bot_name: bot.bot_name || null
     }));
+  }
+
+  async function queueDiscordEventNotification(event, { singletonKey } = {}) {
+    if (!apiBoss || !env.discordEventsWebhookUrl) return null;
+    try {
+      return await enqueueDiscordEventNotificationJob(apiBoss, event, { singletonKey });
+    } catch (error) {
+      console.error('discord event enqueue failed', {
+        type: event?.type || null,
+        singletonKey: singletonKey || null,
+        error: error?.message || String(error)
+      });
+      captureException(error, {
+        tags: { subsystem: 'discord-event-enqueue', event_type: event?.type || 'unknown' },
+        extra: { singletonKey: singletonKey || null }
+      });
+      return null;
+    }
   }
 
   function requireTopicBotMeta(botKeyRaw) {
@@ -1959,19 +1979,54 @@ export function createApiHelpers(ctx) {
     const firstName = user.first_name || null;
     const normalizedBotKey = normalizeBotKey(botKey);
     const botKeyForContext = normalizedBotKey || normalizeBotKey(env.defaultBotKey);
-
-    await pool.query(
+    const insertResult = await pool.query(
       `INSERT INTO users (chat_id, username, first_name, inactive_reason, inactive_at, last_delivery_error)
        VALUES ($1, $2, $3, NULL, NULL, NULL)
-       ON CONFLICT (chat_id) DO UPDATE SET
-         username = EXCLUDED.username,
-         first_name = EXCLUDED.first_name,
-         inactive_reason = NULL,
-         inactive_at = NULL,
-         last_delivery_error = NULL,
-         updated_at = NOW()`,
+       ON CONFLICT (chat_id) DO NOTHING
+       RETURNING chat_id`,
       [chatId, username, firstName]
     );
+
+    const isNewUser = insertResult.rowCount > 0;
+    if (!isNewUser) {
+      await pool.query(
+        `UPDATE users
+            SET username = $2,
+                first_name = $3,
+                inactive_reason = NULL,
+                inactive_at = NULL,
+                last_delivery_error = NULL,
+                updated_at = NOW()
+          WHERE chat_id = $1`,
+        [chatId, username, firstName]
+      );
+    }
+
+    if (isNewUser && env.discordUserMilestoneStep > 0) {
+      const { rows } = await pool.query(
+        `SELECT COUNT(*)::int AS total_users
+           FROM users`
+      );
+      const totalUsers = Number(rows[0]?.total_users || 0);
+      if (
+        Number.isFinite(totalUsers)
+        && totalUsers > 0
+        && totalUsers % env.discordUserMilestoneStep === 0
+      ) {
+        await queueDiscordEventNotification(
+          {
+            type: 'user_milestone',
+            milestone: totalUsers,
+            total_users: totalUsers,
+            chat_id: chatId,
+            username,
+            first_name: firstName,
+            bot_key: botKeyForContext
+          },
+          { singletonKey: `discord_event:user_milestone:${totalUsers}` }
+        );
+      }
+    }
 
     if (!botKeyForContext) return;
 
@@ -2266,7 +2321,7 @@ export function createApiHelpers(ctx) {
       const currency = subscription.items?.data?.[0]?.price?.currency?.toUpperCase() || 'EUR';
 
       const { rows: prevRows } = await pool.query(
-        `SELECT chat_id, plan_tier, stripe_price_id
+        `SELECT chat_id, plan_tier, stripe_price_id, plan_started_at, username, first_name
            FROM users
           WHERE stripe_customer_id = $1
           LIMIT 1`,
@@ -2275,6 +2330,9 @@ export function createApiHelpers(ctx) {
       const prevTier = prevRows[0]?.plan_tier || 'free';
       const prevStripePriceId = prevRows[0]?.stripe_price_id || null;
       const prevChatId = prevRows[0]?.chat_id || null;
+      const prevPlanStartedAt = prevRows[0]?.plan_started_at || null;
+      const prevUsername = prevRows[0]?.username || null;
+      const prevFirstName = prevRows[0]?.first_name || null;
 
       let schedulePendingTier = null;
       let schedulePendingEffectiveAt = null;
@@ -2434,6 +2492,26 @@ export function createApiHelpers(ctx) {
           price_id: nextStripePriceId,
           currency
         });
+      }
+
+      const firstPaidTier = nextPlanTier === 'plus' || nextPlanTier === 'pro';
+      if (updatedChatId && firstPaidTier && !prevPlanStartedAt) {
+        const notificationBotKey = await resolveUserBotKey(updatedChatId);
+        await queueDiscordEventNotification(
+          {
+            type: 'new_paid_user',
+            chat_id: updatedChatId,
+            username: prevUsername,
+            first_name: prevFirstName,
+            bot_key: notificationBotKey,
+            plan_tier: nextPlanTier,
+            status,
+            price_id: nextStripePriceId,
+            currency,
+            subscription_id: subscription.id || null
+          },
+          { singletonKey: `discord_event:new_paid_user:${updatedChatId}` }
+        );
       }
     }
 

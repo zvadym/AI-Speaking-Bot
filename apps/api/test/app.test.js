@@ -12,6 +12,7 @@ process.env.ADMIN_DASHBOARD_PASSWORD ??= 'secret-admin';
 process.env.INTERNAL_API_SECRET ??= 'internal-secret';
 process.env.SENTRY_DSN ??= 'https://public@example.ingest.sentry.io/1';
 process.env.SENTRY_TEST_MODE ??= '1';
+process.env.DISCORD_EVENTS_WEBHOOK_URL ??= 'https://discord.test/api/webhooks/123';
 
 const [{ createApp }, { pool }, { signSession }, { httpError }, sentryModule] = await Promise.all([
   import('../src/app.js'),
@@ -871,6 +872,40 @@ test('internal topic menu marks pro topics with an open lock for pro users', asy
       assert.equal(sentMessages[0].reply_markup.inline_keyboard[0][0].text, '🔒 Pro Topic ✅ PRO');
     });
   });
+});
+
+test('internal n8n error notification queues a Discord event', async () => {
+  const bossCalls = [];
+  const app = await createApp({
+    apiBoss: {
+      send: async (...args) => {
+        bossCalls.push(args);
+        return 'job-123';
+      }
+    }
+  });
+
+  const response = await request(app, {
+    method: 'POST',
+    path: '/internal/notifications/n8n-error',
+    headers: { 'X-Internal-Secret': 'internal-secret' },
+    body: {
+      execution_id: '987',
+      workflow_name: 'AI Bot',
+      workflow_id: 'wf_1',
+      error_message: 'Node execution failed',
+      last_node: 'HTTP Request',
+      mode: 'trigger'
+    }
+  });
+
+  assert.equal(response.status, 202);
+  assert.deepEqual(response.json, { ok: true, queued: true });
+  assert.equal(bossCalls.length, 1);
+  assert.equal(bossCalls[0][0], 'discord-event-send');
+  assert.equal(bossCalls[0][1].type, 'n8n_execution_error');
+  assert.equal(bossCalls[0][1].execution_id, '987');
+  assert.equal(bossCalls[0][2].singletonKey, 'discord_event:n8n_execution_error:987');
 });
 
 test('admin topics list returns v2 topic fields', async () => {

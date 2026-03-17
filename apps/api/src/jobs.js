@@ -4,6 +4,7 @@ import { pool } from './db.js';
 import { loadBotConfigs } from './bot-configs.js';
 import { renderLlmPrompt } from './llm-prompts/index.js';
 import { captureMessage } from './sentry.js';
+import { sendDiscordEventNotification } from './discord-events.js';
 import { createPublicBotCatalogLookup } from './shared/bot-catalog.js';
 import {
   BROADCAST_MESSAGE_KINDS,
@@ -41,6 +42,7 @@ import {
   QUEUE_FREE_LIMIT_HALF_SEND,
   QUEUE_BROADCAST_CAMPAIGN_ENQUEUE,
   QUEUE_BROADCAST_RECIPIENT_SEND,
+  QUEUE_DISCORD_EVENT_SEND,
   QUEUE_LOADER_ROTATE,
   QUEUE_LOADER_TIMEOUT_CLEANUP,
   QUEUE_ONBOARDING_COMPLETE_SCAN,
@@ -135,6 +137,7 @@ const LOADER_ROTATE_INTERVAL_MS = 5000;
 const LOADER_TIMEOUT_SECONDS = 60;
 const LOADER_TIMEOUT_MS = LOADER_TIMEOUT_SECONDS * 1000;
 const LOADER_ROTATE_CONCURRENCY = 10;
+const DISCORD_EVENT_TYPES = new Set(['new_paid_user', 'user_milestone', 'n8n_execution_error']);
 const botCatalog = createPublicBotCatalogLookup(botConfigs, env.telegramBotTokensByBotKey || {});
 const { metaForKey: publicBotMetaForKey } = botCatalog;
 const telegramClient = createTelegramClient({
@@ -3519,6 +3522,22 @@ async function enqueueBroadcastRecipientJob(boss, { campaignId, chatId, botKey }
   );
 }
 
+export async function enqueueDiscordEventNotificationJob(boss, event, { singletonKey } = {}) {
+  if (!boss) return null;
+
+  const type = String(event?.type || '').trim();
+  if (!DISCORD_EVENT_TYPES.has(type)) return null;
+
+  const sendOptions = {
+    ...defaultRetryOptions()
+  };
+  if (singletonKey) {
+    sendOptions.singletonKey = singletonKey;
+  }
+
+  return boss.send(QUEUE_DISCORD_EVENT_SEND, { ...event, type }, sendOptions);
+}
+
 async function cleanupLoaderMessage({ chatId, botKey, sessionId, reason }) {
   const state = await fetchLoaderState(chatId, botKey);
   if (!state || state.session_id !== sessionId) return false;
@@ -4177,6 +4196,30 @@ async function handleBroadcastRecipientSend(jobs) {
   }
 }
 
+async function handleDiscordEventSend(jobs) {
+  for (const job of jobs) {
+    const event = job.data || {};
+    const type = String(event?.type || '').trim();
+    if (!DISCORD_EVENT_TYPES.has(type)) {
+      continue;
+    }
+
+    const result = await sendDiscordEventNotification({
+      webhookUrl: env.discordEventsWebhookUrl,
+      event,
+      botMetaForKey: publicBotMetaForKey
+    });
+
+    console.log('discord-event-send:sent', {
+      jobId: job.id,
+      type,
+      executionId: event.execution_id || null,
+      chatId: Number(event.chat_id || 0) || null,
+      result: result?.ok === true ? 'ok' : 'skipped'
+    });
+  }
+}
+
 export async function registerWorkerHandlers(boss) {
   await boss.work(
     QUEUE_ONBOARDING_COMPLETE_SCAN,
@@ -4267,6 +4310,12 @@ export async function registerWorkerHandlers(boss) {
       handleBroadcastRecipientSend
     );
   }
+
+  await boss.work(
+    QUEUE_DISCORD_EVENT_SEND,
+    { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
+    handleDiscordEventSend
+  );
 }
 
 export async function getBroadcastAudiencePreview(filtersRaw, range, sampleLimit = 20) {

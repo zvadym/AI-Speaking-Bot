@@ -16,6 +16,7 @@ export const QUEUE_WINBACK_SCAN = 'winback-scan';
 export const QUEUE_WINBACK_SEND = 'winback-send';
 export const QUEUE_LOADER_ROTATE = 'loader-rotate';
 export const QUEUE_LOADER_TIMEOUT_CLEANUP = 'loader-timeout-cleanup';
+export const QUEUE_DISCORD_EVENT_SEND = 'discord-event-send';
 
 const ssl = env.databaseSsl
   ? { rejectUnauthorized: env.databaseSslRejectUnauthorized }
@@ -45,6 +46,7 @@ async function ensureQueues(boss) {
   await boss.createQueue(QUEUE_WINBACK_SEND, retryOptions);
   await boss.createQueue(QUEUE_LOADER_ROTATE);
   await boss.createQueue(QUEUE_LOADER_TIMEOUT_CLEANUP);
+  await boss.createQueue(QUEUE_DISCORD_EVENT_SEND, retryOptions);
 }
 
 function createBoss({ enableScheduling }) {

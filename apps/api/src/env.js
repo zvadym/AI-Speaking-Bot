@@ -153,6 +153,8 @@ export const env = {
   sentryRelease: (process.env.SENTRY_RELEASE || '').toString().trim(),
   sentryTracesSampleRate: optionalNumber('SENTRY_TRACES_SAMPLE_RATE', 0.1, { min: 0, max: 1 }),
   sentryProfileSessionSampleRate: optionalNumber('SENTRY_PROFILE_SESSION_SAMPLE_RATE', 0, { min: 0, max: 1 }),
+  discordEventsWebhookUrl: optionalUrl('DISCORD_EVENTS_WEBHOOK_URL'),
+  discordUserMilestoneStep: optionalInteger('DISCORD_USER_MILESTONE_STEP', 100, { min: 1, max: 1000000 }),
   topicGenerationModel: (process.env.TOPIC_GENERATION_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4',
   reminderLlmModel: (process.env.REMINDER_LLM_MODEL || 'gpt-5-mini').toString().trim() || 'gpt-5-mini',
   broadcastMaxRecipients: optionalInteger('BROADCAST_MAX_RECIPIENTS', 2000, { min: 1, max: 100000 }),

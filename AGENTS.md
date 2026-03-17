@@ -45,6 +45,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
   `DATABASE_SSL`, `DATABASE_SSL_REJECT_UNAUTHORIZED`, `TELEGRAM_INITDATA_MAX_AGE`,
   `STRIPE_BILLING_PRODUCT_ID` (required to manage Stripe product prices from the admin dashboard),
   `STRIPE_PORTAL_CONFIG_ID`, `WEBAPP_RETURN_URL`, `PLAN_CHANGED_WEBHOOK_URL`,
+  `DISCORD_EVENTS_WEBHOOK_URL`, `DISCORD_USER_MILESTONE_STEP`,
   `ADMIN_DASHBOARD_PASSWORD`, `BROADCAST_WEBHOOK_URL`, `BROADCAST_WEBHOOK_SECRET`,
   `BROADCAST_MAX_RECIPIENTS`, `BROADCAST_PROCESS_BATCH_SIZE`,
   `BROADCAST_PER_MESSAGE_DELAY_MS`, `BROADCAST_MEDIA_CHAT_ID`, `DEFAULT_BOT_KEY`,
@@ -64,6 +65,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - n8n:
   - `deploy/.env` is used by Docker Compose for the running instance.
   - `deploy/.env.prod` and `deploy/.env.dev` provide credential IDs for workflow rendering.
+  - n8n execution failures can POST into API route `/internal/notifications/n8n-error` with `X-Internal-Secret`.
 - Do not commit secrets. `deploy/.env.api`, `deploy/.env.miniapp`, `deploy/.env.prod`, `deploy/.env.dev`, and `deploy/bots-dev/*.json` are gitignored, but `deploy/.env` is still not ignored.
 
 ## DB / Migrations
