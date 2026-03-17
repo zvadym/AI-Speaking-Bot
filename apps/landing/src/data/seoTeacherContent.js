@@ -148,8 +148,8 @@ function buildEnglishContent(teacher, languageForm) {
   const targetLanguage = languageForm.display || languageForm.adjective || 'English';
 
   return {
-    metaTitle: `${targetLanguage} speaking practice in Telegram with ${teacherName} | AI Language School`,
-    metaDescription: `Practice spoken ${targetLanguage} in Telegram with instant corrections, natural phrasing, and daily micro-lessons. Learn with ${teacherName} and start in one minute.`,
+    metaTitle: `${targetLanguage} speaking practice in Telegram | AI Language School`,
+    metaDescription: `Practice spoken ${targetLanguage} in Telegram with instant corrections, natural phrasing, and daily micro-lessons. Start in one minute.`,
     h1: `${targetLanguage} speaking practice on Telegram`,
     heroLead: `Practice real ${targetLanguage} conversations directly in Telegram. Send a short voice message, and ${teacherName} replies with a corrected, more natural version you can reuse right away.`,
     heroOutcome: `Build practical fluency for work, interviews, travel, and daily life with faster responses, clearer pronunciation, and less hesitation.`,
@@ -259,8 +259,8 @@ function buildUkrainianContent(teacher, languageForm) {
   const targetInstrumental = languageForm.instrumental || targetDisplay;
 
   return {
-    metaTitle: `Практика розмовної ${targetGenitive} в Telegram з ${teacherName} — AI викладач | AI Language School`,
-    metaDescription: `Практикуй розмовну ${targetAccusative} щодня: надсилай голосові в Telegram, отримуй миттєві виправлення, природні фрази та чіткий фідбек. Почни за 1 хвилину з ${teacherName}.`,
+    metaTitle: `Практика розмовної ${targetGenitive} в Telegram — AI викладач | AI Language School`,
+    metaDescription: `Практикуй розмовну ${targetAccusative} щодня: надсилай голосові в Telegram, отримуй миттєві виправлення, природні фрази та чіткий фідбек. Почни за 1 хвилину.`,
     h1: `Практика розмовної ${targetGenitive} у Telegram`,
     heroLead: `Практикуй живе спілкування ${targetInstrumental} у Telegram. Надішли коротке голосове, і ${teacherName} поверне виправлену та природнішу версію, яку можна одразу повторити.`,
     heroOutcome: `Ти швидше формулюєш думки, говориш чіткіше й упевненіше в роботі, на співбесідах, у подорожах та щоденних ситуаціях.`,
@@ -367,8 +367,8 @@ function buildGermanContent(teacher, languageForm) {
   const targetLanguage = languageForm.display || 'Englisch';
 
   return {
-    metaTitle: `${targetLanguage} Sprechpraxis in Telegram mit ${teacherName} | AI Language School`,
-    metaDescription: `Trainiere gesprochenes ${targetLanguage} in Telegram: kurze Voice-Nachrichten, sofortige Korrekturen, natürlichere Formulierungen und klare Hinweise. Starte in einer Minute mit ${teacherName}.`,
+    metaTitle: `${targetLanguage} Sprechpraxis in Telegram | AI Language School`,
+    metaDescription: `Trainiere gesprochenes ${targetLanguage} in Telegram: kurze Voice-Nachrichten, sofortige Korrekturen, natürlichere Formulierungen und klare Hinweise. Starte in einer Minute.`,
     h1: `${targetLanguage} Sprechpraxis auf Telegram`,
     heroLead: `Übe echte Gespräche auf ${targetLanguage} direkt in Telegram. Du sendest eine kurze Sprachnachricht, und ${teacherName} antwortet mit einer korrigierten, natürlicheren Version, die du sofort übernehmen kannst.`,
     heroOutcome: `So baust du alltagstaugliche Sprachsicherheit auf: klarere Aussprache, schnellere Antworten und weniger Hemmungen bei Arbeit, Interviews, Reisen und im Alltag.`,
@@ -475,8 +475,8 @@ function buildItalianContent(teacher, languageForm) {
   const targetLanguage = languageForm.display || 'inglese';
 
   return {
-    metaTitle: `Pratica di conversazione in ${targetLanguage} su Telegram con ${teacherName} | AI Language School`,
-    metaDescription: `Allena il parlato in ${targetLanguage} ogni giorno su Telegram: messaggi vocali, correzioni immediate, frasi naturali e feedback pratico. Inizia in un minuto con ${teacherName}.`,
+    metaTitle: `Pratica di conversazione in ${targetLanguage} su Telegram | AI Language School`,
+    metaDescription: `Allena il parlato in ${targetLanguage} ogni giorno su Telegram: messaggi vocali, correzioni immediate, frasi naturali e feedback pratico. Inizia in un minuto.`,
     h1: `Pratica di conversazione in ${targetLanguage} su Telegram`,
     heroLead: `Fai pratica di conversazione reale in ${targetLanguage} direttamente su Telegram. Invia un vocale breve e ${teacherName} ti risponde con una versione corretta e più naturale, pronta da riutilizzare subito.`,
     heroOutcome: `Migliori la fluidità in modo pratico: risposte più rapide, pronuncia più chiara e meno blocchi in lavoro, colloqui, viaggi e vita quotidiana.`,
@@ -585,8 +585,8 @@ function buildSpanishContent(teacher, languageForm) {
 
   return {
     ...base,
-    metaTitle: `Práctica de conversación en ${targetLanguage} por Telegram con ${teacherName} | AI Language School`,
-    metaDescription: `Practica ${targetLanguage} hablado en Telegram con correcciones al instante, frases naturales y microlecciones diarias. Empieza en un minuto con ${teacherName}.`,
+    metaTitle: `Práctica de conversación en ${targetLanguage} por Telegram | AI Language School`,
+    metaDescription: `Practica ${targetLanguage} hablado en Telegram con correcciones al instante, frases naturales y microlecciones diarias. Empieza en un minuto.`,
     h1: `Práctica de conversación en ${targetLanguage} por Telegram`,
     heroLead: `Practica conversaciones reales en ${targetLanguage} dentro de Telegram. Envías un audio corto y ${teacherName} te responde con una versión corregida y más natural que puedes reutilizar al instante.`,
     heroOutcome: `Ganas fluidez útil para la vida real: respuestas más rápidas, pronunciación más clara y menos bloqueos en trabajo, entrevistas, viajes y gestiones diarias.`,
@@ -603,8 +603,8 @@ function buildPortugueseContent(teacher, languageForm) {
 
   return {
     ...base,
-    metaTitle: `Prática de conversação em ${targetLanguage} no Telegram com ${teacherName} | AI Language School`,
-    metaDescription: `Pratique ${targetLanguage} falado no Telegram com correções imediatas, frases naturais e microlições diárias. Comece em um minuto com ${teacherName}.`,
+    metaTitle: `Prática de conversação em ${targetLanguage} no Telegram | AI Language School`,
+    metaDescription: `Pratique ${targetLanguage} falado no Telegram com correções imediatas, frases naturais e microlições diárias. Comece em um minuto.`,
     h1: `Prática de conversação em ${targetLanguage} no Telegram`,
     heroLead: `Pratique conversas reais em ${targetLanguage} direto no Telegram. Você envia um áudio curto e ${teacherName} responde com uma versão corrigida e mais natural para reutilizar na hora.`,
     heroOutcome: `Você ganha fluência prática para o dia a dia: respostas mais rápidas, pronúncia mais clara e menos travas em trabalho, entrevistas, viagens e rotina.`,
@@ -619,8 +619,8 @@ function buildTurkishContent(teacher, languageForm) {
   const targetLanguage = languageForm.display || 'İngilizce';
 
   return {
-    metaTitle: `${teacherName} ile Telegram'da ${targetLanguage} konuşma pratiği | AI Language School`,
-    metaDescription: `Telegram'da her gün ${targetLanguage} konuşma pratiği yapın: kısa sesli mesajlar gönderin, anında düzeltmeler alın, daha doğal kalıplar öğrenin ve ${teacherName} ile bir dakikada başlayın.`,
+    metaTitle: `Telegram'da ${targetLanguage} konuşma pratiği | AI Language School`,
+    metaDescription: `Telegram'da her gün ${targetLanguage} konuşma pratiği yapın: kısa sesli mesajlar gönderin, anında düzeltmeler alın, daha doğal kalıplar öğrenin ve bir dakikada başlayın.`,
     h1: `Telegram'da ${targetLanguage} konuşma pratiği`,
     heroLead: `Telegram içinde gerçek ${targetLanguage} konuşmalarını pratik yapın. Kısa bir sesli mesaj gönderin; ${teacherName} size hemen düzeltilmiş ve daha doğal bir versiyon göndersin, siz de bunu bir sonraki mesajda tekrar kullanabilesiniz.`,
     heroOutcome: `İş, mülakat, seyahat ve günlük hayatta daha hızlı yanıtlar, daha net telaffuz ve daha az çekinmeyle daha özgüvenli konuşun.`,
@@ -727,8 +727,8 @@ function buildHindiContent(teacher, languageForm) {
   const targetLanguage = languageForm.display || 'अंग्रेज़ी';
 
   return {
-    metaTitle: `${teacherName} के साथ Telegram पर ${targetLanguage} बोलने की प्रैक्टिस | AI Language School`,
-    metaDescription: `Telegram पर रोज़ ${targetLanguage} बोलने की प्रैक्टिस करें: छोटे वॉइस मैसेज भेजें, तुरंत सुधार पाएँ, अधिक स्वाभाविक वाक्य सीखें और ${teacherName} के साथ एक मिनट में शुरू करें।`,
+    metaTitle: `Telegram पर ${targetLanguage} बोलने की प्रैक्टिस | AI Language School`,
+    metaDescription: `Telegram पर रोज़ ${targetLanguage} बोलने की प्रैक्टिस करें: छोटे वॉइस मैसेज भेजें, तुरंत सुधार पाएँ, अधिक स्वाभाविक वाक्य सीखें और एक मिनट में शुरू करें।`,
     h1: `Telegram पर ${targetLanguage} बोलने की प्रैक्टिस`,
     heroLead: `Telegram के अंदर असली ${targetLanguage} बातचीत की प्रैक्टिस करें। एक छोटा वॉइस मैसेज भेजें, और ${teacherName} आपको तुरंत सुधरा हुआ और अधिक स्वाभाविक जवाब भेजेगा जिसे आप अगली बार सीधे इस्तेमाल कर सकें।`,
     heroOutcome: `काम, इंटरव्यू, यात्रा और रोज़मर्रा की स्थितियों में तेज़ जवाब, साफ़ उच्चारण और कम झिझक के साथ ज़्यादा आत्मविश्वास से बोलें।`,
@@ -835,8 +835,8 @@ function buildArabicContent(teacher, languageForm) {
   const targetLanguage = languageForm.display || 'الإنجليزية';
 
   return {
-    metaTitle: `ممارسة التحدث باللغة ${targetLanguage} على Telegram مع ${teacherName} | AI Language School`,
-    metaDescription: `تدرّب يومياً على التحدث باللغة ${targetLanguage} في Telegram: أرسل رسائل صوتية قصيرة، واحصل على تصحيحات فورية، وتعلّم صياغات أكثر طبيعية، وابدأ خلال دقيقة مع ${teacherName}.`,
+    metaTitle: `ممارسة التحدث باللغة ${targetLanguage} على Telegram | AI Language School`,
+    metaDescription: `تدرّب يومياً على التحدث باللغة ${targetLanguage} في Telegram: أرسل رسائل صوتية قصيرة، واحصل على تصحيحات فورية، وتعلّم صياغات أكثر طبيعية، وابدأ خلال دقيقة.`,
     h1: `ممارسة التحدث باللغة ${targetLanguage} على Telegram`,
     heroLead: `تدرّب على محادثات حقيقية باللغة ${targetLanguage} مباشرة داخل Telegram. أرسل رسالة صوتية قصيرة، وسيعود ${teacherName} بصياغة مصححة وأكثر طبيعية يمكنك إعادة استخدامها في رسالتك التالية فوراً.`,
     heroOutcome: `طوّر طلاقة عملية للعمل والمقابلات والسفر والحياة اليومية مع ردود أسرع ونطق أوضح وتردد أقل.`,
@@ -945,8 +945,8 @@ function buildIndonesianContent(teacher, languageForm) {
 
   return {
     ...base,
-    metaTitle: `Latihan speaking ${targetLanguage} di Telegram dengan ${teacherName} | AI Language School`,
-    metaDescription: `Latihan speaking ${targetLanguage} di Telegram dengan koreksi instan, phrasing yang lebih natural, dan micro-lesson harian. Mulai dalam satu menit bersama ${teacherName}.`,
+    metaTitle: `Latihan speaking ${targetLanguage} di Telegram | AI Language School`,
+    metaDescription: `Latihan speaking ${targetLanguage} di Telegram dengan koreksi instan, phrasing yang lebih natural, dan micro-lesson harian. Mulai dalam satu menit.`,
     h1: `Latihan speaking ${targetLanguage} di Telegram`,
     heroLead: `Latih percakapan ${targetLanguage} nyata langsung di Telegram. Kirim voice message singkat, lalu ${teacherName} akan membalas dengan versi yang dikoreksi dan lebih natural untuk langsung kamu pakai.`,
     heroOutcome: `Bangun kefasihan yang praktis untuk kerja, interview, perjalanan, dan kehidupan sehari-hari dengan respons yang lebih cepat, pelafalan yang lebih jelas, dan lebih sedikit ragu.`,
