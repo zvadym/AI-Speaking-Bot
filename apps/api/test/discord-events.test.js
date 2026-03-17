@@ -166,3 +166,39 @@ test('handleStripeEvent queues a Discord notification only for the first paid co
   assert.equal(bossCalls[0][1].plan_tier, 'pro');
   assert.equal(bossCalls[0][2].singletonKey, 'discord_event:new_paid_user:42');
 });
+
+test('sendDiscordEventNotification supports user feedback events', async () => {
+  const { sendDiscordEventNotification } = await import('../src/discord-events.js');
+  let captured = null;
+
+  const result = await sendDiscordEventNotification({
+    webhookUrl: 'https://discord.test/api/webhooks/123',
+    event: {
+      type: 'user_feedback',
+      feedback_id: 77,
+      chat_id: 42,
+      username: 'alice',
+      first_name: 'Alice',
+      bot_key: 'uk-de',
+      category: 'idea',
+      feedback_text: 'Need more drills',
+      kind: 'text',
+      source: 'miniapp'
+    },
+    botMetaForKey: () => ({ bot_name: 'Deutsch Trainer' }),
+    fetchImpl: async (_url, init) => {
+      captured = JSON.parse(init.body);
+      return {
+        ok: true
+      };
+    }
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.type, 'user_feedback');
+  assert.equal(captured.username, 'AI School Events');
+  assert.equal(captured.embeds[0].title, 'New user feedback');
+  assert.equal(captured.embeds[0].description, 'Need more drills');
+  assert.equal(captured.embeds[0].fields.find((entry) => entry.name === 'Category')?.value, 'idea');
+  assert.equal(captured.embeds[0].fields.find((entry) => entry.name === 'Bot')?.value, 'uk-de (Deutsch Trainer)');
+});

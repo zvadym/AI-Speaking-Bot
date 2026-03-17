@@ -71,6 +71,7 @@ Fill these on the server:
 Set `DISCORD_EVENTS_WEBHOOK_URL` in `deploy/.env.api` to receive:
 
 - first-time paid user conversions
+- mini-app user feedback submissions
 - total user milestones at `100/200/300/...` (or the custom `DISCORD_USER_MILESTONE_STEP`)
 - n8n execution errors
 

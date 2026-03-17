@@ -651,7 +651,16 @@ test('miniapp read endpoints return personalized plans, dashboard, and bot catal
 
 test('miniapp mutation endpoints validate input and persist profile changes', async () => {
   await withMockedQuery(createMiniappQueryHandler(), async () => {
-    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const bossCalls = [];
+    const app = await createApp({
+      apiBoss: {
+        publish: async () => null,
+        send: async (...args) => {
+          bossCalls.push(args);
+          return 'job-feedback';
+        }
+      }
+    });
     const token = signSession({ chatId: 42, username: 'alice', botKey: 'uk-de' });
     const authHeaders = { Authorization: `Bearer ${token}` };
 
@@ -692,6 +701,12 @@ test('miniapp mutation endpoints validate input and persist profile changes', as
     assert.equal(feedback.json.bot_key, 'uk-de');
     assert.equal(feedback.json.item.category, 'idea');
     assert.equal(feedback.json.item.text, 'Need more drills');
+    assert.equal(bossCalls.length, 1);
+    assert.equal(bossCalls[0][0], 'discord-event-send');
+    assert.equal(bossCalls[0][1].type, 'user_feedback');
+    assert.equal(bossCalls[0][1].feedback_id, 77);
+    assert.equal(bossCalls[0][1].category, 'idea');
+    assert.equal(bossCalls[0][1].feedback_text, 'Need more drills');
 
     const badLevel = await request(app, {
       method: 'POST',

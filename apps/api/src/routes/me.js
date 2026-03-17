@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { createRequireAuth } from '../auth.js';
+import { enqueueDiscordEventNotificationJob } from '../jobs.js';
 import {
   normalizeBotKey,
   normalizeFeedbackCategory
@@ -167,18 +168,37 @@ export function createMeRouter(ctx, helpers) {
       [chatId, botKey]
     );
 
+    const feedbackRow = rows[0] || null;
+
+    if (feedbackRow && ctx.apiBoss && ctx.env.discordEventsWebhookUrl) {
+      await enqueueDiscordEventNotificationJob(
+        ctx.apiBoss,
+        {
+          type: 'user_feedback',
+          feedback_id: Number(feedbackRow.id || 0) || null,
+          chat_id: chatId,
+          username: user.username || null,
+          first_name: user.first_name || null,
+          bot_key: botKey,
+          category: feedbackRow.category || category,
+          feedback_text: feedbackRow.feedback_text || message,
+          kind: 'text',
+          source: 'miniapp'
+        }
+      );
+    }
+
     const feedbackSummary = await helpers.getUserFeedbackSummary(chatId, botKey);
-    const row = rows[0] || null;
 
     return res.status(201).json({
       bot_key: botKey,
-      item: row ? {
-        id: Number(row.id || 0),
+      item: feedbackRow ? {
+        id: Number(feedbackRow.id || 0),
         kind: 'feedback',
         sender: 'user',
-        category: row.category || category,
-        text: row.feedback_text || message,
-        created_at: row.created_at
+        category: feedbackRow.category || category,
+        text: feedbackRow.feedback_text || message,
+        created_at: feedbackRow.created_at
       } : null,
       feedback_summary: feedbackSummary
     });

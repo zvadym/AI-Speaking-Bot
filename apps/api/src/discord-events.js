@@ -103,6 +103,28 @@ function buildN8nErrorEmbed(event, botMetaForKey) {
   };
 }
 
+function buildUserFeedbackEmbed(event, botMetaForKey) {
+  const category = cleanLine(event.category || '', 64) || 'unknown';
+  const source = cleanLine(event.source || '', 64) || 'unknown';
+  const kind = cleanLine(event.kind || '', 64) || 'text';
+  const message = cleanText(event.feedback_text || event.text || '', 1500) || '(empty)';
+
+  return {
+    title: 'New user feedback',
+    color: 0xf39c12,
+    description: maskMentions(message),
+    fields: [
+      field('User', userLabel(event)),
+      field('Category', category, true),
+      field('Bot', botLabel(event.bot_key, botMetaForKey), true),
+      field('Source', source, true),
+      field('Kind', kind, true),
+      field('Feedback ID', cleanLine(event.feedback_id || event.id || '', 120) || '-', true)
+    ],
+    timestamp: new Date().toISOString()
+  };
+}
+
 function buildEmbed(event, botMetaForKey) {
   const type = cleanLine(event?.type || '', 64);
   if (type === 'new_paid_user') {
@@ -113,6 +135,9 @@ function buildEmbed(event, botMetaForKey) {
   }
   if (type === 'n8n_execution_error') {
     return buildN8nErrorEmbed(event, botMetaForKey);
+  }
+  if (type === 'user_feedback') {
+    return buildUserFeedbackEmbed(event, botMetaForKey);
   }
   throw new Error(`unsupported_discord_event_type:${type || 'unknown'}`);
 }
