@@ -558,6 +558,51 @@ test('admin new paid users by day returns first-time paid users split by first a
   });
 });
 
+test('admin action funnel uses in-window stage timestamps for sequential counts', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('WITH cohort AS') && source.includes('AS free_limit_half_at')) {
+      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+      assert.equal(params[1], '2026-03-08T00:00:00.000Z');
+      assert.equal(params[2], null);
+      assert.equal(params[3], null);
+      assert.deepEqual(params[4], ['first_voice_sent', 'free_limit_half', 'paywall_shown']);
+      assert.match(source, /e\.occurred_at < \$2::timestamptz/);
+      assert.match(source, /std\.sent_at < \$2::timestamptz/);
+      assert.match(source, /paywall_shown_at >= free_limit_half_at/);
+      assert.ok(!source.includes('FROM usage_hourly'));
+      return {
+        rows: [{
+          start_count: 20,
+          first_message_count: 11,
+          onboarding_complete_count: 8,
+          free_limit_half_count: 5,
+          paywall_shown_count: 3
+        }]
+      };
+    }
+
+    throw new Error(`Unexpected query in admin action funnel test: ${source.slice(0, 180)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/action-funnel?from=2026-03-01&to=2026-03-08',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-08T00:00:00.000Z');
+    assert.deepEqual(response.json.series, [
+      { action: 'start', count: 20, pct: 100 },
+      { action: 'first_message', count: 11, pct: 55 },
+      { action: 'onboarding_complete', count: 8, pct: 40 },
+      { action: 'free_limit_half', count: 5, pct: 25 },
+      { action: 'paywall_shown', count: 3, pct: 15 }
+    ]);
+  });
+});
+
 test('admin free users insights applies bot scope to all aggregates', async () => {
   let queryCount = 0;
 

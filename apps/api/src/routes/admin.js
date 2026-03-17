@@ -1627,6 +1627,7 @@ export function createAdminRouter(ctx, helpers) {
     const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
     const funnelActionTypes = [
       'first_voice_sent',
+      'free_limit_half',
       'paywall_shown'
     ];
 
@@ -1641,25 +1642,20 @@ export function createAdminRouter(ctx, helpers) {
            AND ($3::text IS NULL OR u.acquisition_start_payload = $3)
            AND ($4::bigint[] IS NULL OR u.chat_id <> ALL($4::bigint[]))
        ),
-       free_plan AS (
-         SELECT COALESCE(p.voice_seconds_limit, 0)::int AS limit_seconds
-         FROM plans p
-         WHERE p.tier = 'free'
-         LIMIT 1
-       ),
        per_user AS (
          SELECT
            c.chat_id,
            c.start_at,
            MIN(e.occurred_at) FILTER (WHERE e.action_type = 'first_voice_sent') AS first_message_at,
            onboarding.onboarding_complete_at,
-           COALESCE(usage.used_total, 0)::int AS used_total,
+           MIN(e.occurred_at) FILTER (WHERE e.action_type = 'free_limit_half') AS free_limit_half_at,
            MIN(e.occurred_at) FILTER (WHERE e.action_type = 'paywall_shown') AS paywall_shown_at
          FROM cohort c
          LEFT JOIN action_events e
            ON e.chat_id = c.chat_id
           AND e.action_type = ANY($5::text[])
           AND e.occurred_at >= c.start_at
+          AND e.occurred_at < $2::timestamptz
          LEFT JOIN LATERAL (
            SELECT MIN(std.sent_at) AS onboarding_complete_at
            FROM scheduled_task_dispatches std
@@ -1667,13 +1663,10 @@ export function createAdminRouter(ctx, helpers) {
              AND std.task_type = 'onboarding_complete'
              AND std.status = 'sent'
              AND std.sent_at IS NOT NULL
+             AND std.sent_at >= c.start_at
+             AND std.sent_at < $2::timestamptz
          ) onboarding ON true
-         LEFT JOIN LATERAL (
-           SELECT COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_total
-           FROM usage_hourly uh
-           WHERE uh.chat_id = c.chat_id
-         ) usage ON true
-         GROUP BY c.chat_id, c.start_at, onboarding.onboarding_complete_at, usage.used_total
+         GROUP BY c.chat_id, c.start_at, onboarding.onboarding_complete_at
        ),
        counts AS (
          SELECT
@@ -1699,8 +1692,8 @@ export function createAdminRouter(ctx, helpers) {
                WHEN first_message_at IS NOT NULL
                 AND onboarding_complete_at IS NOT NULL
                 AND onboarding_complete_at >= first_message_at
-                AND (SELECT limit_seconds FROM free_plan) > 0
-                AND used_total >= ((SELECT limit_seconds FROM free_plan)::numeric * 0.5)
+                AND free_limit_half_at IS NOT NULL
+                AND free_limit_half_at >= onboarding_complete_at
                  THEN 1
                ELSE 0
              END
@@ -1710,10 +1703,10 @@ export function createAdminRouter(ctx, helpers) {
                WHEN first_message_at IS NOT NULL
                 AND onboarding_complete_at IS NOT NULL
                 AND onboarding_complete_at >= first_message_at
-                AND (SELECT limit_seconds FROM free_plan) > 0
-                AND used_total >= ((SELECT limit_seconds FROM free_plan)::numeric * 0.5)
+                AND free_limit_half_at IS NOT NULL
+                AND free_limit_half_at >= onboarding_complete_at
                 AND paywall_shown_at IS NOT NULL
-                AND paywall_shown_at >= onboarding_complete_at
+                AND paywall_shown_at >= free_limit_half_at
                  THEN 1
                ELSE 0
              END
