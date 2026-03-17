@@ -218,11 +218,19 @@
     ]
   },
   "contact": {
-    "title": "संपर्क",
-    "subhead": "प्रतिक्रिया के लिए बॉट को सीधे Telegram में इस्तेमाल करें।",
-    "stepOpenBot": "अपने बॉट को Telegram में खोलें।",
-    "stepTypeCommand": "टाइप करें",
-    "stepSend": "अपनी प्रतिक्रिया पाठ या आवाज़ के रूप में भेजें।"
+    "title": "हमें लिखें",
+    "subhead": "लैंडिंग बैकएंड आपका संदेश सीधे Discord पर भेजता है, ताकि हम जल्दी जवाब दे सकें।",
+    "replyHint": "अपना Telegram, Discord या email छोड़ें, ताकि हम आपसे संपर्क कर सकें।",
+    "nameLabel": "नाम",
+    "namePlaceholder": "आपका नाम",
+    "contactLabel": "जवाब के लिए संपर्क",
+    "contactPlaceholder": "Telegram @username, Discord या email",
+    "messageLabel": "संदेश",
+    "messagePlaceholder": "हम आपकी किस बात में मदद करें?",
+    "submit": "संदेश भेजें",
+    "sending": "भेजा जा रहा है...",
+    "success": "संदेश भेज दिया गया है। हमें वह Discord में मिल गया है।",
+    "error": "संदेश नहीं भेजा जा सका। कृपया एक मिनट बाद फिर कोशिश करें।"
   },
   "teachers": {
     "title": "शिक्षक",

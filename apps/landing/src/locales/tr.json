@@ -218,11 +218,19 @@
     ]
   },
   "contact": {
-    "title": "İletişim",
-    "subhead": "Geri bildirim için botu doğrudan Telegram'da kullan.",
-    "stepOpenBot": "Botunu Telegram'da aç.",
-    "stepTypeCommand": "Şunu yaz",
-    "stepSend": "Geri bildirimini yazı ya da sesli mesaj olarak gönder."
+    "title": "Bize yaz",
+    "subhead": "Landing backend'i mesajını doğrudan Discord'a gönderir, böylece daha hızlı yanıt verebiliriz.",
+    "replyHint": "Sana nasıl ulaşacağımızı bilmemiz için Telegram, Discord veya e-posta bilgini bırak.",
+    "nameLabel": "Ad",
+    "namePlaceholder": "Adın",
+    "contactLabel": "Geri dönüş iletişimi",
+    "contactPlaceholder": "Telegram @kullanici, Discord veya e-posta",
+    "messageLabel": "Mesaj",
+    "messagePlaceholder": "Nasıl yardımcı olabiliriz?",
+    "submit": "Mesajı gönder",
+    "sending": "Gönderiliyor...",
+    "success": "Mesaj gönderildi. Discord'da aldık.",
+    "error": "Mesaj gönderilemedi. Lütfen bir dakika sonra tekrar dene."
   },
   "teachers": {
     "title": "Öğretmenler",

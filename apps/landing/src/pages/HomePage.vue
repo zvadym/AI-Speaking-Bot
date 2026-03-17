@@ -304,13 +304,11 @@
       <div class="snap-inner contact-inner">
         <div class="container reveal-up contact-main">
           <article class="card contact-card">
-            <h3 class="h3">{{ t('contact.title') }}</h3>
-            <p class="muted contact-subhead">{{ t('contact.subhead') }}</p>
-            <ol class="muted contact-steps">
-              <li>{{ t('contact.stepOpenBot') }}</li>
-              <li>{{ t('contact.stepTypeCommand') }} <code>/feedback</code></li>
-              <li>{{ t('contact.stepSend') }}</li>
-            </ol>
+            <div class="contact-copy">
+              <h3 class="h3">{{ t('contact.title') }}</h3>
+              <p class="muted contact-subhead">{{ t('contact.subhead') }}</p>
+            </div>
+            <ContactDiscordForm />
           </article>
         </div>
         <div class="container reveal-up contact-footer-wrap" style="--revealDelay: 120ms;">
@@ -325,6 +323,7 @@
 import { computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import ChatConversationDemo from '../components/ChatConversationDemo.vue';
+import ContactDiscordForm from '../components/ContactDiscordForm.vue';
 import TeacherCard from '../components/TeacherCard.vue';
 import HomeFooterMini from '../components/HomeFooterMini.vue';
 import { blogPosts } from '../data/blogPosts.js';
@@ -1130,6 +1129,11 @@ watch(
 
 .contact-card {
   display: grid;
+  gap: 20px;
+}
+
+.contact-copy {
+  display: grid;
   gap: 12px;
 }
 
@@ -1137,22 +1141,6 @@ watch(
   margin: 0;
   line-height: 1.7;
   max-width: 68ch;
-}
-
-.contact-steps {
-  margin: 0;
-  padding-left: 20px;
-  display: grid;
-  gap: 8px;
-  line-height: 1.7;
-}
-
-.contact-steps code {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 2px 8px;
-  background: color-mix(in srgb, var(--surface) 75%, var(--bg));
-  font-size: 0.95em;
 }
 
 .contact-inner {

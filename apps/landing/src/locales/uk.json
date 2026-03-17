@@ -218,11 +218,19 @@
     ]
   },
   "contact": {
-    "title": "Контакт",
-    "subhead": "Для фідбеку використовуй бота напряму в Telegram.",
-    "stepOpenBot": "Відкрий свого бота в Telegram.",
-    "stepTypeCommand": "Набери",
-    "stepSend": "Надішли фідбек текстом або голосовим повідомленням."
+    "title": "Напишіть нам",
+    "subhead": "Бекенд лендингу надсилає ваше повідомлення прямо в Discord, тож ми зможемо відповісти швидше.",
+    "replyHint": "Залиште ваш Telegram, Discord або email, щоб ми знали, як вам відповісти.",
+    "nameLabel": "Ім'я",
+    "namePlaceholder": "Ваше ім'я",
+    "contactLabel": "Контакт для відповіді",
+    "contactPlaceholder": "Telegram @username, Discord або email",
+    "messageLabel": "Повідомлення",
+    "messagePlaceholder": "Чим можемо допомогти?",
+    "submit": "Надіслати повідомлення",
+    "sending": "Надсилаємо...",
+    "success": "Повідомлення надіслано. Ми вже отримали його в Discord.",
+    "error": "Не вдалося надіслати повідомлення. Спробуйте ще раз за хвилину."
   },
   "teachers": {
     "title": "Викладачі",

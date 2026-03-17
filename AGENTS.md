@@ -58,6 +58,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
     `VITE_SCHOOL_URL`, `VITE_DEBUG_UI`.
 - Landing env vars:
   - Optional runtime/build vars include `NUXT_PUBLIC_SITE_URL`, `PRICING_API_BASE`,
+    `LANDING_DISCORD_WEBHOOK_URL`,
     and legacy fallbacks `VITE_SITE_URL`, `API_BASE_URL`, `VITE_API_BASE`.
   - `apps/landing/scripts/generate-pricing.mjs` fetches `/public/plans` at build time; in CI/Vercel it fails hard if pricing env is missing.
 - n8n:

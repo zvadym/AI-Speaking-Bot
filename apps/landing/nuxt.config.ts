@@ -114,6 +114,7 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
+    discordContactWebhookUrl: process.env.LANDING_DISCORD_WEBHOOK_URL || '',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.VITE_SITE_URL || DEFAULT_SITE_URL,
       ogImage: process.env.NUXT_PUBLIC_OG_IMAGE || process.env.VITE_OG_IMAGE || '/og_tag_img.png'

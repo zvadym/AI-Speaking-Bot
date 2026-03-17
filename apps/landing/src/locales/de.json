@@ -218,11 +218,19 @@
     ]
   },
   "contact": {
-    "title": "Kontakt",
-    "subhead": "Für Feedback nutze den Bot direkt in Telegram.",
-    "stepOpenBot": "Öffne deinen Bot in Telegram.",
-    "stepTypeCommand": "Gib ein",
-    "stepSend": "Sende dein Feedback als Text oder Sprachnachricht."
+    "title": "Schreib uns",
+    "subhead": "Das Landing-Backend schickt deine Nachricht direkt an Discord, damit wir schneller antworten können.",
+    "replyHint": "Hinterlasse dein Telegram, Discord oder deine E-Mail, damit wir dich erreichen können.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Dein Name",
+    "contactLabel": "Kontakt für Antwort",
+    "contactPlaceholder": "Telegram @username, Discord-Handle oder E-Mail",
+    "messageLabel": "Nachricht",
+    "messagePlaceholder": "Wobei können wir helfen?",
+    "submit": "Nachricht senden",
+    "sending": "Wird gesendet...",
+    "success": "Nachricht gesendet. Sie ist in Discord angekommen.",
+    "error": "Die Nachricht konnte nicht gesendet werden. Bitte versuche es gleich noch einmal."
   },
   "teachers": {
     "title": "Lehrkräfte",

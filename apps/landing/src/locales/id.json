@@ -218,11 +218,19 @@
     ]
   },
   "contact": {
-    "title": "Kontak",
-    "subhead": "Untuk feedback, gunakan bot langsung di Telegram.",
-    "stepOpenBot": "Buka botmu di Telegram.",
-    "stepTypeCommand": "Ketik",
-    "stepSend": "Kirim feedback sebagai text atau audio."
+    "title": "Hubungi kami",
+    "subhead": "Backend landing mengirim pesan Anda langsung ke Discord agar kami bisa membalas lebih cepat.",
+    "replyHint": "Tinggalkan Telegram, Discord, atau email Anda agar kami tahu cara menghubungi Anda.",
+    "nameLabel": "Nama",
+    "namePlaceholder": "Nama Anda",
+    "contactLabel": "Kontak balasan",
+    "contactPlaceholder": "Telegram @username, Discord, atau email",
+    "messageLabel": "Pesan",
+    "messagePlaceholder": "Apa yang bisa kami bantu?",
+    "submit": "Kirim pesan",
+    "sending": "Mengirim...",
+    "success": "Pesan terkirim. Kami sudah menerimanya di Discord.",
+    "error": "Pesan tidak dapat dikirim. Coba lagi dalam satu menit."
   },
   "teachers": {
     "title": "Guru",

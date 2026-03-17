@@ -218,11 +218,19 @@
     ]
   },
   "contact": {
-    "title": "التواصل",
-    "subhead": "لإرسال الملاحظات، استخدم البوت مباشرة داخل Telegram.",
-    "stepOpenBot": "افتح البوت الخاص بك في Telegram.",
-    "stepTypeCommand": "اكتب",
-    "stepSend": "أرسل ملاحظاتك كنص أو رسالة صوتية."
+    "title": "راسلنا",
+    "subhead": "يرسل خادم صفحة الهبوط رسالتك مباشرة إلى Discord حتى نتمكن من الرد بسرعة أكبر.",
+    "replyHint": "اترك Telegram أو Discord أو البريد الإلكتروني الخاص بك حتى نعرف كيف نرد عليك.",
+    "nameLabel": "الاسم",
+    "namePlaceholder": "اسمك",
+    "contactLabel": "وسيلة الرد",
+    "contactPlaceholder": "Telegram @username أو Discord أو البريد الإلكتروني",
+    "messageLabel": "الرسالة",
+    "messagePlaceholder": "كيف يمكننا مساعدتك؟",
+    "submit": "إرسال الرسالة",
+    "sending": "جارٍ الإرسال...",
+    "success": "تم إرسال الرسالة. لقد استلمناها في Discord.",
+    "error": "تعذر إرسال الرسالة. حاول مرة أخرى بعد دقيقة."
   },
   "teachers": {
     "title": "المعلمون",
