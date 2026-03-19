@@ -1071,28 +1071,202 @@
           </div>
 
           <div class="row">
-            <label class="field grow">
-              <span>Inline buttons (optional: JSON or row syntax)</span>
-              <textarea
-                v-model="broadcast.inlineKeyboardJson"
-                rows="5"
-                placeholder='[row][Topics][/row]'
-              />
-              <small class="hint">
-                Row syntax examples:
-                <code>[row][Topics][/row]</code> (auto maps to <code>topic:menu</code>),
-                <code>[row][Open site|https://ai-language-school.online][/row]</code>,
-                <code>[row][Topics|topic:menu][Help|https://t.me/your_support][/row]</code>.
-                You can also use JSON: <code>[[{"text":"Topics","callback_data":"topic:menu"}]]</code>.
-              </small>
-            </label>
-            <div class="actions">
-              <button class="btn" type="button" @click="applyBroadcastTopicsButtonPreset">
-                Use Topics preset
-              </button>
-              <button class="btn danger" type="button" @click="clearBroadcastButtons">
-                Clear buttons
-              </button>
+            <div class="field grow broadcast-builder-field">
+              <span>Inline buttons (optional)</span>
+
+              <div class="broadcast-builder-shell">
+                <div class="broadcast-builder-topbar">
+                  <div class="broadcast-builder-copy">
+                    <strong>Visual button builder</strong>
+                    <small>{{ broadcastInlineKeyboardSummary }}</small>
+                  </div>
+
+                  <div class="broadcast-builder-topbar-actions">
+                    <button
+                      class="btn"
+                      type="button"
+                      :disabled="broadcastButtonRows.length >= BROADCAST_INLINE_KEYBOARD_MAX_ROWS"
+                      @click="addBroadcastButtonRow"
+                    >
+                      Add row
+                    </button>
+                    <button class="btn" type="button" @click="applyBroadcastTopicsButtonPreset">
+                      Insert Topics menu
+                    </button>
+                    <button
+                      class="btn"
+                      type="button"
+                      :disabled="!canImportBroadcastTopics"
+                      @click="importBroadcastTopicButtons"
+                    >
+                      {{ broadcastTopicsImporting ? 'Importing…' : 'Import bot topics' }}
+                    </button>
+                    <button class="btn danger" type="button" @click="clearBroadcastButtons">
+                      Clear buttons
+                    </button>
+                  </div>
+                </div>
+
+                <div v-if="broadcastButtonRows.length" class="broadcast-builder-list">
+                  <article
+                    v-for="(row, rowIndex) in broadcastButtonRows"
+                    :key="row.id"
+                    class="broadcast-builder-row"
+                    :class="{
+                      dragging: broadcastDraggingRowId === row.id,
+                      'drop-target': broadcastDragOverRowId === row.id && broadcastDraggingRowId !== row.id
+                    }"
+                    @dragover.prevent="handleBroadcastRowDragOver(row)"
+                    @drop.prevent="handleBroadcastRowDrop(row)"
+                  >
+                    <header class="broadcast-builder-row-head">
+                      <div class="broadcast-builder-row-meta">
+                        <div
+                          class="broadcast-builder-handle"
+                          draggable="true"
+                          title="Drag row"
+                          aria-label="Drag row"
+                          @dragstart="startBroadcastRowDrag(row, $event)"
+                          @dragend="finishBroadcastRowDrag"
+                        >
+                          ⋮⋮
+                        </div>
+                        <div>
+                          <strong>Row {{ rowIndex + 1 }}</strong>
+                          <small>{{ row.buttons.length }} / {{ BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW }} buttons</small>
+                        </div>
+                      </div>
+
+                      <div class="broadcast-builder-row-actions">
+                        <button
+                          class="btn"
+                          type="button"
+                          :disabled="row.buttons.length >= BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW"
+                          @click="addBroadcastButton(row.id)"
+                        >
+                          Add button
+                        </button>
+                        <button class="btn danger" type="button" @click="removeBroadcastButtonRow(row.id)">
+                          Delete row
+                        </button>
+                      </div>
+                    </header>
+
+                    <div
+                      class="broadcast-builder-buttons"
+                      :class="{ 'drop-target': broadcastButtonDropRowId === row.id && !broadcastButtonDropButtonId }"
+                      @dragover.prevent="handleBroadcastButtonRowDragOver(row)"
+                      @drop.prevent="handleBroadcastButtonRowDrop(row)"
+                    >
+                      <article
+                        v-for="button in row.buttons"
+                        :key="button.id"
+                        class="broadcast-builder-button"
+                        :class="{
+                          dragging: broadcastDraggingButtonId === button.id,
+                          'drop-target': broadcastButtonDropRowId === row.id && broadcastButtonDropButtonId === button.id && broadcastDraggingButtonId !== button.id
+                        }"
+                        @dragover.prevent="handleBroadcastButtonDragOver(row, button)"
+                        @drop.prevent="handleBroadcastButtonDrop(row, button)"
+                      >
+                        <div class="broadcast-builder-button-head">
+                          <div
+                            class="broadcast-builder-handle"
+                            draggable="true"
+                            title="Drag button"
+                            aria-label="Drag button"
+                            @dragstart="startBroadcastButtonDrag(row, button, $event)"
+                            @dragend="finishBroadcastButtonDrag"
+                          >
+                            ⋮⋮
+                          </div>
+                          <button class="broadcast-builder-remove" type="button" @click="removeBroadcastButton(row.id, button.id)">
+                            Remove
+                          </button>
+                        </div>
+
+                        <div class="broadcast-builder-button-grid">
+                          <label class="field grow">
+                            <span>Label</span>
+                            <input
+                              v-model="button.text"
+                              type="text"
+                              autocomplete="off"
+                              :maxlength="BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN"
+                              placeholder="Topics"
+                            />
+                          </label>
+
+                          <label class="field">
+                            <span>Action</span>
+                            <select v-model="button.actionType">
+                              <option value="callback">Callback</option>
+                              <option value="url">URL</option>
+                            </select>
+                          </label>
+
+                          <label v-if="button.actionType === 'callback'" class="field grow">
+                            <span>Callback data</span>
+                            <input
+                              v-model="button.callbackData"
+                              type="text"
+                              autocomplete="off"
+                              :maxlength="BROADCAST_INLINE_KEYBOARD_MAX_CALLBACK_DATA_LEN"
+                              placeholder="topic:menu"
+                            />
+                          </label>
+
+                          <label v-else class="field grow">
+                            <span>URL</span>
+                            <input
+                              v-model="button.url"
+                              type="url"
+                              autocomplete="off"
+                              inputmode="url"
+                              :maxlength="BROADCAST_INLINE_KEYBOARD_MAX_URL_LEN"
+                              placeholder="https://ai-language-school.online"
+                            />
+                          </label>
+                        </div>
+                      </article>
+                    </div>
+                  </article>
+                </div>
+
+                <div v-else class="broadcast-builder-empty">
+                  <strong>No buttons yet.</strong>
+                  <p>Start with an empty row, insert the Topics menu, or import the current bot’s full topic catalog.</p>
+                </div>
+
+                <small class="hint">
+                  Drag rows or button cards to reorder. Telegram allows up to
+                  <code>{{ BROADCAST_INLINE_KEYBOARD_MAX_ROWS }}</code> rows and
+                  <code>{{ BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW }}</code> buttons per row.
+                </small>
+                <small v-if="broadcastTopicImportHint" class="hint">{{ broadcastTopicImportHint }}</small>
+                <small v-if="broadcastButtonsInfo" class="hint">{{ broadcastButtonsInfo }}</small>
+                <small v-if="broadcastButtonsLocalError" class="error">{{ broadcastButtonsLocalError }}</small>
+
+                <details class="broadcast-builder-advanced">
+                  <summary>Advanced JSON / row syntax</summary>
+                  <label class="field grow">
+                    <span>Inline buttons raw input</span>
+                    <textarea
+                      v-model="broadcast.inlineKeyboardJson"
+                      rows="8"
+                      placeholder='[row][Topics][/row]'
+                    />
+                    <small class="hint">
+                      Valid edits sync back into the visual builder.
+                      Row syntax examples:
+                      <code>[row][Topics][/row]</code>,
+                      <code>[row][Open site|https://ai-language-school.online][/row]</code>,
+                      <code>[row][Topics|topic:menu][Help|https://t.me/your_support][/row]</code>.
+                      JSON is also supported: <code>[[{"text":"Topics","callback_data":"topic:menu"}]]</code>.
+                    </small>
+                  </label>
+                </details>
+              </div>
             </div>
           </div>
 
@@ -2325,7 +2499,6 @@ const BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW = 8;
 const BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN = 64;
 const BROADCAST_INLINE_KEYBOARD_MAX_CALLBACK_DATA_LEN = 64;
 const BROADCAST_INLINE_KEYBOARD_MAX_URL_LEN = 2048;
-const BROADCAST_TOPICS_BUTTON_PRESET = '[row][Topics|topic:menu][/row]';
 const broadcast = reactive({
   username: '',
   planFree: true,
@@ -2349,6 +2522,16 @@ const broadcastMediaFile = ref(null);
 const mediaUploading = ref(false);
 const mediaUploadError = ref('');
 const mediaUploadInfo = ref('');
+const broadcastButtonsInfo = ref('');
+const broadcastButtonsLocalError = ref('');
+const broadcastButtonRows = ref([]);
+const broadcastDraggingRowId = ref('');
+const broadcastDragOverRowId = ref('');
+const broadcastDraggingButtonId = ref('');
+const broadcastDraggingButtonRowId = ref('');
+const broadcastButtonDropRowId = ref('');
+const broadcastButtonDropButtonId = ref('');
+const broadcastTopicsImporting = ref(false);
 const reminderTestUserSearch = ref('');
 const reminderTestSuggestions = ref([]);
 const reminderTestLookupError = ref('');
@@ -2376,83 +2559,77 @@ const hasBroadcastMedia = computed(() => {
   return Boolean(mediaUrl || hasFileIds);
 });
 
-function normalizeInlineKeyboardDraft(raw) {
-  const payloadRaw = String(raw ?? '').trim();
-  if (!payloadRaw) return { value: null, error: '' };
+let broadcastDraftCounter = 0;
+let syncingBroadcastKeyboardFromBuilder = false;
+let syncingBroadcastKeyboardFromRaw = false;
 
-  function parseRowSyntax(text) {
-    const lines = String(text || '')
-      .split(/\r?\n/g)
-      .map((line) => line.trim())
-      .filter(Boolean);
-    if (!lines.length) return { ok: true, rows: [] };
+function nextBroadcastDraftId(prefix) {
+  broadcastDraftCounter += 1;
+  return `${prefix}-${broadcastDraftCounter}`;
+}
 
-    const rows = [];
-    for (const line of lines) {
-      const rowMatch = line.match(/^\[row\]([\s\S]*?)\[\/row\]$/i);
-      if (!rowMatch) {
-        return {
-          ok: false,
-          error: 'Row syntax: each non-empty line must be [row][Button|action][/row].'
-        };
-      }
+function parseInlineKeyboardRowSyntax(text) {
+  const lines = String(text || '')
+    .split(/\r?\n/g)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) return { ok: true, rows: [] };
 
-      const inside = rowMatch[1] || '';
-      const matches = Array.from(inside.matchAll(/\[([^\]|]+)(?:\|([^\]]+))?\]/g));
-      if (matches.length === 0) {
-        return {
-          ok: false,
-          error: 'Each [row] must include at least one [Button|action] item.'
-        };
-      }
-
-      const row = [];
-      for (const match of matches) {
-        const textRaw = String(match[1] || '').trim();
-        const actionRaw = String(match[2] || '').trim();
-        if (!textRaw) {
-          return { ok: false, error: 'Button text cannot be empty in row syntax.' };
-        }
-
-        let callbackData = '';
-        let url = '';
-        if (!actionRaw) {
-          if (textRaw.toLowerCase() === 'topics') callbackData = 'topic:menu';
-          else return { ok: false, error: 'Each button in row syntax needs an action after "|".' };
-        } else if (/^https?:\/\//i.test(actionRaw)) {
-          url = actionRaw;
-        } else if (/^url:/i.test(actionRaw)) {
-          url = actionRaw.slice(4).trim();
-        } else if (/^(cb|callback):/i.test(actionRaw)) {
-          callbackData = actionRaw.replace(/^(cb|callback):/i, '').trim();
-        } else {
-          callbackData = actionRaw;
-        }
-
-        const button = { text: textRaw };
-        if (callbackData) button.callback_data = callbackData;
-        if (url) button.url = url;
-        row.push(button);
-      }
-
-      rows.push(row);
+  const rows = [];
+  for (const line of lines) {
+    const rowMatch = line.match(/^\[row\]([\s\S]*?)\[\/row\]$/i);
+    if (!rowMatch) {
+      return {
+        ok: false,
+        error: 'Row syntax: each non-empty line must be [row][Button|action][/row].'
+      };
     }
 
-    return { ok: true, rows };
+    const inside = rowMatch[1] || '';
+    const matches = Array.from(inside.matchAll(/\[([^\]|]+)(?:\|([^\]]+))?\]/g));
+    if (matches.length === 0) {
+      return {
+        ok: false,
+        error: 'Each [row] must include at least one [Button|action] item.'
+      };
+    }
+
+    const row = [];
+    for (const match of matches) {
+      const textRaw = String(match[1] || '').trim();
+      const actionRaw = String(match[2] || '').trim();
+      if (!textRaw) {
+        return { ok: false, error: 'Button text cannot be empty in row syntax.' };
+      }
+
+      let callbackData = '';
+      let url = '';
+      if (!actionRaw) {
+        if (textRaw.toLowerCase() === 'topics') callbackData = 'topic:menu';
+        else return { ok: false, error: 'Each button in row syntax needs an action after "|".' };
+      } else if (/^https?:\/\//i.test(actionRaw)) {
+        url = actionRaw;
+      } else if (/^url:/i.test(actionRaw)) {
+        url = actionRaw.slice(4).trim();
+      } else if (/^(cb|callback):/i.test(actionRaw)) {
+        callbackData = actionRaw.replace(/^(cb|callback):/i, '').trim();
+      } else {
+        callbackData = actionRaw;
+      }
+
+      const button = { text: textRaw };
+      if (callbackData) button.callback_data = callbackData;
+      if (url) button.url = url;
+      row.push(button);
+    }
+
+    rows.push(row);
   }
 
-  let sourceRows = null;
-  try {
-    const parsed = JSON.parse(payloadRaw);
-    sourceRows = Array.isArray(parsed)
-      ? parsed
-      : (parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed.inline_keyboard : null);
-  } catch {
-    const rowSyntax = parseRowSyntax(payloadRaw);
-    if (!rowSyntax.ok) return { value: null, error: rowSyntax.error };
-    sourceRows = rowSyntax.rows;
-  }
+  return { ok: true, rows };
+}
 
+function normalizeInlineKeyboardRows(sourceRows) {
   if (!Array.isArray(sourceRows)) {
     return {
       value: null,
@@ -2525,15 +2702,398 @@ function normalizeInlineKeyboardDraft(raw) {
   };
 }
 
+function normalizeInlineKeyboardDraft(raw) {
+  const payloadRaw = String(raw ?? '').trim();
+  if (!payloadRaw) return { value: null, error: '' };
+
+  let sourceRows = null;
+  try {
+    const parsed = JSON.parse(payloadRaw);
+    sourceRows = Array.isArray(parsed)
+      ? parsed
+      : (parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed.inline_keyboard : null);
+  } catch {
+    const rowSyntax = parseInlineKeyboardRowSyntax(payloadRaw);
+    if (!rowSyntax.ok) return { value: null, error: rowSyntax.error };
+    sourceRows = rowSyntax.rows;
+  }
+
+  return normalizeInlineKeyboardRows(sourceRows);
+}
+
+function createBroadcastButtonDraft(raw = {}) {
+  const callbackData = String(raw.callback_data ?? raw.callbackData ?? raw.callbackDataRaw ?? '').trim();
+  const url = String(raw.url ?? '').trim();
+  const explicitAction = String(raw.actionType || '').trim().toLowerCase();
+  const actionType = explicitAction === 'url' || explicitAction === 'callback'
+    ? explicitAction
+    : (url && !callbackData ? 'url' : 'callback');
+
+  return {
+    id: nextBroadcastDraftId('btn'),
+    text: String(raw.text ?? ''),
+    actionType,
+    callbackData,
+    url
+  };
+}
+
+function createBroadcastRowDraft(buttons = []) {
+  const sourceButtons = Array.isArray(buttons) && buttons.length
+    ? buttons
+    : [{ text: '', actionType: 'callback', callbackData: '', url: '' }];
+
+  return {
+    id: nextBroadcastDraftId('row'),
+    buttons: sourceButtons.map((button) => createBroadcastButtonDraft(button))
+  };
+}
+
+function buildBroadcastButtonRowsFromPayload(rows) {
+  return Array.isArray(rows) ? rows.map((row) => createBroadcastRowDraft(row)) : [];
+}
+
+function buildBroadcastButtonPayloadRows(rows = []) {
+  return (Array.isArray(rows) ? rows : []).map((row) =>
+    (Array.isArray(row?.buttons) ? row.buttons : []).map((button) => {
+      const payload = { text: String(button?.text ?? '') };
+      if (String(button?.actionType || 'callback') === 'url') {
+        const url = String(button?.url ?? '').trim();
+        if (url) payload.url = url;
+      } else {
+        const callbackData = String(button?.callbackData ?? '').trim();
+        if (callbackData) payload.callback_data = callbackData;
+      }
+      return payload;
+    })
+  );
+}
+
+function serializeBroadcastButtonRows(rows = []) {
+  if (!Array.isArray(rows) || rows.length === 0) return '';
+  return JSON.stringify(buildBroadcastButtonPayloadRows(rows), null, 2);
+}
+
 const broadcastInlineKeyboardState = computed(() => normalizeInlineKeyboardDraft(broadcast.inlineKeyboardJson));
 const broadcastInlineKeyboardError = computed(() => broadcastInlineKeyboardState.value.error || '');
+const broadcastInlineKeyboardSummary = computed(() => {
+  const rowCount = broadcastButtonRows.value.length;
+  const buttonCount = broadcastButtonRows.value.reduce((sum, row) => sum + row.buttons.length, 0);
+  if (!rowCount || !buttonCount) return 'No buttons configured.';
+  return `${rowCount} row${rowCount === 1 ? '' : 's'} · ${buttonCount} button${buttonCount === 1 ? '' : 's'}`;
+});
 
 function applyBroadcastTopicsButtonPreset() {
-  broadcast.inlineKeyboardJson = BROADCAST_TOPICS_BUTTON_PRESET;
+  broadcastButtonsInfo.value = 'Inserted a single Topics menu button.';
+  broadcastButtonsLocalError.value = '';
+  broadcastButtonRows.value = [
+    createBroadcastRowDraft([{ text: 'Topics', actionType: 'callback', callbackData: 'topic:menu' }])
+  ];
 }
 
 function clearBroadcastButtons() {
-  broadcast.inlineKeyboardJson = '';
+  broadcastButtonsInfo.value = '';
+  broadcastButtonsLocalError.value = '';
+  broadcastButtonRows.value = [];
+  finishBroadcastRowDrag();
+  finishBroadcastButtonDrag();
+}
+
+function addBroadcastButtonRow() {
+  if (broadcastButtonRows.value.length >= BROADCAST_INLINE_KEYBOARD_MAX_ROWS) return;
+  broadcastButtonsInfo.value = '';
+  broadcastButtonsLocalError.value = '';
+  broadcastButtonRows.value.push(createBroadcastRowDraft());
+}
+
+function removeBroadcastButtonRow(rowId) {
+  broadcastButtonsInfo.value = '';
+  broadcastButtonsLocalError.value = '';
+  broadcastButtonRows.value = broadcastButtonRows.value.filter((row) => row.id !== rowId);
+  if (broadcastDraggingRowId.value === rowId) finishBroadcastRowDrag();
+  if (broadcastDraggingButtonRowId.value === rowId) finishBroadcastButtonDrag();
+}
+
+function addBroadcastButton(rowId) {
+  const row = broadcastButtonRows.value.find((entry) => entry.id === rowId);
+  if (!row || row.buttons.length >= BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW) return;
+  broadcastButtonsInfo.value = '';
+  broadcastButtonsLocalError.value = '';
+  row.buttons.push(createBroadcastButtonDraft({ actionType: 'callback' }));
+}
+
+function removeBroadcastButton(rowId, buttonId) {
+  const row = broadcastButtonRows.value.find((entry) => entry.id === rowId);
+  if (!row) return;
+
+  if (row.buttons.length <= 1) {
+    removeBroadcastButtonRow(rowId);
+    return;
+  }
+
+  broadcastButtonsInfo.value = '';
+  broadcastButtonsLocalError.value = '';
+  row.buttons = row.buttons.filter((button) => button.id !== buttonId);
+  if (broadcastDraggingButtonId.value === buttonId) finishBroadcastButtonDrag();
+}
+
+function reorderById(list, sourceId, targetId) {
+  const next = Array.isArray(list) ? [...list] : [];
+  const sourceIndex = next.findIndex((item) => item.id === sourceId);
+  const targetIndex = next.findIndex((item) => item.id === targetId);
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return next;
+  const [moved] = next.splice(sourceIndex, 1);
+  next.splice(targetIndex, 0, moved);
+  return next;
+}
+
+function startBroadcastRowDrag(row, event) {
+  if (!row?.id) {
+    event?.preventDefault?.();
+    return;
+  }
+  broadcastDraggingRowId.value = row.id;
+  broadcastDragOverRowId.value = row.id;
+  if (event?.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', row.id);
+  }
+}
+
+function handleBroadcastRowDragOver(row) {
+  if (!broadcastDraggingRowId.value || broadcastDraggingButtonId.value || !row?.id) return;
+  broadcastDragOverRowId.value = row.id;
+}
+
+function handleBroadcastRowDrop(row) {
+  const sourceId = broadcastDraggingRowId.value;
+  const targetId = row?.id || '';
+  if (!sourceId || !targetId || sourceId === targetId) {
+    finishBroadcastRowDrag();
+    return;
+  }
+
+  broadcastButtonsInfo.value = '';
+  broadcastButtonsLocalError.value = '';
+  broadcastButtonRows.value = reorderById(broadcastButtonRows.value, sourceId, targetId);
+  finishBroadcastRowDrag();
+}
+
+function finishBroadcastRowDrag() {
+  broadcastDraggingRowId.value = '';
+  broadcastDragOverRowId.value = '';
+}
+
+function startBroadcastButtonDrag(row, button, event) {
+  if (!row?.id || !button?.id) {
+    event?.preventDefault?.();
+    return;
+  }
+  broadcastDraggingButtonRowId.value = row.id;
+  broadcastDraggingButtonId.value = button.id;
+  broadcastButtonDropRowId.value = row.id;
+  broadcastButtonDropButtonId.value = button.id;
+  if (event?.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', `${row.id}:${button.id}`);
+  }
+}
+
+function handleBroadcastButtonDragOver(row, button) {
+  if (!broadcastDraggingButtonId.value || !row?.id || !button?.id) return;
+  broadcastButtonDropRowId.value = row.id;
+  broadcastButtonDropButtonId.value = button.id;
+}
+
+function handleBroadcastButtonRowDragOver(row) {
+  if (!broadcastDraggingButtonId.value || !row?.id) return;
+  broadcastButtonDropRowId.value = row.id;
+  broadcastButtonDropButtonId.value = '';
+}
+
+function moveBroadcastButton(rows, sourceRowId, sourceButtonId, targetRowId, targetButtonId = '') {
+  const nextRows = (Array.isArray(rows) ? rows : []).map((row) => ({
+    ...row,
+    buttons: Array.isArray(row.buttons) ? [...row.buttons] : []
+  }));
+
+  const sourceRow = nextRows.find((row) => row.id === sourceRowId);
+  const targetRow = nextRows.find((row) => row.id === targetRowId);
+  if (!sourceRow || !targetRow) return nextRows;
+
+  const sourceIndex = sourceRow.buttons.findIndex((button) => button.id === sourceButtonId);
+  if (sourceIndex < 0) return nextRows;
+  if (
+    sourceRow.id !== targetRow.id &&
+    targetRow.buttons.length >= BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW
+  ) {
+    return nextRows;
+  }
+
+  const [moved] = sourceRow.buttons.splice(sourceIndex, 1);
+  if (!moved) return nextRows;
+
+  let targetIndex = targetButtonId
+    ? targetRow.buttons.findIndex((button) => button.id === targetButtonId)
+    : targetRow.buttons.length;
+  if (targetIndex < 0) targetIndex = targetRow.buttons.length;
+  if (sourceRow.id === targetRow.id && sourceIndex < targetIndex) {
+    targetIndex -= 1;
+  }
+
+  targetRow.buttons.splice(targetIndex, 0, moved);
+  return nextRows;
+}
+
+function handleBroadcastButtonDrop(row, button) {
+  const sourceRowId = broadcastDraggingButtonRowId.value;
+  const sourceButtonId = broadcastDraggingButtonId.value;
+  const targetRowId = row?.id || '';
+  const targetButtonId = button?.id || '';
+  if (!sourceRowId || !sourceButtonId || !targetRowId || !targetButtonId) {
+    finishBroadcastButtonDrag();
+    return;
+  }
+  if (sourceRowId === targetRowId && sourceButtonId === targetButtonId) {
+    finishBroadcastButtonDrag();
+    return;
+  }
+  if (
+    sourceRowId !== targetRowId &&
+    (row?.buttons?.length || 0) >= BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW
+  ) {
+    broadcastButtonsLocalError.value = `Target row already has ${BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW} buttons.`;
+    finishBroadcastButtonDrag();
+    return;
+  }
+
+  broadcastButtonsInfo.value = '';
+  broadcastButtonsLocalError.value = '';
+  broadcastButtonRows.value = moveBroadcastButton(
+    broadcastButtonRows.value,
+    sourceRowId,
+    sourceButtonId,
+    targetRowId,
+    targetButtonId
+  );
+  finishBroadcastButtonDrag();
+}
+
+function handleBroadcastButtonRowDrop(row) {
+  const sourceRowId = broadcastDraggingButtonRowId.value;
+  const sourceButtonId = broadcastDraggingButtonId.value;
+  const targetRowId = row?.id || '';
+  if (!sourceRowId || !sourceButtonId || !targetRowId) {
+    finishBroadcastButtonDrag();
+    return;
+  }
+  if (
+    sourceRowId !== targetRowId &&
+    (row?.buttons?.length || 0) >= BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW
+  ) {
+    broadcastButtonsLocalError.value = `Target row already has ${BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW} buttons.`;
+    finishBroadcastButtonDrag();
+    return;
+  }
+
+  broadcastButtonsInfo.value = '';
+  broadcastButtonsLocalError.value = '';
+  broadcastButtonRows.value = moveBroadcastButton(
+    broadcastButtonRows.value,
+    sourceRowId,
+    sourceButtonId,
+    targetRowId
+  );
+  finishBroadcastButtonDrag();
+}
+
+function finishBroadcastButtonDrag() {
+  broadcastDraggingButtonRowId.value = '';
+  broadcastDraggingButtonId.value = '';
+  broadcastButtonDropRowId.value = '';
+  broadcastButtonDropButtonId.value = '';
+}
+
+watch(
+  broadcastButtonRows,
+  (rows) => {
+    if (syncingBroadcastKeyboardFromRaw) return;
+    const nextRaw = serializeBroadcastButtonRows(rows);
+    if (broadcast.inlineKeyboardJson === nextRaw) return;
+    syncingBroadcastKeyboardFromBuilder = true;
+    broadcast.inlineKeyboardJson = nextRaw;
+    syncingBroadcastKeyboardFromBuilder = false;
+  },
+  { deep: true }
+);
+
+watch(
+  () => broadcast.inlineKeyboardJson,
+  (value) => {
+    if (syncingBroadcastKeyboardFromBuilder) return;
+    const state = normalizeInlineKeyboardDraft(value);
+    if (state.error && String(value ?? '').trim()) return;
+    syncingBroadcastKeyboardFromRaw = true;
+    broadcastButtonRows.value = buildBroadcastButtonRowsFromPayload(state.value);
+    syncingBroadcastKeyboardFromRaw = false;
+  },
+  { immediate: true }
+);
+
+function buildBroadcastImportedTopicLabel(topic) {
+  const emoji = String(topic?.emoji || '🧩').trim();
+  const title = String(topic?.title_base || topic?.topic_id || '').trim();
+  return `${emoji} ${title}`.trim().slice(0, BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN);
+}
+
+async function importBroadcastTopicButtons() {
+  if (!canImportBroadcastTopics.value) return;
+
+  broadcastTopicsImporting.value = true;
+  broadcastButtonsInfo.value = '';
+  broadcastButtonsLocalError.value = '';
+
+  try {
+    const data = await apiJson(props.apiBase, '/admin/topics', {
+      headers: adminHeaders(),
+      query: { bot_key: broadcastTopicImportBotKey.value }
+    });
+
+    const sourceItems = Array.isArray(data?.items) ? data.items : [];
+    const importedTopics = sourceItems
+      .filter((topic) => {
+        const topicId = String(topic?.topic_id || '').trim().toLowerCase();
+        return Boolean(topicId);
+      })
+      .slice(0, BROADCAST_INLINE_KEYBOARD_MAX_ROWS);
+
+    if (!importedTopics.length) {
+      broadcastButtonsInfo.value = `No topics found for ${broadcastTopicImportBotLabel.value || 'the selected bot'}.`;
+      return;
+    }
+
+    broadcastButtonRows.value = importedTopics.map((topic) =>
+      createBroadcastRowDraft([
+        {
+          text: buildBroadcastImportedTopicLabel(topic),
+          actionType: 'callback',
+          callbackData: `topic:${String(topic.topic_id || '').trim().toLowerCase()}`
+        }
+      ])
+    );
+
+    if (sourceItems.length > importedTopics.length) {
+      broadcastButtonsInfo.value = `Imported ${importedTopics.length} of ${sourceItems.length} topics from ${broadcastTopicImportBotLabel.value}. Telegram supports up to ${BROADCAST_INLINE_KEYBOARD_MAX_ROWS} rows here.`;
+    } else {
+      broadcastButtonsInfo.value = `Imported ${importedTopics.length} topic button${importedTopics.length === 1 ? '' : 's'} from ${broadcastTopicImportBotLabel.value}.`;
+    }
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
+    broadcastButtonsLocalError.value = `Topic import failed: ${msg}`;
+  } finally {
+    broadcastTopicsImporting.value = false;
+  }
 }
 
 const canUploadBroadcastMedia = computed(() => {
@@ -2745,6 +3305,36 @@ const selectedBroadcastBaseLang = computed(() => {
   const botKey = selectedBroadcastBotKeys.value[0] || '';
   if (!botKey) return '';
   return (botStatsByKey.value.get(botKey)?.base_lang ?? '').toString().trim().toLowerCase();
+});
+
+const broadcastTopicImportBotKey = computed(() =>
+  selectedBroadcastBotKeys.value.length === 1 ? selectedBroadcastBotKeys.value[0] : ''
+);
+
+const broadcastTopicImportBotLabel = computed(() => {
+  const botKey = broadcastTopicImportBotKey.value;
+  if (!botKey) return '';
+  const bot = botStatsByKey.value.get(botKey);
+  if (!bot) return botKey;
+  const base = languageLabelForCode(bot.base_lang);
+  const target = languageLabelForCode(bot.target_lang);
+  return `${botKey} (${base} → ${target})`;
+});
+
+const canImportBroadcastTopics = computed(() =>
+  Boolean(password.value) &&
+  Boolean(broadcastTopicImportBotKey.value) &&
+  !broadcastTopicsImporting.value
+);
+
+const broadcastTopicImportHint = computed(() => {
+  if (broadcastTopicImportBotKey.value) {
+    return `Import will use ${broadcastTopicImportBotLabel.value} and create one topic button per row.`;
+  }
+  if (selectedBroadcastBotKeys.value.length > 1) {
+    return 'Select exactly one bot to import its topic catalog.';
+  }
+  return 'Pick one bot if you want to import its full topic catalog.';
 });
 
 const automatedMessageTestChatIdSet = computed(() =>
@@ -5316,6 +5906,7 @@ h1 {
 }
 
 .field input[type='text'],
+.field input[type='url'],
 .field input[type='password'],
 .field input[type='date'],
 .field input[type='number'],
@@ -5331,6 +5922,7 @@ h1 {
 }
 
 .field input[type='text'],
+.field input[type='url'],
 .field input[type='password'],
 .field input[type='date'],
 .field input[type='number'],
@@ -5349,6 +5941,7 @@ h1 {
 }
 
 .field input[type='text']:focus,
+.field input[type='url']:focus,
 .field input[type='password']:focus,
 .field input[type='date']:focus,
 .field input[type='number']:focus,
@@ -5752,6 +6345,193 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.broadcast-builder-field {
+  min-width: 0;
+}
+
+.broadcast-builder-shell {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(30, 26, 22, 0.1);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(246, 241, 232, 0.52)),
+    rgba(255, 255, 255, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.broadcast-builder-topbar,
+.broadcast-builder-copy,
+.broadcast-builder-topbar-actions,
+.broadcast-builder-row-head,
+.broadcast-builder-row-meta,
+.broadcast-builder-row-actions,
+.broadcast-builder-button-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.broadcast-builder-copy {
+  display: grid;
+  gap: 2px;
+  justify-content: flex-start;
+}
+
+.broadcast-builder-copy strong {
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.broadcast-builder-copy small,
+.broadcast-builder-row-meta small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.broadcast-builder-list {
+  display: grid;
+  gap: 12px;
+}
+
+.broadcast-builder-row {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(30, 26, 22, 0.1);
+  background: rgba(255, 255, 255, 0.6);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.broadcast-builder-row.dragging {
+  opacity: 0.68;
+  transform: scale(0.995);
+}
+
+.broadcast-builder-row.drop-target {
+  border-color: rgba(31, 107, 99, 0.34);
+  background: rgba(31, 107, 99, 0.08);
+  box-shadow: 0 18px 38px rgba(20, 18, 16, 0.1);
+}
+
+.broadcast-builder-buttons {
+  display: grid;
+  gap: 10px;
+  min-height: 18px;
+}
+
+.broadcast-builder-buttons.drop-target {
+  padding: 6px;
+  border-radius: 12px;
+  outline: 1px dashed rgba(31, 107, 99, 0.38);
+  background: rgba(31, 107, 99, 0.06);
+}
+
+.broadcast-builder-button {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(30, 26, 22, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.broadcast-builder-button.dragging {
+  opacity: 0.64;
+  transform: scale(0.995);
+}
+
+.broadcast-builder-button.drop-target {
+  border-color: rgba(59, 130, 246, 0.34);
+  box-shadow: 0 14px 30px rgba(20, 18, 16, 0.1);
+}
+
+.broadcast-builder-button-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.broadcast-builder-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(246, 241, 232, 0.72);
+  color: var(--muted);
+  cursor: grab;
+  user-select: none;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.broadcast-builder-handle:active {
+  cursor: grabbing;
+}
+
+.broadcast-builder-remove {
+  border: 0;
+  background: transparent;
+  color: rgba(174, 43, 40, 0.9);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.broadcast-builder-empty {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px dashed rgba(30, 26, 22, 0.16);
+  background: rgba(255, 255, 255, 0.44);
+}
+
+.broadcast-builder-empty strong {
+  font-size: 14px;
+}
+
+.broadcast-builder-empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.broadcast-builder-advanced {
+  border-top: 1px solid rgba(30, 26, 22, 0.1);
+  padding-top: 12px;
+}
+
+.broadcast-builder-advanced summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  list-style: none;
+}
+
+.broadcast-builder-advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.broadcast-builder-advanced[open] {
+  display: grid;
+  gap: 10px;
+}
+
+.broadcast-builder-advanced[open] summary {
+  margin-bottom: 2px;
 }
 
 .pill {
@@ -6158,6 +6938,18 @@ h1 {
 
   .btn {
     min-inline-size: 0;
+  }
+
+  .broadcast-builder-topbar,
+  .broadcast-builder-row-head,
+  .broadcast-builder-button-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .broadcast-builder-row-actions,
+  .broadcast-builder-topbar-actions {
+    width: 100%;
   }
 }
 
