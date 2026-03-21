@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { createHash } from 'crypto';
 import OpenAI from 'openai';
 import { normalizeLanguageCode } from './shared/normalization.js';
 
@@ -59,6 +60,19 @@ function slugifyPhrase(value) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 96) || 'phrase';
+}
+
+export function buildIdiomPhraseSourceSignature(entry) {
+  return createHash('sha256')
+    .update(JSON.stringify({
+      targetLanguage: entry.targetLanguage,
+      levelBucket: entry.levelBucket,
+      phraseText: entry.phraseText,
+      meaningText: entry.meaningText,
+      toneText: entry.toneText,
+      exampleText: entry.exampleText
+    }))
+    .digest('hex');
 }
 
 export function resolveIdiomPracticeLevelBucket(levelRaw) {

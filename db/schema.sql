@@ -944,6 +944,7 @@ CREATE TABLE public.idiom_phrase_translations (
     source text DEFAULT 'llm'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    source_signature text DEFAULT ''::text NOT NULL,
     CONSTRAINT idiom_phrase_translations_base_language_check CHECK (((char_length(base_language) >= 2) AND (char_length(base_language) <= 8))),
     CONSTRAINT idiom_phrase_translations_source_check CHECK ((source = ANY (ARRAY['llm'::text, 'passthrough'::text])))
 );
@@ -1657,6 +1658,13 @@ CREATE INDEX idx_idiom_phrase_translations_phrase_id ON public.idiom_phrase_tran
 
 
 --
+-- Name: idx_idiom_phrase_translations_phrase_id_base_language_signature; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_idiom_phrase_translations_phrase_id_base_language_signature ON public.idiom_phrase_translations USING btree (phrase_id, base_language, source_signature);
+
+
+--
 -- Name: idx_messages_chat_bot_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2091,4 +2099,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260313100000'),
     ('20260313130000'),
     ('20260317113000'),
-    ('20260321110000');
+    ('20260321110000'),
+    ('20260321123000');

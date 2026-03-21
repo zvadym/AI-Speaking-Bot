@@ -6,6 +6,7 @@ import pg from 'pg';
 import { fileURLToPath } from 'url';
 import { loadBotConfigs } from '../src/bot-configs.js';
 import {
+  buildIdiomPhraseSourceSignature,
   collectIdiomPracticeBaseLanguages,
   loadIdiomPhraseFiles,
   translateIdiomPhraseEntry
@@ -36,6 +37,7 @@ const shouldTranslate = !args.has('--skip-translate');
 const translationModel = (process.env.IDIOM_PRACTICE_OPENAI_MODEL || process.env.TOPIC_GENERATION_MODEL || 'gpt-5.4')
   .toString()
   .trim() || 'gpt-5.4';
+const translationConcurrency = Math.max(1, Math.min(8, Number(process.env.IDIOM_PRACTICE_TRANSLATION_CONCURRENCY || 4) || 4));
 
 async function upsertCatalogEntry(client, entry) {
   const { rows } = await client.query(
@@ -95,15 +97,17 @@ async function upsertTranslation(client, phraseId, baseLanguage, translation) {
        tone_translation,
        example_translation,
        source,
+       source_signature,
        updated_at
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
      ON CONFLICT (phrase_id, base_language) DO UPDATE
        SET phrase_translation = EXCLUDED.phrase_translation,
            meaning_translation = EXCLUDED.meaning_translation,
            tone_translation = EXCLUDED.tone_translation,
            example_translation = EXCLUDED.example_translation,
            source = EXCLUDED.source,
+           source_signature = EXCLUDED.source_signature,
            updated_at = NOW()`,
     [
       phraseId,
@@ -112,9 +116,39 @@ async function upsertTranslation(client, phraseId, baseLanguage, translation) {
       translation.meaning_translation,
       translation.tone_translation,
       translation.example_translation,
-      translation.source
+      translation.source,
+      translation.source_signature
     ]
   );
+}
+
+async function loadExistingTranslationSignatures(client, phraseIds) {
+  const normalizedIds = phraseIds.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0);
+  if (!normalizedIds.length) return new Map();
+
+  const { rows } = await client.query(
+    `SELECT phrase_id, base_language, source_signature
+       FROM idiom_phrase_translations
+      WHERE phrase_id = ANY($1::bigint[])`,
+    [normalizedIds]
+  );
+
+  const map = new Map();
+  for (const row of rows || []) {
+    map.set(`${Number(row.phrase_id)}:${String(row.base_language || '').trim()}`, String(row.source_signature || '').trim());
+  }
+  return map;
+}
+
+async function runWithConcurrency(items, concurrency, worker) {
+  const pending = [...items];
+  const runners = Array.from({ length: Math.min(concurrency, pending.length) }, async () => {
+    while (pending.length) {
+      const next = pending.shift();
+      await worker(next);
+    }
+  });
+  await Promise.all(runners);
 }
 
 async function main() {
@@ -136,6 +170,7 @@ async function main() {
 
   const client = await pool.connect();
   try {
+    console.log(`Importing idiom phrase catalog from ${PHRASES_DIR}`);
     await client.query('BEGIN');
 
     const imported = [];
@@ -143,28 +178,45 @@ async function main() {
       const activeSourceKeys = [];
       for (const entry of payload.items) {
         const phraseId = await upsertCatalogEntry(client, entry);
-        imported.push({ phraseId, entry });
+        imported.push({ phraseId, entry, sourceSignature: buildIdiomPhraseSourceSignature(entry) });
         activeSourceKeys.push(entry.sourceKey);
       }
       await deactivateMissingEntries(client, payload.meta.fileStem, activeSourceKeys);
+      console.log(`Imported ${payload.items.length} rows from ${payload.meta.fileName}`);
     }
+    await client.query('COMMIT');
 
     if (shouldTranslate) {
-      for (const { phraseId, entry } of imported) {
+      const existingSignatures = await loadExistingTranslationSignatures(client, imported.map((item) => item.phraseId));
+      const translationJobs = [];
+      for (const item of imported) {
         for (const baseLanguage of baseLanguages) {
-          const translation = await translateIdiomPhraseEntry({
-            apiKey,
-            model: translationModel,
-            targetLanguage: entry.targetLanguage,
-            baseLanguage,
-            entry
-          });
-          await upsertTranslation(client, phraseId, baseLanguage, translation);
+          const key = `${item.phraseId}:${baseLanguage}`;
+          if (existingSignatures.get(key) === item.sourceSignature) continue;
+          translationJobs.push({ ...item, baseLanguage });
         }
       }
-    }
 
-    await client.query('COMMIT');
+      console.log(`Need ${translationJobs.length} translation upserts across ${baseLanguages.length} base languages`);
+      let completed = 0;
+      await runWithConcurrency(translationJobs, translationConcurrency, async (job) => {
+        const translation = await translateIdiomPhraseEntry({
+          apiKey,
+          model: translationModel,
+          targetLanguage: job.entry.targetLanguage,
+          baseLanguage: job.baseLanguage,
+          entry: job.entry
+        });
+        await upsertTranslation(pool, job.phraseId, job.baseLanguage, {
+          ...translation,
+          source_signature: job.sourceSignature
+        });
+        completed += 1;
+        if (completed % 25 === 0 || completed === translationJobs.length) {
+          console.log(`Translated ${completed}/${translationJobs.length}`);
+        }
+      });
+    }
     console.log(`Imported ${imported.length} idiom phrases from ${PHRASES_DIR}`);
     if (shouldTranslate) {
       console.log(`Ensured translations for base languages: ${baseLanguages.join(', ')}`);
@@ -172,7 +224,9 @@ async function main() {
       console.log('Skipped translation generation');
     }
   } catch (error) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch {}
     throw error;
   } finally {
     client.release();
