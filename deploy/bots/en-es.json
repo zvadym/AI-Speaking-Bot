@@ -4,9 +4,9 @@
   "learning_language": "es",
   "bot_name": "Mateo",
   "teacher_avatar_emoji": "👨‍🏫",
-  "teacher_tagline_uk": "Spanish for real life, travel, and everyday confidence 🇪🇸. Friendly guidance, natural speech.",
-  "teacher_tagline_en": "Spanish for real life, travel, and everyday confidence 🇪🇸. Friendly guidance, natural speech.",
-  "teacher_tagline_it": "Spagnolo per vita reale, viaggi e sicurezza quotidiana 🇪🇸. Guida gentile e parlato naturale.",
+  "teacher_tagline_uk": "Spanish for real life, travel, and everyday conversation 🇪🇸. Short practice, clear corrections.",
+  "teacher_tagline_en": "Spanish for real life, travel, and everyday conversation 🇪🇸. Short practice, clear corrections.",
+  "teacher_tagline_it": "Spagnolo per vita reale, viaggi e conversazioni di ogni giorno 🇪🇸. Pratica breve, correzioni chiare.",
   "teacher_style_tags": [
     "gentle",
     "structured",
@@ -19,51 +19,51 @@
   "locale": {
     "btn_translation": "Translation 🇬🇧",
     "btn_follow_up_hints": "What can I say next?",
-    "waiting_text": "⏳ Got it! I’m listening carefully...",
+    "waiting_text": "⏳ Got it. Checking...",
     "loader_messages": [
-      "⏳ Checking everything... great effort!",
-      "🧠 Untangling the language knots...",
-      "✍️ Polishing your answer...",
-      "🎧 Checking meaning and natural flow...",
-      "✨ Picking the best wording...",
-      "🪄 A little language magic...",
-      "🧩 Putting the sentence puzzle together...",
-      "📝 Smoothing the grammar gently...",
-      "🚀 Helping your speaking confidence grow...",
-      "🔍 Looking for tiny improvements...",
-      "🌟 Polishing the final version...",
-      "🎯 Aiming for the clearest response...",
-      "🕵️ Finding small hidden mistakes...",
-      "💡 Suggestion mode on...",
-      "🎵 Tuning rhythm and sound...",
-      "☕ One sip of tea and I’m done 😄",
-      "📌 Capturing the key points...",
-      "🧪 Trying a few options and choosing the best one."
+      "⏳ Checking the main points...",
+      "🧠 Looking at what to fix...",
+      "✍️ Writing a short explanation...",
+      "🎧 Checking meaning and form...",
+      "📝 Picking clearer wording...",
+      "🔍 Checking the grammar...",
+      "🧩 Putting the sentence together...",
+      "💬 Shaping the reply...",
+      "📌 Pulling out 1-2 important points...",
+      "🎯 Choosing the most useful correction...",
+      "🗂️ Sorting everything into place...",
+      "📝 Checking words and order...",
+      "💡 Preparing a next-reply hint...",
+      "🎵 Checking the rhythm of the sentence...",
+      "🔎 Tightening small details...",
+      "☕ One more second, almost done...",
+      "📍 Checking the details...",
+      "✅ Finishing the reply..."
     ],
-    "better_audio_please": "It’s better if we practice with real conversation 🎙️ Next time, please send a voice message.",
-    "callback_saved": "Done, saved ✅",
+    "better_audio_please": "Voice works better for this kind of practice 🎙️ Next time, send a short voice message.",
+    "callback_saved": "Saved ✅",
     "callback_translating": "Translating...",
     "translation_fallback_missing": "I don’t have a translation for this message yet.",
     "translation_header": "🇬🇧 Translation:",
     "translation_transcript_header": "📝 Transcript:",
-    "callback_hints_loading": "Preparing suggestions...",
-    "hints_intro": "Here are a few options you can say next:",
-    "hints_empty": "I don’t have suggestions for this message yet. Try with the next reply.",
+    "callback_hints_loading": "Preparing options...",
+    "hints_intro": "Here are a few options for your next reply:",
+    "hints_empty": "I don’t have suggestions for this message yet. Try the next reply.",
     "choose_level_text": "Choose your level 👇",
-    "hi_message_text": "Hi! Let’s do a 30-second speaking test 👋\nSend one short voice or text message (1–2 sentences), and I’ll reply with:\n✅ transcript\n✅ corrections + short explanation\n✅ what to say next",
+    "hi_message_text": "Hi! Let’s start with a short check 👋\nSend one short voice or text message (1-2 sentences), and I’ll reply with:\n✅ transcript\n✅ corrections + short explanation\n✅ what to say next",
     "choose_voice_mode_text": "How would you like to receive my replies: voice or text? 🎧💬",
     "voice_mode_text": "💬 Text",
     "voice_mode_voice": "🎧 Voice",
     "voice_reply_prefix": "📝 ",
-    "msg_too_long": "That’s a bit long 🙂 Try 1–2 sentences for better quality corrections.",
-    "msg_to_bot": "🤖→🤖 Hey colleague! If you’re a bot, blink twice 😄 Please send me one spoken sentence.",
-    "msg_error_command": "Oops, I don’t know that command yet 🙈",
-    "level_saved_prefix": "Great! Your level is ",
-    "msg_next_step": "Now send me a short voice message (1–2 sentences) 🎙️ I’ll correct mistakes and explain clearly 🙂",
-    "lang_saved_prefix": "Perfect! We’re practicing ",
+    "msg_too_long": "That message is a bit long 🙂 Try 1-2 sentences. I can give more precise corrections that way.",
+    "msg_to_bot": "🤖→🤖 If you’re a bot, send one spoken sentence 😄",
+    "msg_error_command": "I don’t know that command yet.",
+    "level_saved_prefix": "Level saved: ",
+    "msg_next_step": "Now send a short voice message (1-2 sentences) 🎙️ I’ll correct 1-2 important things and explain them briefly.",
+    "lang_saved_prefix": "We’re practicing ",
     "lang_label_de": "Spanish 🇪🇸",
     "lang_label_en": "English 🇬🇧",
-    "reply_mode_saved_prefix": "Perfect! I’ll reply ",
+    "reply_mode_saved_prefix": "I’ll reply ",
     "reply_mode_voice": "🎧 with voice",
     "reply_mode_text": "💬 in text",
     "stats_title": "<b>💎 Subscription</b>",
@@ -84,16 +84,16 @@
     "stats_pending_prefix": "Scheduled change: ",
     "pending_change_prefix": "switch to ",
     "pending_change_suffix": " at period end",
-    "stats_footer": "Details and subscription management are available in the mini-app below.",
+    "stats_footer": "Subscription details and management are in the mini-app below.",
     "btn_open_miniapp": "Open mini-app",
-    "msg_limit_reached": "I’d love to keep practicing with you, but you’ve already reached the free plan lifetime limit 😔\\nTo continue, open the subscription in the mini-app with the button below ✨\\n⬇️⬇️⬇️",
-    "msg_tts_limit_reached": "You’ve reached the weekly limit for my voice replies 😔 Check /stats.",
+    "msg_limit_reached": "You’ve already used the free practice limit.\nTo continue, open the subscription in the mini-app with the button below.",
+    "msg_tts_limit_reached": "You’ve reached the weekly limit for voice replies. Check /stats.",
     "btn_open_subscription": "💎 Open subscription",
-    "msg_too_short": "I couldn’t hear anything 😭 Please try a slightly longer voice message.",
+    "msg_too_short": "I couldn’t hear enough. Try a slightly longer voice message.",
     "user_text_prefix_multiline": "📝 Your text:\\n",
     "user_text_preview": "📝 Your text: ...",
-    "msg_feedback_prompt": "Thanks! Please send your feedback as text or a voice message 🎙️",
-    "msg_feedback_thanks": "Thanks! I received your feedback 💛",
+    "msg_feedback_prompt": "Thanks. Please send feedback as text or a voice message 🎙️",
+    "msg_feedback_thanks": "Thanks, I received your feedback.",
     "msg_feedback_needs_text_or_voice": "Please send feedback as text or voice message 🎙️",
     "level_label_beginner": "Beginner (A1-A2)",
     "level_label_conversational": "Conversational (B1-B2)",
@@ -108,15 +108,15 @@
     "xp_digest_prefix": "Your progress:",
     "topic_btn_set_inline": "🧭 Set topic",
     "topic_btn_manage_inline": "🎯 Change/cancel topic",
-    "onboarding_start_practice_text": "Great start ✨ Want to choose a topic, or continue freely? You can send a voice or text message anytime.",
+    "onboarding_start_practice_text": "You can choose a topic or continue freely. Send a voice or text message anytime.",
     "onboarding_btn_start_voice": "🎙️ Start with voice",
     "onboarding_btn_start_text": "✍️ Start with text",
     "onboarding_btn_show_example": "👀 Show example",
-    "onboarding_example_text": "Example 1 (commute):\n❌ Even on Monday, I go to <s>my work</s> with half-closed eyes.\n✅ Even on Monday, I go <b><u>to work</u></b> with half-closed eyes.\n🧠 Rule: We say <b><u>go to work</u></b> without \"my\".\n\nExample 2 (remote work):\n❌ On Fridays, I <s>work in home</s> in pajamas during meetings.\n✅ On Fridays, I <b><u>work from home</u></b> in pajamas during meetings.\n🧠 Rule: For remote work, we say <b><u>work from home</u></b>, not \"in home\".\n\nNow it's your turn 🙂 Send 1–2 short sentences.",
-    "onboarding_voice_cta_text": "Great. Send a short voice message (1–2 sentences) 🎙️",
-    "onboarding_text_cta_text": "Great. Send a short text message (1–2 sentences) ✍️",
-    "onboarding_showcase_no_mistakes_text": "Very good, no mistakes here 👏\nIf you want to see how I fix mistakes, send something intentionally wrong.\nFor example:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Awesome progress — your profile is ready 🚀\n\nA few quick notes:\n• Your starting level is A1. You can change it anytime to A1, A2, B1, B2, or C1.\n• Use the buttons below the chat to switch your language level and reply format anytime: voice or text.\n• You earn XP as you practice. As your XP grows, more features unlock over time.\n• Your streak is the number of days you practice in a row. A longer streak increases your XP multiplier.\n• In the App, you can open more settings, send feedback, and manage other options.\n\nSend your next message to keep your streak going 🔥\n\nCongratulations! Onboarding is finished.",
+    "onboarding_example_text": "Example 1 (commute):\n❌ Even on Monday, I go to <s>my work</s> with half-closed eyes.\n✅ Even on Monday, I go <b><u>to work</u></b> with half-closed eyes.\n🧠 Rule: We say <b><u>go to work</u></b> without \"my\".\n\nExample 2 (remote work):\n❌ On Fridays, I <s>work in home</s> in pajamas during meetings.\n✅ On Fridays, I <b><u>work from home</u></b> in pajamas during meetings.\n🧠 Rule: For remote work, we say <b><u>work from home</u></b>, not \"in home\".\n\nNow it’s your turn 🙂 Send 1-2 short sentences.",
+    "onboarding_voice_cta_text": "Okay. Send a short voice message (1-2 sentences) 🎙️",
+    "onboarding_text_cta_text": "Okay. Send a short text message (1-2 sentences) ✍️",
+    "onboarding_showcase_no_mistakes_text": "No mistakes here 👏\nIf you want to see how I correct things, send a sentence with an intentional mistake.\nFor example:\n❌ Yesterday I go to work by bus.",
+    "onboarding_complete_full_text": "Your profile is ready 🚀\n\nA few quick notes:\n• Your starting level is A1. You can change it anytime to A1, A2, B1, B2, or C1.\n• Use the buttons below the chat to change your level and reply type: voice or text.\n• You earn XP as you practice. Over time, this unlocks more features.\n• Your streak is the number of days you practice in a row. A longer streak increases your XP multiplier.\n• The mini-app has more settings, feedback, and account options.\n\nSend your next message to continue practicing 🔥\n\nOnboarding is finished.",
     "keyboard_btn_level_prefix": "Level",
     "keyboard_btn_topic_prefix": "Topic",
     "keyboard_btn_topic_none": "Choose topic",
@@ -133,61 +133,61 @@
     "notifications": {
       "day1_return": {
         "text_variants": [
-          "Ready for a 2-minute practice? Write one short sentence.",
-          "Want to do a quick practice? Write one short sentence."
+          "Have 2 minutes for practice? Write one short sentence.",
+          "Want to get back into practice? Write one short sentence."
         ],
         "voice_variants": [
-          "Ready for a quick practice? Send a short voice note.",
+          "Have a minute for practice? Send a short voice note.",
           "Want to get back into practice? Send a short voice note."
         ],
         "topic_text_variants": [
-          "Want a quick restart with {{topic_title}}? Write one short sentence.",
-          "Ready to jump back into {{topic_title}}? Write one short sentence."
+          "Want to return to {{topic_title}}? Write one short sentence.",
+          "Ready to pick up {{topic_title}} again? Write one short sentence."
         ],
         "topic_voice_variants": [
-          "Want a quick restart with {{topic_title}}? Send a short voice note.",
-          "Ready to jump back into {{topic_title}}? Send a short voice note."
+          "Want to return to {{topic_title}}? Send a short voice note.",
+          "Ready to pick up {{topic_title}} again? Send a short voice note."
         ]
       },
       "winback": {
         "reply_cta_voice": "send a short voice message",
         "reply_cta_text": "write one short sentence",
         "d3_fallback_variants": [
-          "So, shall we continue? Write one short sentence — and then I'll help.",
-          "Ready to keep going? Write one short sentence — and then I'll help."
+          "Want to continue? Write one short sentence, and I’ll help from there.",
+          "Ready to keep going? Write one short sentence, and I’ll help from there."
         ],
         "d7_fallback_variants": [
-          "Want to practice again? Write one short sentence — and I'll pick it up from there.",
-          "Want to get back to practice? Write one short sentence — and I'll pick it up."
+          "Want to practice again? Write one short sentence, and we’ll continue.",
+          "Want to get back to practice? Write one short sentence, and we’ll continue."
         ],
         "d14": {
           "default": [
-            "No pressure. We can restart from zero anytime. {{reply_cta_label}} when you want.",
-            "Whenever you're ready, we can start fresh. {{reply_cta_label}}."
+            "No pressure. We can start again anytime. {{reply_cta_label}} when you want.",
+            "Whenever you’re ready, we can start again. {{reply_cta_label}}."
           ],
           "topic": [
-            "Want to come back to “{{topic_title}}”? Write one short sentence — and we'll continue.",
-            "Want to return to “{{topic_title}}”? Write one short sentence — and we'll continue."
+            "Want to come back to “{{topic_title}}”? Write one short sentence, and we’ll continue.",
+            "Want to return to “{{topic_title}}”? Write one short sentence, and we’ll continue."
           ],
           "streak": [
             "You already built a {{streak_best}}-day streak once. We can start again with one small step. {{reply_cta_label}}.",
             "Your best streak was {{streak_best}} days. Restarting can be just one short message. {{reply_cta_label}}."
           ],
           "voice": [
-            "A quick voice reply is enough to restart. {{reply_cta_label}} when you feel like it.",
-            "We can make the comeback easy. {{reply_cta_label}} and we'll go from there."
+            "A short voice message is enough to restart. {{reply_cta_label}} when you feel like it.",
+            "You can restart with one short voice message. {{reply_cta_label}} and we’ll go from there."
           ]
         }
       },
       "free_limit_50": {
-        "message_html": "<b>You’re already halfway through your free limit ✨</b>\nIf you want to keep going, PRO costs less than 2 cups of coffee per month.\n\nIt unlocks extra features like new topics, tone settings, and more updates in the future."
+        "message_html": "<b>You’re already halfway through your free limit.</b>\nIf you want to keep going without pauses, PRO is available in the mini-app.\n\nIt unlocks more practice, new topics, and extra settings."
       }
     }
   },
   "telegram_presentation": {
     "name": "Mateo 🇬🇧→🇪🇸 Spanish tutor",
-    "description": "Spanish for real life, travel, and everyday confidence 🇪🇸. Friendly guidance, natural speech.\nhttps://ai-language-school.online/en",
-    "short_description": "Spanish for real life, travel, and everyday confidence 🇪🇸. Friendly guidance, natural speech.",
+    "description": "Spanish for real life, travel, and everyday conversation 🇪🇸. Short practice, clear corrections.\nhttps://ai-language-school.online/en",
+    "short_description": "Spanish for real life, travel, and everyday conversation 🇪🇸. Short practice, clear corrections.",
     "commands": [
       {
         "command": "start",
@@ -223,7 +223,7 @@
       }
     ],
     "menu_button": {
-      "text": "App",
+      "text": "Mini-app",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=en-es"
     },
     "username": "language_en_es_bot"
