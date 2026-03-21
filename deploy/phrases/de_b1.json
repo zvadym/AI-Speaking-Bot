@@ -1,0 +1,602 @@
+[
+  {
+    "phrase": "Das kommt drauf an",
+    "meaning": "Es hängt von der Situation ab.",
+    "tone": "neutral",
+    "example": "Kommst du morgen mit? Das kommt drauf an."
+  },
+  {
+    "phrase": "Ist halt so",
+    "meaning": "So ist die Situation eben; man muss es akzeptieren.",
+    "tone": "umgangssprachlich",
+    "example": "Der Zug ist weg. Ist halt so."
+  },
+  {
+    "phrase": "Kommt schon mal vor",
+    "meaning": "So etwas passiert manchmal.",
+    "tone": "locker",
+    "example": "Ich habe den Termin vergessen. Kommt schon mal vor."
+  },
+  {
+    "phrase": "Das wäre mir lieber",
+    "meaning": "Ich würde diese Option bevorzugen.",
+    "tone": "höflich",
+    "example": "Mir wäre Freitag lieber."
+  },
+  {
+    "phrase": "So sieht's aus",
+    "meaning": "So ist die Lage.",
+    "tone": "umgangssprachlich",
+    "example": "Wir haben keine Zeit mehr. So sieht's aus."
+  },
+  {
+    "phrase": "Das macht Sinn",
+    "meaning": "Das ist logisch und sinnvoll.",
+    "tone": "neutral",
+    "example": "Erst planen und dann anfangen? Das macht Sinn."
+  },
+  {
+    "phrase": "Das sagt mir was",
+    "meaning": "Das kenne ich irgendwie.",
+    "tone": "umgangssprachlich",
+    "example": "Der Name sagt mir was."
+  },
+  {
+    "phrase": "Das kommt mir bekannt vor",
+    "meaning": "Das wirkt vertraut.",
+    "tone": "neutral",
+    "example": "Die Stimme kommt mir bekannt vor."
+  },
+  {
+    "phrase": "Ich hab so meine Zweifel",
+    "meaning": "Ich bin nicht ganz überzeugt.",
+    "tone": "skeptisch",
+    "example": "Ob das klappt? Ich hab so meine Zweifel."
+  },
+  {
+    "phrase": "Ich sehe das anders",
+    "meaning": "Ich habe dazu eine andere Meinung.",
+    "tone": "direkt",
+    "example": "Du findest das fair? Ich sehe das anders."
+  },
+  {
+    "phrase": "Da hast du recht",
+    "meaning": "Du hast in diesem Punkt recht.",
+    "tone": "neutral",
+    "example": "Da hast du recht, wir sollten früher los."
+  },
+  {
+    "phrase": "Du hast nicht ganz unrecht",
+    "meaning": "Dein Punkt stimmt zum Teil.",
+    "tone": "nachdenklich",
+    "example": "Du hast nicht ganz unrecht mit deiner Kritik."
+  },
+  {
+    "phrase": "Ganz meinerseits",
+    "meaning": "Das gilt auch für mich.",
+    "tone": "freundlich",
+    "example": "Schön, dich kennenzulernen. Ganz meinerseits."
+  },
+  {
+    "phrase": "Das lässt sich machen",
+    "meaning": "Das ist möglich.",
+    "tone": "praktisch",
+    "example": "Kannst du das bis morgen schicken? Das lässt sich machen."
+  },
+  {
+    "phrase": "Das kriegen wir hin",
+    "meaning": "Wir schaffen das.",
+    "tone": "ermutigend",
+    "example": "Die Aufgabe ist schwer, aber das kriegen wir hin."
+  },
+  {
+    "phrase": "Das wird schon",
+    "meaning": "Es wird am Ende gut werden.",
+    "tone": "beruhigend",
+    "example": "Mach dir keine Sorgen, das wird schon."
+  },
+  {
+    "phrase": "Lass dir Zeit",
+    "meaning": "Du musst dich nicht beeilen.",
+    "tone": "freundlich",
+    "example": "Lass dir Zeit, ich warte."
+  },
+  {
+    "phrase": "Mach dir keinen Kopf",
+    "meaning": "Mach dir nicht zu viele Sorgen.",
+    "tone": "umgangssprachlich",
+    "example": "Wegen der Prüfung? Mach dir keinen Kopf."
+  },
+  {
+    "phrase": "Reden wir nicht drum herum",
+    "meaning": "Sprechen wir direkt darüber.",
+    "tone": "direkt",
+    "example": "Reden wir nicht drum herum: Das Projekt ist zu spät."
+  },
+  {
+    "phrase": "Unter uns gesagt",
+    "meaning": "Das sage ich vertraulich.",
+    "tone": "vertraulich",
+    "example": "Unter uns gesagt, ich traue ihm nicht ganz."
+  },
+  {
+    "phrase": "Ganz ehrlich",
+    "meaning": "Ich sage jetzt offen meine Meinung.",
+    "tone": "direkt",
+    "example": "Ganz ehrlich, das war keine gute Idee."
+  },
+  {
+    "phrase": "Wenn du mich fragst",
+    "meaning": "Nach meiner Meinung gefragt.",
+    "tone": "umgangssprachlich",
+    "example": "Wenn du mich fragst, ist Option B besser."
+  },
+  {
+    "phrase": "Soweit ich weiß",
+    "meaning": "Nach meinem aktuellen Wissen.",
+    "tone": "vorsichtig",
+    "example": "Soweit ich weiß, beginnt das Meeting um neun."
+  },
+  {
+    "phrase": "Wenn ich mich nicht irre",
+    "meaning": "Falls ich mich richtig erinnere.",
+    "tone": "vorsichtig",
+    "example": "Wenn ich mich nicht irre, wohnt sie jetzt in Graz."
+  },
+  {
+    "phrase": "Im Großen und Ganzen",
+    "meaning": "Insgesamt betrachtet.",
+    "tone": "neutral",
+    "example": "Im Großen und Ganzen war der Tag gut."
+  },
+  {
+    "phrase": "Am Ende des Tages",
+    "meaning": "Wenn man alles zusammen betrachtet.",
+    "tone": "reflektiert",
+    "example": "Am Ende des Tages zählt nur das Ergebnis."
+  },
+  {
+    "phrase": "Früher oder später",
+    "meaning": "Irgendwann wird es passieren.",
+    "tone": "neutral",
+    "example": "Früher oder später musst du dich entscheiden."
+  },
+  {
+    "phrase": "Im Moment sieht es so aus",
+    "meaning": "Nach jetzigem Stand scheint es so zu sein.",
+    "tone": "sachlich",
+    "example": "Im Moment sieht es so aus, als ob wir pünktlich fertig werden."
+  },
+  {
+    "phrase": "Das ist mir neu",
+    "meaning": "Das wusste ich bisher nicht.",
+    "tone": "neutral",
+    "example": "Ihr zieht um? Das ist mir neu."
+  },
+  {
+    "phrase": "Das ist nicht ohne",
+    "meaning": "Das ist anspruchsvoll oder nicht leicht.",
+    "tone": "umgangssprachlich",
+    "example": "Drei Jobs gleichzeitig? Das ist nicht ohne."
+  },
+  {
+    "phrase": "Nicht unbedingt",
+    "meaning": "Nicht in jedem Fall.",
+    "tone": "neutral",
+    "example": "Muss man dafür viel Erfahrung haben? Nicht unbedingt."
+  },
+  {
+    "phrase": "Nicht wirklich",
+    "meaning": "Eigentlich nicht.",
+    "tone": "umgangssprachlich",
+    "example": "Hat es dir gefallen? Nicht wirklich."
+  },
+  {
+    "phrase": "Das geht zu weit",
+    "meaning": "Das ist zu viel oder nicht akzeptabel.",
+    "tone": "bestimmt",
+    "example": "Ein Witz ist okay, aber das geht zu weit."
+  },
+  {
+    "phrase": "So war das nicht gemeint",
+    "meaning": "Ich wollte etwas anderes ausdrücken.",
+    "tone": "klärend",
+    "example": "So war das nicht gemeint, ich wollte dich nicht kritisieren."
+  },
+  {
+    "phrase": "Nimm's mir nicht übel",
+    "meaning": "Sei bitte nicht beleidigt wegen dem, was ich sage.",
+    "tone": "vorsichtig",
+    "example": "Nimm's mir nicht übel, aber das passt nicht."
+  },
+  {
+    "phrase": "Nimm das nicht persönlich",
+    "meaning": "Es ist kein persönlicher Angriff.",
+    "tone": "vorsichtig",
+    "example": "Nimm das nicht persönlich, ich finde nur die Idee nicht gut."
+  },
+  {
+    "phrase": "Klingt nach einem Plan",
+    "meaning": "Das klingt nach einer guten Vorgehensweise.",
+    "tone": "freundlich",
+    "example": "Erst essen, dann lernen? Klingt nach einem Plan."
+  },
+  {
+    "phrase": "Das wäre eine Idee",
+    "meaning": "Das ist ein möglicher guter Vorschlag.",
+    "tone": "offen",
+    "example": "Wir könnten früher anfangen. Das wäre eine Idee."
+  },
+  {
+    "phrase": "Das halte ich für keine gute Idee",
+    "meaning": "Ich finde diesen Vorschlag nicht sinnvoll.",
+    "tone": "bestimmt",
+    "example": "Ohne Vorbereitung zu starten halte ich für keine gute Idee."
+  },
+  {
+    "phrase": "Da bin ich raus",
+    "meaning": "Dabei mache ich nicht mit.",
+    "tone": "umgangssprachlich",
+    "example": "Noch eine Nachtschicht? Da bin ich raus."
+  },
+  {
+    "phrase": "Darauf würde ich nicht wetten",
+    "meaning": "Darauf würde ich mich nicht verlassen.",
+    "tone": "skeptisch",
+    "example": "Dass er pünktlich kommt? Darauf würde ich nicht wetten."
+  },
+  {
+    "phrase": "Darauf kannst du dich verlassen",
+    "meaning": "Darauf ist sicher Verlass.",
+    "tone": "bestimmt",
+    "example": "Ich bin morgen da, darauf kannst du dich verlassen."
+  },
+  {
+    "phrase": "Das steht noch nicht fest",
+    "meaning": "Es ist noch nicht entschieden.",
+    "tone": "neutral",
+    "example": "Ob wir fahren, steht noch nicht fest."
+  },
+  {
+    "phrase": "Das steht außer Frage",
+    "meaning": "Daran gibt es keinen Zweifel.",
+    "tone": "bestimmt",
+    "example": "Seine Erfahrung steht außer Frage."
+  },
+  {
+    "phrase": "Das versteht sich von selbst",
+    "meaning": "Das ist selbstverständlich.",
+    "tone": "neutral",
+    "example": "Dass wir helfen, versteht sich von selbst."
+  },
+  {
+    "phrase": "Das ist keine große Sache",
+    "meaning": "Das ist nicht besonders schwierig oder wichtig.",
+    "tone": "beruhigend",
+    "example": "Ich mache das schnell, das ist keine große Sache."
+  },
+  {
+    "phrase": "Das ist leichter gesagt als getan",
+    "meaning": "Es klingt einfach, ist aber schwer umzusetzen.",
+    "tone": "reflektiert",
+    "example": "Einfach entspannen? Das ist leichter gesagt als getan."
+  },
+  {
+    "phrase": "Jetzt mal im Ernst",
+    "meaning": "Jetzt spreche ich ernsthaft.",
+    "tone": "direkt",
+    "example": "Jetzt mal im Ernst, wir brauchen einen Plan."
+  },
+  {
+    "phrase": "Das darf doch nicht wahr sein",
+    "meaning": "Ich bin sehr überrascht oder genervt.",
+    "tone": "emotional",
+    "example": "Schon wieder ein Fehler? Das darf doch nicht wahr sein."
+  },
+  {
+    "phrase": "Das kann doch wohl nicht sein",
+    "meaning": "Das ist kaum zu glauben.",
+    "tone": "emotional",
+    "example": "Die Datei ist wieder weg? Das kann doch wohl nicht sein."
+  },
+  {
+    "phrase": "Das trifft sich gut",
+    "meaning": "Das passt zeitlich oder situativ sehr gut.",
+    "tone": "freundlich",
+    "example": "Du bist auch in der Stadt? Das trifft sich gut."
+  },
+  {
+    "phrase": "Das passt mir gut",
+    "meaning": "Dieser Zeitpunkt oder Plan ist für mich passend.",
+    "tone": "neutral",
+    "example": "Dienstag um elf passt mir gut."
+  },
+  {
+    "phrase": "Das sagt alles",
+    "meaning": "Mehr muss man dazu nicht sagen.",
+    "tone": "stark",
+    "example": "Sein Blick sagt alles."
+  },
+  {
+    "phrase": "Nicht der Rede wert",
+    "meaning": "Dafür musst du dich nicht bedanken.",
+    "tone": "höflich",
+    "example": "Danke für deine Hilfe. Nicht der Rede wert."
+  },
+  {
+    "phrase": "Aus meiner Sicht",
+    "meaning": "So sehe ich die Sache.",
+    "tone": "sachlich",
+    "example": "Aus meiner Sicht brauchen wir mehr Zeit."
+  },
+  {
+    "phrase": "Wenn es nach mir geht",
+    "meaning": "Wenn ich entscheiden dürfte.",
+    "tone": "neutral",
+    "example": "Wenn es nach mir geht, fahren wir früher los."
+  },
+  {
+    "phrase": "So oder so",
+    "meaning": "Egal wie, das Ergebnis bleibt gleich.",
+    "tone": "neutral",
+    "example": "So oder so müssen wir heute noch antworten."
+  },
+  {
+    "phrase": "So gesehen",
+    "meaning": "Wenn man es aus dieser Perspektive betrachtet.",
+    "tone": "nachdenklich",
+    "example": "So gesehen hast du einen Punkt."
+  },
+  {
+    "phrase": "Im Zweifel",
+    "meaning": "Wenn man unsicher ist.",
+    "tone": "sachlich",
+    "example": "Im Zweifel fragen wir noch einmal nach."
+  },
+  {
+    "phrase": "Auf den ersten Blick",
+    "meaning": "Wenn man es zuerst ansieht.",
+    "tone": "neutral",
+    "example": "Auf den ersten Blick sieht alles gut aus."
+  },
+  {
+    "phrase": "Auf den zweiten Blick",
+    "meaning": "Wenn man genauer hinschaut.",
+    "tone": "nachdenklich",
+    "example": "Auf den zweiten Blick ist der Fehler klar."
+  },
+  {
+    "phrase": "Im Nachhinein",
+    "meaning": "Wenn man später darauf zurückschaut.",
+    "tone": "reflektiert",
+    "example": "Im Nachhinein war die Entscheidung richtig."
+  },
+  {
+    "phrase": "Wie dem auch sei",
+    "meaning": "Egal wie man es sieht; weiter im Thema.",
+    "tone": "neutral",
+    "example": "Wie dem auch sei, wir müssen jetzt handeln."
+  },
+  {
+    "phrase": "Ganz nebenbei",
+    "meaning": "Neben dem eigentlichen Thema gesagt.",
+    "tone": "locker",
+    "example": "Ganz nebenbei, dein Paket ist angekommen."
+  },
+  {
+    "phrase": "Das nur nebenbei",
+    "meaning": "Das ist nur eine zusätzliche Bemerkung.",
+    "tone": "sachlich",
+    "example": "Das nur nebenbei: Morgen ist Feiertag."
+  },
+  {
+    "phrase": "Ich bin mir da nicht so sicher",
+    "meaning": "Ich zweifle daran.",
+    "tone": "vorsichtig",
+    "example": "Ob das die beste Lösung ist? Ich bin mir da nicht so sicher."
+  },
+  {
+    "phrase": "Das würde ich so nicht sagen",
+    "meaning": "Ich würde das anders formulieren oder sehen.",
+    "tone": "diplomatisch",
+    "example": "Dass es einfach ist, würde ich so nicht sagen."
+  },
+  {
+    "phrase": "Da ist was dran",
+    "meaning": "Das hat etwas Wahres.",
+    "tone": "zustimmend",
+    "example": "Da ist was dran, wir haben zu spät angefangen."
+  },
+  {
+    "phrase": "Das sehe ich genauso",
+    "meaning": "Ich habe genau dieselbe Meinung.",
+    "tone": "neutral",
+    "example": "Das sehe ich genauso, wir brauchen mehr Tests."
+  },
+  {
+    "phrase": "Das sehe ich ähnlich",
+    "meaning": "Ich denke fast genauso.",
+    "tone": "neutral",
+    "example": "Das sehe ich ähnlich, aber ganz sicher bin ich nicht."
+  },
+  {
+    "phrase": "Das kommt ganz gelegen",
+    "meaning": "Das passt mir gerade gut.",
+    "tone": "freundlich",
+    "example": "Dein Anruf kommt ganz gelegen, ich hatte gerade Zeit."
+  },
+  {
+    "phrase": "Das ist nicht mein Ding",
+    "meaning": "Das gefällt mir nicht oder passt nicht zu mir.",
+    "tone": "umgangssprachlich",
+    "example": "Smalltalk ist nicht mein Ding."
+  },
+  {
+    "phrase": "Das ist nichts für mich",
+    "meaning": "Das passt nicht zu mir.",
+    "tone": "neutral",
+    "example": "Camping im Winter ist nichts für mich."
+  },
+  {
+    "phrase": "Das geht mir auf die Nerven",
+    "meaning": "Das nervt mich sehr.",
+    "tone": "genervt",
+    "example": "Dieses ständige Piepen geht mir auf die Nerven."
+  },
+  {
+    "phrase": "Kein Wunder also",
+    "meaning": "Deshalb ist das nicht überraschend.",
+    "tone": "neutral",
+    "example": "Er hat kaum geschlafen, kein Wunder also, dass er müde ist."
+  },
+  {
+    "phrase": "Das war knapp",
+    "meaning": "Es hat nur ganz knapp gereicht.",
+    "tone": "emotional",
+    "example": "Wir haben den Zug noch erwischt. Das war knapp."
+  },
+  {
+    "phrase": "Das ist halb so wild",
+    "meaning": "Es ist nicht so schlimm, wie es wirkt.",
+    "tone": "beruhigend",
+    "example": "Du hast einen kleinen Fehler gemacht. Das ist halb so wild."
+  },
+  {
+    "phrase": "Da lässt sich was machen",
+    "meaning": "Man kann dafür eine Lösung finden.",
+    "tone": "praktisch",
+    "example": "Du brauchst mehr Zeit? Da lässt sich was machen."
+  },
+  {
+    "phrase": "Das ist ein Anfang",
+    "meaning": "Es ist noch nicht genug, aber ein erster Schritt.",
+    "tone": "ermutigend",
+    "example": "Fünf neue Kunden sind gut. Das ist ein Anfang."
+  },
+  {
+    "phrase": "Da kann man nichts machen",
+    "meaning": "Die Situation lässt sich nicht ändern.",
+    "tone": "resigniert",
+    "example": "Der Laden ist schon zu. Da kann man nichts machen."
+  },
+  {
+    "phrase": "Da führt kein Weg dran vorbei",
+    "meaning": "Es ist unvermeidlich.",
+    "tone": "bestimmt",
+    "example": "Wenn wir wachsen wollen, führt kein Weg dran vorbei zu investieren."
+  },
+  {
+    "phrase": "Das liegt auf der Hand",
+    "meaning": "Das ist offensichtlich.",
+    "tone": "sachlich",
+    "example": "Dass wir mehr Personal brauchen, liegt auf der Hand."
+  },
+  {
+    "phrase": "Das steht mir nicht zu",
+    "meaning": "Es ist nicht meine Aufgabe oder mein Recht, darüber zu urteilen.",
+    "tone": "zurückhaltend",
+    "example": "Ob er kündigen soll, steht mir nicht zu zu sagen."
+  },
+  {
+    "phrase": "Das ist nicht der Punkt",
+    "meaning": "Darum geht es eigentlich nicht.",
+    "tone": "bestimmt",
+    "example": "Wie teuer es war, ist nicht der Punkt."
+  },
+  {
+    "phrase": "Darum geht es nicht",
+    "meaning": "Das eigentliche Thema ist ein anderes.",
+    "tone": "direkt",
+    "example": "Darum geht es nicht, es geht um Vertrauen."
+  },
+  {
+    "phrase": "Darüber lässt sich streiten",
+    "meaning": "Dazu kann man unterschiedliche Meinungen haben.",
+    "tone": "neutral",
+    "example": "Ob das die beste Lösung ist, darüber lässt sich streiten."
+  },
+  {
+    "phrase": "Das ist Ansichtssache",
+    "meaning": "Das hängt von der persönlichen Meinung ab.",
+    "tone": "neutral",
+    "example": "Schönheit ist Ansichtssache."
+  },
+  {
+    "phrase": "Damit ist nicht zu spaßen",
+    "meaning": "Das ist ernst und gefährlich.",
+    "tone": "warnend",
+    "example": "Mit so einer Diagnose ist nicht zu spaßen."
+  },
+  {
+    "phrase": "Das hat es in sich",
+    "meaning": "Das ist schwieriger oder heftiger, als es zuerst wirkt.",
+    "tone": "umgangssprachlich",
+    "example": "Die Prüfung hat es in sich."
+  },
+  {
+    "phrase": "Das ist nicht gerade ideal",
+    "meaning": "Das ist eher ungünstig.",
+    "tone": "diplomatisch",
+    "example": "Ohne Backup zu arbeiten ist nicht gerade ideal."
+  },
+  {
+    "phrase": "Dafür spricht einiges",
+    "meaning": "Es gibt gute Argumente dafür.",
+    "tone": "sachlich",
+    "example": "Für einen Testlauf spricht einiges."
+  },
+  {
+    "phrase": "Dagegen spricht auch einiges",
+    "meaning": "Es gibt auch gute Argumente dagegen.",
+    "tone": "sachlich",
+    "example": "Gegen einen sofortigen Start spricht auch einiges."
+  },
+  {
+    "phrase": "Das will was heißen",
+    "meaning": "Das ist besonders bemerkenswert.",
+    "tone": "umgangssprachlich",
+    "example": "Wenn sogar er zufrieden ist, will das was heißen."
+  },
+  {
+    "phrase": "Davon gehe ich aus",
+    "meaning": "Ich nehme an, dass das so ist.",
+    "tone": "neutral",
+    "example": "Kommt die Bestätigung heute noch? Davon gehe ich aus."
+  },
+  {
+    "phrase": "Ich steh auf dem Schlauch",
+    "meaning": "Ich verstehe gerade etwas nicht.",
+    "tone": "umgangssprachlich",
+    "example": "Erklär's noch mal, ich steh gerade auf dem Schlauch."
+  },
+  {
+    "phrase": "Das kommt nicht infrage",
+    "meaning": "Das ist völlig ausgeschlossen.",
+    "tone": "bestimmt",
+    "example": "Ohne Vertrag zu arbeiten kommt nicht infrage."
+  },
+  {
+    "phrase": "Ganz und gar nicht",
+    "meaning": "Überhaupt nicht.",
+    "tone": "stark",
+    "example": "Bist du nervös? Ganz und gar nicht."
+  },
+  {
+    "phrase": "Nicht im Geringsten",
+    "meaning": "Überhaupt nicht, kein bisschen.",
+    "tone": "gehoben",
+    "example": "Es stört mich nicht im Geringsten."
+  },
+  {
+    "phrase": "Das wäre nicht nötig gewesen",
+    "meaning": "Du hättest das nicht extra machen müssen.",
+    "tone": "warm",
+    "example": "Du hast mir Blumen mitgebracht? Das wäre nicht nötig gewesen."
+  },
+  {
+    "phrase": "Das ist mir lieber so",
+    "meaning": "So gefällt es mir besser.",
+    "tone": "neutral",
+    "example": "Lass uns doch telefonieren, das ist mir lieber so."
+  }
+]

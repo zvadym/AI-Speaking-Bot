@@ -11,6 +11,7 @@ services:
       - NODE_ENV=production
     volumes:
       - ./bots:/deploy/bots:ro
+      - ./phrases:/deploy/phrases:ro
     expose:
       - "3000"
 

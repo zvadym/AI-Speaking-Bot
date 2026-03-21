@@ -8,6 +8,8 @@ export const QUEUE_DAY1_RETURN_SCAN = 'day1-return-scan';
 export const QUEUE_DAY1_RETURN_SEND = 'day1-return-send';
 export const QUEUE_WEEKLY_DIGEST_SCAN = 'weekly-digest-scan';
 export const QUEUE_WEEKLY_DIGEST_SEND = 'weekly-digest-send';
+export const QUEUE_IDIOM_PRACTICE_SCAN = 'idiom-practice-scan';
+export const QUEUE_IDIOM_PRACTICE_SEND = 'idiom-practice-send';
 export const QUEUE_FREE_LIMIT_HALF_SCAN = 'free-limit-half-scan';
 export const QUEUE_FREE_LIMIT_HALF_SEND = 'free-limit-half-send';
 export const QUEUE_BROADCAST_CAMPAIGN_ENQUEUE = 'broadcast-campaign-enqueue';
@@ -38,6 +40,8 @@ async function ensureQueues(boss) {
   await boss.createQueue(QUEUE_DAY1_RETURN_SEND, retryOptions);
   await boss.createQueue(QUEUE_WEEKLY_DIGEST_SCAN);
   await boss.createQueue(QUEUE_WEEKLY_DIGEST_SEND, retryOptions);
+  await boss.createQueue(QUEUE_IDIOM_PRACTICE_SCAN);
+  await boss.createQueue(QUEUE_IDIOM_PRACTICE_SEND, retryOptions);
   await boss.createQueue(QUEUE_FREE_LIMIT_HALF_SCAN);
   await boss.createQueue(QUEUE_FREE_LIMIT_HALF_SEND, retryOptions);
   await boss.createQueue(QUEUE_BROADCAST_CAMPAIGN_ENQUEUE, retryOptions);
@@ -117,6 +121,12 @@ export async function startWorkerBoss() {
       await boss.schedule(
         QUEUE_WEEKLY_DIGEST_SCAN,
         '20 * * * *',
+        {},
+        { key: 'default' }
+      );
+      await boss.schedule(
+        QUEUE_IDIOM_PRACTICE_SCAN,
+        `15 ${env.idiomPracticeSendHourUtc} * * *`,
         {},
         { key: 'default' }
       );

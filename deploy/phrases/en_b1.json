@@ -1,0 +1,662 @@
+[
+  {
+    "phrase": "Say no more",
+    "meaning": "I understand completely; you do not need to explain more.",
+    "tone": "casual",
+    "example": "You need someone to cover your shift? Say no more."
+  },
+  {
+    "phrase": "Mark my words",
+    "meaning": "Remember what I am saying because it will happen.",
+    "tone": "strong",
+    "example": "Mark my words, this app will grow fast."
+  },
+  {
+    "phrase": "You don't say",
+    "meaning": "Used to react to something obvious; often sarcastic.",
+    "tone": "ironic",
+    "example": "He forgot again? You don't say."
+  },
+  {
+    "phrase": "Fair enough",
+    "meaning": "I accept your point or decision.",
+    "tone": "neutral",
+    "example": "You are too tired to go out? Fair enough."
+  },
+  {
+    "phrase": "No wonder",
+    "meaning": "It is not surprising.",
+    "tone": "casual",
+    "example": "No wonder she is tired. She worked all night."
+  },
+  {
+    "phrase": "That figures",
+    "meaning": "That makes sense in a slightly negative or unsurprised way.",
+    "tone": "casual",
+    "example": "The train is late again? That figures."
+  },
+  {
+    "phrase": "I can't help it",
+    "meaning": "I cannot control it.",
+    "tone": "casual",
+    "example": "I laugh when I am nervous. I can't help it."
+  },
+  {
+    "phrase": "That's the point",
+    "meaning": "That is the main idea.",
+    "tone": "neutral",
+    "example": "It's supposed to feel simple. That's the point."
+  },
+  {
+    "phrase": "That's not the point",
+    "meaning": "That is not the important issue.",
+    "tone": "firm",
+    "example": "The price is not the point. The quality is."
+  },
+  {
+    "phrase": "You bet",
+    "meaning": "Certainly; definitely yes.",
+    "tone": "friendly",
+    "example": "Can I join you tomorrow? You bet."
+  },
+  {
+    "phrase": "Suit yourself",
+    "meaning": "Do what you want, even if I do not agree.",
+    "tone": "cool",
+    "example": "You do not want dessert? Suit yourself."
+  },
+  {
+    "phrase": "My pleasure",
+    "meaning": "I was happy to help.",
+    "tone": "polite",
+    "example": "Thanks for your help. My pleasure."
+  },
+  {
+    "phrase": "I owe you one",
+    "meaning": "I should do something nice for you later.",
+    "tone": "friendly",
+    "example": "You saved me today. I owe you one."
+  },
+  {
+    "phrase": "Don't get me wrong",
+    "meaning": "I do not want you to misunderstand me.",
+    "tone": "careful",
+    "example": "Don't get me wrong, I like the idea, but it needs work."
+  },
+  {
+    "phrase": "By the way",
+    "meaning": "Used to add extra information.",
+    "tone": "neutral",
+    "example": "By the way, I saw Anna this morning."
+  },
+  {
+    "phrase": "For the record",
+    "meaning": "Used to state something clearly and officially.",
+    "tone": "firm",
+    "example": "For the record, I never agreed to that plan."
+  },
+  {
+    "phrase": "In the long run",
+    "meaning": "Over a long period of time.",
+    "tone": "neutral",
+    "example": "In the long run, daily practice matters more."
+  },
+  {
+    "phrase": "In no time",
+    "meaning": "Very quickly.",
+    "tone": "casual",
+    "example": "You will finish this in no time."
+  },
+  {
+    "phrase": "At least",
+    "meaning": "Used to show a minimum positive point.",
+    "tone": "neutral",
+    "example": "We missed the bus, but at least the weather is nice."
+  },
+  {
+    "phrase": "After all",
+    "meaning": "When everything is considered.",
+    "tone": "neutral",
+    "example": "Maybe he was right after all."
+  },
+  {
+    "phrase": "In the meantime",
+    "meaning": "During the period before something else happens.",
+    "tone": "neutral",
+    "example": "Dinner will be ready soon. In the meantime, have some tea."
+  },
+  {
+    "phrase": "Sooner or later",
+    "meaning": "At some time in the future.",
+    "tone": "neutral",
+    "example": "Sooner or later, you will have to decide."
+  },
+  {
+    "phrase": "More or less",
+    "meaning": "Approximately; almost.",
+    "tone": "casual",
+    "example": "We are more or less ready."
+  },
+  {
+    "phrase": "All of a sudden",
+    "meaning": "Suddenly and unexpectedly.",
+    "tone": "neutral",
+    "example": "All of a sudden, the lights went out."
+  },
+  {
+    "phrase": "Every now and then",
+    "meaning": "Sometimes, but not often.",
+    "tone": "casual",
+    "example": "I still talk to him every now and then."
+  },
+  {
+    "phrase": "Once in a while",
+    "meaning": "Occasionally.",
+    "tone": "casual",
+    "example": "Once in a while, I like to work from a cafe."
+  },
+  {
+    "phrase": "Come to think of it",
+    "meaning": "Used when you suddenly remember or realize something.",
+    "tone": "casual",
+    "example": "Come to think of it, I have not seen her today."
+  },
+  {
+    "phrase": "Now that you mention it",
+    "meaning": "Used when someone's words make you remember something.",
+    "tone": "casual",
+    "example": "Now that you mention it, he did look upset."
+  },
+  {
+    "phrase": "That rings a bell",
+    "meaning": "It sounds familiar.",
+    "tone": "casual",
+    "example": "Her name rings a bell, but I am not sure why."
+  },
+  {
+    "phrase": "I had no idea",
+    "meaning": "I did not know that at all.",
+    "tone": "natural",
+    "example": "I had no idea you spoke Italian."
+  },
+  {
+    "phrase": "It's up to you",
+    "meaning": "You can decide.",
+    "tone": "neutral",
+    "example": "We can stay or leave. It's up to you."
+  },
+  {
+    "phrase": "That's on me",
+    "meaning": "It was my fault or responsibility.",
+    "tone": "casual",
+    "example": "I forgot to send the file. That's on me."
+  },
+  {
+    "phrase": "No offense",
+    "meaning": "I do not want to insult you.",
+    "tone": "careful",
+    "example": "No offense, but this design looks unfinished."
+  },
+  {
+    "phrase": "Just in case",
+    "meaning": "As a precaution.",
+    "tone": "neutral",
+    "example": "Take an umbrella just in case."
+  },
+  {
+    "phrase": "In that case",
+    "meaning": "If that is true, then this follows.",
+    "tone": "neutral",
+    "example": "In that case, we should leave early."
+  },
+  {
+    "phrase": "As far as I know",
+    "meaning": "Based on what I know.",
+    "tone": "careful",
+    "example": "As far as I know, the meeting starts at ten."
+  },
+  {
+    "phrase": "As usual",
+    "meaning": "In the normal way; like always.",
+    "tone": "neutral",
+    "example": "He was late, as usual."
+  },
+  {
+    "phrase": "So far so good",
+    "meaning": "Everything is going well until now.",
+    "tone": "casual",
+    "example": "How is the new job? So far so good."
+  },
+  {
+    "phrase": "That's a relief",
+    "meaning": "I am glad because something bad did not happen.",
+    "tone": "warm",
+    "example": "You are okay? That's a relief."
+  },
+  {
+    "phrase": "Easier said than done",
+    "meaning": "It sounds simple, but it is difficult to do.",
+    "tone": "neutral",
+    "example": "Saving money is easier said than done."
+  },
+  {
+    "phrase": "That's more like it",
+    "meaning": "This is better; this is what I wanted.",
+    "tone": "encouraging",
+    "example": "Now that explanation is clear. That's more like it."
+  },
+  {
+    "phrase": "You never know",
+    "meaning": "Something unexpected may happen.",
+    "tone": "casual",
+    "example": "Take your CV with you. You never know."
+  },
+  {
+    "phrase": "One way or another",
+    "meaning": "By some method, somehow.",
+    "tone": "neutral",
+    "example": "We will solve it one way or another."
+  },
+  {
+    "phrase": "For good",
+    "meaning": "Permanently.",
+    "tone": "neutral",
+    "example": "She moved to Berlin for good."
+  },
+  {
+    "phrase": "For now",
+    "meaning": "At the present time, but maybe not forever.",
+    "tone": "neutral",
+    "example": "For now, this solution is enough."
+  },
+  {
+    "phrase": "Out of the blue",
+    "meaning": "Unexpectedly.",
+    "tone": "casual",
+    "example": "He called me out of the blue last night."
+  },
+  {
+    "phrase": "On second thought",
+    "meaning": "After thinking again.",
+    "tone": "natural",
+    "example": "On second thought, let's stay home."
+  },
+  {
+    "phrase": "On the bright side",
+    "meaning": "Looking at the positive part of a situation.",
+    "tone": "optimistic",
+    "example": "We missed the train, but on the bright side, we have time for coffee."
+  },
+  {
+    "phrase": "In my opinion",
+    "meaning": "This is what I think.",
+    "tone": "neutral",
+    "example": "In my opinion, the first option is better."
+  },
+  {
+    "phrase": "From my point of view",
+    "meaning": "In the way I see it.",
+    "tone": "neutral",
+    "example": "From my point of view, the problem is communication."
+  },
+  {
+    "phrase": "As a matter of fact",
+    "meaning": "In fact; actually.",
+    "tone": "slightly formal",
+    "example": "As a matter of fact, I have already finished it."
+  },
+  {
+    "phrase": "To be honest",
+    "meaning": "Speaking honestly.",
+    "tone": "natural",
+    "example": "To be honest, I did not enjoy the film."
+  },
+  {
+    "phrase": "To be fair",
+    "meaning": "Used to be balanced and reasonable.",
+    "tone": "neutral",
+    "example": "To be fair, he did warn us in advance."
+  },
+  {
+    "phrase": "To make matters worse",
+    "meaning": "Used to add an extra negative detail.",
+    "tone": "dramatic",
+    "example": "The car broke down, and to make matters worse, it started raining."
+  },
+  {
+    "phrase": "Believe it or not",
+    "meaning": "It may sound surprising, but it is true.",
+    "tone": "casual",
+    "example": "Believe it or not, I have never seen that movie."
+  },
+  {
+    "phrase": "First things first",
+    "meaning": "Let's deal with the most important thing first.",
+    "tone": "practical",
+    "example": "First things first, we need a plan."
+  },
+  {
+    "phrase": "Long story short",
+    "meaning": "I will tell only the main point.",
+    "tone": "casual",
+    "example": "Long story short, we missed the flight."
+  },
+  {
+    "phrase": "At the end of the day",
+    "meaning": "When everything is considered.",
+    "tone": "reflective",
+    "example": "At the end of the day, health matters most."
+  },
+  {
+    "phrase": "So to speak",
+    "meaning": "In a way; not literally.",
+    "tone": "neutral",
+    "example": "He is the heart of the team, so to speak."
+  },
+  {
+    "phrase": "By all means",
+    "meaning": "Certainly; go ahead.",
+    "tone": "polite",
+    "example": "Can I open the window? By all means."
+  },
+  {
+    "phrase": "Not a big deal",
+    "meaning": "Not very important or serious.",
+    "tone": "casual",
+    "example": "I can wait five minutes. It's not a big deal."
+  },
+  {
+    "phrase": "That's a shame",
+    "meaning": "That is unfortunate.",
+    "tone": "warm",
+    "example": "You cannot come tonight? That's a shame."
+  },
+  {
+    "phrase": "Serves you right",
+    "meaning": "You deserve that bad result because of your actions.",
+    "tone": "blunt",
+    "example": "You ignored the warning, and now the file is gone. Serves you right."
+  },
+  {
+    "phrase": "I mean it",
+    "meaning": "I am serious.",
+    "tone": "firm",
+    "example": "Take a day off. I mean it."
+  },
+  {
+    "phrase": "You're telling me",
+    "meaning": "I know that very well; often used for strong agreement.",
+    "tone": "casual",
+    "example": "This week has been exhausting. You're telling me."
+  },
+  {
+    "phrase": "Tell me about it",
+    "meaning": "I strongly agree because I have experienced the same thing.",
+    "tone": "casual",
+    "example": "Traffic was awful today. Tell me about it."
+  },
+  {
+    "phrase": "I don't buy it",
+    "meaning": "I do not believe it.",
+    "tone": "skeptical",
+    "example": "He says he forgot again, but I don't buy it."
+  },
+  {
+    "phrase": "I wouldn't count on it",
+    "meaning": "Do not expect it to happen.",
+    "tone": "careful",
+    "example": "Will they reply today? I wouldn't count on it."
+  },
+  {
+    "phrase": "It's not worth it",
+    "meaning": "It is not worth the time, money, or effort.",
+    "tone": "practical",
+    "example": "The repair is too expensive. It's not worth it."
+  },
+  {
+    "phrase": "That's beyond me",
+    "meaning": "I cannot understand or explain that.",
+    "tone": "neutral",
+    "example": "Why they changed the system is beyond me."
+  },
+  {
+    "phrase": "What a relief",
+    "meaning": "I am very glad something stressful is over.",
+    "tone": "warm",
+    "example": "The exam is done at last. What a relief."
+  },
+  {
+    "phrase": "That's weird",
+    "meaning": "That is strange.",
+    "tone": "casual",
+    "example": "That's weird. I was sure I left my keys here."
+  },
+  {
+    "phrase": "That's unlike you",
+    "meaning": "That behavior is unusual for you.",
+    "tone": "observant",
+    "example": "You forgot the meeting? That's unlike you."
+  },
+  {
+    "phrase": "That reminds me",
+    "meaning": "What you said made me remember something.",
+    "tone": "natural",
+    "example": "That reminds me, I need to call my sister."
+  },
+  {
+    "phrase": "No kidding",
+    "meaning": "Really? or obviously, depending on tone.",
+    "tone": "casual",
+    "example": "You got the job? No kidding!"
+  },
+  {
+    "phrase": "Are you kidding me?",
+    "meaning": "Used to show surprise, shock, or annoyance.",
+    "tone": "strong",
+    "example": "They canceled it again? Are you kidding me?"
+  },
+  {
+    "phrase": "Take your time",
+    "meaning": "There is no need to hurry.",
+    "tone": "friendly",
+    "example": "Take your time. I am not in a rush."
+  },
+  {
+    "phrase": "Make yourself at home",
+    "meaning": "Relax and feel comfortable here.",
+    "tone": "warm",
+    "example": "Come in and make yourself at home."
+  },
+  {
+    "phrase": "I've had enough",
+    "meaning": "I cannot accept any more of this.",
+    "tone": "strong",
+    "example": "I've had enough of these delays."
+  },
+  {
+    "phrase": "That's the last straw",
+    "meaning": "This final problem makes the situation unbearable.",
+    "tone": "strong",
+    "example": "They lost my order again. That's the last straw."
+  },
+  {
+    "phrase": "Keep in touch",
+    "meaning": "Continue to communicate with me.",
+    "tone": "warm",
+    "example": "It was great seeing you. Keep in touch."
+  },
+  {
+    "phrase": "Don't push it",
+    "meaning": "Do not go too far.",
+    "tone": "warning",
+    "example": "I said yes once. Don't push it."
+  },
+  {
+    "phrase": "I'm just saying",
+    "meaning": "I am only giving my opinion.",
+    "tone": "casual",
+    "example": "I'm just saying, maybe we should leave earlier."
+  },
+  {
+    "phrase": "Let's call it a day",
+    "meaning": "Let's stop working for today.",
+    "tone": "natural",
+    "example": "We are all tired. Let's call it a day."
+  },
+  {
+    "phrase": "That works for me",
+    "meaning": "I am okay with that plan.",
+    "tone": "friendly",
+    "example": "We can meet at eight. That works for me."
+  },
+  {
+    "phrase": "I'm all ears",
+    "meaning": "I am listening carefully.",
+    "tone": "friendly",
+    "example": "You said you had an idea. I'm all ears."
+  },
+  {
+    "phrase": "Give me a break",
+    "meaning": "Used to show disbelief or annoyance.",
+    "tone": "irritated",
+    "example": "Another delay? Give me a break."
+  },
+  {
+    "phrase": "That's not like you",
+    "meaning": "That behavior seems unusual for you.",
+    "tone": "observant",
+    "example": "You never forget birthdays. That's not like you."
+  },
+  {
+    "phrase": "I won't lie",
+    "meaning": "I will be honest.",
+    "tone": "direct",
+    "example": "I won't lie, that was hard."
+  },
+  {
+    "phrase": "It won't last",
+    "meaning": "It is temporary.",
+    "tone": "reassuring",
+    "example": "This stress won't last forever."
+  },
+  {
+    "phrase": "I'd rather not",
+    "meaning": "I prefer not to do that.",
+    "tone": "polite",
+    "example": "Do you want to talk about it? I'd rather not."
+  },
+  {
+    "phrase": "I'd say so",
+    "meaning": "Yes, I think that is true.",
+    "tone": "casual",
+    "example": "Was it a success? I'd say so."
+  },
+  {
+    "phrase": "I suppose so",
+    "meaning": "Probably yes, though not strongly.",
+    "tone": "uncertain",
+    "example": "Should we trust him? I suppose so."
+  },
+  {
+    "phrase": "That's beside the point",
+    "meaning": "That is not relevant to the main issue.",
+    "tone": "firm",
+    "example": "Who started it is beside the point."
+  },
+  {
+    "phrase": "So be it",
+    "meaning": "I accept it, even if I do not like it.",
+    "tone": "resigned",
+    "example": "If we have to start over, so be it."
+  },
+  {
+    "phrase": "Time will tell",
+    "meaning": "We will know the truth later.",
+    "tone": "reflective",
+    "example": "Will this strategy work? Time will tell."
+  },
+  {
+    "phrase": "Let's face it",
+    "meaning": "Let's accept the truth, even if it is unpleasant.",
+    "tone": "direct",
+    "example": "Let's face it, we are behind schedule."
+  },
+  {
+    "phrase": "You name it",
+    "meaning": "Anything you can think of.",
+    "tone": "casual",
+    "example": "This store has books, games, snacks, you name it."
+  },
+  {
+    "phrase": "The sooner the better",
+    "meaning": "It is better to do it as early as possible.",
+    "tone": "practical",
+    "example": "We should book the tickets. The sooner the better."
+  },
+  {
+    "phrase": "It's been ages",
+    "meaning": "A very long time has passed.",
+    "tone": "friendly",
+    "example": "It's been ages since we last talked."
+  },
+  {
+    "phrase": "No hard feelings",
+    "meaning": "I am not upset with you.",
+    "tone": "friendly",
+    "example": "We disagreed, but no hard feelings."
+  },
+  {
+    "phrase": "You have a point",
+    "meaning": "What you said makes sense.",
+    "tone": "neutral",
+    "example": "You have a point. We may need more time."
+  },
+  {
+    "phrase": "I can't complain",
+    "meaning": "Things are fairly good.",
+    "tone": "casual",
+    "example": "How's work? I can't complain."
+  },
+  {
+    "phrase": "That makes sense",
+    "meaning": "I understand why that is true.",
+    "tone": "neutral",
+    "example": "That makes sense now that you explained it."
+  },
+  {
+    "phrase": "Here we go again",
+    "meaning": "The same annoying thing is happening again.",
+    "tone": "ironic",
+    "example": "Another software update during the meeting? Here we go again."
+  },
+  {
+    "phrase": "Nothing fancy",
+    "meaning": "Simple, not special or expensive.",
+    "tone": "casual",
+    "example": "We had a quiet dinner, nothing fancy."
+  },
+  {
+    "phrase": "It just slipped my mind",
+    "meaning": "I forgot it for a moment.",
+    "tone": "natural",
+    "example": "Sorry I missed your call. It just slipped my mind."
+  },
+  {
+    "phrase": "I can't stand it",
+    "meaning": "I dislike it very much.",
+    "tone": "strong",
+    "example": "I can't stand that noise anymore."
+  },
+  {
+    "phrase": "For what it's worth",
+    "meaning": "This may or may not be useful, but here is my opinion.",
+    "tone": "careful",
+    "example": "For what it's worth, I think your first idea was better."
+  },
+  {
+    "phrase": "It is what it is",
+    "meaning": "We have to accept the situation as it is.",
+    "tone": "resigned",
+    "example": "We cannot change the result now. It is what it is."
+  }
+]

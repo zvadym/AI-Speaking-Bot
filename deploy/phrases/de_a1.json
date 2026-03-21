@@ -1,0 +1,602 @@
+[
+  {
+    "phrase": "Alles klar",
+    "meaning": "Alles ist klar; okay.",
+    "tone": "casual",
+    "example": "Treffen wir uns um sechs? Alles klar."
+  },
+  {
+    "phrase": "Kein Problem",
+    "meaning": "Das ist okay; kein Problem.",
+    "tone": "friendly",
+    "example": "Kannst du mir helfen? Kein Problem."
+  },
+  {
+    "phrase": "Kein Stress",
+    "meaning": "Du musst dir keine Sorgen machen oder dich nicht beeilen.",
+    "tone": "casual",
+    "example": "Ich komme fünf Minuten später. Kein Stress."
+  },
+  {
+    "phrase": "Macht nichts",
+    "meaning": "Das ist nicht wichtig; das ist okay.",
+    "tone": "friendly",
+    "example": "Oh, ich habe den Kuli vergessen. Macht nichts."
+  },
+  {
+    "phrase": "Schon gut",
+    "meaning": "Es ist okay jetzt; kein Problem.",
+    "tone": "warm",
+    "example": "Tut mir leid, ich bin spät. Schon gut."
+  },
+  {
+    "phrase": "Passt schon",
+    "meaning": "So ist es okay.",
+    "tone": "casual",
+    "example": "Ist der Platz okay? Ja, passt schon."
+  },
+  {
+    "phrase": "Na klar",
+    "meaning": "Natürlich.",
+    "tone": "friendly",
+    "example": "Kommst du morgen? Na klar."
+  },
+  {
+    "phrase": "Klar doch",
+    "meaning": "Ja, natürlich.",
+    "tone": "playful",
+    "example": "Kann ich dein Ladegerät kurz nehmen? Klar doch."
+  },
+  {
+    "phrase": "Ach so",
+    "meaning": "Ah, jetzt verstehe ich.",
+    "tone": "natural",
+    "example": "Ach so, du meinst den anderen Bahnhof."
+  },
+  {
+    "phrase": "Genau",
+    "meaning": "Exakt; richtig.",
+    "tone": "neutral",
+    "example": "Wir treffen uns vor dem Kino. Genau."
+  },
+  {
+    "phrase": "Stimmt",
+    "meaning": "Das ist richtig.",
+    "tone": "neutral",
+    "example": "Heute ist es wirklich kalt. Stimmt."
+  },
+  {
+    "phrase": "Echt?",
+    "meaning": "Wirklich?",
+    "tone": "casual",
+    "example": "Du hast schon Feierabend? Echt?"
+  },
+  {
+    "phrase": "Wirklich?",
+    "meaning": "Ist das wahr?",
+    "tone": "neutral",
+    "example": "Wirklich? Das wusste ich nicht."
+  },
+  {
+    "phrase": "Na gut",
+    "meaning": "Okay dann.",
+    "tone": "neutral",
+    "example": "Na gut, dann machen wir es so."
+  },
+  {
+    "phrase": "Warum nicht?",
+    "meaning": "Das klingt okay; ja, gern.",
+    "tone": "casual",
+    "example": "Wollen wir noch einen Kaffee trinken? Warum nicht?"
+  },
+  {
+    "phrase": "Mal sehen",
+    "meaning": "Ich bin noch nicht sicher.",
+    "tone": "neutral",
+    "example": "Kommst du am Wochenende mit? Mal sehen."
+  },
+  {
+    "phrase": "Ich glaube schon",
+    "meaning": "Ich denke ja.",
+    "tone": "neutral",
+    "example": "Ist das der richtige Bus? Ich glaube schon."
+  },
+  {
+    "phrase": "Ich glaube nicht",
+    "meaning": "Ich denke nein.",
+    "tone": "neutral",
+    "example": "Kommt er heute noch? Ich glaube nicht."
+  },
+  {
+    "phrase": "Ich hoffe es",
+    "meaning": "Ich wünsche mir, dass es so ist.",
+    "tone": "neutral",
+    "example": "Wird das Wetter besser? Ich hoffe es."
+  },
+  {
+    "phrase": "Lieber nicht",
+    "meaning": "Besser nicht.",
+    "tone": "careful",
+    "example": "Sollen wir ohne Jacke raus? Lieber nicht."
+  },
+  {
+    "phrase": "Natürlich",
+    "meaning": "Ja, sicher.",
+    "tone": "polite",
+    "example": "Darf ich hier sitzen? Natürlich."
+  },
+  {
+    "phrase": "Gerne",
+    "meaning": "Mit Freude; ja.",
+    "tone": "friendly",
+    "example": "Kannst du mir das erklären? Gerne."
+  },
+  {
+    "phrase": "Bitte schön",
+    "meaning": "Hier bitte / gern geschehen.",
+    "tone": "polite",
+    "example": "Ein Kaffee für Sie. Bitte schön."
+  },
+  {
+    "phrase": "Vielen Dank",
+    "meaning": "Danke sehr.",
+    "tone": "polite",
+    "example": "Vielen Dank für deine Hilfe."
+  },
+  {
+    "phrase": "Kein Ding",
+    "meaning": "Kein Problem.",
+    "tone": "casual",
+    "example": "Danke fürs Warten. Kein Ding."
+  },
+  {
+    "phrase": "Tut mir leid",
+    "meaning": "Ich bin sorry; es tut mir leid.",
+    "tone": "polite",
+    "example": "Tut mir leid, ich habe es vergessen."
+  },
+  {
+    "phrase": "Entschuldigung",
+    "meaning": "Verzeihung / sorry.",
+    "tone": "polite",
+    "example": "Entschuldigung, ist hier noch frei?"
+  },
+  {
+    "phrase": "Moment mal",
+    "meaning": "Warte einen Moment.",
+    "tone": "casual",
+    "example": "Moment mal, ich suche meinen Schlüssel."
+  },
+  {
+    "phrase": "Warte mal",
+    "meaning": "Warte kurz.",
+    "tone": "casual",
+    "example": "Warte mal, ich komme mit."
+  },
+  {
+    "phrase": "Einen Moment",
+    "meaning": "Bitte warten Sie kurz.",
+    "tone": "polite",
+    "example": "Einen Moment, ich bin gleich da."
+  },
+  {
+    "phrase": "Bis gleich",
+    "meaning": "Wir sehen uns sehr bald.",
+    "tone": "friendly",
+    "example": "Ich hole nur kurz Wasser. Bis gleich."
+  },
+  {
+    "phrase": "Bis später",
+    "meaning": "Wir sehen uns später.",
+    "tone": "friendly",
+    "example": "Ich muss jetzt los. Bis später."
+  },
+  {
+    "phrase": "Bis morgen",
+    "meaning": "Wir sehen uns morgen.",
+    "tone": "friendly",
+    "example": "Schönen Abend noch, bis morgen."
+  },
+  {
+    "phrase": "Bis dann",
+    "meaning": "Bis später / bis dann.",
+    "tone": "neutral",
+    "example": "Okay, wir schreiben noch. Bis dann."
+  },
+  {
+    "phrase": "Mach's gut",
+    "meaning": "Pass gut auf dich auf.",
+    "tone": "warm",
+    "example": "Ich gehe jetzt nach Hause. Mach's gut."
+  },
+  {
+    "phrase": "Viel Spaß",
+    "meaning": "Hab eine schöne Zeit.",
+    "tone": "warm",
+    "example": "Viel Spaß auf der Party!"
+  },
+  {
+    "phrase": "Gute Reise",
+    "meaning": "Ich wünsche dir eine gute Fahrt oder Reise.",
+    "tone": "warm",
+    "example": "Du fährst nach Berlin? Gute Reise!"
+  },
+  {
+    "phrase": "Gute Besserung",
+    "meaning": "Werde schnell wieder gesund.",
+    "tone": "warm",
+    "example": "Du bist krank? Gute Besserung!"
+  },
+  {
+    "phrase": "Kein Wunder",
+    "meaning": "Das ist nicht überraschend.",
+    "tone": "casual",
+    "example": "Du bist seit fünf Uhr wach? Kein Wunder, dass du müde bist."
+  },
+  {
+    "phrase": "Wie bitte?",
+    "meaning": "Kannst du das bitte wiederholen?",
+    "tone": "polite",
+    "example": "Wie bitte? Ich habe das nicht verstanden."
+  },
+  {
+    "phrase": "Noch mal, bitte",
+    "meaning": "Bitte sag es noch einmal.",
+    "tone": "polite",
+    "example": "Noch mal, bitte. Das war zu schnell."
+  },
+  {
+    "phrase": "Langsam, bitte",
+    "meaning": "Bitte sprich langsamer.",
+    "tone": "polite",
+    "example": "Langsam, bitte. Mein Deutsch ist noch nicht so gut."
+  },
+  {
+    "phrase": "Nicht so schnell",
+    "meaning": "Bitte langsamer.",
+    "tone": "neutral",
+    "example": "Nicht so schnell, ich schreibe mit."
+  },
+  {
+    "phrase": "Keine Ahnung",
+    "meaning": "Ich habe keine Idee; ich weiß es nicht.",
+    "tone": "casual",
+    "example": "Wann kommt der Zug? Keine Ahnung."
+  },
+  {
+    "phrase": "Weiß ich nicht",
+    "meaning": "Ich weiß es nicht.",
+    "tone": "neutral",
+    "example": "Wo ist Paul? Weiß ich nicht."
+  },
+  {
+    "phrase": "Ist mir egal",
+    "meaning": "Es ist für mich nicht wichtig.",
+    "tone": "casual",
+    "example": "Pizza oder Pasta? Ist mir egal."
+  },
+  {
+    "phrase": "Egal",
+    "meaning": "Es ist nicht wichtig.",
+    "tone": "casual",
+    "example": "Welchen Film schauen wir? Egal."
+  },
+  {
+    "phrase": "Hauptsache",
+    "meaning": "Das Wichtigste ist ...",
+    "tone": "casual",
+    "example": "Hauptsache, wir sind pünktlich."
+  },
+  {
+    "phrase": "Auf jeden Fall",
+    "meaning": "Sicher; definitiv.",
+    "tone": "natural",
+    "example": "Kommst du heute Abend? Auf jeden Fall."
+  },
+  {
+    "phrase": "Vielleicht später",
+    "meaning": "Vielleicht nicht jetzt, sondern später.",
+    "tone": "casual",
+    "example": "Willst du jetzt essen? Vielleicht später."
+  },
+  {
+    "phrase": "Nicht jetzt",
+    "meaning": "Jetzt nicht.",
+    "tone": "neutral",
+    "example": "Kannst du kurz telefonieren? Nicht jetzt."
+  },
+  {
+    "phrase": "Jetzt sofort",
+    "meaning": "Genau jetzt.",
+    "tone": "urgent",
+    "example": "Wir müssen jetzt sofort los."
+  },
+  {
+    "phrase": "Bin gleich da",
+    "meaning": "Ich komme in einem Moment.",
+    "tone": "natural",
+    "example": "Warte kurz, ich bin gleich da."
+  },
+  {
+    "phrase": "So geht's",
+    "meaning": "So funktioniert es.",
+    "tone": "neutral",
+    "example": "So geht's: erst drücken, dann ziehen."
+  },
+  {
+    "phrase": "Geht klar",
+    "meaning": "Okay; einverstanden.",
+    "tone": "casual",
+    "example": "Ich bringe Brot mit. Geht klar."
+  },
+  {
+    "phrase": "In Ordnung",
+    "meaning": "Okay; akzeptabel.",
+    "tone": "polite",
+    "example": "Ist neun Uhr für Sie in Ordnung?"
+  },
+  {
+    "phrase": "Alles gut",
+    "meaning": "Alles ist in Ordnung.",
+    "tone": "friendly",
+    "example": "Alles gut, ich komme allein zurecht."
+  },
+  {
+    "phrase": "Wie läuft's?",
+    "meaning": "Wie geht es? Wie läuft es?",
+    "tone": "casual",
+    "example": "Hi Tom, wie läuft's?"
+  },
+  {
+    "phrase": "Was ist los?",
+    "meaning": "Was passiert? Was ist das Problem?",
+    "tone": "caring",
+    "example": "Du siehst traurig aus. Was ist los?"
+  },
+  {
+    "phrase": "Was gibt's?",
+    "meaning": "Was ist los? Was gibt es Neues?",
+    "tone": "casual",
+    "example": "Hey, was gibt's?"
+  },
+  {
+    "phrase": "Was ist denn?",
+    "meaning": "Was ist passiert?",
+    "tone": "caring",
+    "example": "Du bist so still. Was ist denn?"
+  },
+  {
+    "phrase": "Komm rein",
+    "meaning": "Komm herein.",
+    "tone": "friendly",
+    "example": "Die Tür ist offen. Komm rein."
+  },
+  {
+    "phrase": "Setz dich",
+    "meaning": "Nimm Platz.",
+    "tone": "friendly",
+    "example": "Setz dich, ich mache dir einen Tee."
+  },
+  {
+    "phrase": "Steh auf",
+    "meaning": "Steh auf / erhebe dich.",
+    "tone": "neutral",
+    "example": "Steh auf, wir müssen los."
+  },
+  {
+    "phrase": "Komm mit",
+    "meaning": "Geh mit mir zusammen.",
+    "tone": "friendly",
+    "example": "Komm mit, ich zeige dir den Weg."
+  },
+  {
+    "phrase": "Warte hier",
+    "meaning": "Bleib hier und warte.",
+    "tone": "neutral",
+    "example": "Warte hier, ich bin gleich zurück."
+  },
+  {
+    "phrase": "Pass auf",
+    "meaning": "Sei vorsichtig.",
+    "tone": "caring",
+    "example": "Pass auf, der Boden ist nass."
+  },
+  {
+    "phrase": "Vorsicht",
+    "meaning": "Achtung; sei vorsichtig.",
+    "tone": "urgent",
+    "example": "Vorsicht, heiß!"
+  },
+  {
+    "phrase": "Keine Sorge",
+    "meaning": "Mach dir keine Sorgen.",
+    "tone": "warm",
+    "example": "Keine Sorge, wir finden eine Lösung."
+  },
+  {
+    "phrase": "Nur keine Panik",
+    "meaning": "Bleib ruhig; keine Panik.",
+    "tone": "reassuring",
+    "example": "Nur keine Panik, wir haben noch Zeit."
+  },
+  {
+    "phrase": "Zum Glück",
+    "meaning": "Glücklicherweise.",
+    "tone": "natural",
+    "example": "Zum Glück hat der Supermarkt noch offen."
+  },
+  {
+    "phrase": "Leider nicht",
+    "meaning": "Unglücklicherweise nein.",
+    "tone": "polite",
+    "example": "Haben Sie das in Blau? Leider nicht."
+  },
+  {
+    "phrase": "Noch nicht",
+    "meaning": "Bis jetzt nicht.",
+    "tone": "neutral",
+    "example": "Bist du fertig? Noch nicht."
+  },
+  {
+    "phrase": "Nicht mehr",
+    "meaning": "Früher ja, jetzt nicht.",
+    "tone": "neutral",
+    "example": "Rauchst du noch? Nicht mehr."
+  },
+  {
+    "phrase": "Fast fertig",
+    "meaning": "Beinahe fertig.",
+    "tone": "neutral",
+    "example": "Ich bin fast fertig."
+  },
+  {
+    "phrase": "Ich bin dabei",
+    "meaning": "Ich mache mit / ich kümmere mich darum.",
+    "tone": "natural",
+    "example": "Kannst du helfen? Ja, ich bin dabei."
+  },
+  {
+    "phrase": "Ich bin da",
+    "meaning": "Ich bin hier / ich bin angekommen.",
+    "tone": "neutral",
+    "example": "Ich bin da. Wo bist du?"
+  },
+  {
+    "phrase": "Ich bin unterwegs",
+    "meaning": "Ich bin auf dem Weg.",
+    "tone": "neutral",
+    "example": "Tut mir leid, ich bin unterwegs."
+  },
+  {
+    "phrase": "Ich komme gleich",
+    "meaning": "Ich komme in einem Moment.",
+    "tone": "neutral",
+    "example": "Ich komme gleich, ich ziehe nur Schuhe an."
+  },
+  {
+    "phrase": "Ganz genau",
+    "meaning": "Exakt; genau so.",
+    "tone": "natural",
+    "example": "Ganz genau, das meinte ich."
+  },
+  {
+    "phrase": "Stimmt so",
+    "meaning": "So ist es richtig.",
+    "tone": "service",
+    "example": "Einmal zahlen, bitte. So? Ja, stimmt so."
+  },
+  {
+    "phrase": "Das geht",
+    "meaning": "Das ist okay; das funktioniert.",
+    "tone": "neutral",
+    "example": "Ist der Tisch okay? Ja, das geht."
+  },
+  {
+    "phrase": "Das klappt",
+    "meaning": "Das funktioniert.",
+    "tone": "encouraging",
+    "example": "Mit etwas Übung klappt das."
+  },
+  {
+    "phrase": "Das passt",
+    "meaning": "Das ist okay; das geht.",
+    "tone": "natural",
+    "example": "Dienstag um zehn? Das passt."
+  },
+  {
+    "phrase": "Na und?",
+    "meaning": "Und was dann? Das ist nicht wichtig.",
+    "tone": "direct",
+    "example": "Ich bin fünf Minuten zu spät. Na und?"
+  },
+  {
+    "phrase": "Ach komm",
+    "meaning": "Komm schon.",
+    "tone": "casual",
+    "example": "Ach komm, das war doch nur ein Witz."
+  },
+  {
+    "phrase": "Ehrlich?",
+    "meaning": "Wirklich? Ist das wahr?",
+    "tone": "casual",
+    "example": "Du hast die Prüfung bestanden? Ehrlich?"
+  },
+  {
+    "phrase": "So ein Mist",
+    "meaning": "Wie ärgerlich.",
+    "tone": "mildly frustrated",
+    "example": "So ein Mist, ich habe den Bus verpasst."
+  },
+  {
+    "phrase": "Typisch",
+    "meaning": "Das ist sehr normal für diese Situation oder Person.",
+    "tone": "casual",
+    "example": "Schon wieder Regen. Typisch."
+  },
+  {
+    "phrase": "Na ja",
+    "meaning": "Nun ja; nicht ganz perfekt.",
+    "tone": "natural",
+    "example": "Na ja, perfekt war es nicht."
+  },
+  {
+    "phrase": "Also gut",
+    "meaning": "Okay dann.",
+    "tone": "neutral",
+    "example": "Also gut, wir fangen an."
+  },
+  {
+    "phrase": "Ab und zu",
+    "meaning": "Manchmal.",
+    "tone": "neutral",
+    "example": "Ich gehe ab und zu schwimmen."
+  },
+  {
+    "phrase": "Immer noch",
+    "meaning": "Noch immer; weiterhin.",
+    "tone": "neutral",
+    "example": "Wohnst du noch dort? Ja, immer noch."
+  },
+  {
+    "phrase": "Erst mal",
+    "meaning": "Zuerst / für den Moment.",
+    "tone": "natural",
+    "example": "Erst mal einen Kaffee, dann arbeiten wir."
+  },
+  {
+    "phrase": "Nicht schlecht",
+    "meaning": "Ganz gut.",
+    "tone": "casual",
+    "example": "Dein Deutsch ist echt nicht schlecht."
+  },
+  {
+    "phrase": "Ganz schön",
+    "meaning": "Ziemlich / ziemlich stark.",
+    "tone": "natural",
+    "example": "Es ist heute ganz schön kalt."
+  },
+  {
+    "phrase": "Echt schade",
+    "meaning": "Wirklich schade.",
+    "tone": "warm",
+    "example": "Du kannst nicht kommen? Echt schade."
+  },
+  {
+    "phrase": "Gute Nacht",
+    "meaning": "Schlaf gut.",
+    "tone": "warm",
+    "example": "Es ist spät. Gute Nacht!"
+  },
+  {
+    "phrase": "Na also",
+    "meaning": "Siehst du; jetzt geht es.",
+    "tone": "encouraging",
+    "example": "Na also, jetzt klappt es doch."
+  },
+  {
+    "phrase": "Viel Erfolg",
+    "meaning": "Ich wünsche dir Erfolg.",
+    "tone": "warm",
+    "example": "Morgen hast du die Prüfung? Viel Erfolg!"
+  }
+]

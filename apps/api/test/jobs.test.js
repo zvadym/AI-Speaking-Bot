@@ -26,8 +26,10 @@ ensureSentryInitialized({ processName: 'worker' });
 
 const {
   sendAdminTestDay1ReturnReminder,
+  sendAdminTestIdiomPracticeReminder,
   sendAdminTestWeeklyDigestReminder,
   sendDay1ReturnReminderCore,
+  sendIdiomPracticeReminderCore,
   sendWeeklyDigestReminderCore
 } = jobsModule;
 
@@ -139,6 +141,152 @@ test('admin day1 return reminder uses topic + voice variants without language me
   assert.equal(queries.filter((sql) => sql.includes('INSERT INTO scheduled_task_dispatches')).length, 1);
 });
 
+test('admin idiom practice reminder sends translated phrase bundle', async () => {
+  const telegramBodies = [];
+  const deliveredPhraseIds = [];
+
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('FROM users u') && source.includes('practiced_today')) {
+      return {
+        rows: [{
+          chat_id: 55,
+          first_name: 'Oksana',
+          inactive_reason: null,
+          bot_key: 'uk-en',
+          is_active: true,
+          level: 'a2',
+          onboarding_sent_at: '2026-03-10T09:00:00.000Z',
+          practiced_today: false
+        }]
+      };
+    }
+
+    if (source.includes('INSERT INTO scheduled_task_dispatches (')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    if (source.includes('SELECT id') && source.includes('FROM scheduled_task_dispatches')) {
+      return { rows: [{ id: 9011 }] };
+    }
+
+    if (source.includes('WITH candidates AS (')) {
+      assert.equal(params[2], 'uk');
+      assert.equal(params[3], 'en');
+      assert.equal(params[4], 'a1_a2');
+      assert.equal(params[5], 2);
+      return {
+        rows: [
+          {
+            id: 101,
+            phrase_text: 'For what it\'s worth',
+            meaning_text: 'This may or may not be useful, but here is my opinion.',
+            tone_text: 'careful',
+            example_text: 'For what it\'s worth, I think your first idea was better.',
+            phrase_translation: 'Якщо це має значення',
+            meaning_translation: 'Це може бути корисно або ні, але ось моя думка.',
+            tone_translation: 'обережний',
+            example_translation: 'Якщо це має значення, я думаю, що твоя перша ідея була кращою.',
+            delivery_count: 0,
+            last_sent_at: null
+          },
+          {
+            id: 102,
+            phrase_text: 'That figures',
+            meaning_text: 'That makes sense in a slightly negative or unsurprised way.',
+            tone_text: 'casual',
+            example_text: 'The train is late again? That figures.',
+            phrase_translation: 'Цього і слід було чекати',
+            meaning_translation: 'Це логічно, хоч і трохи негативно або без здивування.',
+            tone_translation: 'невимушений',
+            example_translation: 'Потяг знову запізнюється? Цього і слід було чекати.',
+            delivery_count: 1,
+            last_sent_at: '2026-03-18T09:00:00.000Z'
+          }
+        ]
+      };
+    }
+
+    if (source.includes('UPDATE scheduled_task_dispatches')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    if (source.includes('UPDATE user_bots')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    if (source.includes('INSERT INTO idiom_phrase_deliveries')) {
+      deliveredPhraseIds.push(...params[3]);
+      return { rowCount: params[3].length, rows: [] };
+    }
+
+    if (source.includes('UPDATE users')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    throw new Error(`Unexpected query in admin idiom practice test: ${source.slice(0, 180)}`);
+  }, async () => {
+    await withMockedFetch(async (_url, init) => {
+      telegramBodies.push(JSON.parse(init.body));
+      return okTelegramResponse(933);
+    }, async () => {
+      const result = await sendAdminTestIdiomPracticeReminder({
+        chatId: 55,
+        botKey: 'uk-en'
+      });
+
+      assert.equal(result.ok, true);
+      assert.equal(result.reminder_type, 'idiom_phrase_practice');
+      assert.equal(result.telegram_message_id, 933);
+      assert.deepEqual(result.phrase_ids, [101, 102]);
+      assert.match(result.message_text, /For what it's worth/);
+      assert.match(result.message_text, /Якщо це має значення/);
+      assert.match(result.message_text, /Надішли власне речення/i);
+    });
+  });
+
+  assert.equal(telegramBodies.length, 1);
+  assert.match(telegramBodies[0].text, /For what it's worth/);
+  assert.match(telegramBodies[0].text, /Translation|Pereklad|Переклад/);
+  assert.deepEqual(deliveredPhraseIds, [101, 102]);
+});
+
+test('automated idiom practice skips users who already practiced today', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('FROM users u') && source.includes('practiced_today')) {
+      return {
+        rows: [{
+          chat_id: 88,
+          first_name: 'Lena',
+          inactive_reason: null,
+          bot_key: 'en-de',
+          is_active: true,
+          level: 'b1',
+          onboarding_sent_at: '2026-03-10T09:00:00.000Z',
+          practiced_today: true
+        }]
+      };
+    }
+
+    if (source.includes('INSERT INTO scheduled_task_dispatches (')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    if (source.includes('UPDATE scheduled_task_dispatches')) {
+      assert.equal(params[5], 'already_practiced_today');
+      return { rowCount: 1, rows: [] };
+    }
+
+    throw new Error(`Unexpected query in automated idiom practice skip test: ${source.slice(0, 180)}`);
+  }, async () => {
+    const result = await sendIdiomPracticeReminderCore({
+      chatId: 88,
+      botKey: 'en-de'
+    });
+
+    assert.equal(result, null);
+  });
+});
+
 test('automated day1 return sends generic text after 22 hours of inactivity', async () => {
   const telegramBodies = [];
 
@@ -206,8 +354,8 @@ test('automated day1 return sends generic text after 22 hours of inactivity', as
       assert.equal(result.taskType, 'day1_return');
       assert.equal(result.telegramMessageId, 902);
       assert.ok([
-        'Ready for a 2-minute practice? Write one short sentence.',
-        'Want to do a quick practice? Write one short sentence.'
+        'Have 2 minutes for practice? Write one short sentence.',
+        'Want to get back into practice? Write one short sentence.'
       ].includes(result.messageText));
     });
   });

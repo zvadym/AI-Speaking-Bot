@@ -18,6 +18,7 @@ import {
   enqueueBroadcastCampaign as enqueueBroadcastCampaignJob,
   getAutomatedMessageTestState,
   sendAdminTestDay1ReturnReminder,
+  sendAdminTestIdiomPracticeReminder,
   sendAdminTestFreeLimitHalfReminder,
   sendAdminTestWeeklyDigestReminder,
   sendAdminTestWinbackReminder
@@ -48,6 +49,7 @@ const NOTIFICATION_TASK_TYPES = [
   'onboarding_complete',
   'day1_return',
   'weekly_digest',
+  'idiom_phrase_practice',
   'free_limit_50',
   'winback_d3',
   'winback_d7',
@@ -57,6 +59,7 @@ const NOTIFICATION_SERIES_TYPES = [
   'onboarding_complete',
   'day1_return',
   'weekly_digest',
+  'idiom_phrase_practice',
   'free_limit_50',
   'winback_d3',
   'winback_d7',
@@ -3163,10 +3166,11 @@ export function createAdminRouter(ctx, helpers) {
     const reminderType = String(req.body?.reminderType ?? req.body?.reminder_type ?? '').trim().toLowerCase();
     const isDay1ReturnType = reminderType === 'day1_return';
     const isWeeklyDigestType = reminderType === 'weekly_digest';
+    const isIdiomPracticeType = reminderType === 'idiom_phrase_practice';
     const isWinbackType = ['d3', 'd7', 'd14'].includes(reminderType);
     const isFreeLimitHalfType = reminderType === 'free_limit_50';
 
-    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || (!isDay1ReturnType && !isWeeklyDigestType && !isWinbackType && !isFreeLimitHalfType)) {
+    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || (!isDay1ReturnType && !isWeeklyDigestType && !isIdiomPracticeType && !isWinbackType && !isFreeLimitHalfType)) {
       return res.status(400).json({ error: 'bad_request' });
     }
 
@@ -3178,6 +3182,11 @@ export function createAdminRouter(ctx, helpers) {
           })
         : isWeeklyDigestType
           ? await sendAdminTestWeeklyDigestReminder({
+            chatId,
+            botKey
+          })
+        : isIdiomPracticeType
+          ? await sendAdminTestIdiomPracticeReminder({
               chatId,
               botKey
             })
@@ -3206,6 +3215,10 @@ export function createAdminRouter(ctx, helpers) {
         errorCode === 'missing_free_limit_half_message'
         || errorCode === 'missing_free_limit_half_cta'
         || errorCode === 'free_limit_half_send_failed'
+        || errorCode === 'insufficient_phrase_catalog'
+        || errorCode === 'missing_phrase_translation'
+        || errorCode === 'idiom_phrase_send_failed'
+        || errorCode === 'idiom_phrase_build_failed'
         || errorCode === 'weekly_digest_build_failed'
         || errorCode === 'weekly_digest_send_failed'
       ) {

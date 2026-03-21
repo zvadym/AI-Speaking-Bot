@@ -1426,6 +1426,7 @@
             <span>Reminder type</span>
             <select v-model="reminderTestType">
               <option value="weekly_digest">Weekly digest</option>
+              <option value="idiom_phrase_practice">Idiomatic phrase practice</option>
               <option value="d3">D3</option>
               <option value="d7">D7</option>
               <option value="d14">D14</option>
@@ -2232,13 +2233,14 @@ const notificationSeriesPalette = [
 const notificationTypeMeta = {
   onboarding_complete: { label: 'Onboarding complete', color: notificationSeriesPalette[0], order: 0 },
   weekly_digest: { label: 'Weekly digest', color: notificationSeriesPalette[1], order: 1 },
-  free_limit_50: { label: '50% free limit', color: notificationSeriesPalette[2], order: 2 },
-  winback_d3: { label: 'Winback D3', color: notificationSeriesPalette[3], order: 3 },
-  winback_d7: { label: 'Winback D7', color: notificationSeriesPalette[4], order: 4 },
-  winback_d14: { label: 'Winback D14', color: notificationSeriesPalette[5], order: 5 },
-  broadcast_text: { label: 'Broadcast text', color: notificationSeriesPalette[6], order: 6 },
-  broadcast_photo: { label: 'Broadcast photo', color: notificationSeriesPalette[7], order: 7 },
-  broadcast_video: { label: 'Broadcast video', color: notificationSeriesPalette[8], order: 8 }
+  idiom_phrase_practice: { label: 'Idiomatic phrase practice', color: notificationSeriesPalette[2], order: 2 },
+  free_limit_50: { label: '50% free limit', color: notificationSeriesPalette[3], order: 3 },
+  winback_d3: { label: 'Winback D3', color: notificationSeriesPalette[4], order: 4 },
+  winback_d7: { label: 'Winback D7', color: notificationSeriesPalette[5], order: 5 },
+  winback_d14: { label: 'Winback D14', color: notificationSeriesPalette[6], order: 6 },
+  broadcast_text: { label: 'Broadcast text', color: notificationSeriesPalette[7], order: 7 },
+  broadcast_photo: { label: 'Broadcast photo', color: notificationSeriesPalette[8], order: 8 },
+  broadcast_video: { label: 'Broadcast video', color: notificationSeriesPalette[0], order: 9 }
 };
 const actionSeriesConfig = [
   { key: 'start', label: 'start', color: 'rgba(31, 107, 99, 0.88)' },
@@ -2546,6 +2548,7 @@ const reminderTestResult = ref(null);
 
 function reminderTestTypeLabel(value) {
   if (value === 'weekly_digest') return 'Weekly digest';
+  if (value === 'idiom_phrase_practice') return 'Idiomatic phrase practice';
   if (value === 'free_limit_50') return '50% free limit';
   return String(value || '').toUpperCase();
 }
@@ -3366,7 +3369,7 @@ const canSendReminderTest = computed(() => {
   if (!password.value) return false;
   if (!reminderTestSelectedChatId.value) return false;
   if (!normalizeBotKeyValue(reminderTestBotKey.value) || !reminderTestBotExists.value) return false;
-  if (!['weekly_digest', 'd3', 'd7', 'd14', 'free_limit_50'].includes(reminderTestType.value)) return false;
+  if (!['weekly_digest', 'idiom_phrase_practice', 'd3', 'd7', 'd14', 'free_limit_50'].includes(reminderTestType.value)) return false;
   if (reminderTestConfirm.value.trim().toUpperCase() !== 'TEST') return false;
   if (reminderTestAllowlistBlocked.value) return false;
   return true;

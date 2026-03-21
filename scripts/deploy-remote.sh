@@ -187,16 +187,26 @@ step "🗄️ 2.4/10: Run DB migrations"
 bash "${MIGRATE_SCRIPT}"
 
 if [[ "${SKIP_N8N}" == "true" ]]; then
-  step "🐳 2.5/10: Build & restart api/miniapp/caddy only (--skip-n8n)"
+  step "🐳 2.5/10: Build api/miniapp images (--skip-n8n)"
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build api miniapp
+  step "🧠 2.6/10: Import idiom phrase catalog"
+  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
+    -e IDIOM_PHRASES_DIR=/deploy/phrases \
+    api node ./scripts/import-idiom-phrases.mjs </dev/null
+  step "🚀 2.7/10: Restart api/miniapp/caddy only (--skip-n8n)"
   if [[ "${RESTART_ALL}" == "true" ]]; then
     docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --no-deps api miniapp caddy
   else
     docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --no-deps api miniapp caddy
   fi
 else
-  step "🐳 2.5/10: Build & restart services"
+  step "🐳 2.5/10: Build service images"
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build
+  step "🧠 2.6/10: Import idiom phrase catalog"
+  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
+    -e IDIOM_PHRASES_DIR=/deploy/phrases \
+    api node ./scripts/import-idiom-phrases.mjs </dev/null
+  step "🚀 2.7/10: Restart services"
   if [[ "${RESTART_ALL}" == "true" ]]; then
     docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --remove-orphans
   else
@@ -205,31 +215,31 @@ else
 fi
 
 if [[ "${SKIP_N8N}" == "true" ]]; then
-  step "⏭️ 2.6/10: Skip n8n stop/import/activation (--skip-n8n)"
+  step "⏭️ 2.8/10: Skip n8n stop/import/activation (--skip-n8n)"
 else
   if [[ "${RESTART_ALL}" == "true" ]]; then
-    step "🛑 2.6/10: Stop n8n (pre-import, --restart-all)"
+    step "🛑 2.8/10: Stop n8n (pre-import, --restart-all)"
     docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" stop n8n >/dev/null 2>&1 || true
 
-    step "🧹 2.7/10: Unpublish/deactivate ALL n8n workflows (--restart-all)"
+    step "🧹 2.9/10: Unpublish/deactivate ALL n8n workflows (--restart-all)"
     COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" STOP_N8N_BEFORE=false bash scripts/unpublish-all-n8n-workflows.sh
   else
-    step "♻️ 2.6/10: Keep n8n running during workflow import/publish"
+    step "♻️ 2.8/10: Keep n8n running during workflow import/publish"
   fi
 
-  step "📦 2.8/10: Import n8n workflows"
+  step "📦 2.10/10: Import n8n workflows"
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps n8n-import </dev/null
 
   if [[ "${RESTART_ALL}" == "true" ]]; then
-    step "✅ 2.9/10: Activate n8n workflows with restart (--restart-all)"
+    step "✅ 2.11/10: Activate n8n workflows with restart (--restart-all)"
     COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" STOP_N8N_BEFORE=false RESTART_N8N_AFTER=true bash scripts/activate-n8n-workflows.sh
   else
-    step "✅ 2.9/10: Publish n8n workflows live"
+    step "✅ 2.11/10: Publish n8n workflows live"
     COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" STOP_N8N_BEFORE=false RESTART_N8N_AFTER=false bash scripts/activate-n8n-workflows.sh
   fi
 fi
 
-step "✅ 2.10/10: Health checks"
+step "✅ 2.12/10: Health checks"
 if [[ "${SKIP_HEALTHCHECKS}" == "true" ]]; then
   echo "⚠️ SKIP_HEALTHCHECKS=true; skipping health checks"
 elif command -v curl >/dev/null 2>&1; then

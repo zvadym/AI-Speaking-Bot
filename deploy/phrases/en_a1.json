@@ -1,0 +1,602 @@
+[
+  {
+    "phrase": "Sounds good",
+    "meaning": "I like that idea.",
+    "tone": "casual",
+    "example": "Let's meet at 6. Sounds good."
+  },
+  {
+    "phrase": "No problem",
+    "meaning": "It is okay; I can do it.",
+    "tone": "friendly",
+    "example": "Can you help me? No problem."
+  },
+  {
+    "phrase": "Of course",
+    "meaning": "Yes, certainly.",
+    "tone": "friendly",
+    "example": "Can I sit here? Of course."
+  },
+  {
+    "phrase": "Not really",
+    "meaning": "No, not much.",
+    "tone": "casual",
+    "example": "Do you like coffee? Not really."
+  },
+  {
+    "phrase": "I see",
+    "meaning": "I understand now.",
+    "tone": "neutral",
+    "example": "Oh, you are busy today. I see."
+  },
+  {
+    "phrase": "Maybe later",
+    "meaning": "Not now, but possibly after some time.",
+    "tone": "casual",
+    "example": "Do you want dessert? Maybe later."
+  },
+  {
+    "phrase": "Right now",
+    "meaning": "At this moment.",
+    "tone": "neutral",
+    "example": "I can't talk right now."
+  },
+  {
+    "phrase": "Come on",
+    "meaning": "Hurry up or let's go.",
+    "tone": "casual",
+    "example": "Come on, the bus is here."
+  },
+  {
+    "phrase": "Hold on",
+    "meaning": "Wait a moment.",
+    "tone": "casual",
+    "example": "Hold on, I need my keys."
+  },
+  {
+    "phrase": "Go ahead",
+    "meaning": "You can start or continue.",
+    "tone": "friendly",
+    "example": "If you want to ask, go ahead."
+  },
+  {
+    "phrase": "Good for you",
+    "meaning": "That is nice for you.",
+    "tone": "friendly",
+    "example": "You got the job? Good for you!"
+  },
+  {
+    "phrase": "Lucky you",
+    "meaning": "You are fortunate.",
+    "tone": "playful",
+    "example": "You have a day off? Lucky you."
+  },
+  {
+    "phrase": "Poor thing",
+    "meaning": "I feel sorry for that person.",
+    "tone": "warm",
+    "example": "She is sick again. Poor thing."
+  },
+  {
+    "phrase": "Never mind",
+    "meaning": "It is not important now.",
+    "tone": "friendly",
+    "example": "I forgot the tickets. Never mind."
+  },
+  {
+    "phrase": "No worries",
+    "meaning": "It is okay; do not worry.",
+    "tone": "friendly",
+    "example": "Sorry I'm late. No worries."
+  },
+  {
+    "phrase": "Take care",
+    "meaning": "Goodbye, and stay safe.",
+    "tone": "warm",
+    "example": "See you tomorrow. Take care."
+  },
+  {
+    "phrase": "See you soon",
+    "meaning": "We will meet again soon.",
+    "tone": "friendly",
+    "example": "Bye for now. See you soon."
+  },
+  {
+    "phrase": "Long time no see",
+    "meaning": "I have not seen you for a long time.",
+    "tone": "friendly",
+    "example": "Hey, long time no see!"
+  },
+  {
+    "phrase": "Here you go",
+    "meaning": "This is for you.",
+    "tone": "friendly",
+    "example": "Here you go, your coffee."
+  },
+  {
+    "phrase": "After you",
+    "meaning": "You go first.",
+    "tone": "polite",
+    "example": "After you, please."
+  },
+  {
+    "phrase": "This way",
+    "meaning": "Come in this direction.",
+    "tone": "neutral",
+    "example": "The office is this way."
+  },
+  {
+    "phrase": "My bad",
+    "meaning": "It was my mistake.",
+    "tone": "casual",
+    "example": "I sent the wrong file. My bad."
+  },
+  {
+    "phrase": "I guess so",
+    "meaning": "I think yes, but I am not fully sure.",
+    "tone": "casual",
+    "example": "Is it ready? I guess so."
+  },
+  {
+    "phrase": "I hope so",
+    "meaning": "I want that to be true.",
+    "tone": "neutral",
+    "example": "Will it stop raining? I hope so."
+  },
+  {
+    "phrase": "I don't mind",
+    "meaning": "It is okay for me.",
+    "tone": "neutral",
+    "example": "We can walk if you want. I don't mind."
+  },
+  {
+    "phrase": "It depends",
+    "meaning": "The answer changes with the situation.",
+    "tone": "neutral",
+    "example": "Do you work on weekends? It depends."
+  },
+  {
+    "phrase": "That's all",
+    "meaning": "There is nothing more.",
+    "tone": "neutral",
+    "example": "I just need bread and milk. That's all."
+  },
+  {
+    "phrase": "Not yet",
+    "meaning": "It has not happened so far.",
+    "tone": "neutral",
+    "example": "Are you ready? Not yet."
+  },
+  {
+    "phrase": "Not anymore",
+    "meaning": "It was true before, but not now.",
+    "tone": "neutral",
+    "example": "Do you live there? Not anymore."
+  },
+  {
+    "phrase": "Once again",
+    "meaning": "One more time.",
+    "tone": "neutral",
+    "example": "Could you say that once again?"
+  },
+  {
+    "phrase": "For sure",
+    "meaning": "Definitely.",
+    "tone": "casual",
+    "example": "Will you come? For sure."
+  },
+  {
+    "phrase": "Why not?",
+    "meaning": "Yes, that sounds fine.",
+    "tone": "casual",
+    "example": "Want to go out? Why not?"
+  },
+  {
+    "phrase": "Sure thing",
+    "meaning": "Yes, certainly.",
+    "tone": "friendly",
+    "example": "Can you call me later? Sure thing."
+  },
+  {
+    "phrase": "That's fine",
+    "meaning": "That is acceptable.",
+    "tone": "neutral",
+    "example": "We can meet tomorrow. That's fine."
+  },
+  {
+    "phrase": "That's okay",
+    "meaning": "It is all right.",
+    "tone": "friendly",
+    "example": "Sorry, I forgot. That's okay."
+  },
+  {
+    "phrase": "Are you sure?",
+    "meaning": "Do you really think so?",
+    "tone": "neutral",
+    "example": "Are you sure this is the right train?"
+  },
+  {
+    "phrase": "I'm sure",
+    "meaning": "I feel certain.",
+    "tone": "neutral",
+    "example": "I'm sure I locked the door."
+  },
+  {
+    "phrase": "I think so",
+    "meaning": "Probably yes.",
+    "tone": "neutral",
+    "example": "Is she at home? I think so."
+  },
+  {
+    "phrase": "I don't think so",
+    "meaning": "Probably not.",
+    "tone": "neutral",
+    "example": "Will he join us? I don't think so."
+  },
+  {
+    "phrase": "Let me see",
+    "meaning": "Give me a moment to think or check.",
+    "tone": "neutral",
+    "example": "Let me see if I have your number."
+  },
+  {
+    "phrase": "Wait a second",
+    "meaning": "Please wait a very short time.",
+    "tone": "casual",
+    "example": "Wait a second, I'm coming."
+  },
+  {
+    "phrase": "Just a minute",
+    "meaning": "Please wait a short time.",
+    "tone": "neutral",
+    "example": "Just a minute, please."
+  },
+  {
+    "phrase": "One more time",
+    "meaning": "Again.",
+    "tone": "neutral",
+    "example": "Can you say it one more time?"
+  },
+  {
+    "phrase": "What happened?",
+    "meaning": "What took place?",
+    "tone": "neutral",
+    "example": "You look upset. What happened?"
+  },
+  {
+    "phrase": "What's wrong?",
+    "meaning": "What is the problem?",
+    "tone": "caring",
+    "example": "You are very quiet. What's wrong?"
+  },
+  {
+    "phrase": "What's up?",
+    "meaning": "How are you or what is happening?",
+    "tone": "casual",
+    "example": "Hey, what's up?"
+  },
+  {
+    "phrase": "How come?",
+    "meaning": "Why?",
+    "tone": "casual",
+    "example": "You are leaving early? How come?"
+  },
+  {
+    "phrase": "Who knows?",
+    "meaning": "Nobody knows.",
+    "tone": "casual",
+    "example": "Will they win? Who knows?"
+  },
+  {
+    "phrase": "That's true",
+    "meaning": "I agree that it is correct.",
+    "tone": "neutral",
+    "example": "It is cold today. That's true."
+  },
+  {
+    "phrase": "Good idea",
+    "meaning": "That is a smart plan.",
+    "tone": "friendly",
+    "example": "Let's take a taxi. Good idea."
+  },
+  {
+    "phrase": "Bad idea",
+    "meaning": "That is not a good plan.",
+    "tone": "neutral",
+    "example": "Driving without sleep is a bad idea."
+  },
+  {
+    "phrase": "I agree",
+    "meaning": "I have the same opinion.",
+    "tone": "neutral",
+    "example": "I agree with you."
+  },
+  {
+    "phrase": "Exactly",
+    "meaning": "That is completely correct.",
+    "tone": "neutral",
+    "example": "Exactly, that is what I mean."
+  },
+  {
+    "phrase": "Not exactly",
+    "meaning": "Not completely true.",
+    "tone": "neutral",
+    "example": "Are you finished? Not exactly."
+  },
+  {
+    "phrase": "Almost done",
+    "meaning": "Very near completion.",
+    "tone": "neutral",
+    "example": "Dinner is almost done."
+  },
+  {
+    "phrase": "I'm ready",
+    "meaning": "I am prepared now.",
+    "tone": "neutral",
+    "example": "I'm ready to go."
+  },
+  {
+    "phrase": "Me too",
+    "meaning": "The same is true for me.",
+    "tone": "friendly",
+    "example": "I love summer. Me too."
+  },
+  {
+    "phrase": "Me neither",
+    "meaning": "The same negative thing is true for me.",
+    "tone": "neutral",
+    "example": "I don't like fish. Me neither."
+  },
+  {
+    "phrase": "I forgot",
+    "meaning": "I did not remember.",
+    "tone": "neutral",
+    "example": "I forgot my umbrella."
+  },
+  {
+    "phrase": "I remember",
+    "meaning": "I still know it from before.",
+    "tone": "neutral",
+    "example": "Yes, I remember your name."
+  },
+  {
+    "phrase": "Be careful",
+    "meaning": "Act safely.",
+    "tone": "caring",
+    "example": "The floor is wet. Be careful."
+  },
+  {
+    "phrase": "Hurry up",
+    "meaning": "Do it faster.",
+    "tone": "casual",
+    "example": "Hurry up, we are late."
+  },
+  {
+    "phrase": "Slow down",
+    "meaning": "Do it more slowly.",
+    "tone": "neutral",
+    "example": "Please slow down. I can't understand."
+  },
+  {
+    "phrase": "Calm down",
+    "meaning": "Become less upset.",
+    "tone": "neutral",
+    "example": "Take a breath and calm down."
+  },
+  {
+    "phrase": "Wake up",
+    "meaning": "Stop sleeping.",
+    "tone": "neutral",
+    "example": "Wake up, it's seven."
+  },
+  {
+    "phrase": "Cheer up",
+    "meaning": "Try to feel happier.",
+    "tone": "warm",
+    "example": "Cheer up, tomorrow will be better."
+  },
+  {
+    "phrase": "Sit down",
+    "meaning": "Take a seat.",
+    "tone": "neutral",
+    "example": "Please sit down here."
+  },
+  {
+    "phrase": "Stand up",
+    "meaning": "Get on your feet.",
+    "tone": "neutral",
+    "example": "Stand up and stretch."
+  },
+  {
+    "phrase": "Come in",
+    "meaning": "Enter the room or building.",
+    "tone": "friendly",
+    "example": "The door is open. Come in."
+  },
+  {
+    "phrase": "Go out",
+    "meaning": "Leave the room or go outside.",
+    "tone": "neutral",
+    "example": "Let's go out for a walk."
+  },
+  {
+    "phrase": "Turn left",
+    "meaning": "Move to the left side.",
+    "tone": "neutral",
+    "example": "Turn left at the bank."
+  },
+  {
+    "phrase": "Turn right",
+    "meaning": "Move to the right side.",
+    "tone": "neutral",
+    "example": "Turn right after the bridge."
+  },
+  {
+    "phrase": "Look out",
+    "meaning": "Be careful; there is danger.",
+    "tone": "urgent",
+    "example": "Look out! A bike is coming."
+  },
+  {
+    "phrase": "Try again",
+    "meaning": "Do it one more time.",
+    "tone": "encouraging",
+    "example": "That answer is close. Try again."
+  },
+  {
+    "phrase": "Keep going",
+    "meaning": "Continue.",
+    "tone": "encouraging",
+    "example": "Keep going, you are doing well."
+  },
+  {
+    "phrase": "Well done",
+    "meaning": "You did it very well.",
+    "tone": "warm",
+    "example": "Well done, that was excellent."
+  },
+  {
+    "phrase": "Nice try",
+    "meaning": "It was a good attempt.",
+    "tone": "encouraging",
+    "example": "Nice try, you were close."
+  },
+  {
+    "phrase": "No chance",
+    "meaning": "It is impossible or very unlikely.",
+    "tone": "casual",
+    "example": "Can we finish in five minutes? No chance."
+  },
+  {
+    "phrase": "Maybe next time",
+    "meaning": "Not now, but perhaps later.",
+    "tone": "friendly",
+    "example": "We missed the movie. Maybe next time."
+  },
+  {
+    "phrase": "That's enough",
+    "meaning": "Stop now; this amount is sufficient.",
+    "tone": "neutral",
+    "example": "That's enough sugar for me."
+  },
+  {
+    "phrase": "Not bad",
+    "meaning": "Quite good.",
+    "tone": "casual",
+    "example": "Your pronunciation is not bad."
+  },
+  {
+    "phrase": "Pretty good",
+    "meaning": "Quite good.",
+    "tone": "casual",
+    "example": "How was the test? Pretty good."
+  },
+  {
+    "phrase": "All right",
+    "meaning": "Okay.",
+    "tone": "neutral",
+    "example": "All right, let's start."
+  },
+  {
+    "phrase": "As usual",
+    "meaning": "In the normal or expected way.",
+    "tone": "neutral",
+    "example": "He was late, as usual."
+  },
+  {
+    "phrase": "In a minute",
+    "meaning": "Very soon.",
+    "tone": "neutral",
+    "example": "I'll be ready in a minute."
+  },
+  {
+    "phrase": "On my way",
+    "meaning": "I am coming now.",
+    "tone": "neutral",
+    "example": "I'm on my way to the station."
+  },
+  {
+    "phrase": "I'm here",
+    "meaning": "I have arrived.",
+    "tone": "neutral",
+    "example": "I'm here. Where are you?"
+  },
+  {
+    "phrase": "There you are",
+    "meaning": "Here is the person or thing.",
+    "tone": "friendly",
+    "example": "There you are. I was looking for you."
+  },
+  {
+    "phrase": "What else?",
+    "meaning": "What other thing?",
+    "tone": "neutral",
+    "example": "We need bread, milk, and what else?"
+  },
+  {
+    "phrase": "Anything else?",
+    "meaning": "Do you need more?",
+    "tone": "polite",
+    "example": "Anything else for your order?"
+  },
+  {
+    "phrase": "That's it",
+    "meaning": "Nothing more is needed.",
+    "tone": "neutral",
+    "example": "Just water, please. That's it."
+  },
+  {
+    "phrase": "Same here",
+    "meaning": "The same is true for me.",
+    "tone": "friendly",
+    "example": "I'm tired. Same here."
+  },
+  {
+    "phrase": "I feel sick",
+    "meaning": "I do not feel well.",
+    "tone": "neutral",
+    "example": "I feel sick, so I'm going home."
+  },
+  {
+    "phrase": "I'm tired",
+    "meaning": "I need rest or sleep.",
+    "tone": "neutral",
+    "example": "I'm tired after work."
+  },
+  {
+    "phrase": "I'm hungry",
+    "meaning": "I want food.",
+    "tone": "neutral",
+    "example": "I'm hungry. Let's eat."
+  },
+  {
+    "phrase": "I'm thirsty",
+    "meaning": "I want a drink.",
+    "tone": "neutral",
+    "example": "I'm thirsty. Can I have some water?"
+  },
+  {
+    "phrase": "I feel better",
+    "meaning": "My condition has improved.",
+    "tone": "neutral",
+    "example": "I feel better today."
+  },
+  {
+    "phrase": "Good luck",
+    "meaning": "I hope things go well for you.",
+    "tone": "warm",
+    "example": "Good luck with your interview."
+  },
+  {
+    "phrase": "Have fun",
+    "meaning": "Enjoy yourself.",
+    "tone": "friendly",
+    "example": "Have fun at the party."
+  },
+  {
+    "phrase": "Sweet dreams",
+    "meaning": "Sleep well.",
+    "tone": "warm",
+    "example": "Good night. Sweet dreams."
+  }
+]

@@ -354,7 +354,8 @@ test('admin notifications metrics returns sent counts by bot and type', async ()
           { day: '2026-03-01', bot_key: 'uk-de', notification_type: 'onboarding_complete', count: 2 },
           { day: '2026-03-01', bot_key: 'uk-de', notification_type: 'broadcast_text', count: 3 },
           { day: '2026-03-02', bot_key: 'uk-en', notification_type: 'winback_d3', count: 1 },
-          { day: '2026-03-03', bot_key: 'en-de', notification_type: 'weekly_digest', count: 4 }
+          { day: '2026-03-03', bot_key: 'en-de', notification_type: 'weekly_digest', count: 4 },
+          { day: '2026-03-03', bot_key: 'uk-en', notification_type: 'idiom_phrase_practice', count: 2 }
         ]
       };
     }
@@ -375,7 +376,8 @@ test('admin notifications metrics returns sent counts by bot and type', async ()
       { day: '2026-03-01', bot_key: 'uk-de', notification_type: 'onboarding_complete', count: 2 },
       { day: '2026-03-01', bot_key: 'uk-de', notification_type: 'broadcast_text', count: 3 },
       { day: '2026-03-02', bot_key: 'uk-en', notification_type: 'winback_d3', count: 1 },
-      { day: '2026-03-03', bot_key: 'en-de', notification_type: 'weekly_digest', count: 4 }
+      { day: '2026-03-03', bot_key: 'en-de', notification_type: 'weekly_digest', count: 4 },
+      { day: '2026-03-03', bot_key: 'uk-en', notification_type: 'idiom_phrase_practice', count: 2 }
     ]);
   });
 });
