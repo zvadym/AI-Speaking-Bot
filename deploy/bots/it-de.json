@@ -94,6 +94,7 @@
     "msg_feedback_prompt": "Grazie! Scrivimi il tuo feedback in testo oppure invia un messaggio vocale 🎙️",
     "msg_feedback_thanks": "Grazie! Ho ricevuto il tuo feedback 💛",
     "msg_feedback_needs_text_or_voice": "Per favore invia il feedback in testo o con un messaggio vocale 🎙️",
+    "msg_needs_text_or_voice": "Per favore invia solo un messaggio di testo o vocale 🎙️",
     "hi_message_text": "Ciao! Facciamo un test di conversazione da 30 secondi 👋\nInvia un breve messaggio vocale o testuale (1–2 frasi) e ti risponderò con:\n✅ trascrizione\n✅ correzioni + spiegazione breve\n✅ cosa dire dopo",
     "level_label_beginner": "Principiante (A1-A2)",
     "level_label_conversational": "Intermedio (B1-B2)",

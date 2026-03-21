@@ -98,6 +98,10 @@ The API automated notifications also read these locale keys when present:
 - `locale.notifications.winback.*`
 - `locale.notifications.free_limit_50.message_html`
 
+The main chat workflow also expects:
+
+- `locale.msg_needs_text_or_voice` for unsupported media in the regular practice flow, for example a photo sent without text
+
 ## Two-Step Workflow
 
 ### 1) Validate / normalize bot files

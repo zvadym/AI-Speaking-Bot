@@ -95,6 +95,7 @@
     "msg_feedback_prompt": "Danke! Schreib mir dein Feedback als Text oder sende eine Sprachnachricht 🎙️",
     "msg_feedback_thanks": "Danke! Ich habe dein Feedback erhalten 💛",
     "msg_feedback_needs_text_or_voice": "Bitte sende dein Feedback als Text oder Sprachnachricht 🎙️",
+    "msg_needs_text_or_voice": "Bitte sende nur eine Text- oder Sprachnachricht 🎙️",
     "level_label_beginner": "Anfänger (A1-A2)",
     "level_label_conversational": "Mittelstufe (B1-B2)",
     "level_label_advanced": "Fortgeschritten (C1+)",

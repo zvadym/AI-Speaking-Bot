@@ -95,6 +95,7 @@
     "msg_feedback_prompt": "Teşekkürler! Geri bildirimi metin ya da sesli mesaj olarak gönder 🎙️",
     "msg_feedback_thanks": "Teşekkürler! Geri bildirimini aldım 💛",
     "msg_feedback_needs_text_or_voice": "Lütfen geri bildirimi metin veya sesli mesaj olarak gönder 🎙️",
+    "msg_needs_text_or_voice": "Lütfen sadece metin veya sesli mesaj gönder 🎙️",
     "level_label_beginner": "Başlangıç (A1-A2)",
     "level_label_conversational": "Konuşma seviyesi (B1-B2)",
     "level_label_advanced": "İleri (C1+)",

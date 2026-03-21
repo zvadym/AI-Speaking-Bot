@@ -94,6 +94,7 @@
     "msg_feedback_prompt": "Дякую. Надішли, будь ласка, відгук текстом або голосовим повідомленням 🎙️",
     "msg_feedback_thanks": "Дякую, я отримав твій відгук.",
     "msg_feedback_needs_text_or_voice": "Надішли, будь ласка, відгук текстом або голосовим повідомленням 🎙️",
+    "msg_needs_text_or_voice": "Надішли, будь ласка, лише текстове або голосове повідомлення 🎙️",
     "level_label_beginner": "Початковий (A1-A2)",
     "level_label_conversational": "Розмовний (B1-B2)",
     "level_label_advanced": "Просунутий (C1+)",

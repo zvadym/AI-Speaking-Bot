@@ -95,6 +95,7 @@
     "msg_feedback_prompt": "धन्यवाद! कृपया अपना फीडबैक टेक्स्ट या वॉइस मैसेज में भेजें 🎙️",
     "msg_feedback_thanks": "धन्यवाद! आपका फीडबैक मिल गया 💛",
     "msg_feedback_needs_text_or_voice": "कृपया फीडबैक टेक्स्ट या वॉइस मैसेज के रूप में भेजें 🎙️",
+    "msg_needs_text_or_voice": "कृपया केवल टेक्स्ट या वॉइस मैसेज भेजें 🎙️",
     "level_label_beginner": "शुरुआती (A1-A2)",
     "level_label_conversational": "संवादी (B1-B2)",
     "level_label_advanced": "उन्नत (C1+)",

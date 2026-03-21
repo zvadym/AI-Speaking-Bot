@@ -95,6 +95,7 @@
     "msg_feedback_prompt": "شكرًا! أرسل ملاحظاتك كنص أو رسالة صوتية 🎙️",
     "msg_feedback_thanks": "شكرًا! استلمت ملاحظاتك 💛",
     "msg_feedback_needs_text_or_voice": "يرجى إرسال الملاحظات كنص أو رسالة صوتية 🎙️",
+    "msg_needs_text_or_voice": "يرجى إرسال رسالة نصية أو صوتية فقط 🎙️",
     "level_label_beginner": "مبتدئ (A1-A2)",
     "level_label_conversational": "مستوى محادثة (B1-B2)",
     "level_label_advanced": "متقدم (C1+)",
