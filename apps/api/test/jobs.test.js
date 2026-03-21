@@ -240,13 +240,18 @@ test('admin idiom practice reminder sends translated phrase bundle', async () =>
       assert.deepEqual(result.phrase_ids, [101, 102]);
       assert.match(result.message_text, /For what it's worth/);
       assert.match(result.message_text, /Якщо це має значення/);
+      assert.match(result.message_text, /🗣/u);
+      assert.match(result.message_text, /💡/u);
+      assert.match(result.message_text, /📝/u);
+      assert.match(result.message_text, /<i>\(/);
       assert.match(result.message_text, /Надішли власне речення/i);
     });
   });
 
   assert.equal(telegramBodies.length, 1);
   assert.match(telegramBodies[0].text, /For what it's worth/);
-  assert.match(telegramBodies[0].text, /Translation|Pereklad|Переклад/);
+  assert.match(telegramBodies[0].text, /🗣/u);
+  assert.match(telegramBodies[0].text, /📝/u);
   assert.deepEqual(deliveredPhraseIds, [101, 102]);
 });
 

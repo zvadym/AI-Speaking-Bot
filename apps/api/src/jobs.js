@@ -1976,11 +1976,12 @@ function buildIdiomPracticeMessage(context, phrases) {
   for (const [index, phrase] of phrases.entries()) {
     parts.push('');
     parts.push(`<b>${index + 1}. ${escapeTelegramHtmlText(phrase.phraseText)}</b>`);
-    parts.push(`${escapeTelegramHtmlText(locale.translation_label)}: ${escapeTelegramHtmlText(phrase.phraseTranslation)}`);
-    parts.push(`${escapeTelegramHtmlText(locale.meaning_label)}: ${escapeTelegramHtmlText(phrase.meaningTranslation)}`);
-    parts.push(`${escapeTelegramHtmlText(locale.tone_label)}: ${escapeTelegramHtmlText(phrase.toneTranslation)}`);
-    parts.push(`${escapeTelegramHtmlText(locale.example_label)}: ${escapeTelegramHtmlText(phrase.exampleText)}`);
-    parts.push(`${escapeTelegramHtmlText(locale.translation_label)}: ${escapeTelegramHtmlText(phrase.exampleTranslation)}`);
+    parts.push(`🗣 ${escapeTelegramHtmlText(phrase.phraseTranslation)}`);
+    parts.push(`💡 ${escapeTelegramHtmlText(phrase.meaningTranslation)}`);
+    parts.push(`🎭 ${escapeTelegramHtmlText(locale.tone_label)}: ${escapeTelegramHtmlText(phrase.toneTranslation)}`);
+    parts.push('');
+    parts.push(`📝 ${escapeTelegramHtmlText(locale.example_label)}: ${escapeTelegramHtmlText(phrase.exampleText)}`);
+    parts.push(`<i>(${escapeTelegramHtmlText(phrase.exampleTranslation)})</i>`);
   }
 
   parts.push('');
