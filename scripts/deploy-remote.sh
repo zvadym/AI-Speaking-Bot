@@ -15,6 +15,7 @@ HEALTH_TIMEOUT_SEC="${HEALTH_TIMEOUT_SEC:-5}"
 SKIP_HEALTHCHECKS="${SKIP_HEALTHCHECKS:-false}"
 SKIP_N8N="${SKIP_N8N:-false}"
 RESTART_ALL="${RESTART_ALL:-false}"
+UPDATE_PHRASES="${UPDATE_PHRASES:-false}"
 OPENAI_MODELS_CONFIG="${OPENAI_MODELS_CONFIG:-deploy/workflows/openai-models.json}"
 
 # Override these when deploying to a new server before DNS is updated.
@@ -31,6 +32,7 @@ Usage: scripts/deploy-remote.sh [--skip-n8n] [--restart-all] [--help]
 Options:
   --skip-n8n  Skip n8n workflow render/import/activation and n8n-specific health checks.
   --restart-all  Force full service restart, including restart-based n8n workflow activation.
+  --update-phrases  Import idiom phrase catalog after build.
   --help      Show this help message.
 EOF
 }
@@ -52,6 +54,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --restart-all)
       RESTART_ALL="true"
+      shift
+      ;;
+    --update-phrases)
+      UPDATE_PHRASES="true"
       shift
       ;;
     --help|-h)
@@ -76,6 +82,11 @@ if [[ "${RESTART_ALL}" != "true" && "${RESTART_ALL}" != "false" ]]; then
   exit 1
 fi
 
+if [[ "${UPDATE_PHRASES}" != "true" && "${UPDATE_PHRASES}" != "false" ]]; then
+  echo "Invalid UPDATE_PHRASES=${UPDATE_PHRASES} (expected: true|false)" >&2
+  exit 1
+fi
+
 ssh_cmd() {
   if [[ "${SSH_FORWARD_AGENT}" == "true" ]]; then
     ssh -A "$@"
@@ -89,7 +100,7 @@ ssh_cmd -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >
 
 log "🚀 Step 2/9: Run remote deploy commands"
 ssh_cmd "${DEPLOY_HOST}" \
-  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' SKIP_N8N='${SKIP_N8N}' RESTART_ALL='${RESTART_ALL}' OPENAI_MODELS_CONFIG='${OPENAI_MODELS_CONFIG}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' HEALTHCHECK_N8N_URL='${HEALTHCHECK_N8N_URL}' HEALTHCHECK_N8N_LOCAL_URL='${HEALTHCHECK_N8N_LOCAL_URL}' bash -se" <<'REMOTE'
+  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' SKIP_N8N='${SKIP_N8N}' RESTART_ALL='${RESTART_ALL}' UPDATE_PHRASES='${UPDATE_PHRASES}' OPENAI_MODELS_CONFIG='${OPENAI_MODELS_CONFIG}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' HEALTHCHECK_N8N_URL='${HEALTHCHECK_N8N_URL}' HEALTHCHECK_N8N_LOCAL_URL='${HEALTHCHECK_N8N_LOCAL_URL}' bash -se" <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
@@ -189,10 +200,14 @@ bash "${MIGRATE_SCRIPT}"
 if [[ "${SKIP_N8N}" == "true" ]]; then
   step "🐳 2.5/10: Build api/worker/miniapp images (--skip-n8n)"
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build api worker miniapp
-  step "🧠 2.6/10: Import idiom phrase catalog"
-  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
-    -e IDIOM_PHRASES_DIR=/deploy/phrases \
-    api node ./scripts/import-idiom-phrases.mjs </dev/null
+  if [[ "${UPDATE_PHRASES}" == "true" ]]; then
+    step "🧠 2.6/10: Import idiom phrase catalog (--update-phrases)"
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
+      -e IDIOM_PHRASES_DIR=/deploy/phrases \
+      api node ./scripts/import-idiom-phrases.mjs </dev/null
+  else
+    step "⏭️ 2.6/10: Skip idiom phrase import (pass --update-phrases to enable)"
+  fi
   step "🚀 2.7/10: Restart api/worker/miniapp/caddy only (--skip-n8n)"
   if [[ "${RESTART_ALL}" == "true" ]]; then
     docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --no-deps api worker miniapp caddy
@@ -202,10 +217,14 @@ if [[ "${SKIP_N8N}" == "true" ]]; then
 else
   step "🐳 2.5/10: Build service images"
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build
-  step "🧠 2.6/10: Import idiom phrase catalog"
-  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
-    -e IDIOM_PHRASES_DIR=/deploy/phrases \
-    api node ./scripts/import-idiom-phrases.mjs </dev/null
+  if [[ "${UPDATE_PHRASES}" == "true" ]]; then
+    step "🧠 2.6/10: Import idiom phrase catalog (--update-phrases)"
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
+      -e IDIOM_PHRASES_DIR=/deploy/phrases \
+      api node ./scripts/import-idiom-phrases.mjs </dev/null
+  else
+    step "⏭️ 2.6/10: Skip idiom phrase import (pass --update-phrases to enable)"
+  fi
   step "🚀 2.7/10: Restart services"
   if [[ "${RESTART_ALL}" == "true" ]]; then
     docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --remove-orphans
