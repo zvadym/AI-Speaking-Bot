@@ -187,17 +187,17 @@ step "🗄️ 2.4/10: Run DB migrations"
 bash "${MIGRATE_SCRIPT}"
 
 if [[ "${SKIP_N8N}" == "true" ]]; then
-  step "🐳 2.5/10: Build api/miniapp images (--skip-n8n)"
-  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build api miniapp
+  step "🐳 2.5/10: Build api/worker/miniapp images (--skip-n8n)"
+  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build api worker miniapp
   step "🧠 2.6/10: Import idiom phrase catalog"
   docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
     -e IDIOM_PHRASES_DIR=/deploy/phrases \
     api node ./scripts/import-idiom-phrases.mjs </dev/null
-  step "🚀 2.7/10: Restart api/miniapp/caddy only (--skip-n8n)"
+  step "🚀 2.7/10: Restart api/worker/miniapp/caddy only (--skip-n8n)"
   if [[ "${RESTART_ALL}" == "true" ]]; then
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --no-deps api miniapp caddy
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --no-deps api worker miniapp caddy
   else
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --no-deps api miniapp caddy
+    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --no-deps api worker miniapp caddy
   fi
 else
   step "🐳 2.5/10: Build service images"
