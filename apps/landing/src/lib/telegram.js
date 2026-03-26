@@ -26,7 +26,6 @@ export function deriveLandingStartPayloadFromQuery(query) {
   const campaign = normalizeStartToken(readFirstQueryValue(query, 'utm_campaign'), 28);
 
   const attributed = !!(source || campaign);
-
   const parts = ['landing'];
   if (source) parts.push(source);
   if (campaign) parts.push(campaign);
@@ -40,7 +39,6 @@ export function deriveLandingStartPayloadFromQuery(query) {
 
 export function persistLandingStartPayloadFromQuery(query) {
   if (!import.meta.client) return;
-
   const { payload, attributed } = deriveLandingStartPayloadFromQuery(query);
   if (!attributed) return;
 
@@ -91,8 +89,16 @@ export function withLandingStartParam(urlRaw, startPayload = 'landing') {
   }
 }
 
-export function getTeacherTelegramUrl(teacher, startPayload = 'landing') {
-  if (!teacher) return '';
-  const direct = (teacher.telegramUrl || '').toString().trim();
-  return withLandingStartParam(direct, startPayload);
+export function getPracticePathStartPayload(practicePath, landingPayload = 'landing') {
+  const slug = normalizeStartToken(practicePath?.slug || '', 24);
+  const base = slug || 'landing';
+  const attributed = normalizeStartToken(landingPayload, 36);
+  if (!attributed || attributed === 'landing') return base;
+  return normalizeStartToken(`${base}_${attributed}`, 64) || base;
+}
+
+export function getPracticePathTelegramUrl(practicePath, landingPayload = 'landing') {
+  if (!practicePath) return '';
+  const direct = (practicePath.telegramUrl || '').toString().trim();
+  return withLandingStartParam(direct, getPracticePathStartPayload(practicePath, landingPayload));
 }

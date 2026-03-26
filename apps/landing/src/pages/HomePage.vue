@@ -11,10 +11,17 @@
 
           <div class="hero-actions reveal-up" style="--revealDelay: 140ms;">
             <button type="button" class="btn primary" @click="openTryModal">{{ t('cta.tryNow') }}</button>
-            <RouterLink class="btn" :to="routeWithLocale('teachers')">{{ t('cta.start') }}</RouterLink>
+            <RouterLink class="btn" :to="routeWithLocale('practice')">{{ t('cta.start') }}</RouterLink>
           </div>
 
           <div class="shot card reveal-up" style="--revealDelay: 220ms;">
+            <div class="hero-shot-head">
+              <RomiAvatar :practice-path="featuredPracticePaths[0] || null" :size="84" loading="eager" fetchpriority="high" alt="Romi" />
+              <div>
+                <div class="shot-title">Romi</div>
+                <div class="muted shot-copy">{{ t('practice.cardSubtitle') }}</div>
+              </div>
+            </div>
             <ChatConversationDemo scenario-id="jobInterview" />
           </div>
         </div>
@@ -23,6 +30,26 @@
     </section>
 
     <section id="features" class="snap-section section">
+      <div class="parallax-bg" aria-hidden="true" />
+      <div class="snap-inner">
+        <div class="container reveal-up">
+          <div class="section-head stacked">
+            <div>
+              <h2 class="h2">{{ t('home.featuredTeachersTitle') }}</h2>
+              <p class="muted">{{ t('home.featuredTeachersSubhead') }}</p>
+            </div>
+            <RouterLink class="btn ghost" :to="routeWithLocale('practice')">{{ t('home.featuredTeachersCta') }}</RouterLink>
+          </div>
+
+          <div v-if="featuredPracticePaths.length" class="grid-3 reveal-up" style="--revealDelay: 120ms;">
+            <PracticePathCard v-for="practicePath in featuredPracticePaths" :key="practicePath.slug" :practice-path="practicePath" />
+          </div>
+        </div>
+        <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
+      </div>
+    </section>
+
+    <section class="snap-section section">
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner">
         <div class="container reveal-up">
@@ -39,26 +66,6 @@
               <h3 class="h3">{{ item.title }}</h3>
               <p class="muted feature-desc">{{ item.desc }}</p>
             </article>
-          </div>
-        </div>
-        <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
-      </div>
-    </section>
-
-    <section class="snap-section section">
-      <div class="parallax-bg" aria-hidden="true" />
-      <div class="snap-inner">
-        <div class="container reveal-up">
-          <div class="section-head stacked">
-            <div>
-              <h2 class="h2">{{ t('home.featuredTeachersTitle') }}</h2>
-              <p class="muted">{{ t('home.featuredTeachersSubhead') }}</p>
-            </div>
-            <RouterLink class="btn ghost" :to="routeWithLocale('teachers')">{{ t('home.featuredTeachersCta') }}</RouterLink>
-          </div>
-
-          <div v-if="featuredTeachers.length" class="grid-3 reveal-up" style="--revealDelay: 120ms;">
-            <TeacherCard v-for="teacher in featuredTeachers" :key="teacher.teacherKey || teacher.slug" :teacher="teacher" />
           </div>
         </div>
         <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
@@ -324,16 +331,17 @@ import { computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import ChatConversationDemo from '../components/ChatConversationDemo.vue';
 import ContactDiscordForm from '../components/ContactDiscordForm.vue';
-import TeacherCard from '../components/TeacherCard.vue';
+import PracticePathCard from '../components/PracticePathCard.vue';
 import HomeFooterMini from '../components/HomeFooterMini.vue';
 import { blogPosts } from '../data/blogPosts.js';
-import { teachers } from '../data/teachers.js';
-import { featuredTeacherKeys } from '../data/featuredTeachers.js';
+import { featuredPracticePathKeys } from '../data/featuredPracticePaths.js';
+import { practicePaths } from '../data/practicePaths.js';
 import { pricing } from '../generated/pricing.js';
 import { normalizeLocale, routeWithLocale, useI18n } from '../i18n.js';
+import RomiAvatar from '../components/RomiAvatar.vue';
 
 const { t, tm, locale } = useI18n();
-const tryTeacherModalOpen = useState('tryTeacherModalOpen', () => false);
+const tryPracticeModalOpen = useState('tryPracticeModalOpen', () => false);
 const billingInterval = useState('pricingBillingInterval', () => 'year');
 const selectedPricingCurrency = useState(
   'pricingCurrency',
@@ -371,18 +379,18 @@ const whyWorksCards = computed(() => {
   }));
 });
 
-const featuredTeachers = computed(() => {
+const featuredPracticePaths = computed(() => {
   const uiLocale = normalizeLocale(locale.value) || 'en';
-  const all = (Array.isArray(teachers) ? teachers : []).filter((teacher) => {
-    const base = normalizeLocale(teacher?.baseLanguage) || '';
+  const all = (Array.isArray(practicePaths) ? practicePaths : []).filter((practicePath) => {
+    const base = normalizeLocale(practicePath?.baseLanguage) || '';
     return base === uiLocale;
   });
 
-  const byKey = new Map(all.map((teacher) => [String(teacher?.teacherKey || '').toLowerCase(), teacher]));
+  const byKey = new Map(all.map((practicePath) => [String(practicePath?.botKey || '').toLowerCase(), practicePath]));
   const seen = new Set();
   const result = [];
 
-  for (const rawKey of Array.isArray(featuredTeacherKeys) ? featuredTeacherKeys : []) {
+  for (const rawKey of Array.isArray(featuredPracticePathKeys) ? featuredPracticePathKeys : []) {
     const key = String(rawKey || '').trim().toLowerCase();
     if (!key || seen.has(key)) continue;
     const match = byKey.get(key);
@@ -392,11 +400,11 @@ const featuredTeachers = computed(() => {
     if (result.length >= 3) return result;
   }
 
-  for (const teacher of all) {
-    const key = String(teacher?.teacherKey || '').toLowerCase();
+  for (const practicePath of all) {
+    const key = String(practicePath?.botKey || '').toLowerCase();
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    result.push(teacher);
+    result.push(practicePath);
     if (result.length >= 3) break;
   }
 
@@ -404,7 +412,7 @@ const featuredTeachers = computed(() => {
 });
 
 function openTryModal() {
-  tryTeacherModalOpen.value = true;
+  tryPracticeModalOpen.value = true;
 }
 
 function normalizeCurrencyCode(raw, fallback = null) {
@@ -765,9 +773,28 @@ watch(
   min-height: 280px;
   height: auto;
   display: grid;
+  gap: 18px;
   place-items: start center;
+  padding: 20px;
   background: var(--surface);
   overflow: hidden;
+}
+
+.hero-shot-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.shot-title {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.shot-copy {
+  margin-top: 4px;
 }
 
 .section {

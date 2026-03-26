@@ -146,11 +146,11 @@ function buildPathByName(name, params = {}) {
   if (name.startsWith('/')) return normalizePath(name);
 
   if (name === 'home') return '/';
-  if (name === 'teachers') return '/teachers';
+  if (name === 'practice') return '/practice';
 
-  if (name === 'teacher') {
+  if (name === 'practice-detail') {
     const slug = (params.slug || '').toString().trim();
-    return slug ? `/teachers/${encodeURIComponent(slug)}` : '/teachers';
+    return slug ? `/practice/${encodeURIComponent(slug)}` : '/practice';
   }
 
   if (name === 'blog-post') {

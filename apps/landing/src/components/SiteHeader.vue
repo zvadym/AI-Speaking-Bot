@@ -106,7 +106,7 @@
       @try="handleDrawerTry"
     />
 
-    <TeacherTryModal v-model:open="tryTeacherModalOpen" />
+    <PracticePathTryModal v-model:open="tryPracticeModalOpen" />
   </header>
 </template>
 
@@ -115,14 +115,14 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router';
 import { useRoute } from 'vue-router';
 import MobileMenuDrawer from './MobileMenuDrawer.vue';
-import TeacherTryModal from './TeacherTryModal.vue';
+import PracticePathTryModal from './PracticePathTryModal.vue';
 import { localizedPath, normalizeLocale, routeWithLocale, stripLocalePrefix, useI18n, supportedLocales } from '../i18n.js';
 
 const { t, locale, setAppLocale } = useI18n();
 const route = useRoute();
 
 const NAV_ITEMS = [
-  { key: 'teachers', type: 'route', labelKey: 'nav.teachers', routeName: 'teachers', primary: true },
+  { key: 'practice', type: 'route', labelKey: 'nav.practice', routeName: 'practice', primary: true },
   { key: 'features', type: 'section', labelKey: 'nav.features', sectionId: 'features', primary: true },
   { key: 'how', type: 'section', labelKey: 'nav.how', sectionId: 'how', primary: true },
   { key: 'pricing', type: 'section', labelKey: 'nav.pricing', sectionId: 'pricing', primary: true },
@@ -138,7 +138,7 @@ let rafId = 0;
 let isScrollBound = false;
 const isLocaleMenuOpen = ref(false);
 const localePickerRef = ref(null);
-const tryTeacherModalOpen = useState('tryTeacherModalOpen', () => false);
+const tryPracticeModalOpen = useState('tryPracticeModalOpen', () => false);
 const mobileMenuOpen = useState('mobileMenuOpen', () => false);
 const LOCALE_FLAGS = {
   en: '🇺🇸',
@@ -155,8 +155,7 @@ const LOCALE_FLAGS = {
 
 const routeSuffix = computed(() => stripLocalePrefix(route.path || '/'));
 const isHomeRoute = computed(() => routeSuffix.value === '/');
-const isTeachersActive = computed(() => routeSuffix.value === '/teachers' || routeSuffix.value.startsWith('/teachers/'));
-const isTeacherProfileRoute = computed(() => /^\/teachers\/[^/]+\/?$/u.test(routeSuffix.value));
+const isPracticeActive = computed(() => routeSuffix.value === '/practice' || routeSuffix.value.startsWith('/practice/'));
 const isBlogRoute = computed(() => routeSuffix.value === '/blog' || routeSuffix.value.startsWith('/blog/'));
 
 function normalizeHash(hash) {
@@ -275,7 +274,7 @@ function toNavPath(item) {
 
 function isItemActive(item) {
   if (!item) return false;
-  if (item.key === 'teachers') return isTeachersActive.value;
+  if (item.key === 'practice') return isPracticeActive.value;
   if (item.key === 'blog') return isBlogRoute.value || activeSection.value === 'blog';
   if (item.type === 'section') return activeSection.value === item.sectionId;
   return false;
@@ -305,9 +304,7 @@ async function switchLocale(nextLocale) {
   const normalized = normalizeLocale(nextLocale);
   if (!normalized || normalized === locale.value) return;
   setAppLocale(normalized);
-  const targetPath = isTeacherProfileRoute.value
-    ? localizedPath('/', normalized)
-    : localizedPath(routeSuffix.value, normalized);
+  const targetPath = localizedPath(routeSuffix.value, normalized);
   await navigateTo(
     {
       path: targetPath,
@@ -321,7 +318,7 @@ async function switchLocale(nextLocale) {
 function openTryModal() {
   closeLocaleMenu();
   mobileMenuOpen.value = false;
-  tryTeacherModalOpen.value = true;
+  tryPracticeModalOpen.value = true;
 }
 
 function openMobileMenu() {
@@ -333,7 +330,7 @@ async function handleDrawerTry() {
   closeLocaleMenu();
   mobileMenuOpen.value = false;
   await nextTick();
-  tryTeacherModalOpen.value = true;
+  tryPracticeModalOpen.value = true;
 }
 
 function openLocaleMenu() {

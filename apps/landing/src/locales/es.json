@@ -9,10 +9,11 @@
     "blog": "Blog",
     "menu": "Menú",
     "about": "Acerca de",
-    "contact": "Contacto"
+    "contact": "Contacto",
+    "practice": "Practice Paths"
   },
   "cta": {
-    "start": "Ver profesores",
+    "start": "Choose your path",
     "try": "TRY",
     "tryNow": "Probar en Telegram",
     "openTelegram": "Abrir en Telegram",
@@ -22,16 +23,16 @@
     "backToTeachers": "Volver a profesores"
   },
   "home": {
-    "headline": "Aprende hablando.",
-    "seoTitle": "AI Language School | Bot de aprendizaje de idiomas en Telegram",
-    "seoDescription": "Practica speaking en Telegram con un tutor de IA. Envía voz o texto, recibe correcciones instantáneas, frases más naturales, apoyo de traducción y sugerencias para continuar.",
-    "subhead": "Practica speaking en Telegram con un tutor de IA: envía voz o texto, recibe correcciones al instante y mantén la conversación con sugerencias útiles.",
-    "tryModalTitle": "Elige un profesor",
-    "tryModalSubhead": "Elige un profesor para abrir su chat en Telegram.",
+    "headline": "Practice with Romi.",
+    "seoTitle": "Practice Languages with Romi | Speak in Telegram",
+    "seoDescription": "Practice speaking in Telegram with Romi. Choose a language path, send voice or text, get clear corrections, and keep the conversation moving every day.",
+    "subhead": "One friendly speaking companion. Multiple language paths. Speak every day in Telegram.",
+    "tryModalTitle": "Choose your practice path",
+    "tryModalSubhead": "Pick a language path to start practicing with Romi in Telegram.",
     "meetTeachers": "Ver profesores",
     "chat": {
       "you": "Tú",
-      "bot": "Bot profesor",
+      "bot": "Romi",
       "tip": "Corrección",
       "youMsg": "Quiero hablar inglés con más confianza, pero no sé qué decir.",
       "botMsg": "Perfecto: cuéntame tu día en 5 frases. Te ayudo a sonar más natural.",
@@ -39,11 +40,11 @@
     },
     "chatDemo": {
       "you": "Tú",
-      "bot": "Bot profesor",
+      "bot": "Romi",
       "userAudio": "Mensaje de voz",
       "transcriptLabel": "Transcripción",
       "botAudio": "Respuesta de voz",
-      "botTranscriptLabel": "Transcripción del profesor",
+      "botTranscriptLabel": "Romi transcript",
       "statusListening": "Perfecto — escuchando",
       "statusPreparing": "Preparando la respuesta",
       "translateAction": "Traducir",
@@ -82,16 +83,16 @@
     },
     "teachersTitle": "Profesores",
     "teachersDesc": "Cada profesor tiene su propio estilo, idiomas y enfoque.",
-    "featuredTeachersTitle": "Conoce a los profesores",
-    "featuredTeachersSubhead": "Elige un estilo que encaje con tus objetivos y empieza a practicar en Telegram.",
-    "featuredTeachersCta": "Ver todos los profesores",
+    "featuredTeachersTitle": "Choose your practice path",
+    "featuredTeachersSubhead": "Pick the language path that fits your goal and start speaking with Romi in Telegram.",
+    "featuredTeachersCta": "See all practice paths",
     "featuresTitle": "Funciones",
     "featuresSubhead": "Herramientas centradas en voz para mantener la conversación en marcha.",
     "featureCards": {
       "voice": {
         "tag": "Voz",
         "title": "Mensajes de voz",
-        "desc": "Habla de forma natural con audio. El bot transcribe tu mensaje y responde con contexto."
+        "desc": "Speak naturally in audio. Romi transcribes your message and replies with context-aware guidance."
       },
       "translation": {
         "tag": "Traducir",
@@ -106,15 +107,15 @@
       "memory": {
         "tag": "Memoria",
         "title": "Memoria",
-        "desc": "El bot recuerda el contexto de tu conversación para que la práctica sea continua y personalizada."
+        "desc": "Romi remembers your conversation context, so your practice feels continuous and personal over time."
       }
     },
     "howTitle": "Cómo funciona",
     "steps": {
-      "oneTitle": "Elige profesor y nivel",
-      "oneDesc": "Elige un profesor para tu combinación de idiomas y define tu nivel de A1 a C1.",
+      "oneTitle": "Choose your language path",
+      "oneDesc": "Pick the base language and target language you want to practice with Romi.",
       "twoTitle": "Envía un mensaje corto de voz o texto",
-      "twoDesc": "Habla con naturalidad en Telegram. El bot transcribe la voz, lee el contexto y prepara una respuesta enfocada.",
+      "twoDesc": "Speak naturally in Telegram. Romi transcribes voice, reads context, and prepares a targeted response.",
       "threeTitle": "Recibe correcciones que puedes usar de inmediato",
       "threeDesc": "Obtén una versión mejor, feedback claro basado en reglas, ayuda de traducción y pistas para tu siguiente respuesta."
     },
@@ -156,7 +157,7 @@
       "less": "Menos"
     },
     "ctaTry": "Probar en Telegram",
-    "ctaChooseTeacher": "Probar en Telegram",
+    "ctaChooseTeacher": "Start with Romi",
     "tiers": {
       "free": {
         "name": "Free",
@@ -180,7 +181,7 @@
   "about": {
     "title": "Acerca de",
     "p1": "Creamos AI Language School porque queríamos una forma más simple de practicar speaking, sin horarios, llamadas incómodas ni miedo a ser juzgado.",
-    "p2": "Telegram siempre está contigo. Un bot-profesor siempre está listo. Y unos minutos de práctica real cada día valen más que el plan perfecto que nunca empiezas.",
+    "p2": "Telegram is already part of your day. Romi is ready when you are. A few minutes of real speaking practice beats the perfect plan you never start.",
     "bullets": {
       "one": "Practica en un formato de chat familiar",
       "two": "Recibe correcciones suaves y frases mejores",
@@ -192,12 +193,12 @@
     "subhead": "Todo lo que necesitas saber antes de empezar a practicar.",
     "items": [
       {
-        "q": "¿Cómo funciona el bot de idiomas en Telegram?",
-        "a": "Envías un mensaje corto de voz o texto en Telegram, el bot lo analiza y recibes una respuesta corregida y más natural con feedback práctico."
+        "q": "How does practice with Romi work in Telegram?",
+        "a": "You send a short voice or text message in Telegram, Romi reads it, and you receive a corrected, more natural reply plus practical feedback."
       },
       {
-        "q": "¿Se adapta a mi nivel de idioma?",
-        "a": "Sí. Puedes elegir tu nivel (A1, A2, B1, B2, C1), y la profundidad de las correcciones se adapta para que el feedback sea útil y no abrumador."
+        "q": "Does Romi adapt to my language level?",
+        "a": "Yes. You can choose your level, and the depth of corrections adapts so the feedback stays useful and calm."
       },
       {
         "q": "¿Puedo practicar sin reservar clases en vivo?",
@@ -208,8 +209,8 @@
         "a": "Sí. Cada respuesta puede incluir apoyo de traducción y sugerencias de seguimiento para que respondas más rápido y mantengas la conversación."
       },
       {
-        "q": "¿El bot recuerda mi progreso?",
-        "a": "Sí. El bot guarda tu nivel y el contexto de conversación para que la práctica siga siendo personalizada con el tiempo."
+        "q": "Does Romi remember my progress?",
+        "a": "Yes. Romi keeps your level and conversation context, so your practice stays personalized over time."
       },
       {
         "q": "¿Hay un plan gratuito?",
@@ -283,5 +284,16 @@
     "hi": "Hindi",
     "ar": "Árabe",
     "id": "Indonesio"
+  },
+  "practice": {
+    "title": "Practice Paths",
+    "subhead": "Choose a language path and start your next conversation with Romi in Telegram.",
+    "basePathsHeading": "{language} speakers",
+    "basePathsSubhead": "Practice {targets} with Romi from a {language} base.",
+    "basePathsSubheadFallback": "Choose a path and start speaking with Romi from {language}.",
+    "empty": "No practice paths available yet.",
+    "cardSubtitle": "Practice real conversations with Romi",
+    "cardDescription": "Speak daily, get corrections, build confidence.",
+    "cardCta": "Start with Romi →"
   }
 }

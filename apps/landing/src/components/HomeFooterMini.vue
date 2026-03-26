@@ -7,7 +7,7 @@
       </div>
 
       <nav class="links" aria-label="Footer links">
-        <RouterLink :to="routeWithLocale('teachers')">{{ t('nav.teachers') }}</RouterLink>
+        <RouterLink :to="routeWithLocale('practice')">{{ t('nav.practice') }}</RouterLink>
         <RouterLink :to="routeWithLocale('home', {}, { hash: '#pricing' })">{{ t('nav.pricing') }}</RouterLink>
         <RouterLink :to="routeWithLocale('home', {}, { hash: '#blog' })">{{ t('nav.blog') }}</RouterLink>
         <RouterLink :to="routeWithLocale('home', {}, { hash: '#about' })">{{ t('nav.about') }}</RouterLink>
