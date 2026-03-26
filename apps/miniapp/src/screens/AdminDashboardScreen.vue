@@ -494,6 +494,16 @@
             :data="replyKeyboardClicksSeries"
             :series="replyKeyboardSeriesConfig"
           />
+
+          <AdminChart
+            title="Helper button clicks by day"
+            subtitle="Translate, vocab, and follow-up hints clicks"
+            kind="bar"
+            :stacked="true"
+            x-labels="all"
+            :data="xpButtonClicksSeries"
+            :series="xpButtonSeriesConfig"
+          />
         </div>
       </section>
 
@@ -2124,6 +2134,7 @@ const replyKeyboardSummary = ref({
   total_clicks: 0,
   unique_users: 0
 });
+const xpButtonClicksSeries = ref([]);
 const topicUsageSeries = ref([]);
 const topicUsageSeriesConfig = ref([]);
 const activeUsersSeries = ref([]);
@@ -2261,6 +2272,18 @@ const replyKeyboardActionMeta = {
   reply_kbd_xp_click: { label: 'XP', color: 'rgba(103, 78, 167, 0.88)', order: 3 }
 };
 const replyKeyboardSeriesConfig = Object.entries(replyKeyboardActionMeta)
+  .sort((a, b) => a[1].order - b[1].order)
+  .map(([key, meta]) => ({
+    key,
+    label: meta.label,
+    color: meta.color
+  }));
+const xpButtonEventMeta = {
+  btn_translation: { label: 'Translate', color: 'rgba(38, 84, 124, 0.88)', order: 0 },
+  btn_vocab: { label: 'Vocab', color: 'rgba(199, 90, 36, 0.88)', order: 1 },
+  btn_hints: { label: 'What to say next', color: 'rgba(92, 140, 86, 0.9)', order: 2 }
+};
+const xpButtonSeriesConfig = Object.entries(xpButtonEventMeta)
   .sort((a, b) => a[1].order - b[1].order)
   .map(([key, meta]) => ({
     key,
@@ -4682,6 +4705,7 @@ async function refreshAnalytics() {
       actionTotals,
       replyKeyboardClicks,
       replyKeyboardTotals,
+      xpButtonClicks,
       actionFunnelLast30Days,
       actionFunnelLast7Days,
       topicsByDay,
@@ -4707,6 +4731,7 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/reply-keyboard-clicks-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/reply-keyboard-click-totals', { query: q, headers }),
+      apiJson(props.apiBase, '/admin/metrics/xp-button-clicks-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last30Days, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last7Days, headers }),
       apiJson(props.apiBase, '/admin/metrics/topics-by-day', { query: q, headers }),
@@ -4748,6 +4773,7 @@ async function refreshAnalytics() {
       unique_users: 0
     };
     replyKeyboardTotalsSeries.value = Array.isArray(replyKeyboardTotals?.series) ? replyKeyboardTotals.series : [];
+    xpButtonClicksSeries.value = Array.isArray(xpButtonClicks?.series) ? xpButtonClicks.series : [];
     actionFunnelLast30DaysSeries.value = buildActionFunnelSeries(actionFunnelLast30Days?.series);
     actionFunnelLast7DaysSeries.value = buildActionFunnelSeries(actionFunnelLast7Days?.series);
     const topicsByDayRawRows = Array.isArray(topicsByDay?.series) ? topicsByDay.series : [];
@@ -5289,6 +5315,7 @@ function clearPassword() {
     total_clicks: 0,
     unique_users: 0
   };
+  xpButtonClicksSeries.value = [];
 }
 
 function usersNextPage() {

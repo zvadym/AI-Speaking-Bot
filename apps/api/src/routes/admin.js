@@ -44,6 +44,7 @@ const REPLY_KEYBOARD_ACTION_TYPES = [
   'reply_kbd_voice_click',
   'reply_kbd_xp_click'
 ];
+const XP_BUTTON_EVENT_TYPES = ['btn_translation', 'btn_vocab', 'btn_hints'];
 const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
 const NOTIFICATION_TASK_TYPES = [
   'onboarding_complete',
@@ -846,6 +847,62 @@ export function createAdminRouter(ctx, helpers) {
        LEFT JOIN earned er USING (day_utc)
        ORDER BY d.day_utc ASC`,
       [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
+    );
+
+    return res.json({
+      tz: 'UTC',
+      from: range.from.toISOString(),
+      to: range.to.toISOString(),
+      payload: range.payload,
+      series: rows
+    });
+  });
+
+  router.get('/admin/metrics/xp-button-clicks-by-day', requireAdmin, async (req, res) => {
+    const range = helpers.parseAdminRange(req);
+    if (!range.ok) return res.status(400).json({ error: range.error });
+    res.set('Cache-Control', 'no-store');
+
+    const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
+    const { rows } = await ctx.pool.query(
+      `WITH params AS (
+         SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
+       ),
+       days AS (
+         SELECT generate_series(
+           date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
+           date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
+           interval '1 day'
+         )::date AS day_utc
+       ),
+       filtered_users AS (
+         SELECT chat_id
+         FROM users
+         WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
+           AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
+       ),
+       counts AS (
+         SELECT
+           date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+           e.event_type,
+           COUNT(*)::int AS count
+         FROM xp_events e
+         JOIN filtered_users u ON u.chat_id = e.chat_id
+         WHERE e.occurred_at >= (SELECT from_ts FROM params)
+           AND e.occurred_at < (SELECT to_ts FROM params)
+           AND e.event_type = ANY($5::text[])
+         GROUP BY 1, 2
+       )
+       SELECT
+         d.day_utc::text AS day,
+         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_translation'), 0)::int AS btn_translation,
+         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_vocab'), 0)::int AS btn_vocab,
+         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_hints'), 0)::int AS btn_hints
+       FROM days d
+       LEFT JOIN counts c USING (day_utc)
+       GROUP BY d.day_utc
+       ORDER BY d.day_utc ASC`,
+      [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, XP_BUTTON_EVENT_TYPES]
     );
 
     return res.json({

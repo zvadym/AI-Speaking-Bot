@@ -518,6 +518,61 @@ test('admin reply keyboard click totals return clicks and unique users', async (
   });
 });
 
+test('admin xp button click metrics return daily click counts', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes("btn_translation") && source.includes('GROUP BY d.day_utc')) {
+      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+      assert.equal(params[1], '2026-03-04T00:00:00.000Z');
+      assert.equal(params[2], null);
+      assert.equal(params[3], null);
+      assert.deepEqual(params[4], ['btn_translation', 'btn_vocab', 'btn_hints']);
+      return {
+        rows: [
+          {
+            day: '2026-03-01',
+            btn_translation: 5,
+            btn_vocab: 2,
+            btn_hints: 3
+          },
+          {
+            day: '2026-03-02',
+            btn_translation: 1,
+            btn_vocab: 4,
+            btn_hints: 0
+          }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in admin xp button clicks by day test: ${source.slice(0, 180)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/xp-button-clicks-by-day?from=2026-03-01&to=2026-03-04',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
+    assert.deepEqual(response.json.series, [
+      {
+        day: '2026-03-01',
+        btn_translation: 5,
+        btn_vocab: 2,
+        btn_hints: 3
+      },
+      {
+        day: '2026-03-02',
+        btn_translation: 1,
+        btn_vocab: 4,
+        btn_hints: 0
+      }
+    ]);
+  });
+});
+
 test('admin new paid users by day returns first-time paid users split by first associated bot', async () => {
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('first_paid_users AS') && source.includes('CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots')) {
