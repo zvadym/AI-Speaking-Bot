@@ -1,5 +1,4 @@
 import { practicePaths, getPracticePathByLegacyAlias, getPracticePathBySlug } from './practicePaths.js';
-import { resolveTeacherRouteBySlug } from './teacherSlugs.js';
 import { normalizeLocale } from '../i18n.js';
 
 function normalizeSlug(input) {
@@ -37,21 +36,8 @@ export function resolvePracticePathRouteBySlug(requestedLocale, slugInput) {
       isCanonicalRequest: requested === canonicalLocale && slug === normalizeSlug(direct.slug)
     };
   }
-
-  const legacyTeacherResolution = resolveTeacherRouteBySlug(requested, slug);
-  if (!legacyTeacherResolution?.teacher?.slug) return null;
-
-  const fallback = getPracticePathBySlug(legacyTeacherResolution.teacher.slug);
-  if (!fallback) return null;
-
-  const canonicalLocale = getPracticePathCanonicalLocale(fallback);
-  const canonicalPath = getPracticePathCanonicalPath(fallback);
-  return {
-    practicePath: fallback,
-    canonicalLocale,
-    canonicalPath,
-    isCanonicalRequest: false
-  };
+ 
+  return null;
 }
 
 export function getAlternatePracticePaths(currentPracticePath) {

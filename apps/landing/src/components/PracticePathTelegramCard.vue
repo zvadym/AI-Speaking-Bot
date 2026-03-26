@@ -7,7 +7,7 @@
     :aria-label="ariaLabel"
     @click="emit('choose')"
   >
-    <RomiAvatar :practice-path="practicePath" :size="68" :alt="avatarAlt" />
+    <div class="flag-badge" :aria-label="title">{{ flag }}</div>
 
     <div class="info">
       <div class="title-row">
@@ -22,15 +22,12 @@
           <span>{{ t('practice.cardCta') }}</span>
         </span>
       </div>
-      <p class="muted subtitle">{{ t('practice.cardSubtitle') }}</p>
-      <p class="muted description">{{ practicePath?.description || t('practice.cardDescription') }}</p>
     </div>
   </a>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import RomiAvatar from './RomiAvatar.vue';
 import { getLandingStartPayload, getPracticePathTelegramUrl } from '../lib/telegram.js';
 import { useI18n } from '../i18n.js';
 
@@ -43,19 +40,26 @@ const emit = defineEmits(['choose']);
 const route = useRoute();
 const { t } = useI18n();
 
-const title = computed(() => `${t(`languageName.${props.practicePath.baseLanguage}`)} → ${t(`languageName.${props.practicePath.targetLanguage}`)}`);
+const title = computed(() => t(`languageName.${props.practicePath.targetLanguage}`));
 const startPayload = computed(() => getLandingStartPayload(route.query));
 const telegramUrl = computed(() => getPracticePathTelegramUrl(props.practicePath, startPayload.value));
-const avatarAlt = computed(() => `Romi for ${title.value}`);
 const ariaLabel = computed(() => `${t('practice.cardCta')}: ${title.value}`);
+const flag = computed(() => {
+  const code = (props.practicePath?.targetLanguage || '').toString().trim().toLowerCase();
+  const flagsByLanguage = {
+    ar: '🇸🇦', de: '🇩🇪', en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷', hi: '🇮🇳', id: '🇮🇩',
+    it: '🇮🇹', pl: '🇵🇱', pt: '🇵🇹', ru: '🇷🇺', tr: '🇹🇷', ua: '🇺🇦', uk: '🇺🇦'
+  };
+  return flagsByLanguage[code] || '🏳️';
+});
 </script>
 
 <style scoped>
 .practice-card {
   display: grid;
-  grid-template-columns: 68px 1fr;
-  gap: 16px 18px;
-  align-items: start;
+  grid-template-columns: 52px 1fr;
+  gap: 12px 16px;
+  align-items: center;
   padding: 18px;
   transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
@@ -78,6 +82,18 @@ const ariaLabel = computed(() => `${t('practice.cardCta')}: ${title.value}`);
   min-width: 0;
 }
 
+.flag-badge {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 78%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--fg) 10%, transparent);
+  font-size: 28px;
+}
+
 .title-row {
   display: flex;
   align-items: center;
@@ -87,22 +103,6 @@ const ariaLabel = computed(() => `${t('practice.cardCta')}: ${title.value}`);
 
 .title {
   margin: 0;
-}
-
-.subtitle,
-.description {
-  margin: 0;
-  line-height: 1.5;
-}
-
-.subtitle {
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-.description {
-  margin-top: 6px;
-  font-size: 14px;
 }
 
 .tg-pill {

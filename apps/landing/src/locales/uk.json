@@ -10,10 +10,10 @@
     "menu": "Меню",
     "about": "Про нас",
     "contact": "Контакт",
-    "practice": "Practice Paths"
+    "practice": "Маршрути практики"
   },
   "cta": {
-    "start": "Choose your path",
+    "start": "Оберіть свій маршрут",
     "try": "TRY",
     "tryNow": "Спробувати в Telegram",
     "openTelegram": "Відкрити в Telegram",
@@ -23,12 +23,12 @@
     "backToTeachers": "Назад до викладачів"
   },
   "home": {
-    "headline": "Practice with Romi.",
+    "headline": "Практикуйтеся з Romi.",
     "seoTitle": "Practice Languages with Romi | Speak in Telegram",
     "seoDescription": "Practice speaking in Telegram with Romi. Choose a language path, send voice or text, get clear corrections, and keep the conversation moving every day.",
-    "subhead": "One friendly speaking companion. Multiple language paths. Speak every day in Telegram.",
-    "tryModalTitle": "Choose your practice path",
-    "tryModalSubhead": "Pick a language path to start practicing with Romi in Telegram.",
+    "subhead": "Одна дружня співрозмовниця. Кілька мовних маршрутів. Говоріть щодня в Telegram.",
+    "tryModalTitle": "Оберіть маршрут практики",
+    "tryModalSubhead": "Оберіть мовний маршрут і почніть практику з Romi у Telegram.",
     "meetTeachers": "Познайомитися з викладачами",
     "chat": {
       "you": "Ти",
@@ -83,16 +83,16 @@
     },
     "teachersTitle": "Викладачі",
     "teachersDesc": "Кожен викладач має свій стиль, мови та фокус.",
-    "featuredTeachersTitle": "Choose your practice path",
+    "featuredTeachersTitle": "Оберіть маршрут практики",
     "featuredTeachersSubhead": "Pick the language path that fits your goal and start speaking with Romi in Telegram.",
-    "featuredTeachersCta": "See all practice paths",
+    "featuredTeachersCta": "Переглянути всі маршрути практики",
     "featuresTitle": "Функції",
     "featuresSubhead": "Голосові інструменти, що допомагають тримати розмову в русі.",
     "featureCards": {
       "voice": {
         "tag": "Голос",
         "title": "Голосові повідомлення",
-        "desc": "Speak naturally in audio. Romi transcribes your message and replies with context-aware guidance."
+        "desc": "Говоріть природно голосом. Romi розпізнає ваше повідомлення й відповідає з урахуванням контексту."
       },
       "translation": {
         "tag": "Переклад",
@@ -107,15 +107,15 @@
       "memory": {
         "tag": "Пам’ять",
         "title": "Пам’ять",
-        "desc": "Romi remembers your conversation context, so your practice feels continuous and personal over time."
+        "desc": "Romi пам’ятає контекст розмови, тому практика з часом відчувається безперервною та особистою."
       }
     },
     "howTitle": "Як це працює",
     "steps": {
-      "oneTitle": "Choose your language path",
-      "oneDesc": "Pick the base language and target language you want to practice with Romi.",
+      "oneTitle": "Оберіть мовний маршрут",
+      "oneDesc": "Оберіть базову мову та цільову мову, яку хочете практикувати з Romi.",
       "twoTitle": "Надішли коротке голосове або текст",
-      "twoDesc": "Speak naturally in Telegram. Romi transcribes voice, reads context, and prepares a targeted response.",
+      "twoDesc": "Говоріть природно в Telegram. Romi розпізнає голос, розуміє контекст і готує точну відповідь.",
       "threeTitle": "Отримай виправлення, які легко застосувати",
       "threeDesc": "Ти отримуєш кращу версію фрази, чіткі пояснення правил, переклад і підказки для наступної відповіді."
     },
@@ -157,7 +157,7 @@
       "less": "Менше"
     },
     "ctaTry": "Спробувати в Telegram",
-    "ctaChooseTeacher": "Start with Romi",
+    "ctaChooseTeacher": "Почати з Romi",
     "tiers": {
       "free": {
         "name": "Free",
@@ -181,7 +181,7 @@
   "about": {
     "title": "Про нас",
     "p1": "Ми створили AI Language School, бо хотіли простіший спосіб практикувати говоріння — без розкладів, незручних дзвінків і страху осуду.",
-    "p2": "Telegram is already part of your day. Romi is ready when you are. A few minutes of real speaking practice beats the perfect plan you never start.",
+    "p2": "Telegram уже є частиною вашого дня. Romi готова, коли готові ви. Кілька хвилин справжньої розмовної практики кращі за ідеальний план, який ви так і не почнете.",
     "bullets": {
       "one": "Практика у знайомому форматі чату",
       "two": "Делікатні виправлення і кращі формулювання",
@@ -193,12 +193,12 @@
     "subhead": "Коротко про те, як усе працює перед стартом.",
     "items": [
       {
-        "q": "How does practice with Romi work in Telegram?",
-        "a": "You send a short voice or text message in Telegram, Romi reads it, and you receive a corrected, more natural reply plus practical feedback."
+        "q": "Як працює практика з Romi у Telegram?",
+        "a": "Ви надсилаєте коротке голосове або текстове повідомлення в Telegram, Romi його читає, а ви отримуєте виправлену, природнішу відповідь і практичний фідбек."
       },
       {
-        "q": "Does Romi adapt to my language level?",
-        "a": "Yes. You can choose your level, and the depth of corrections adapts so the feedback stays useful and calm."
+        "q": "Чи підлаштовується Romi під мій рівень мови?",
+        "a": "Так. Ви можете обрати свій рівень, а глибина виправлень підлаштовується так, щоб фідбек залишався корисним і спокійним."
       },
       {
         "q": "Чи потрібно бронювати дзвінки або уроки за розкладом?",
@@ -209,8 +209,8 @@
         "a": "Так. Для відповідей доступні переклад і підказки, що сказати далі, щоб легше підтримувати діалог."
       },
       {
-        "q": "Does Romi remember my progress?",
-        "a": "Yes. Romi keeps your level and conversation context, so your practice stays personalized over time."
+        "q": "Чи пам’ятає Romi мій прогрес?",
+        "a": "Так. Romi зберігає ваш рівень і контекст розмови, тож практика з часом лишається персоналізованою."
       },
       {
         "q": "Чи є безкоштовний план?",
@@ -286,14 +286,14 @@
     "id": "Індонезійська"
   },
   "practice": {
-    "title": "Practice Paths",
-    "subhead": "Choose a language path and start your next conversation with Romi in Telegram.",
-    "basePathsHeading": "{language} speakers",
-    "basePathsSubhead": "Practice {targets} with Romi from a {language} base.",
-    "basePathsSubheadFallback": "Choose a path and start speaking with Romi from {language}.",
-    "empty": "No practice paths available yet.",
-    "cardSubtitle": "Practice real conversations with Romi",
-    "cardDescription": "Speak daily, get corrections, build confidence.",
-    "cardCta": "Start with Romi →"
+    "title": "Маршрути практики",
+    "subhead": "Оберіть мовний маршрут і почніть свою наступну розмову з Romi у Telegram.",
+    "basePathsHeading": "Носії {language}",
+    "basePathsSubhead": "Практикуйте {targets} з Romi, спираючись на {language}.",
+    "basePathsSubheadFallback": "Оберіть маршрут і почніть говорити з Romi, спираючись на {language}.",
+    "empty": "Маршрути практики поки недоступні.",
+    "cardSubtitle": "Практикуйте реальні розмови з Romi",
+    "cardDescription": "Говоріть щодня, отримуйте виправлення та зміцнюйте впевненість.",
+    "cardCta": "Почати з Romi →"
   }
 }

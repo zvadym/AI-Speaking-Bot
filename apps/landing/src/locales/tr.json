@@ -10,10 +10,10 @@
     "menu": "Menü",
     "about": "Hakkımızda",
     "contact": "İletişim",
-    "practice": "Practice Paths"
+    "practice": "Pratik yolları"
   },
   "cta": {
-    "start": "Choose your path",
+    "start": "Yolunu seç",
     "try": "DENE",
     "tryNow": "Telegram'da dene",
     "openTelegram": "Telegram'da aç",
@@ -23,12 +23,12 @@
     "backToTeachers": "Öğretmenlere dön"
   },
   "home": {
-    "headline": "Practice with Romi.",
+    "headline": "Romi ile pratik yap.",
     "seoTitle": "Practice Languages with Romi | Speak in Telegram",
     "seoDescription": "Practice speaking in Telegram with Romi. Choose a language path, send voice or text, get clear corrections, and keep the conversation moving every day.",
-    "subhead": "One friendly speaking companion. Multiple language paths. Speak every day in Telegram.",
-    "tryModalTitle": "Choose your practice path",
-    "tryModalSubhead": "Pick a language path to start practicing with Romi in Telegram.",
+    "subhead": "Tek bir samimi konuşma arkadaşı. Birden fazla dil yolu. Telegram’da her gün konuş.",
+    "tryModalTitle": "Pratik yolunu seç",
+    "tryModalSubhead": "Bir dil yolu seç ve Telegram’da Romi ile pratik yapmaya başla.",
     "meetTeachers": "Öğretmenleri gör",
     "chat": {
       "you": "Sen",
@@ -83,16 +83,16 @@
     },
     "teachersTitle": "Öğretmenler",
     "teachersDesc": "Her öğretmenin kendi stili, dilleri ve odak alanı vardır.",
-    "featuredTeachersTitle": "Choose your practice path",
+    "featuredTeachersTitle": "Pratik yolunu seç",
     "featuredTeachersSubhead": "Pick the language path that fits your goal and start speaking with Romi in Telegram.",
-    "featuredTeachersCta": "See all practice paths",
+    "featuredTeachersCta": "Tüm pratik yollarını gör",
     "featuresTitle": "Özellikler",
     "featuresSubhead": "Konuşmayı akışta tutan voice-first araçlar.",
     "featureCards": {
       "voice": {
         "tag": "Ses",
         "title": "Sesli mesajlar",
-        "desc": "Speak naturally in audio. Romi transcribes your message and replies with context-aware guidance."
+        "desc": "Sesli olarak doğal şekilde konuş. Romi mesajını yazıya döker ve bağlama uygun yönlendirmeyle yanıt verir."
       },
       "translation": {
         "tag": "Çeviri",
@@ -107,15 +107,15 @@
       "memory": {
         "tag": "Hafıza",
         "title": "Hafıza",
-        "desc": "Romi remembers your conversation context, so your practice feels continuous and personal over time."
+        "desc": "Romi konuşma bağlamını hatırlar, böylece pratiğin zamanla kesintisiz ve kişisel hissettirir."
       }
     },
     "howTitle": "Nasıl çalışır",
     "steps": {
-      "oneTitle": "Choose your language path",
-      "oneDesc": "Pick the base language and target language you want to practice with Romi.",
+      "oneTitle": "Dil yolunu seç",
+      "oneDesc": "Romi ile çalışmak istediğin ana dili ve hedef dili seç.",
       "twoTitle": "Kısa bir sesli ya da yazılı mesaj gönder",
-      "twoDesc": "Speak naturally in Telegram. Romi transcribes voice, reads context, and prepares a targeted response.",
+      "twoDesc": "Telegram’da doğal şekilde konuş. Romi sesini yazıya döker, bağlamı anlar ve hedefli bir yanıt hazırlar.",
       "threeTitle": "Hemen kullanabileceğin düzeltmeler al",
       "threeDesc": "Daha iyi bir versiyon, net kural bazlı geri bildirim, çeviri desteği ve bir sonraki cevabın için ipuçları al."
     },
@@ -157,7 +157,7 @@
       "less": "Daha az"
     },
     "ctaTry": "Telegram'da dene",
-    "ctaChooseTeacher": "Start with Romi",
+    "ctaChooseTeacher": "Romi ile başla",
     "tiers": {
       "free": {
         "name": "Free",
@@ -181,7 +181,7 @@
   "about": {
     "title": "Hakkımızda",
     "p1": "AI Language School'u kurduk çünkü konuşma pratiği yapmanın daha basit bir yolunu istedik: program ayarlamadan, rahatsız edici görüşmeler olmadan ve yargılanma korkusu yaşamadan.",
-    "p2": "Telegram is already part of your day. Romi is ready when you are. A few minutes of real speaking practice beats the perfect plan you never start.",
+    "p2": "Telegram zaten gününün bir parçası. Sen hazır olduğunda Romi de hazır. Birkaç dakikalık gerçek konuşma pratiği, hiç başlamadığın mükemmel plandan daha iyidir.",
     "bullets": {
       "one": "Alışık olduğun sohbet formatında pratik yap",
       "two": "Nazik düzeltmeler ve daha iyi ifadeler al",
@@ -193,12 +193,12 @@
     "subhead": "Pratik yapmaya başlamadan önce bilmen gereken her şey.",
     "items": [
       {
-        "q": "How does practice with Romi work in Telegram?",
-        "a": "You send a short voice or text message in Telegram, Romi reads it, and you receive a corrected, more natural reply plus practical feedback."
+        "q": "Telegram’da Romi ile pratik nasıl çalışır?",
+        "a": "Telegram’da kısa bir sesli ya da yazılı mesaj gönderirsin, Romi bunu okur ve sana düzeltilmiş, daha doğal bir yanıtla birlikte pratik geri bildirim verir."
       },
       {
-        "q": "Does Romi adapt to my language level?",
-        "a": "Yes. You can choose your level, and the depth of corrections adapts so the feedback stays useful and calm."
+        "q": "Romi benim dil seviyeme uyum sağlar mı?",
+        "a": "Evet. Seviyeni seçebilirsin ve düzeltmelerin derinliği, geri bildirim yararlı ve sakin kalacak şekilde uyarlanır."
       },
       {
         "q": "Canlı ders rezerve etmeden pratik yapabilir miyim?",
@@ -209,8 +209,8 @@
         "a": "Evet. Her cevapta çeviri desteği ve konuşmayı sürdürmene yardım eden devam önerileri bulunabilir."
       },
       {
-        "q": "Does Romi remember my progress?",
-        "a": "Yes. Romi keeps your level and conversation context, so your practice stays personalized over time."
+        "q": "Romi ilerlememi hatırlar mı?",
+        "a": "Evet. Romi seviyeni ve konuşma bağlamını hatırlar, böylece pratiğin zamanla kişisel kalır."
       },
       {
         "q": "Ücretsiz plan var mı?",
@@ -286,14 +286,14 @@
     "id": "Endonezce"
   },
   "practice": {
-    "title": "Practice Paths",
-    "subhead": "Choose a language path and start your next conversation with Romi in Telegram.",
-    "basePathsHeading": "{language} speakers",
-    "basePathsSubhead": "Practice {targets} with Romi from a {language} base.",
-    "basePathsSubheadFallback": "Choose a path and start speaking with Romi from {language}.",
-    "empty": "No practice paths available yet.",
-    "cardSubtitle": "Practice real conversations with Romi",
-    "cardDescription": "Speak daily, get corrections, build confidence.",
-    "cardCta": "Start with Romi →"
+    "title": "Pratik yolları",
+    "subhead": "Bir dil yolu seç ve Telegram’da Romi ile bir sonraki konuşmana başla.",
+    "basePathsHeading": "{language} konuşanlar",
+    "basePathsSubhead": "{language} temelinden Romi ile {targets} pratiği yap.",
+    "basePathsSubheadFallback": "Bir yol seç ve {language} temelinden Romi ile konuşmaya başla.",
+    "empty": "Henüz kullanılabilir pratik yolu yok.",
+    "cardSubtitle": "Romi ile gerçek konuşmalar pratiği yap",
+    "cardDescription": "Her gün konuş, düzeltmeler al ve özgüven kazan.",
+    "cardCta": "Romi ile başla →"
   }
 }

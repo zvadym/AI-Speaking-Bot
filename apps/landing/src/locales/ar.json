@@ -10,10 +10,10 @@
     "menu": "القائمة",
     "about": "من نحن",
     "contact": "التواصل",
-    "practice": "Practice Paths"
+    "practice": "مسارات التدرّب"
   },
   "cta": {
-    "start": "Choose your path",
+    "start": "اختر مسارك",
     "try": "جرّب",
     "tryNow": "جرّب في Telegram",
     "openTelegram": "افتح في Telegram",
@@ -23,12 +23,12 @@
     "backToTeachers": "العودة إلى المعلمين"
   },
   "home": {
-    "headline": "Practice with Romi.",
+    "headline": "تدرّب مع رومي.",
     "seoTitle": "Practice Languages with Romi | Speak in Telegram",
     "seoDescription": "Practice speaking in Telegram with Romi. Choose a language path, send voice or text, get clear corrections, and keep the conversation moving every day.",
-    "subhead": "One friendly speaking companion. Multiple language paths. Speak every day in Telegram.",
-    "tryModalTitle": "Choose your practice path",
-    "tryModalSubhead": "Pick a language path to start practicing with Romi in Telegram.",
+    "subhead": "رفيقة محادثة ودودة واحدة. مسارات لغوية متعددة. تحدّث كل يوم عبر تيليجرام.",
+    "tryModalTitle": "اختر مسار التدرّب",
+    "tryModalSubhead": "اختر مساراً لغوياً وابدأ التدرّب مع رومي في تيليجرام.",
     "meetTeachers": "شاهد المعلمين",
     "chat": {
       "you": "أنت",
@@ -83,16 +83,16 @@
     },
     "teachersTitle": "المعلمون",
     "teachersDesc": "لكل معلّم أسلوبه ولغاته وتركيزه الخاص.",
-    "featuredTeachersTitle": "Choose your practice path",
+    "featuredTeachersTitle": "اختر مسار التدرّب",
     "featuredTeachersSubhead": "Pick the language path that fits your goal and start speaking with Romi in Telegram.",
-    "featuredTeachersCta": "See all practice paths",
+    "featuredTeachersCta": "عرض كل مسارات التدرّب",
     "featuresTitle": "المزايا",
     "featuresSubhead": "أدوات voice-first تُبقي المحادثة مستمرة.",
     "featureCards": {
       "voice": {
         "tag": "صوت",
         "title": "رسائل صوتية",
-        "desc": "Speak naturally in audio. Romi transcribes your message and replies with context-aware guidance."
+        "desc": "تحدّث طبيعياً بالصوت. تقوم رومي بتفريغ رسالتك والرد بإرشاد مناسب للسياق."
       },
       "translation": {
         "tag": "ترجمة",
@@ -107,15 +107,15 @@
       "memory": {
         "tag": "ذاكرة",
         "title": "الذاكرة",
-        "desc": "Romi remembers your conversation context, so your practice feels continuous and personal over time."
+        "desc": "تتذكر رومي سياق محادثتك، لذلك يبدو التدرّب متصلاً وشخصياً مع الوقت."
       }
     },
     "howTitle": "كيف يعمل",
     "steps": {
-      "oneTitle": "Choose your language path",
-      "oneDesc": "Pick the base language and target language you want to practice with Romi.",
+      "oneTitle": "اختر مسارك اللغوي",
+      "oneDesc": "اختر اللغة الأساسية واللغة الهدف التي تريد التدرّب عليها مع رومي.",
       "twoTitle": "أرسل رسالة صوتية أو نصية قصيرة",
-      "twoDesc": "Speak naturally in Telegram. Romi transcribes voice, reads context, and prepares a targeted response.",
+      "twoDesc": "تحدّث بشكل طبيعي في تيليجرام. تقوم رومي بتفريغ الرسائل الصوتية، وفهم السياق، وإعداد رد مناسب.",
       "threeTitle": "احصل على تصحيحات يمكنك استخدامها فوراً",
       "threeDesc": "احصل على نسخة أفضل، وملاحظات واضحة مبنية على القواعد، ودعم ترجمة، وأفكار لردك التالي."
     },
@@ -157,7 +157,7 @@
       "less": "أقل"
     },
     "ctaTry": "جرّب في Telegram",
-    "ctaChooseTeacher": "Start with Romi",
+    "ctaChooseTeacher": "ابدأ مع رومي",
     "tiers": {
       "free": {
         "name": "Free",
@@ -181,7 +181,7 @@
   "about": {
     "title": "من نحن",
     "p1": "أنشأنا AI Language School لأننا أردنا طريقة أبسط لممارسة التحدث من دون جداول أو مكالمات محرجة أو خوف من التقييم.",
-    "p2": "Telegram is already part of your day. Romi is ready when you are. A few minutes of real speaking practice beats the perfect plan you never start.",
+    "p2": "تيليجرام جزء من يومك بالفعل. رومي جاهزة عندما تكون أنت جاهزاً. بضع دقائق من التدرّب الحقيقي على التحدث أفضل من خطة مثالية لا تبدأها أبداً.",
     "bullets": {
       "one": "تدرّب داخل صيغة دردشة مألوفة",
       "two": "احصل على تصحيحات لطيفة وصياغة أفضل",
@@ -193,12 +193,12 @@
     "subhead": "كل ما تحتاج إلى معرفته قبل أن تبدأ التدريب.",
     "items": [
       {
-        "q": "How does practice with Romi work in Telegram?",
-        "a": "You send a short voice or text message in Telegram, Romi reads it, and you receive a corrected, more natural reply plus practical feedback."
+        "q": "كيف يعمل التدرّب مع رومي في تيليجرام؟",
+        "a": "ترسل رسالة صوتية أو نصية قصيرة في تيليجرام، فتقرأها رومي وتعيد لك رداً مصححاً وأكثر طبيعية مع ملاحظات عملية."
       },
       {
-        "q": "Does Romi adapt to my language level?",
-        "a": "Yes. You can choose your level, and the depth of corrections adapts so the feedback stays useful and calm."
+        "q": "هل تتكيف رومي مع مستواي اللغوي؟",
+        "a": "نعم. يمكنك اختيار مستواك، وعمق التصحيحات يتكيف ليبقى مفيداً وهادئاً."
       },
       {
         "q": "هل يمكنني التدرب من دون حجز دروس مباشرة؟",
@@ -209,8 +209,8 @@
         "a": "نعم. يمكن أن يتضمن كل رد دعماً للترجمة وخيارات متابعة تساعدك على الرد بسرعة والاستمرار في الحوار."
       },
       {
-        "q": "Does Romi remember my progress?",
-        "a": "Yes. Romi keeps your level and conversation context, so your practice stays personalized over time."
+        "q": "هل تتذكر رومي تقدمي؟",
+        "a": "نعم. تحتفظ رومي بمستواك وسياق المحادثة، لذلك يبقى التدرّب مخصصاً لك مع الوقت."
       },
       {
         "q": "هل توجد خطة مجانية؟",
@@ -286,14 +286,14 @@
     "id": "الإندونيسية"
   },
   "practice": {
-    "title": "Practice Paths",
-    "subhead": "Choose a language path and start your next conversation with Romi in Telegram.",
-    "basePathsHeading": "{language} speakers",
-    "basePathsSubhead": "Practice {targets} with Romi from a {language} base.",
-    "basePathsSubheadFallback": "Choose a path and start speaking with Romi from {language}.",
-    "empty": "No practice paths available yet.",
-    "cardSubtitle": "Practice real conversations with Romi",
-    "cardDescription": "Speak daily, get corrections, build confidence.",
-    "cardCta": "Start with Romi →"
+    "title": "مسارات التدرّب",
+    "subhead": "اختر مساراً لغوياً وابدأ محادثتك التالية مع رومي في تيليجرام.",
+    "basePathsHeading": "المتحدثون بـ{language}",
+    "basePathsSubhead": "تدرّب على {targets} مع رومي انطلاقاً من {language}.",
+    "basePathsSubheadFallback": "اختر مساراً وابدأ التحدث مع رومي انطلاقاً من {language}.",
+    "empty": "لا توجد مسارات تدرّب متاحة بعد.",
+    "cardSubtitle": "تدرّب على محادثات حقيقية مع رومي",
+    "cardDescription": "تحدّث يومياً، واحصل على تصحيحات، وابنِ ثقتك.",
+    "cardCta": "ابدأ مع رومي ←"
   }
 }
