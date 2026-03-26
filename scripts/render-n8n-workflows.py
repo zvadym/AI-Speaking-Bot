@@ -82,6 +82,10 @@ PROMPT_TEMPLATE_FILES = {
     "model_vocab_prompt": "model_vocab_prompt.md",
 }
 
+PROMPT_PARTIAL_FILES = {
+    "user_facing_tone_rules": REPO_ROOT / "shared" / "llm-prompts" / "user-facing-tone.md",
+}
+
 COMMON_DETECTED_LANGUAGE_CODES = ("en", "de", "it", "uk", "ru")
 
 PLACEHOLDER_RE = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
@@ -195,6 +199,18 @@ def load_prompt_templates(prompts_dir: Path) -> Dict[str, str]:
     return templates
 
 
+def load_prompt_partials() -> Dict[str, str]:
+    partials: Dict[str, str] = {}
+    for key, path in PROMPT_PARTIAL_FILES.items():
+        if not path.exists():
+            raise ValueError(f"Missing prompt partial file: {path}")
+        text = path.read_text(encoding="utf-8").strip()
+        if not text:
+            raise ValueError(f"Prompt partial file is empty: {path}")
+        partials[key] = text
+    return partials
+
+
 def load_openai_models_config(path: Path) -> Dict[str, str]:
     if not path.exists():
         raise ValueError(f"Missing OpenAI models config file: {path}")
@@ -300,6 +316,7 @@ def compose_locale_with_generated_prompts(
     locale: Dict[str, Any],
     prompt_templates: Dict[str, str],
     prompt_context: Dict[str, str],
+    prompt_partials: Dict[str, str],
     *,
     bot_key: str,
 ) -> Dict[str, Any]:
@@ -483,7 +500,9 @@ def compose_locale_with_generated_prompts(
         if tmpl is None:
             raise ValueError(f"Prompt template missing for key: {prompt_key}")
         merged[prompt_key] = render_template_strict(
-            tmpl, prompt_context, template_name=f"{prompt_key} ({bot_key})"
+            tmpl,
+            {**prompt_context, **prompt_partials},
+            template_name=f"{prompt_key} ({bot_key})",
         )
     return merged
 
@@ -880,6 +899,11 @@ def main() -> int:
         print(str(e), file=sys.stderr)
         return 1
     try:
+        prompt_partials = load_prompt_partials()
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    try:
         openai_models = load_openai_models_config(models_config_path)
     except ValueError as e:
         print(str(e), file=sys.stderr)
@@ -938,6 +962,7 @@ def main() -> int:
             locale=locale,
             prompt_templates=prompt_templates,
             prompt_context=prompt_context,
+            prompt_partials=prompt_partials,
             bot_key=bot_key,
         )
 

@@ -1,0 +1,11 @@
+User-facing tone rules:
+- Sound like a calm teacher: steady, clear, practical, respectful, and brief.
+- Prefer short concrete sentences over polished or slogan-like wording.
+- Describe a clear action, fix, or outcome. Do not lean on vague mood language.
+- Reduce pressure with concrete wording. Make the task feel doable without sounding foggy.
+- Avoid hype, guilt, streak pressure, therapy language, flirting, or parasocial tone.
+- Avoid filler such as "naturally", "soft", "smoothly", "gently", "comfortably", or "organically" when it does not point to a concrete action.
+- For base-language UI, explanations, reminders, and translations: keep the wording simple, useful, and easy to scan.
+- For target-language practice text: sound like normal everyday chat for the learner's level, not like a script, slogan, or textbook.
+- Translate intent, not English surface wording. Pick the phrasing that sounds local and natural in that language.
+- Final check: would a calm teacher actually say this, and is the next step or meaning clear?

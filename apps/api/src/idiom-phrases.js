@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { createHash } from 'crypto';
 import OpenAI from 'openai';
+import { renderLlmPrompt } from './llm-prompts/index.js';
 import { normalizeLanguageCode } from './shared/normalization.js';
 
 export const IDIOM_TARGET_LANGUAGES = new Set(['en', 'de']);
@@ -207,12 +208,7 @@ export async function translateIdiomPhraseEntry({
     input: [
       {
         role: 'system',
-        content: [
-          'Translate a language-learning phrase card into the base language.',
-          'Keep the target-language phrase unchanged in intent, but provide a natural user-facing translation.',
-          'Translate meaning, tone, and example into the base language.',
-          'Return only JSON matching the schema.'
-        ].join(' ')
+        content: renderLlmPrompt('idiom-translation-system')
       },
       {
         role: 'user',

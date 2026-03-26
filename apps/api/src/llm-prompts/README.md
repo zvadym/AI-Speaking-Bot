@@ -11,3 +11,4 @@ Out of scope:
 Template format:
 - Markdown files with `{{variable_name}}` placeholders
 - Rendered through `renderLlmPrompt()` in `index.js`
+- Shared reusable tone partials live in `shared/llm-prompts/` and are injected automatically

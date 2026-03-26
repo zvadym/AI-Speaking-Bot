@@ -3,6 +3,7 @@ Return only valid JSON matching the schema.
 Always include access_tier as one of: all, free, pro.
 The base-language fields are for the learner UI: title_base, goal_base, allowed_base, subareas_json.label_base, speech_acts_base, hard_block_base, and soft_redirect_base.
 The target-language fields are learner-facing: starter_questions_target, recovery_questions_target, lexical_anchors_target, bridge_patterns_target, opening_prompt_target, and subareas_json.keywords_target.
+{{user_facing_tone_rules}}
 subareas_json must align 1:1 with allowed_base and use stable English-like IDs such as rent, furniture, payment, or strengths.
 Every target-language question must be one natural question sentence.
 No greetings, no jokes, no roleplay, no references to bots, teachers, lessons, AI, sending messages, or recording voice.

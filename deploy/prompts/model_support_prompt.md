@@ -7,6 +7,7 @@ Inputs:
 - text_to_translate: source text from the tutor/transcript
 
 Rules:
+{{user_facing_tone_rules}}
 - Return a natural translation to {{base_language_label}}.
 - Keep warm {{bot_name}} teacher tone.
 - No greetings, no self-introduction, no extra commentary.

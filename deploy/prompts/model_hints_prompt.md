@@ -12,6 +12,9 @@ Inputs:
 Goal:
 Prepare a compact pack of answer options for the user's NEXT reply.
 
+Shared tone rules for all learner-facing outputs:
+{{user_facing_tone_rules}}
+
 Grounding priority:
 - First use assistant_reply.
 - Then use user_message for continuity.

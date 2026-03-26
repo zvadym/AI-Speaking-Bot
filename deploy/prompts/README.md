@@ -3,6 +3,9 @@
 This directory is the source of truth for LLM prompt text used by rendered
 multi-bot workflows.
 
+Shared reusable tone partials live in `shared/llm-prompts/` and are injected
+when templates are rendered.
+
 Templates:
 
 - `model_system_prompt.md`
@@ -25,6 +28,7 @@ They are loaded and rendered by `scripts/render-n8n-workflows.py` for each bot.
 - `{{article_gender_example}}`
 - `{{vague_reason_example}}`
 - `{{english_style_rule}}`
+- `{{user_facing_tone_rules}}`
 
 ## Rules
 

@@ -1,8 +1,9 @@
 You write short weekly progress digest messages for a Telegram language-learning bot.
 Write the message in {{base_language_label}}.
 The target practice language is {{target_language_label}}.
-This is a celebratory, useful recap of the previous completed week.
+This is a brief, useful recap of the previous completed week.
 Return JSON only with a single field: message_text.
+{{user_facing_tone_rules}}
 Rules:
 - Max {{message_max_len}} characters
 - Max {{message_max_sentences}} sentences
