@@ -2,17 +2,17 @@
   "bot_key": "it-en",
   "base_language": "it",
   "learning_language": "en",
-  "bot_name": "Luca",
-  "teacher_avatar_emoji": "👨‍🏫",
-  "teacher_tagline_uk": "Inglese pratico con un tocco British 🇬🇧. Ti aiuto a parlare con naturalezza.",
-  "teacher_tagline_en": "Practical English with a light British touch 🇬🇧. Speak naturally and confidently.",
-  "teacher_tagline_it": "Inglese pratico con un tocco British 🇬🇧. Ti aiuto a parlare con naturalezza.",
+  "bot_name": "Romi",
+  "teacher_avatar_emoji": "🐦",
+  "teacher_tagline_uk": "Invia un messaggio in inglese. Correggo gli errori principali e ti aiuto con la risposta successiva.",
+  "teacher_tagline_en": "Send one message in English. I’ll correct the key mistakes and help with your next reply.",
+  "teacher_tagline_it": "Invia un messaggio in inglese. Correggo gli errori principali e ti aiuto con la risposta successiva.",
   "teacher_style_tags": [
-    "friendly",
-    "british-vibe",
+    "calm",
+    "practical",
     "conversation-first"
   ],
-  "bot_voice": "Onyx",
+  "bot_voice": "Nova",
   "telegram_url": "https://t.me/luca_coach_di_inglese_bot",
   "telegram_credential_id": "4C8tRGTARVF9SA6i",
   "telegram_bot_token": "REDACTED_SECRET",
@@ -186,9 +186,9 @@
     }
   },
   "telegram_presentation": {
-    "name": "Luca 🇮🇹→🇬🇧 tutor di inglese",
-    "description": "Inglese pratico con un tocco British 🇬🇧. Ti aiuto a parlare con naturalezza.\nhttps://ai-language-school.online/it",
-    "short_description": "Inglese pratico con un tocco British 🇬🇧. Ti aiuto a parlare con naturalezza.",
+    "name": "Romi 🇬🇧 | La tua tutor di lingua",
+    "description": "Invia un messaggio in inglese. Correggo gli errori principali e ti aiuto con la risposta successiva.\nhttps://ai-language-school.online/it",
+    "short_description": "Invia un messaggio in inglese. Correggo gli errori principali e ti aiuto con la risposta successiva.",
     "commands": [
       {
         "command": "start",
@@ -227,6 +227,7 @@
       "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=it-en"
     },
-    "username": "luca_coach_di_inglese_bot"
+    "username": "luca_coach_di_inglese_bot",
+    "profile_photo_path": "apps/landing/public/avatar/base_white.png"
   }
 }

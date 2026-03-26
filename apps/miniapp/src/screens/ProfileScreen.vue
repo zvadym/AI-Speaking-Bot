@@ -4,7 +4,7 @@
       <div class="section-head">
         <div>
           <div class="eyebrow">{{ $t('profile.teacherSection') }}</div>
-          <h2>{{ selectedBot.bot_name || languageLabel }}</h2>
+          <h2>{{ languageLabel }}</h2>
         </div>
       </div>
       <p class="section-copy section-copy-compact">{{ teacherTagline }}</p>

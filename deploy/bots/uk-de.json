@@ -2,13 +2,13 @@
   "bot_key": "uk-de",
   "base_language": "uk",
   "learning_language": "de",
-  "bot_name": "Леся",
-  "teacher_avatar_emoji": "👩‍🏫",
-  "teacher_tagline_uk": "Німецька для життя, роботи та подорожей 🇩🇪. Коротка практика, чіткі виправлення.",
-  "teacher_tagline_en": "German for life, work, and travel 🇩🇪. Short practice, clear corrections.",
+  "bot_name": "Romi",
+  "teacher_avatar_emoji": "🐦",
+  "teacher_tagline_uk": "Надішли одне повідомлення німецькою. Я виправлю головні помилки і допоможу з наступною реплікою.",
+  "teacher_tagline_en": "Send one message in German. I’ll correct the key mistakes and help with your next reply.",
   "teacher_style_tags": [
-    "gentle",
-    "structured",
+    "calm",
+    "practical",
     "conversation-first"
   ],
   "bot_voice": "Nova",
@@ -185,9 +185,9 @@
     }
   },
   "telegram_presentation": {
-    "name": "Леся 🇺🇦→🇩🇪 репетитор німецької",
-    "description": "Німецька для життя, роботи та подорожей 🇩🇪. Коротка практика, чіткі виправлення.\nhttps://ai-language-school.online/uk",
-    "short_description": "Німецька для життя, роботи та подорожей 🇩🇪. Коротка практика, чіткі виправлення.",
+    "name": "Romi 🇩🇪 | Твоя репетиторка з мови",
+    "description": "Надішли одне повідомлення німецькою. Я виправлю головні помилки і допоможу з наступною реплікою.\nhttps://ai-language-school.online/uk",
+    "short_description": "Надішли одне повідомлення німецькою. Я виправлю головні помилки і допоможу з наступною реплікою.",
     "commands": [
       {
         "command": "start",
@@ -226,6 +226,8 @@
       "text": "Міні-апка",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=uk-de"
     },
-    "username": "lesia_language_bot"
-  }
+    "username": "lesia_language_bot",
+    "profile_photo_path": "apps/landing/public/avatar/base_white.png"
+  },
+  "teacher_tagline_it": "Invia un messaggio in tedesco. Correggo gli errori principali e ti aiuto con la risposta successiva."
 }

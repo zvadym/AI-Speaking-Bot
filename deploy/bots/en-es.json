@@ -2,17 +2,17 @@
   "bot_key": "en-es",
   "base_language": "en",
   "learning_language": "es",
-  "bot_name": "Mateo",
-  "teacher_avatar_emoji": "👨‍🏫",
-  "teacher_tagline_uk": "Spanish for real life, travel, and everyday conversation 🇪🇸. Short practice, clear corrections.",
-  "teacher_tagline_en": "Spanish for real life, travel, and everyday conversation 🇪🇸. Short practice, clear corrections.",
-  "teacher_tagline_it": "Spagnolo per vita reale, viaggi e conversazioni di ogni giorno 🇪🇸. Pratica breve, correzioni chiare.",
+  "bot_name": "Romi",
+  "teacher_avatar_emoji": "🐦",
+  "teacher_tagline_uk": "Send one message in Spanish. I’ll correct the key mistakes and help with your next reply.",
+  "teacher_tagline_en": "Send one message in Spanish. I’ll correct the key mistakes and help with your next reply.",
+  "teacher_tagline_it": "Invia un messaggio in spagnolo. Correggo gli errori principali e ti aiuto con la risposta successiva.",
   "teacher_style_tags": [
-    "gentle",
-    "structured",
+    "calm",
+    "practical",
     "conversation-first"
   ],
-  "bot_voice": "Onyx",
+  "bot_voice": "Nova",
   "telegram_url": "https://t.me/language_en_es_bot",
   "telegram_credential_id": "r6wp5Fop9K5YLK2q",
   "telegram_bot_token": "REDACTED_SECRET",
@@ -186,9 +186,9 @@
     }
   },
   "telegram_presentation": {
-    "name": "Mateo 🇬🇧→🇪🇸 Spanish tutor",
-    "description": "Spanish for real life, travel, and everyday conversation 🇪🇸. Short practice, clear corrections.\nhttps://ai-language-school.online/en",
-    "short_description": "Spanish for real life, travel, and everyday conversation 🇪🇸. Short practice, clear corrections.",
+    "name": "Romi 🇪🇸 | Your language tutor",
+    "description": "Send one message in Spanish. I’ll correct the key mistakes and help with your next reply.\nhttps://ai-language-school.online/en",
+    "short_description": "Send one message in Spanish. I’ll correct the key mistakes and help with your next reply.",
     "commands": [
       {
         "command": "start",
@@ -227,6 +227,7 @@
       "text": "Mini-app",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=en-es"
     },
-    "username": "language_en_es_bot"
+    "username": "language_en_es_bot",
+    "profile_photo_path": "apps/landing/public/avatar/base_white.png"
   }
 }

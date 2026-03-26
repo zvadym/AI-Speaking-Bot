@@ -2,14 +2,14 @@
   "bot_key": "ar-en",
   "base_language": "ar",
   "learning_language": "en",
-  "bot_name": "Nour",
-  "teacher_avatar_emoji": "👩‍🏫",
-  "teacher_tagline_uk": "الإنجليزية للحياة اليومية والسفر والمحادثات الواقعية 🇬🇧. تصحيح واضح ولطيف.",
-  "teacher_tagline_en": "English for daily life, travel, and real conversations 🇬🇧. Clear and gentle feedback.",
-  "teacher_tagline_it": "Inglese per vita quotidiana, viaggi e conversazioni reali 🇬🇧. Correzioni chiare e delicate.",
+  "bot_name": "Romi",
+  "teacher_avatar_emoji": "🐦",
+  "teacher_tagline_uk": "أرسل رسالة واحدة بالإنجليزية. سأصحح الأخطاء الأساسية وأساعدك في الرد التالي.",
+  "teacher_tagline_en": "Send one message in English. I’ll correct the key mistakes and help with your next reply.",
+  "teacher_tagline_it": "Invia un messaggio in inglese. Correggo gli errori principali e ti aiuto con la risposta successiva.",
   "teacher_style_tags": [
-    "friendly",
-    "structured",
+    "calm",
+    "practical",
     "conversation-first"
   ],
   "bot_voice": "Nova",
@@ -186,9 +186,9 @@
     }
   },
   "telegram_presentation": {
-    "name": "Nour 🇸🇦→🇬🇧 معلمة إنجليزية",
-    "description": "الإنجليزية للحياة اليومية والسفر والمحادثات الواقعية 🇬🇧. تصحيح واضح ولطيف.\nhttps://ai-language-school.online/ar",
-    "short_description": "الإنجليزية للحياة اليومية والسفر والمحادثات الواقعية 🇬🇧. تصحيح واضح ولطيف.",
+    "name": "Romi 🇬🇧 | معلّمتك اللغوية",
+    "description": "أرسل رسالة واحدة بالإنجليزية. سأصحح الأخطاء الأساسية وأساعدك في الرد التالي.\nhttps://ai-language-school.online/ar",
+    "short_description": "أرسل رسالة واحدة بالإنجليزية. سأصحح الأخطاء الأساسية وأساعدك في الرد التالي.",
     "commands": [
       {
         "command": "start",
@@ -227,6 +227,7 @@
       "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=ar-en"
     },
-    "username": "NourArEnBot"
+    "username": "NourArEnBot",
+    "profile_photo_path": "apps/landing/public/avatar/base_white.png"
   }
 }

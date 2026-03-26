@@ -179,6 +179,16 @@ PRACTICE_TEMPLATE_BY_BASE = {
     "ar": "ممارسة {language}",
 }
 
+TITLE_TEMPLATE_BY_BASE = {
+    "en": "{name} {flag} | Your language tutor",
+    "uk": "{name} {flag} | Твоя репетиторка з мови",
+    "de": "{name} {flag} | Deine Sprachtrainerin",
+    "it": "{name} {flag} | La tua tutor di lingua",
+    "tr": "{name} {flag} | Dil öğretmenin",
+    "hi": "{name} {flag} | आपकी भाषा ट्यूटर",
+    "ar": "{name} {flag} | معلّمتك اللغوية",
+}
+
 REQUIRED_KEYS = [
     "bot_key",
     "base_language",
@@ -460,12 +470,10 @@ def localized_presentation_name(display_name: str, base_language: str, learning_
     name = display_name.strip()
     if not name:
         return ""
-    language = localized_practice_language(base_language, learning_language)
-    template = PRACTICE_TEMPLATE_BY_BASE.get(
-        normalize_lang_code(base_language), PRACTICE_TEMPLATE_BY_BASE["en"]
+    template = TITLE_TEMPLATE_BY_BASE.get(
+        normalize_lang_code(base_language), TITLE_TEMPLATE_BY_BASE["en"]
     )
-    practice_label = template.format(language=language)
-    return f"{name} {target_language_flag(learning_language)} | AI | {practice_label}"
+    return template.format(name=name, flag=target_language_flag(learning_language))
 
 
 def expected_presentation_name(config: Dict[str, Any]) -> Optional[str]:
@@ -811,12 +819,28 @@ class TelegramBotClient:
         boundary = f"----CodexBoundary{int(time.time() * 1000)}"
         mime_type = mimetypes.guess_type(str(photo_path))[0] or "application/octet-stream"
         file_bytes = photo_path.read_bytes()
+        attach_name = "profile_photo"
+        photo_descriptor = json.dumps(
+            {
+                "type": "static",
+                "photo": f"attach://{attach_name}",
+            },
+            ensure_ascii=False,
+        )
 
         chunks: List[bytes] = []
         chunks.append(f"--{boundary}\r\n".encode("utf-8"))
         chunks.append(
             (
-                f'Content-Disposition: form-data; name="photo"; filename="{photo_path.name}"\r\n'
+                'Content-Disposition: form-data; name="photo"\r\n\r\n'
+            ).encode("utf-8")
+        )
+        chunks.append(photo_descriptor.encode("utf-8"))
+        chunks.append(b"\r\n")
+        chunks.append(f"--{boundary}\r\n".encode("utf-8"))
+        chunks.append(
+            (
+                f'Content-Disposition: form-data; name="{attach_name}"; filename="{photo_path.name}"\r\n'
                 f"Content-Type: {mime_type}\r\n\r\n"
             ).encode("utf-8")
         )
@@ -1073,6 +1097,10 @@ def build_bot_config(template: Dict[str, Any], intake: Dict[str, Any], miniapp_u
     return config
 
 
+# `apply` treats deploy/bots/*.json as the source of truth and pushes the
+# already-defined Telegram presentation settings to the live Bot API. It does
+# not persist normalization back into the JSON files; any fixes stay in-memory
+# for this run unless you separately run `sync --write`.
 def run_apply(args: argparse.Namespace) -> int:
     script_dir = Path(__file__).resolve().parent
     repo_root = find_repo_root(script_dir)
@@ -1207,6 +1235,9 @@ def run_apply(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+# `sync` never talks to Telegram. It validates and normalizes the
+# `telegram_presentation` section inside deploy/bots/*.json so the checked-in
+# files match the contract. Without `--write` this is a dry-run validator.
 def run_sync(args: argparse.Namespace) -> int:
     script_dir = Path(__file__).resolve().parent
     repo_root = find_repo_root(script_dir)
@@ -1446,7 +1477,14 @@ def build_parser() -> argparse.ArgumentParser:
             "using hard-cutover telegram_presentation section."
         ),
     )
-    parser.add_argument("mode", choices=["interactive", "apply", "sync"], help="Provisioning mode")
+    parser.add_argument(
+        "mode",
+        choices=["interactive", "apply", "sync"],
+        help=(
+            "Provisioning mode: interactive creates/updates configs and applies them; "
+            "apply pushes existing config values to Telegram; sync validates or normalizes local JSON only"
+        ),
+    )
     parser.add_argument("--bots-dir", default="deploy/bots", help="Directory with bot config JSON files")
     parser.add_argument(
         "--miniapp-url-base",
@@ -1485,7 +1523,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--write",
         action="store_true",
-        help="Write normalized files in sync mode. Without this flag sync runs as dry-run validation.",
+        help=(
+            "Write normalized telegram_presentation data back to JSON files in sync mode. "
+            "Without this flag sync only reports drift."
+        ),
     )
     parser.add_argument(
         "--bot-key",

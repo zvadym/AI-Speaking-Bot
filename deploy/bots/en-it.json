@@ -2,14 +2,14 @@
   "bot_key": "en-it",
   "base_language": "en",
   "learning_language": "it",
-  "bot_name": "Emma",
-  "teacher_avatar_emoji": "👩‍🏫",
-  "teacher_tagline_uk": "Italian for real life, travel, and everyday conversation 🇮🇹. Short practice, clear corrections.",
-  "teacher_tagline_en": "Italian for real life, travel, and everyday conversation 🇮🇹. Short practice, clear corrections.",
-  "teacher_tagline_it": "Italiano per vita reale, viaggi e conversazioni di ogni giorno 🇮🇹. Pratica breve, correzioni chiare.",
+  "bot_name": "Romi",
+  "teacher_avatar_emoji": "🐦",
+  "teacher_tagline_uk": "Send one message in Italian. I’ll correct the key mistakes and help with your next reply.",
+  "teacher_tagline_en": "Send one message in Italian. I’ll correct the key mistakes and help with your next reply.",
+  "teacher_tagline_it": "Invia un messaggio in italiano. Correggo gli errori principali e ti aiuto con la risposta successiva.",
   "teacher_style_tags": [
-    "gentle",
-    "structured",
+    "calm",
+    "practical",
     "conversation-first"
   ],
   "bot_voice": "Nova",
@@ -186,9 +186,9 @@
     }
   },
   "telegram_presentation": {
-    "name": "Emma 🇬🇧→🇮🇹 Italian tutor",
-    "description": "Italian for real life, travel, and everyday conversation 🇮🇹. Short practice, clear corrections.\nhttps://ai-language-school.online/en",
-    "short_description": "Italian for real life, travel, and everyday conversation 🇮🇹. Short practice, clear corrections.",
+    "name": "Romi 🇮🇹 | Your language tutor",
+    "description": "Send one message in Italian. I’ll correct the key mistakes and help with your next reply.\nhttps://ai-language-school.online/en",
+    "short_description": "Send one message in Italian. I’ll correct the key mistakes and help with your next reply.",
     "commands": [
       {
         "command": "start",
@@ -227,6 +227,7 @@
       "text": "Mini-app",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=en-it"
     },
-    "username": "language_en_it_bot"
+    "username": "language_en_it_bot",
+    "profile_photo_path": "apps/landing/public/avatar/base_white.png"
   }
 }

@@ -2,14 +2,14 @@
   "bot_key": "de-it",
   "base_language": "de",
   "learning_language": "it",
-  "bot_name": "Giulia",
-  "teacher_avatar_emoji": "👩‍🏫",
-  "teacher_tagline_uk": "Italienisch für Alltag, Reisen und echte Gespräche 🇮🇹. Klare, sanfte Korrekturen.",
-  "teacher_tagline_en": "Italian for daily life, travel, and real conversations 🇮🇹. Clear and gentle feedback.",
-  "teacher_tagline_it": "Italiano per vita quotidiana, viaggi e conversazioni reali 🇮🇹. Correzioni chiare e delicate.",
+  "bot_name": "Romi",
+  "teacher_avatar_emoji": "🐦",
+  "teacher_tagline_uk": "Schick eine Nachricht auf Italienisch. Ich korrigiere die wichtigsten Fehler und helfe dir bei der nächsten Antwort.",
+  "teacher_tagline_en": "Send one message in Italian. I’ll correct the key mistakes and help with your next reply.",
+  "teacher_tagline_it": "Invia un messaggio in italiano. Correggo gli errori principali e ti aiuto con la risposta successiva.",
   "teacher_style_tags": [
-    "friendly",
-    "structured",
+    "calm",
+    "practical",
     "conversation-first"
   ],
   "bot_voice": "Nova",
@@ -186,9 +186,9 @@
     }
   },
   "telegram_presentation": {
-    "name": "Giulia 🇩🇪→🇮🇹 Italienisch-Tutor",
-    "description": "Italienisch für Alltag, Reisen und echte Gespräche 🇮🇹. Klare, sanfte Korrekturen.\nhttps://ai-language-school.online/de",
-    "short_description": "Italienisch für Alltag, Reisen und echte Gespräche 🇮🇹. Klare, sanfte Korrekturen.",
+    "name": "Romi 🇮🇹 | Deine Sprachtrainerin",
+    "description": "Schick eine Nachricht auf Italienisch. Ich korrigiere die wichtigsten Fehler und helfe dir bei der nächsten Antwort.\nhttps://ai-language-school.online/de",
+    "short_description": "Schick eine Nachricht auf Italienisch. Ich korrigiere die wichtigsten Fehler und helfe dir bei der nächsten Antwort.",
     "commands": [
       {
         "command": "start",
@@ -227,6 +227,7 @@
       "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=de-it"
     },
-    "username": "giulia_italienisch_lehrerin_bot"
+    "username": "giulia_italienisch_lehrerin_bot",
+    "profile_photo_path": "apps/landing/public/avatar/base_white.png"
   }
 }

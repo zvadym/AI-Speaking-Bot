@@ -2,14 +2,14 @@
   "bot_key": "hi-en",
   "base_language": "hi",
   "learning_language": "en",
-  "bot_name": "Riya",
-  "teacher_avatar_emoji": "👩‍🏫",
-  "teacher_tagline_uk": "रोज़मर्रा की ज़िंदगी, यात्रा और असली बातचीत के लिए अंग्रेज़ी 🇬🇧। स्पष्ट और नरम फीडबैक।",
-  "teacher_tagline_en": "English for daily life, travel, and real conversations 🇬🇧. Clear and gentle feedback.",
-  "teacher_tagline_it": "Inglese per vita quotidiana, viaggi e conversazioni reali 🇬🇧. Correzioni chiare e delicate.",
+  "bot_name": "Romi",
+  "teacher_avatar_emoji": "🐦",
+  "teacher_tagline_uk": "अंग्रेज़ी में एक संदेश भेजें। मैं मुख्य गलतियाँ ठीक करूँगी और अगले जवाब में मदद करूँगी।",
+  "teacher_tagline_en": "Send one message in English. I’ll correct the key mistakes and help with your next reply.",
+  "teacher_tagline_it": "Invia un messaggio in inglese. Correggo gli errori principali e ti aiuto con la risposta successiva.",
   "teacher_style_tags": [
-    "friendly",
-    "structured",
+    "calm",
+    "practical",
     "conversation-first"
   ],
   "bot_voice": "Nova",
@@ -186,9 +186,9 @@
     }
   },
   "telegram_presentation": {
-    "name": "Riya 🇮🇳→🇬🇧 अंग्रेज़ी शिक्षिका",
-    "description": "रोज़मर्रा की ज़िंदगी, यात्रा और असली बातचीत के लिए अंग्रेज़ी 🇬🇧। स्पष्ट और नरम फीडबैक।\nhttps://ai-language-school.online/hi",
-    "short_description": "रोज़मर्रा की ज़िंदगी, यात्रा और असली बातचीत के लिए अंग्रेज़ी 🇬🇧। स्पष्ट और नरम फीडबैक।",
+    "name": "Romi 🇬🇧 | आपकी भाषा ट्यूटर",
+    "description": "अंग्रेज़ी में एक संदेश भेजें। मैं मुख्य गलतियाँ ठीक करूँगी और अगले जवाब में मदद करूँगी।\nhttps://ai-language-school.online/hi",
+    "short_description": "अंग्रेज़ी में एक संदेश भेजें। मैं मुख्य गलतियाँ ठीक करूँगी और अगले जवाब में मदद करूँगी।",
     "commands": [
       {
         "command": "start",
@@ -227,6 +227,7 @@
       "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=hi-en"
     },
-    "username": "RiyaHiEnBot"
+    "username": "RiyaHiEnBot",
+    "profile_photo_path": "apps/landing/public/avatar/base_white.png"
   }
 }

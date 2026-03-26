@@ -2,23 +2,23 @@
   "bot_key": "uk-en",
   "base_language": "uk",
   "learning_language": "en",
-  "bot_name": "Джекі",
-  "teacher_avatar_emoji": "👨‍🏫",
-  "teacher_tagline_uk": "Англійська з легким британським відтінком 🇬🇧. Коротка практика, чіткі виправлення.",
-  "teacher_tagline_en": "English with a light British touch 🇬🇧. Short practice, clear corrections.",
+  "bot_name": "Romi",
+  "teacher_avatar_emoji": "🐦",
+  "teacher_tagline_uk": "Надішли одне повідомлення англійською. Я виправлю головні помилки і допоможу з наступною реплікою.",
+  "teacher_tagline_en": "Send one message in English. I’ll correct the key mistakes and help with your next reply.",
   "teacher_style_tags": [
-    "friendly",
-    "british-vibe",
+    "calm",
+    "practical",
     "conversation-first"
   ],
-  "bot_voice": "Onyx",
+  "bot_voice": "Nova",
   "telegram_url": "https://t.me/jackie_english_tutor_bot",
   "telegram_credential_id": "57KV0P7PfcH8bu6y",
   "telegram_bot_token": "REDACTED_SECRET",
   "locale": {
     "btn_translation": "Переклад 🇺🇦",
     "btn_follow_up_hints": "Що сказати далі?",
-    "waiting_text": "⏳ Прийняв. Перевіряю...",
+    "waiting_text": "⏳ Прийняла. Перевіряю...",
     "loader_messages": [
       "⏳ Перевіряю головне...",
       "🧠 Дивлюся, що варто виправити...",
@@ -88,11 +88,11 @@
     "msg_limit_reached": "Безкоштовний ліміт практики вже використано.\nЩоб продовжити, відкрий підписку в міні-апці кнопкою нижче.",
     "msg_tts_limit_reached": "Ліміт голосових відповідей на цей тиждень уже використано. Перевір статус підписки командою /stats.",
     "btn_open_subscription": "💎 Відкрити підписку",
-    "msg_too_short": "Я майже нічого не почув. Спробуй трохи довше голосове повідомлення.",
+    "msg_too_short": "Я майже нічого не почула. Спробуй трохи довше голосове повідомлення.",
     "user_text_prefix_multiline": "📝 Твій текст:\n",
     "user_text_preview": "📝 Твій текст: ...",
     "msg_feedback_prompt": "Дякую. Надішли, будь ласка, відгук текстом або голосовим повідомленням 🎙️",
-    "msg_feedback_thanks": "Дякую, я отримав твій відгук.",
+    "msg_feedback_thanks": "Дякую, я отримала твій відгук.",
     "msg_feedback_needs_text_or_voice": "Надішли, будь ласка, відгук текстом або голосовим повідомленням 🎙️",
     "msg_needs_text_or_voice": "Надішли, будь ласка, лише текстове або голосове повідомлення 🎙️",
     "level_label_beginner": "Початковий (A1-A2)",
@@ -185,9 +185,9 @@
     }
   },
   "telegram_presentation": {
-    "name": "Джекі 🇺🇦→🇬🇧 репетитор англійської",
-    "description": "Англійська з легким британським відтінком 🇬🇧. Коротка практика, чіткі виправлення.\nhttps://ai-language-school.online/uk",
-    "short_description": "Англійська з легким британським відтінком 🇬🇧. Коротка практика, чіткі виправлення.",
+    "name": "Romi 🇬🇧 | Твоя репетиторка з мови",
+    "description": "Надішли одне повідомлення англійською. Я виправлю головні помилки і допоможу з наступною реплікою.\nhttps://ai-language-school.online/uk",
+    "short_description": "Надішли одне повідомлення англійською. Я виправлю головні помилки і допоможу з наступною реплікою.",
     "commands": [
       {
         "command": "start",
@@ -226,6 +226,8 @@
       "text": "Міні-апка",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=uk-en"
     },
-    "username": "jackie_english_tutor_bot"
-  }
+    "username": "jackie_english_tutor_bot",
+    "profile_photo_path": "apps/landing/public/avatar/base_white.png"
+  },
+  "teacher_tagline_it": "Invia un messaggio in inglese. Correggo gli errori principali e ti aiuto con la risposta successiva."
 }
