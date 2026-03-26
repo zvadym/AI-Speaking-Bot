@@ -1,16 +1,11 @@
 <template>
   <RouterLink :class="['card', 'practice-card', { highlighted }]" :to="practicePathCanonicalPath">
-    <RomiAvatar :practice-path="practicePath" :size="68" :alt="avatarAlt" />
+    <div class="flag-badge" :aria-label="title">{{ flag }}</div>
 
     <div class="info">
       <div class="title-row">
         <div class="h3 title">{{ title }}</div>
         <span class="go" aria-hidden="true">↗</span>
-      </div>
-      <p class="muted subtitle">{{ subtitle }}</p>
-      <p class="muted description">{{ description }}</p>
-      <div v-if="tags.length" class="tags">
-        <span v-for="tag in tags" :key="tag" class="tag">{{ tag }}</span>
       </div>
     </div>
   </RouterLink>
@@ -19,7 +14,6 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import RomiAvatar from './RomiAvatar.vue';
 import { getPracticePathCanonicalPath } from '../data/practicePathSlugs.js';
 import { useI18n } from '../i18n.js';
 
@@ -29,20 +23,24 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const title = computed(() => `${t(`languageName.${props.practicePath.baseLanguage}`)} → ${t(`languageName.${props.practicePath.targetLanguage}`)}`);
-const subtitle = computed(() => t('practice.cardSubtitle'));
-const description = computed(() => props.practicePath?.description || t('practice.cardDescription'));
-const tags = computed(() => Array.isArray(props.practicePath?.tags) ? props.practicePath.tags.slice(0, 3) : []);
+const title = computed(() => t(`languageName.${props.practicePath.targetLanguage}`));
 const practicePathCanonicalPath = computed(() => getPracticePathCanonicalPath(props.practicePath));
-const avatarAlt = computed(() => `Romi for ${title.value}`);
+const flag = computed(() => {
+  const code = (props.practicePath?.targetLanguage || '').toString().trim().toLowerCase();
+  const flagsByLanguage = {
+    ar: '🇸🇦', de: '🇩🇪', en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷', hi: '🇮🇳', id: '🇮🇩',
+    it: '🇮🇹', pl: '🇵🇱', pt: '🇵🇹', ru: '🇷🇺', tr: '🇹🇷', ua: '🇺🇦', uk: '🇺🇦'
+  };
+  return flagsByLanguage[code] || '🏳️';
+});
 </script>
 
 <style scoped>
 .practice-card {
   display: grid;
-  grid-template-columns: 68px 1fr;
-  gap: 16px 18px;
-  align-items: start;
+  grid-template-columns: 52px 1fr;
+  gap: 12px 16px;
+  align-items: center;
   padding: 18px;
   transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
@@ -65,6 +63,18 @@ const avatarAlt = computed(() => `Romi for ${title.value}`);
   min-width: 0;
 }
 
+.flag-badge {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 78%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--fg) 10%, transparent);
+  font-size: 28px;
+}
+
 .title-row {
   display: flex;
   align-items: center;
@@ -80,41 +90,5 @@ const avatarAlt = computed(() => `Romi for ${title.value}`);
   line-height: 1;
   font-size: 16px;
   opacity: 0.7;
-}
-
-.subtitle,
-.description {
-  margin: 0;
-  line-height: 1.5;
-}
-
-.subtitle {
-  margin-top: 6px;
-  font-size: 14px;
-}
-
-.description {
-  margin-top: 6px;
-  font-size: 14px;
-}
-
-.tags {
-  margin-top: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 9px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
-  background: color-mix(in srgb, var(--surface) 66%, var(--bg));
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 </style>
