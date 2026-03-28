@@ -463,7 +463,7 @@ test('idiom practice more sends one extra phrase at a time up to the daily cap',
       });
       assert.equal(second.status, 'delivered');
       assert.equal(second.deliveryIndex, 3);
-      assert.equal(second.callbackText, 'Ти вже використав сьогоднішній ліміт ідіом.');
+      assert.equal(second.callbackText, 'Надсилаю ще одну фразу.');
       assert.equal(second.telegramMessageId, 935);
 
       const third = await sendIdiomPracticeMorePhrase({
@@ -471,19 +471,22 @@ test('idiom practice more sends one extra phrase at a time up to the daily cap',
         botKey: 'uk-en',
         scheduleKey,
         callbackQueryId: 'cb-3',
-        sourceMessageId: 934,
+        sourceMessageId: 935,
         now
       });
       assert.equal(third.status, 'limit_reached');
-      assert.equal(third.telegramMessageId, null);
+      assert.equal(third.callbackText, '');
+      assert.equal(third.telegramMessageId, 936);
     });
   });
 
-  assert.equal(telegramBodies.length, 2);
+  assert.equal(telegramBodies.length, 3);
   assert.match(telegramBodies[0].text, /That figures/);
   assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data, `idiom_more:${scheduleKey}`);
   assert.match(telegramBodies[1].text, /Cut to the chase/);
-  assert.equal(telegramBodies[1].reply_markup, undefined);
+  assert.equal(telegramBodies[1].reply_markup.inline_keyboard[0][0].callback_data, `idiom_more:${scheduleKey}`);
+  assert.match(telegramBodies[2].text, /Ти вже використав сьогоднішній ліміт ідіом\./);
+  assert.equal(telegramBodies[2].reply_markup, undefined);
   assert.deepEqual(deliveredPhraseIds, [101, 102, 103]);
   assert.deepEqual(dispatch.payload_json.phrase_ids, [101, 102, 103]);
   assert.deepEqual(dispatch.payload_json.idiom_message_ids, [933, 934, 935]);

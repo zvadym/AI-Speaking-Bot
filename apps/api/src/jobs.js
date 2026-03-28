@@ -1980,8 +1980,8 @@ function normalizeIdiomPracticeIdList(raw) {
 }
 
 function buildIdiomPracticeReplyMarkup(context, scheduleKey, remainingCount) {
-  const remaining = clampInteger(remainingCount, { min: 0, max: IDIOM_PRACTICE_DAILY_CAP, fallback: 0 });
-  if (!scheduleKey || remaining <= 0) return null;
+  clampInteger(remainingCount, { min: 0, max: IDIOM_PRACTICE_DAILY_CAP, fallback: 0 });
+  if (!scheduleKey) return null;
   const locale = context.locale || resolveIdiomPracticeLocale(context.botKey);
   return {
     inline_keyboard: [[{
@@ -2697,6 +2697,16 @@ export async function sendIdiomPracticeMorePhrase({
     });
 
     if (deliveredCount >= IDIOM_PRACTICE_DAILY_CAP) {
+      const telegramResult = await sendTelegramTextMessage(
+        normalizedChatId,
+        sanitizeTelegramHtml(String(context.locale.more_limit_reached || locale.more_limit_reached || '')),
+        {
+          botKey: normalizedBotKey,
+          parseMode: 'HTML'
+        }
+      );
+      const limitMessageIdRaw = Number(telegramResult?.message_id ?? 0);
+      const limitTelegramMessageId = Number.isFinite(limitMessageIdRaw) && limitMessageIdRaw > 0 ? limitMessageIdRaw : null;
       await finalizeIdiomPracticeMoreClickEvent(client, reservedEventKey, {
         ...baseEventProperties,
         result: 'limit_reached'
@@ -2705,9 +2715,9 @@ export async function sendIdiomPracticeMorePhrase({
       return {
         ok: true,
         status: 'limit_reached',
-        callbackText: context.locale.more_limit_reached,
+        callbackText: '',
         deliveryIndex: null,
-        telegramMessageId: null
+        telegramMessageId: limitTelegramMessageId
       };
     }
 
@@ -2723,6 +2733,16 @@ export async function sendIdiomPracticeMorePhrase({
     });
     const phrase = phrases[0] || null;
     if (!phrase?.phraseTranslation || !phrase?.meaningTranslation || !phrase?.toneTranslation || !phrase?.exampleTranslation) {
+      const telegramResult = await sendTelegramTextMessage(
+        normalizedChatId,
+        sanitizeTelegramHtml(String(context.locale.more_limit_reached || locale.more_limit_reached || '')),
+        {
+          botKey: normalizedBotKey,
+          parseMode: 'HTML'
+        }
+      );
+      const limitMessageIdRaw = Number(telegramResult?.message_id ?? 0);
+      const limitTelegramMessageId = Number.isFinite(limitMessageIdRaw) && limitMessageIdRaw > 0 ? limitMessageIdRaw : null;
       await finalizeIdiomPracticeMoreClickEvent(client, reservedEventKey, {
         ...baseEventProperties,
         result: 'limit_reached'
@@ -2731,9 +2751,9 @@ export async function sendIdiomPracticeMorePhrase({
       return {
         ok: true,
         status: 'limit_reached',
-        callbackText: context.locale.more_limit_reached,
+        callbackText: '',
         deliveryIndex: null,
-        telegramMessageId: null
+        telegramMessageId: limitTelegramMessageId
       };
     }
 
@@ -2784,7 +2804,7 @@ export async function sendIdiomPracticeMorePhrase({
     return {
       ok: true,
       status: 'delivered',
-      callbackText: remainingAfterSend > 0 ? context.locale.more_sent : context.locale.more_limit_reached,
+      callbackText: context.locale.more_sent,
       deliveryIndex: deliveredCount + 1,
       telegramMessageId
     };
