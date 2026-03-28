@@ -1296,14 +1296,45 @@ export function createAdminRouter(ctx, helpers) {
          WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
            AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
        ),
-       counts AS (
+       activity_events AS (
          SELECT
-           EXTRACT(HOUR FROM v.occurred_at AT TIME ZONE 'UTC')::int AS hour_utc,
-           COUNT(DISTINCT v.chat_id)::int AS count
+           v.chat_id,
+           v.occurred_at
          FROM voice_usage_events v
          JOIN filtered_users u ON u.chat_id = v.chat_id
-         WHERE v.occurred_at >= (SELECT from_ts FROM params)
-           AND v.occurred_at < (SELECT to_ts FROM params)
+
+         UNION
+
+         SELECT
+           m.chat_id,
+           m.created_at AS occurred_at
+         FROM messages m
+         JOIN filtered_users u ON u.chat_id = m.chat_id
+         WHERE m.role = 'user'
+
+         UNION
+
+         SELECT
+           x.chat_id,
+           x.occurred_at
+         FROM xp_events x
+         JOIN filtered_users u ON u.chat_id = x.chat_id
+
+         UNION
+
+         SELECT
+           a.chat_id,
+           a.occurred_at
+         FROM action_events a
+         JOIN filtered_users u ON u.chat_id = a.chat_id
+       ),
+       counts AS (
+         SELECT
+           EXTRACT(HOUR FROM e.occurred_at AT TIME ZONE 'UTC')::int AS hour_utc,
+           COUNT(DISTINCT e.chat_id)::int AS count
+         FROM activity_events e
+         WHERE e.occurred_at >= (SELECT from_ts FROM params)
+           AND e.occurred_at < (SELECT to_ts FROM params)
          GROUP BY 1
        )
        SELECT

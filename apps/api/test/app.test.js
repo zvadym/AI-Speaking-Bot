@@ -1037,6 +1037,46 @@ test('admin active users by day by bot counts any tracked activity with bot attr
   });
 });
 
+test('admin active users by hour counts any tracked activity', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes("LPAD(h.hour_utc::text, 2, '0') || ':00' AS day")) {
+      assert.match(source, /FROM voice_usage_events v/);
+      assert.match(source, /FROM messages m/);
+      assert.match(source, /FROM xp_events x/);
+      assert.match(source, /FROM action_events a/);
+      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+      assert.equal(params[1], '2026-03-04T00:00:00.000Z');
+      assert.equal(params[2], null);
+      assert.equal(params[3], null);
+      return {
+        rows: [
+          { day: '00:00', count: 0 },
+          { day: '01:00', count: 2 },
+          { day: '02:00', count: 5 }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in active users by hour test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/active-users-by-hour?from=2026-03-01&to=2026-03-04',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
+    assert.deepEqual(response.json.series, [
+      { day: '00:00', count: 0 },
+      { day: '01:00', count: 2 },
+      { day: '02:00', count: 5 }
+    ]);
+  });
+});
+
 test('uncaught async route errors reach the final sentry-backed 500 handler', async () => {
   __resetCapturedEventsForTests();
 

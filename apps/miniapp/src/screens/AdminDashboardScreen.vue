@@ -310,7 +310,7 @@
       <section class="charts-grid">
         <AdminChart
           title="Active users by hour"
-          subtitle="UTC hour-of-day distribution for selected range with today layered on top"
+          subtitle="UTC hour-of-day distribution from any tracked activity, with today layered on top"
           kind="bar"
           :stacked="false"
           x-labels="all"
