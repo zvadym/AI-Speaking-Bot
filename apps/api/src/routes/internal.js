@@ -3,7 +3,8 @@ import { Router } from 'express';
 import {
   enqueueDiscordEventNotificationJob,
   enqueueLoaderRotateJob,
-  enqueueLoaderTimeoutCleanupJob
+  enqueueLoaderTimeoutCleanupJob,
+  sendIdiomPracticeMorePhrase
 } from '../jobs.js';
 import { normalizeBotKey } from '../shared/normalization.js';
 import { createRequireInternalApi } from '../middleware/internal-api.js';
@@ -164,6 +165,56 @@ export function createInternalRouter(ctx, helpers) {
         extra: { chatId, botKey }
       });
       return res.status(500).json({ error: 'topic_menu_failed' });
+    }
+  });
+
+  router.post('/internal/idiom-practice/more', requireInternalApi, async (req, res) => {
+    const chatId = Number(req.body?.chat_id);
+    const botKey = normalizeBotKey(req.body?.bot_key);
+    const scheduleKey = (req.body?.schedule_key ?? '').toString().trim();
+    const callbackQueryId = (req.body?.callback_query_id ?? '').toString().trim();
+    const sourceMessageId = Number(req.body?.source_message_id);
+
+    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || !scheduleKey || !callbackQueryId) {
+      return res.status(400).json({ error: 'bad_request' });
+    }
+
+    try {
+      const result = await sendIdiomPracticeMorePhrase({
+        chatId,
+        botKey,
+        scheduleKey,
+        callbackQueryId,
+        sourceMessageId
+      });
+      return res.json(result);
+    } catch (error) {
+      console.error('internal-idiom-practice-more failed', {
+        chatId,
+        botKey,
+        scheduleKey,
+        callbackQueryId,
+        error: error?.message || String(error)
+      });
+      captureException(error, {
+        tags: { route: 'internal-idiom-practice-more' },
+        extra: { chatId, botKey, scheduleKey, callbackQueryId }
+      });
+
+      const errorCode = String(error?.code || '').trim();
+      if (errorCode === 'bad_request') {
+        return res.status(400).json({ error: 'bad_request' });
+      }
+      if (
+        errorCode === 'idiom_phrase_build_failed'
+        || errorCode === 'telegram_send_failed'
+      ) {
+        return res.status(502).json({
+          error: errorCode || 'request_failed',
+          detail: error?.detail || error?.message || errorCode || 'request_failed'
+        });
+      }
+      return res.status(500).json({ error: 'idiom_practice_more_failed' });
     }
   });
 

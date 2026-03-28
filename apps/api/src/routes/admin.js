@@ -42,7 +42,8 @@ const REPLY_KEYBOARD_ACTION_TYPES = [
   'reply_kbd_topic_click',
   'reply_kbd_level_click',
   'reply_kbd_voice_click',
-  'reply_kbd_xp_click'
+  'reply_kbd_xp_click',
+  'idiom_phrase_more_click'
 ];
 const XP_BUTTON_EVENT_TYPES = ['btn_translation', 'btn_vocab', 'btn_hints'];
 const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
@@ -1587,7 +1588,8 @@ export function createAdminRouter(ctx, helpers) {
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_topic_click'), 0)::int AS reply_kbd_topic_click,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_level_click'), 0)::int AS reply_kbd_level_click,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_voice_click'), 0)::int AS reply_kbd_voice_click,
-         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_xp_click'), 0)::int AS reply_kbd_xp_click
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_xp_click'), 0)::int AS reply_kbd_xp_click,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'idiom_phrase_more_click'), 0)::int AS idiom_phrase_more_click
        FROM days d
        LEFT JOIN counts c USING (day_utc)
        GROUP BY d.day_utc

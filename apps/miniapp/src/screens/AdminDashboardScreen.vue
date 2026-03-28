@@ -464,9 +464,9 @@
       <section class="card panel">
         <header class="panel-head">
           <div>
-            <div class="panel-kicker">Reply keyboard</div>
+            <div class="panel-kicker">Telegram buttons</div>
             <h2 class="panel-title">Usage</h2>
-            <p class="panel-sub">Raw taps on the persistent Telegram reply keyboard. Slash commands are excluded.</p>
+            <p class="panel-sub">Raw taps on Telegram reply-keyboard buttons and idiom-practice “More” buttons. Slash commands are excluded.</p>
           </div>
         </header>
 
@@ -487,7 +487,7 @@
           </div>
 
           <AdminChart
-            title="Reply keyboard clicks by day"
+            title="Telegram button clicks by day"
             subtitle="Raw click count by button type"
             kind="bar"
             x-labels="all"
@@ -2269,7 +2269,8 @@ const replyKeyboardActionMeta = {
   reply_kbd_topic_click: { label: 'Topic', color: 'rgba(31, 107, 99, 0.88)', order: 0 },
   reply_kbd_level_click: { label: 'Level', color: 'rgba(199, 90, 36, 0.88)', order: 1 },
   reply_kbd_voice_click: { label: 'Voice', color: 'rgba(46, 88, 142, 0.88)', order: 2 },
-  reply_kbd_xp_click: { label: 'XP', color: 'rgba(103, 78, 167, 0.88)', order: 3 }
+  reply_kbd_xp_click: { label: 'XP', color: 'rgba(103, 78, 167, 0.88)', order: 3 },
+  idiom_phrase_more_click: { label: 'Idiom More', color: 'rgba(177, 116, 41, 0.9)', order: 4 }
 };
 const replyKeyboardSeriesConfig = Object.entries(replyKeyboardActionMeta)
   .sort((a, b) => a[1].order - b[1].order)

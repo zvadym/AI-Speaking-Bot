@@ -69,6 +69,23 @@ async function withMockedQuery(handler, run) {
   }
 }
 
+async function withMockedPool({ queryHandler = null, connectHandler = null }, run) {
+  const originalQuery = pool.query.bind(pool);
+  const originalConnect = pool.connect.bind(pool);
+  if (queryHandler) {
+    pool.query = async (sql, params) => queryHandler(typeof sql === 'string' ? sql : sql?.text || '', params);
+  }
+  if (connectHandler) {
+    pool.connect = async () => connectHandler();
+  }
+  try {
+    await run();
+  } finally {
+    pool.query = originalQuery;
+    pool.connect = originalConnect;
+  }
+}
+
 async function withMockedFetch(handler, run) {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input, init) => {
@@ -393,7 +410,8 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
         'reply_kbd_topic_click',
         'reply_kbd_level_click',
         'reply_kbd_voice_click',
-        'reply_kbd_xp_click'
+        'reply_kbd_xp_click',
+        'idiom_phrase_more_click'
       ]);
       return {
         rows: [
@@ -402,14 +420,16 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
             reply_kbd_topic_click: 4,
             reply_kbd_level_click: 2,
             reply_kbd_voice_click: 6,
-            reply_kbd_xp_click: 1
+            reply_kbd_xp_click: 1,
+            idiom_phrase_more_click: 3
           },
           {
             day: '2026-03-02',
             reply_kbd_topic_click: 3,
             reply_kbd_level_click: 0,
             reply_kbd_voice_click: 5,
-            reply_kbd_xp_click: 2
+            reply_kbd_xp_click: 2,
+            idiom_phrase_more_click: 1
           }
         ]
       };
@@ -433,14 +453,16 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
         reply_kbd_topic_click: 4,
         reply_kbd_level_click: 2,
         reply_kbd_voice_click: 6,
-        reply_kbd_xp_click: 1
+        reply_kbd_xp_click: 1,
+        idiom_phrase_more_click: 3
       },
       {
         day: '2026-03-02',
         reply_kbd_topic_click: 3,
         reply_kbd_level_click: 0,
         reply_kbd_voice_click: 5,
-        reply_kbd_xp_click: 2
+        reply_kbd_xp_click: 2,
+        idiom_phrase_more_click: 1
       }
     ]);
   });
@@ -457,7 +479,8 @@ test('admin reply keyboard click totals return clicks and unique users', async (
         'reply_kbd_topic_click',
         'reply_kbd_level_click',
         'reply_kbd_voice_click',
-        'reply_kbd_xp_click'
+        'reply_kbd_xp_click',
+        'idiom_phrase_more_click'
       ]);
       return {
         rows: [
@@ -465,29 +488,36 @@ test('admin reply keyboard click totals return clicks and unique users', async (
             action: 'reply_kbd_topic_click',
             clicks: 7,
             unique_users: 5,
-            total_clicks: 19,
-            summary_unique_users: 9
+            total_clicks: 23,
+            summary_unique_users: 11
           },
           {
             action: 'reply_kbd_level_click',
             clicks: 2,
             unique_users: 2,
-            total_clicks: 19,
-            summary_unique_users: 9
+            total_clicks: 23,
+            summary_unique_users: 11
           },
           {
             action: 'reply_kbd_voice_click',
             clicks: 8,
             unique_users: 6,
-            total_clicks: 19,
-            summary_unique_users: 9
+            total_clicks: 23,
+            summary_unique_users: 11
           },
           {
             action: 'reply_kbd_xp_click',
             clicks: 2,
             unique_users: 2,
-            total_clicks: 19,
-            summary_unique_users: 9
+            total_clicks: 23,
+            summary_unique_users: 11
+          },
+          {
+            action: 'idiom_phrase_more_click',
+            clicks: 4,
+            unique_users: 3,
+            total_clicks: 23,
+            summary_unique_users: 11
           }
         ]
       };
@@ -506,16 +536,152 @@ test('admin reply keyboard click totals return clicks and unique users', async (
     assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
     assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
     assert.deepEqual(response.json.summary, {
-      total_clicks: 19,
-      unique_users: 9
+      total_clicks: 23,
+      unique_users: 11
     });
     assert.deepEqual(response.json.series, [
       { action: 'reply_kbd_topic_click', clicks: 7, unique_users: 5 },
       { action: 'reply_kbd_level_click', clicks: 2, unique_users: 2 },
       { action: 'reply_kbd_voice_click', clicks: 8, unique_users: 6 },
-      { action: 'reply_kbd_xp_click', clicks: 2, unique_users: 2 }
+      { action: 'reply_kbd_xp_click', clicks: 2, unique_users: 2 },
+      { action: 'idiom_phrase_more_click', clicks: 4, unique_users: 3 }
     ]);
   });
+});
+
+test('internal idiom practice more returns delivered result', async () => {
+  const now = new Date('2026-03-28T10:00:00.000Z');
+  const RealDate = Date;
+  const telegramBodies = [];
+  const dispatch = {
+    id: 9011,
+    telegram_message_id: 933,
+    payload_json: {
+      phrase_ids: [101],
+      idiom_message_ids: [933],
+      delivery_count: 1
+    }
+  };
+  const deliveredPhraseIds = [101];
+
+  globalThis.Date = class extends RealDate {
+    constructor(value) {
+      super(value ?? now.toISOString());
+    }
+    static now() {
+      return now.getTime();
+    }
+    static parse(value) {
+      return RealDate.parse(value);
+    }
+    static UTC(...args) {
+      return RealDate.UTC(...args);
+    }
+  };
+
+  try {
+    await withMockedPool({
+      queryHandler: async (source, params = []) => {
+        if (source.includes('FROM users u') && source.includes('practiced_today')) {
+          return {
+            rows: [{
+              chat_id: 55,
+              first_name: 'Oksana',
+              inactive_reason: null,
+              bot_key: 'uk-en',
+              is_active: true,
+              level: 'a2',
+              onboarding_sent_at: '2026-03-10T09:00:00.000Z',
+              practiced_today: false
+            }]
+          };
+        }
+        if (source.includes('INSERT INTO action_events (')) {
+          return { rowCount: 1, rows: [] };
+        }
+        throw new Error(`Unexpected pool query in internal idiom more test: ${source.slice(0, 180)}`);
+      },
+      connectHandler: () => ({
+        async query(sql, params = []) {
+          const source = typeof sql === 'string' ? sql : sql?.text || '';
+          if (source === 'BEGIN' || source === 'COMMIT' || source === 'ROLLBACK') {
+            return { rowCount: 0, rows: [] };
+          }
+          if (source.includes('INSERT INTO action_events (')) {
+            return { rowCount: 1, rows: [] };
+          }
+          if (source.includes('SELECT id, telegram_message_id, payload_json') && source.includes('FOR UPDATE')) {
+            return { rows: [dispatch] };
+          }
+          if (source.includes('SELECT COUNT(*)::int AS delivery_count')) {
+            return { rows: [{ delivery_count: deliveredPhraseIds.length }] };
+          }
+          if (source.includes('WITH candidates AS (')) {
+            return {
+              rows: [{
+                id: 102,
+                phrase_text: 'That figures',
+                meaning_text: 'That makes sense in a slightly negative way.',
+                tone_text: 'casual',
+                example_text: 'The train is late again? That figures.',
+                phrase_translation: 'Цього і слід було чекати',
+                meaning_translation: 'Це логічно, хоч і трохи негативно.',
+                tone_translation: 'невимушений',
+                example_translation: 'Потяг знову запізнюється? Цього і слід було чекати.',
+                delivery_count: 0,
+                last_sent_at: null
+              }]
+            };
+          }
+          if (source.includes('INSERT INTO idiom_phrase_deliveries')) {
+            deliveredPhraseIds.push(...params[3]);
+            return { rowCount: 1, rows: [] };
+          }
+          if (source.includes('UPDATE scheduled_task_dispatches') && source.includes('SET payload_json =')) {
+            dispatch.payload_json = JSON.parse(params[1]);
+            return { rowCount: 1, rows: [] };
+          }
+          if (source.includes('UPDATE action_events')) {
+            return { rowCount: 1, rows: [] };
+          }
+          throw new Error(`Unexpected client query in internal idiom more test: ${source.slice(0, 180)}`);
+        },
+        release() {}
+      })
+    }, async () => {
+      await withMockedFetch(async (_url, init) => {
+        telegramBodies.push(JSON.parse(init.body));
+        return new Response(JSON.stringify({ ok: true, result: { message_id: 934 } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }, async () => {
+        const app = await createApp({ apiBoss: { publish: async () => null } });
+        const response = await request(app, {
+          method: 'POST',
+          path: '/internal/idiom-practice/more',
+          headers: { 'X-Internal-Secret': 'internal-secret' },
+          body: {
+            chat_id: 55,
+            bot_key: 'uk-en',
+            schedule_key: '2026-03-28',
+            callback_query_id: 'cb-1',
+            source_message_id: 933
+          }
+        });
+
+        assert.equal(response.status, 200);
+        assert.equal(response.json.status, 'delivered');
+        assert.equal(response.json.deliveryIndex, 2);
+        assert.equal(response.json.telegramMessageId, 934);
+      });
+    });
+  } finally {
+    globalThis.Date = RealDate;
+  }
+
+  assert.equal(telegramBodies.length, 1);
+  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data, 'idiom_more:2026-03-28');
 });
 
 test('admin xp button click metrics return daily click counts', async () => {

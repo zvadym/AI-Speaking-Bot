@@ -36,8 +36,7 @@ import {
 import {
   buildIdiomPracticeScheduleKey,
   buildUtcDayRange,
-  resolveIdiomPracticeLevelBucket,
-  resolveIdiomPracticePhraseCount
+  resolveIdiomPracticeLevelBucket
 } from './idiom-phrases.js';
 import {
   QUEUE_DAY1_RETURN_SCAN,
@@ -81,6 +80,9 @@ const WEEKLY_DIGEST_SCAN_WEEKDAY = 1;
 const WEEKLY_DIGEST_SCAN_HOUR_UTC = 16;
 const IDIOM_PRACTICE_TASK_TYPE = 'idiom_phrase_practice';
 const IDIOM_PRACTICE_TEST_TASK_TYPE = 'idiom_phrase_practice_test';
+const IDIOM_PRACTICE_INITIAL_SEND_COUNT = 1;
+const IDIOM_PRACTICE_DAILY_CAP = 3;
+const IDIOM_PRACTICE_MORE_ACTION_TYPE = 'idiom_phrase_more_click';
 const FREE_LIMIT_HALF_TASK_TYPE = 'free_limit_50';
 const FREE_LIMIT_HALF_TEST_TASK_TYPE = 'free_limit_50_test';
 const FREE_LIMIT_HALF_SCAN_LIMIT = 500;
@@ -548,7 +550,11 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     meaning_label: 'Meaning',
     tone_label: 'Tone',
     example_label: 'Example',
-    cta: 'Reply with one of these phrases in your own sentence.'
+    cta: 'Reply with this phrase in your own sentence.',
+    more_button_text: 'More',
+    more_sent: 'One more phrase is on the way.',
+    more_limit_reached: 'You reached today\'s idiom limit.',
+    more_expired: 'That idiom button has expired.'
   },
   de: {
     title: 'Taegliche Redewendungs-Praxis',
@@ -556,7 +562,11 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     meaning_label: 'Bedeutung',
     tone_label: 'Ton',
     example_label: 'Beispiel',
-    cta: 'Antworte mit einem eigenen Satz mit einer dieser Phrasen.'
+    cta: 'Antworte mit einem eigenen Satz mit dieser Phrase.',
+    more_button_text: 'Mehr',
+    more_sent: 'Noch eine Phrase ist unterwegs.',
+    more_limit_reached: 'Du hast das heutige Redewendungs-Limit erreicht.',
+    more_expired: 'Dieser Redewendungs-Button ist abgelaufen.'
   },
   en: {
     title: 'Daily idiomatic phrase practice',
@@ -564,7 +574,11 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     meaning_label: 'Meaning',
     tone_label: 'Tone',
     example_label: 'Example',
-    cta: 'Reply with one of these phrases in your own sentence.'
+    cta: 'Reply with this phrase in your own sentence.',
+    more_button_text: 'More',
+    more_sent: 'One more phrase is on the way.',
+    more_limit_reached: 'You reached today\'s idiom limit.',
+    more_expired: 'That idiom button has expired.'
   },
   it: {
     title: 'Pratica quotidiana di espressioni idiomatiche',
@@ -572,7 +586,11 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     meaning_label: 'Significato',
     tone_label: 'Tono',
     example_label: 'Esempio',
-    cta: 'Rispondi con una tua frase usando una di queste espressioni.'
+    cta: 'Rispondi con una tua frase usando questa espressione.',
+    more_button_text: 'Altro',
+    more_sent: 'Ti mando un\'altra espressione.',
+    more_limit_reached: 'Hai raggiunto il limite di oggi per le espressioni idiomatiche.',
+    more_expired: 'Quel pulsante per le espressioni idiomatiche e scaduto.'
   },
   uk: {
     title: 'Щоденна практика сталих фраз',
@@ -580,7 +598,11 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     meaning_label: 'Значення',
     tone_label: 'Тон',
     example_label: 'Приклад',
-    cta: 'Надішли власне речення з однією з цих фраз.'
+    cta: 'Надішли власне речення з цією фразою.',
+    more_button_text: 'Ще',
+    more_sent: 'Надсилаю ще одну фразу.',
+    more_limit_reached: 'Ти вже використав сьогоднішній ліміт ідіом.',
+    more_expired: 'Ця кнопка ідіом уже неактивна.'
   }
 };
 
@@ -695,7 +717,11 @@ function resolveIdiomPracticeLocale(botKeyRaw) {
     meaning_label: String(raw.meaning_label || defaults.meaning_label).trim() || defaults.meaning_label,
     tone_label: String(raw.tone_label || defaults.tone_label).trim() || defaults.tone_label,
     example_label: String(raw.example_label || defaults.example_label).trim() || defaults.example_label,
-    cta: String(raw.cta || defaults.cta).trim() || defaults.cta
+    cta: String(raw.cta || defaults.cta).trim() || defaults.cta,
+    more_button_text: String(raw.more_button_text || defaults.more_button_text).trim() || defaults.more_button_text,
+    more_sent: String(raw.more_sent || defaults.more_sent).trim() || defaults.more_sent,
+    more_limit_reached: String(raw.more_limit_reached || defaults.more_limit_reached).trim() || defaults.more_limit_reached,
+    more_expired: String(raw.more_expired || defaults.more_expired).trim() || defaults.more_expired
   };
 }
 
@@ -1878,7 +1904,6 @@ async function loadIdiomPracticeContext(chatId, botKeyRaw, {
     isActive: row.is_active === true || row.is_active === 1 || row.is_active === 't',
     level: normalizeOptionalText(row.level, 16) || 'a1',
     levelBucket: resolveIdiomPracticeLevelBucket(row.level),
-    phraseCount: resolveIdiomPracticePhraseCount(row.level),
     onboardingSentAt: row.onboarding_sent_at ? new Date(row.onboarding_sent_at) : null,
     practicedToday: row.practiced_today === true || row.practiced_today === 1 || row.practiced_today === 't',
     baseLanguage,
@@ -1905,9 +1930,74 @@ async function fetchScheduledDispatchId(taskType, chatId, botKey, scheduleKey) {
   return Number.isFinite(id) && id > 0 ? id : null;
 }
 
-async function selectIdiomPracticeBundle({ chatId, botKey, baseLanguage, targetLanguage, levelBucket, limit }) {
-  const normalizedLimit = clampInteger(limit, { min: 1, max: 10, fallback: 2 });
-  const { rows } = await pool.query(
+function normalizeIdiomPracticeDispatchPayload(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return raw;
+}
+
+function normalizeIdiomPracticeIdList(raw) {
+  return Array.isArray(raw)
+    ? raw
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0)
+    : [];
+}
+
+function buildIdiomPracticeReplyMarkup(context, scheduleKey, remainingCount) {
+  const remaining = clampInteger(remainingCount, { min: 0, max: IDIOM_PRACTICE_DAILY_CAP, fallback: 0 });
+  if (!scheduleKey || remaining <= 0) return null;
+  const locale = context.locale || resolveIdiomPracticeLocale(context.botKey);
+  return {
+    inline_keyboard: [[{
+      text: String(locale.more_button_text || 'More').trim() || 'More',
+      callback_data: `idiom_more:${scheduleKey}`
+    }]]
+  };
+}
+
+function buildIdiomPracticeDispatchPayload(currentPayload, { phraseIds = [], telegramMessageId = null } = {}) {
+  const payload = normalizeIdiomPracticeDispatchPayload(currentPayload);
+  const nextPhraseIds = Array.from(new Set([
+    ...normalizeIdiomPracticeIdList(payload.phrase_ids),
+    ...normalizeIdiomPracticeIdList(phraseIds)
+  ]));
+  const nextMessageIds = Array.from(new Set([
+    ...normalizeIdiomPracticeIdList(payload.idiom_message_ids),
+    ...normalizeIdiomPracticeIdList([telegramMessageId])
+  ]));
+  return {
+    ...payload,
+    phrase_ids: nextPhraseIds,
+    idiom_message_ids: nextMessageIds,
+    delivery_count: nextPhraseIds.length
+  };
+}
+
+function isManualIdiomPracticeSchedule(scheduleKey) {
+  return String(scheduleKey || '').trim().startsWith('manual_test:');
+}
+
+function isIdiomPracticeScheduleCurrent(scheduleKey, now = new Date()) {
+  const normalized = String(scheduleKey || '').trim();
+  return Boolean(normalized) && normalized === buildIdiomPracticeScheduleKey(now);
+}
+
+function isInteractiveIdiomPracticeSchedule(scheduleKey, now = new Date()) {
+  return isIdiomPracticeScheduleCurrent(scheduleKey, now) || isManualIdiomPracticeSchedule(scheduleKey);
+}
+
+async function selectIdiomPracticeBundle({
+  chatId,
+  botKey,
+  baseLanguage,
+  targetLanguage,
+  levelBucket,
+  scheduleKey,
+  limit,
+  db = pool
+}) {
+  const normalizedLimit = clampInteger(limit, { min: 1, max: 10, fallback: 1 });
+  const { rows } = await db.query(
     `WITH candidates AS (
        SELECT
          c.id,
@@ -1932,6 +2022,14 @@ async function selectIdiomPracticeBundle({ chatId, botKey, baseLanguage, targetL
        WHERE c.target_language = $4::text
          AND c.level_bucket = $5::text
          AND c.is_active = true
+         AND NOT EXISTS (
+           SELECT 1
+           FROM idiom_phrase_deliveries d_today
+           WHERE d_today.chat_id = $1::bigint
+             AND d_today.bot_key = $2::text
+             AND d_today.schedule_key = $6::text
+             AND d_today.phrase_id = c.id
+         )
        GROUP BY
          c.id,
          c.phrase_text,
@@ -1949,8 +2047,8 @@ async function selectIdiomPracticeBundle({ chatId, botKey, baseLanguage, targetL
         CASE WHEN delivery_count = 0 THEN 0 ELSE 1 END ASC,
         last_sent_at ASC NULLS FIRST,
         id ASC
-      LIMIT $6::int`,
-    [chatId, botKey, baseLanguage, targetLanguage, levelBucket, normalizedLimit]
+      LIMIT $7::int`,
+    [chatId, botKey, baseLanguage, targetLanguage, levelBucket, scheduleKey, normalizedLimit]
   );
 
   return (rows || []).map((row) => ({
@@ -1968,34 +2066,39 @@ async function selectIdiomPracticeBundle({ chatId, botKey, baseLanguage, targetL
   }));
 }
 
-function buildIdiomPracticeMessage(context, phrases) {
-  if (!Array.isArray(phrases) || phrases.length === 0) return '';
+function buildIdiomPracticeMessage(context, phrase) {
+  if (!phrase || typeof phrase !== 'object') return '';
   const locale = context.locale || resolveIdiomPracticeLocale(context.botKey);
   const parts = [`<b>${escapeTelegramHtmlText(locale.title)}</b>`];
-
-  for (const [index, phrase] of phrases.entries()) {
-    parts.push('');
-    parts.push(`<b>${index + 1}. ${escapeTelegramHtmlText(phrase.phraseText)}</b>`);
-    parts.push(`🗣 ${escapeTelegramHtmlText(phrase.phraseTranslation)}`);
-    parts.push(`💡 ${escapeTelegramHtmlText(phrase.meaningTranslation)}`);
-    parts.push(`🎭 ${escapeTelegramHtmlText(locale.tone_label)}: ${escapeTelegramHtmlText(phrase.toneTranslation)}`);
-    parts.push('');
-    parts.push(`📝 ${escapeTelegramHtmlText(locale.example_label)}: ${escapeTelegramHtmlText(phrase.exampleText)}`);
-    parts.push(`<i>(${escapeTelegramHtmlText(phrase.exampleTranslation)})</i>`);
-  }
+  parts.push('');
+  parts.push(`<b>${escapeTelegramHtmlText(phrase.phraseText)}</b>`);
+  parts.push(`🗣 ${escapeTelegramHtmlText(phrase.phraseTranslation)}`);
+  parts.push(`💡 ${escapeTelegramHtmlText(phrase.meaningTranslation)}`);
+  parts.push(`🎭 ${escapeTelegramHtmlText(locale.tone_label)}: ${escapeTelegramHtmlText(phrase.toneTranslation)}`);
+  parts.push('');
+  parts.push(`📝 ${escapeTelegramHtmlText(locale.example_label)}: ${escapeTelegramHtmlText(phrase.exampleText)}`);
+  parts.push(`<i>(${escapeTelegramHtmlText(phrase.exampleTranslation)})</i>`);
 
   parts.push('');
   parts.push(escapeTelegramHtmlText(locale.cta));
   return parts.join('\n');
 }
 
-async function insertIdiomPhraseDeliveries({ taskDispatchId, chatId, botKey, scheduleKey, levelBucket, phraseIds }) {
+async function insertIdiomPhraseDeliveries({
+  taskDispatchId,
+  chatId,
+  botKey,
+  scheduleKey,
+  levelBucket,
+  phraseIds,
+  db = pool
+}) {
   const normalizedIds = Array.isArray(phraseIds)
     ? phraseIds.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0)
     : [];
   if (!normalizedIds.length) return;
 
-  await pool.query(
+  await db.query(
     `INSERT INTO idiom_phrase_deliveries (
        task_dispatch_id,
        chat_id,
@@ -2184,10 +2287,11 @@ export async function sendIdiomPracticeReminderCore({
     baseLanguage: context.baseLanguage,
     targetLanguage: context.targetLanguage,
     levelBucket: context.levelBucket,
-    limit: context.phraseCount
+    scheduleKey: effectiveScheduleKey,
+    limit: IDIOM_PRACTICE_INITIAL_SEND_COUNT
   });
 
-  if (phrases.length < context.phraseCount) {
+  if (phrases.length < IDIOM_PRACTICE_INITIAL_SEND_COUNT) {
     await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
       status: 'failed',
       lastError: 'insufficient_phrase_catalog',
@@ -2201,32 +2305,40 @@ export async function sendIdiomPracticeReminderCore({
     throw createAppError('insufficient_phrase_catalog', 502, 'insufficient_phrase_catalog', { retryable: false });
   }
 
-  const missingTranslation = phrases.find((phrase) => !phrase.phraseTranslation || !phrase.meaningTranslation || !phrase.toneTranslation || !phrase.exampleTranslation);
-  if (missingTranslation) {
+  const phrase = phrases[0] || null;
+  if (!phrase?.phraseTranslation || !phrase?.meaningTranslation || !phrase?.toneTranslation || !phrase?.exampleTranslation) {
     await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
       status: 'failed',
       lastError: 'missing_phrase_translation',
       payloadJson: {
         origin,
         reminder_type: IDIOM_PRACTICE_TASK_TYPE,
-        phrase_id: missingTranslation.id
+        phrase_id: phrase?.id || null
       }
     });
     throw createAppError('missing_phrase_translation', 502, 'missing_phrase_translation', { retryable: false });
   }
 
-  const messageText = buildIdiomPracticeMessage(context, phrases);
+  const messageText = buildIdiomPracticeMessage(context, phrase);
   if (!messageText) {
     throw createAppError('idiom_phrase_build_failed', 502, 'idiom_phrase_build_failed', { retryable: false });
   }
 
   try {
+    const replyMarkup = isInteractiveIdiomPracticeSchedule(effectiveScheduleKey, now)
+      ? buildIdiomPracticeReplyMarkup(context, effectiveScheduleKey, IDIOM_PRACTICE_DAILY_CAP - IDIOM_PRACTICE_INITIAL_SEND_COUNT)
+      : null;
     const telegramResult = await sendTelegramTextMessage(normalizedChatId, sanitizeTelegramHtml(messageText), {
       botKey: normalizedBotKey,
-      parseMode: 'HTML'
+      parseMode: 'HTML',
+      replyMarkup
     });
     const messageIdRaw = Number(telegramResult?.message_id ?? 0);
     const telegramMessageId = Number.isFinite(messageIdRaw) && messageIdRaw > 0 ? messageIdRaw : null;
+    const dispatchPayload = buildIdiomPracticeDispatchPayload({}, {
+      phraseIds: [phrase.id],
+      telegramMessageId
+    });
 
     await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
       status: 'sent',
@@ -2235,8 +2347,8 @@ export async function sendIdiomPracticeReminderCore({
         origin,
         reminder_type: IDIOM_PRACTICE_TASK_TYPE,
         level_bucket: context.levelBucket,
-        phrase_ids: phrases.map((phrase) => phrase.id),
-        message_text: messageText
+        message_text: messageText,
+        ...dispatchPayload
       }
     });
     if (taskDispatchId) {
@@ -2246,7 +2358,7 @@ export async function sendIdiomPracticeReminderCore({
         botKey: normalizedBotKey,
         scheduleKey: effectiveScheduleKey,
         levelBucket: context.levelBucket,
-        phraseIds: phrases.map((phrase) => phrase.id)
+        phraseIds: [phrase.id]
       });
     }
     await updateUserDeliveryState(normalizedChatId, {
@@ -2264,7 +2376,7 @@ export async function sendIdiomPracticeReminderCore({
       scheduleKey: effectiveScheduleKey,
       telegramMessageId,
       messageText,
-      phraseIds: phrases.map((phrase) => phrase.id),
+      phraseIds: [phrase.id],
       allowlistActive: getAutomatedMessageTestState().active
     };
   } catch (error) {
@@ -2291,6 +2403,364 @@ export async function sendIdiomPracticeReminderCore({
       inactiveReason,
       cause: error
     });
+  }
+}
+
+async function reserveIdiomPracticeMoreClickEvent(client, {
+  chatId,
+  botKey,
+  callbackQueryId,
+  scheduleKey,
+  sourceMessageId
+}) {
+  const idempotencyKey = String(callbackQueryId || '').trim()
+    ? `idiom_phrase_more_click:${String(callbackQueryId).trim()}`
+    : null;
+  if (!idempotencyKey) return { idempotencyKey: null, inserted: true };
+
+  const { rowCount } = await client.query(
+    `INSERT INTO action_events (
+       chat_id,
+       bot_key,
+       action_type,
+       source,
+       idempotency_key,
+       properties,
+       occurred_at
+     )
+     VALUES (
+       $1::bigint,
+       $2::text,
+       $3::text,
+       'workflow',
+       $4::text,
+       $5::jsonb,
+       NOW()
+     )
+     ON CONFLICT (idempotency_key) DO NOTHING`,
+    [
+      chatId,
+      botKey,
+      IDIOM_PRACTICE_MORE_ACTION_TYPE,
+      idempotencyKey,
+      JSON.stringify({
+        schedule_key: scheduleKey,
+        source_message_id: Number.isFinite(Number(sourceMessageId)) ? Number(sourceMessageId) : null,
+        callback_query_id: String(callbackQueryId || '').trim() || null,
+        result: 'processing'
+      })
+    ]
+  );
+
+  return { idempotencyKey, inserted: rowCount > 0 };
+}
+
+async function finalizeIdiomPracticeMoreClickEvent(client, idempotencyKey, properties) {
+  if (!idempotencyKey) return;
+  await client.query(
+    `UPDATE action_events
+        SET properties = $2::jsonb,
+            occurred_at = NOW()
+      WHERE idempotency_key = $1::text`,
+    [idempotencyKey, JSON.stringify(properties || {})]
+  );
+}
+
+async function recordIdiomPracticeMoreClickOutcome(db, {
+  chatId,
+  botKey,
+  callbackQueryId,
+  scheduleKey,
+  sourceMessageId,
+  result,
+  deliveryIndex = null
+}) {
+  const normalizedChatId = Number(chatId);
+  const normalizedBotKey = normalizeBotKey(botKey);
+  const idempotencyKey = String(callbackQueryId || '').trim()
+    ? `idiom_phrase_more_click:${String(callbackQueryId).trim()}`
+    : null;
+  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey || !idempotencyKey) return;
+
+  await db.query(
+    `INSERT INTO action_events (
+       chat_id,
+       bot_key,
+       action_type,
+       source,
+       idempotency_key,
+       properties,
+       occurred_at
+     )
+     VALUES (
+       $1::bigint,
+       $2::text,
+       $3::text,
+       'workflow',
+       $4::text,
+       $5::jsonb,
+       NOW()
+     )
+     ON CONFLICT (idempotency_key) DO UPDATE
+       SET properties = EXCLUDED.properties,
+           occurred_at = EXCLUDED.occurred_at`,
+    [
+      normalizedChatId,
+      normalizedBotKey,
+      IDIOM_PRACTICE_MORE_ACTION_TYPE,
+      idempotencyKey,
+      JSON.stringify({
+        schedule_key: String(scheduleKey || '').trim() || null,
+        source_message_id: Number.isFinite(Number(sourceMessageId)) ? Number(sourceMessageId) : null,
+        callback_query_id: String(callbackQueryId || '').trim() || null,
+        result: String(result || '').trim() || null,
+        delivery_index: Number.isFinite(Number(deliveryIndex)) ? Number(deliveryIndex) : null
+      })
+    ]
+  );
+}
+
+export async function sendIdiomPracticeMorePhrase({
+  chatId,
+  botKey,
+  scheduleKey,
+  callbackQueryId,
+  sourceMessageId = null,
+  now = new Date()
+} = {}) {
+  const normalizedChatId = Number(chatId);
+  const normalizedBotKey = normalizeBotKey(botKey);
+  const normalizedScheduleKey = String(scheduleKey || '').trim();
+  const normalizedSourceMessageId = Number(sourceMessageId);
+  const locale = resolveIdiomPracticeLocale(normalizedBotKey);
+
+  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey || !normalizedScheduleKey || !String(callbackQueryId || '').trim()) {
+    throw createAppError('bad_request', 400, 'bad_request', { retryable: false });
+  }
+
+  if (!isInteractiveIdiomPracticeSchedule(normalizedScheduleKey, now)) {
+    await recordIdiomPracticeMoreClickOutcome(pool, {
+      chatId: normalizedChatId,
+      botKey: normalizedBotKey,
+      callbackQueryId,
+      scheduleKey: normalizedScheduleKey,
+      sourceMessageId: normalizedSourceMessageId,
+      result: 'expired'
+    });
+    return {
+      ok: true,
+      status: 'expired',
+      callbackText: locale.more_expired,
+      deliveryIndex: null,
+      telegramMessageId: null
+    };
+  }
+
+  const context = await loadIdiomPracticeContext(normalizedChatId, normalizedBotKey, {
+    origin: WINBACK_AUTOMATED_ORIGIN,
+    scheduleKey: normalizedScheduleKey,
+    now
+  });
+  if (!context) {
+    await recordIdiomPracticeMoreClickOutcome(pool, {
+      chatId: normalizedChatId,
+      botKey: normalizedBotKey,
+      callbackQueryId,
+      scheduleKey: normalizedScheduleKey,
+      sourceMessageId: normalizedSourceMessageId,
+      result: 'no_dispatch'
+    });
+    return {
+      ok: true,
+      status: 'no_dispatch',
+      callbackText: locale.more_expired,
+      deliveryIndex: null,
+      telegramMessageId: null
+    };
+  }
+
+  const client = await pool.connect();
+  let reservedEventKey = null;
+
+  try {
+    await client.query('BEGIN');
+
+    const reserve = await reserveIdiomPracticeMoreClickEvent(client, {
+      chatId: normalizedChatId,
+      botKey: normalizedBotKey,
+      callbackQueryId,
+      scheduleKey: normalizedScheduleKey,
+      sourceMessageId: normalizedSourceMessageId
+    });
+    reservedEventKey = reserve.idempotencyKey;
+    if (!reserve.inserted) {
+      await client.query('ROLLBACK');
+      return {
+        ok: true,
+        status: 'limit_reached',
+        callbackText: locale.more_limit_reached,
+        deliveryIndex: null,
+        telegramMessageId: null
+      };
+    }
+
+    const dispatchTaskTypes = isManualIdiomPracticeSchedule(normalizedScheduleKey)
+      ? [IDIOM_PRACTICE_TEST_TASK_TYPE]
+      : [IDIOM_PRACTICE_TASK_TYPE];
+
+    const dispatchResult = await client.query(
+      `SELECT id, telegram_message_id, payload_json
+         FROM scheduled_task_dispatches
+        WHERE task_type = ANY($1::text[])
+          AND bot_key = $2::text
+          AND chat_id = $3::bigint
+          AND schedule_key = $4::text
+          AND status = 'sent'
+          AND sent_at IS NOT NULL
+        LIMIT 1
+        FOR UPDATE`,
+      [dispatchTaskTypes, normalizedBotKey, normalizedChatId, normalizedScheduleKey]
+    );
+    const dispatch = dispatchResult.rows[0] || null;
+    const dispatchPayload = normalizeIdiomPracticeDispatchPayload(dispatch?.payload_json);
+    const knownMessageIds = normalizeIdiomPracticeIdList([
+      dispatch?.telegram_message_id,
+      ...(Array.isArray(dispatchPayload.idiom_message_ids) ? dispatchPayload.idiom_message_ids : [])
+    ]);
+    const baseEventProperties = {
+      schedule_key: normalizedScheduleKey,
+      source_message_id: Number.isFinite(normalizedSourceMessageId) && normalizedSourceMessageId > 0 ? normalizedSourceMessageId : null,
+      callback_query_id: String(callbackQueryId || '').trim() || null
+    };
+
+    if (!dispatch || (Number.isFinite(normalizedSourceMessageId) && normalizedSourceMessageId > 0 && !knownMessageIds.includes(normalizedSourceMessageId))) {
+      await finalizeIdiomPracticeMoreClickEvent(client, reservedEventKey, {
+        ...baseEventProperties,
+        result: 'no_dispatch'
+      });
+      await client.query('COMMIT');
+      return {
+        ok: true,
+        status: 'no_dispatch',
+        callbackText: context.locale.more_expired,
+        deliveryIndex: null,
+        telegramMessageId: null
+      };
+    }
+
+    const deliveriesResult = await client.query(
+      `SELECT COUNT(*)::int AS delivery_count
+         FROM idiom_phrase_deliveries
+        WHERE task_dispatch_id = $1::bigint`,
+      [dispatch.id]
+    );
+    const deliveredCount = clampInteger(deliveriesResult.rows[0]?.delivery_count, {
+      min: 0,
+      max: IDIOM_PRACTICE_DAILY_CAP,
+      fallback: 0
+    });
+
+    if (deliveredCount >= IDIOM_PRACTICE_DAILY_CAP) {
+      await finalizeIdiomPracticeMoreClickEvent(client, reservedEventKey, {
+        ...baseEventProperties,
+        result: 'limit_reached'
+      });
+      await client.query('COMMIT');
+      return {
+        ok: true,
+        status: 'limit_reached',
+        callbackText: context.locale.more_limit_reached,
+        deliveryIndex: null,
+        telegramMessageId: null
+      };
+    }
+
+    const phrases = await selectIdiomPracticeBundle({
+      chatId: normalizedChatId,
+      botKey: normalizedBotKey,
+      baseLanguage: context.baseLanguage,
+      targetLanguage: context.targetLanguage,
+      levelBucket: context.levelBucket,
+      scheduleKey: normalizedScheduleKey,
+      limit: 1,
+      db: client
+    });
+    const phrase = phrases[0] || null;
+    if (!phrase?.phraseTranslation || !phrase?.meaningTranslation || !phrase?.toneTranslation || !phrase?.exampleTranslation) {
+      await finalizeIdiomPracticeMoreClickEvent(client, reservedEventKey, {
+        ...baseEventProperties,
+        result: 'limit_reached'
+      });
+      await client.query('COMMIT');
+      return {
+        ok: true,
+        status: 'limit_reached',
+        callbackText: context.locale.more_limit_reached,
+        deliveryIndex: null,
+        telegramMessageId: null
+      };
+    }
+
+    const messageText = buildIdiomPracticeMessage(context, phrase);
+    if (!messageText) {
+      throw createAppError('idiom_phrase_build_failed', 502, 'idiom_phrase_build_failed', { retryable: false });
+    }
+
+    const remainingAfterSend = IDIOM_PRACTICE_DAILY_CAP - (deliveredCount + 1);
+    const replyMarkup = buildIdiomPracticeReplyMarkup(context, normalizedScheduleKey, remainingAfterSend);
+    const telegramResult = await sendTelegramTextMessage(normalizedChatId, sanitizeTelegramHtml(messageText), {
+      botKey: normalizedBotKey,
+      parseMode: 'HTML',
+      replyMarkup
+    });
+    const messageIdRaw = Number(telegramResult?.message_id ?? 0);
+    const telegramMessageId = Number.isFinite(messageIdRaw) && messageIdRaw > 0 ? messageIdRaw : null;
+
+    await insertIdiomPhraseDeliveries({
+      taskDispatchId: Number(dispatch.id),
+      chatId: normalizedChatId,
+      botKey: normalizedBotKey,
+      scheduleKey: normalizedScheduleKey,
+      levelBucket: context.levelBucket,
+      phraseIds: [phrase.id],
+      db: client
+    });
+
+    const nextPayload = buildIdiomPracticeDispatchPayload(dispatchPayload, {
+      phraseIds: [phrase.id],
+      telegramMessageId
+    });
+    await client.query(
+      `UPDATE scheduled_task_dispatches
+          SET payload_json = $2::jsonb,
+              updated_at = NOW()
+        WHERE id = $1::bigint`,
+      [dispatch.id, JSON.stringify(nextPayload)]
+    );
+
+    await finalizeIdiomPracticeMoreClickEvent(client, reservedEventKey, {
+      ...baseEventProperties,
+      result: 'delivered',
+      delivery_index: deliveredCount + 1
+    });
+
+    await client.query('COMMIT');
+    return {
+      ok: true,
+      status: 'delivered',
+      callbackText: remainingAfterSend > 0 ? context.locale.more_sent : context.locale.more_limit_reached,
+      deliveryIndex: deliveredCount + 1,
+      telegramMessageId
+    };
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      // Ignore rollback failures from a broken client session.
+    }
+    throw error;
+  } finally {
+    client.release();
   }
 }
 

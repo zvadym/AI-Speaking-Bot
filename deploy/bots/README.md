@@ -97,6 +97,7 @@ The API automated notifications also read these locale keys when present:
 - `locale.notifications.weekly_digest.*`
 - `locale.notifications.winback.*`
 - `locale.notifications.free_limit_50.message_html`
+- `locale.notifications.idiom_phrase_practice.*`
 
 The main chat workflow also expects:
 
