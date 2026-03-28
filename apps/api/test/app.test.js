@@ -637,6 +637,24 @@ test('internal idiom practice more returns delivered result', async () => {
             deliveredPhraseIds.push(...params[3]);
             return { rowCount: 1, rows: [] };
           }
+          if (source.includes('FROM public.grant_xp(')) {
+            assert.equal(params[2], 'btn_idiom_more');
+            assert.equal(params[3], 2);
+            return {
+              rows: [{
+                applied: true,
+                awarded_xp: 2,
+                xp_total: 12,
+                xp_daily: 4,
+                streak_current: 2,
+                streak_best: 2,
+                streak_last_day: '2026-03-28',
+                level: 1,
+                xp_into_level: 12,
+                xp_to_next: 188
+              }]
+            };
+          }
           if (source.includes('UPDATE scheduled_task_dispatches') && source.includes('SET payload_json =')) {
             dispatch.payload_json = JSON.parse(params[1]);
             return { rowCount: 1, rows: [] };
@@ -691,20 +709,22 @@ test('admin xp button click metrics return daily click counts', async () => {
       assert.equal(params[1], '2026-03-04T00:00:00.000Z');
       assert.equal(params[2], null);
       assert.equal(params[3], null);
-      assert.deepEqual(params[4], ['btn_translation', 'btn_vocab', 'btn_hints']);
+      assert.deepEqual(params[4], ['btn_translation', 'btn_vocab', 'btn_hints', 'btn_idiom_more']);
       return {
         rows: [
           {
             day: '2026-03-01',
             btn_translation: 5,
             btn_vocab: 2,
-            btn_hints: 3
+            btn_hints: 3,
+            btn_idiom_more: 4
           },
           {
             day: '2026-03-02',
             btn_translation: 1,
             btn_vocab: 4,
-            btn_hints: 0
+            btn_hints: 0,
+            btn_idiom_more: 2
           }
         ]
       };
@@ -727,13 +747,15 @@ test('admin xp button click metrics return daily click counts', async () => {
         day: '2026-03-01',
         btn_translation: 5,
         btn_vocab: 2,
-        btn_hints: 3
+        btn_hints: 3,
+        btn_idiom_more: 4
       },
       {
         day: '2026-03-02',
         btn_translation: 1,
         btn_vocab: 4,
-        btn_hints: 0
+        btn_hints: 0,
+        btn_idiom_more: 2
       }
     ]);
   });
@@ -927,6 +949,10 @@ test('admin free users insights applies bot scope to all aggregates', async () =
 test('admin active users by day returns first-day and returning user splits', async () => {
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('first_activity AS') && source.includes('returned_users')) {
+      assert.match(source, /FROM voice_usage_events v/);
+      assert.match(source, /FROM messages m/);
+      assert.match(source, /FROM xp_events x/);
+      assert.match(source, /FROM action_events a/);
       assert.equal(params[0], '2026-03-01T00:00:00.000Z');
       assert.equal(params[1], '2026-03-04T00:00:00.000Z');
       assert.equal(params[2], null);
@@ -956,6 +982,57 @@ test('admin active users by day returns first-day and returning user splits', as
       { day: '2026-03-01', count: 5, new_users: 3, returned_users: 2 },
       { day: '2026-03-02', count: 4, new_users: 1, returned_users: 3 },
       { day: '2026-03-03', count: 0, new_users: 0, returned_users: 0 }
+    ]);
+  });
+});
+
+test('admin active users by day by bot counts any tracked activity with bot attribution', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('active-users-by-day-by-bot')) {
+      throw new Error('route path leaked into SQL unexpectedly');
+    }
+
+    if (source.includes('COUNT(DISTINCT e.chat_id)::int AS count') && source.includes('CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots')) {
+      assert.match(source, /FROM voice_usage_events v/);
+      assert.match(source, /FROM messages m/);
+      assert.match(source, /FROM xp_events x/);
+      assert.match(source, /FROM action_events a/);
+      assert.match(source, /WHERE a\.bot_key IS NOT NULL/);
+      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
+      assert.equal(params[1], '2026-03-04T00:00:00.000Z');
+      assert.equal(params[2], null);
+      assert.equal(params[3], null);
+      return {
+        rows: [
+          { day: '2026-03-01', bot_key: 'uk-de', count: 3 },
+          { day: '2026-03-01', bot_key: 'en-de', count: 1 },
+          { day: '2026-03-02', bot_key: 'uk-de', count: 2 },
+          { day: '2026-03-02', bot_key: 'en-de', count: 0 },
+          { day: '2026-03-03', bot_key: 'uk-de', count: 0 },
+          { day: '2026-03-03', bot_key: 'en-de', count: 4 }
+        ]
+      };
+    }
+
+    throw new Error(`Unexpected query in active users by day by bot test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/metrics/active-users-by-day-by-bot?from=2026-03-01&to=2026-03-04',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.tz, 'UTC');
+    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
+    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
+    assert.deepEqual(response.json.series, [
+      { day: '2026-03-01', bot_key: 'uk-de', count: 3 },
+      { day: '2026-03-01', bot_key: 'en-de', count: 1 },
+      { day: '2026-03-02', bot_key: 'uk-de', count: 2 },
+      { day: '2026-03-02', bot_key: 'en-de', count: 0 },
+      { day: '2026-03-03', bot_key: 'uk-de', count: 0 },
+      { day: '2026-03-03', bot_key: 'en-de', count: 4 }
     ]);
   });
 });

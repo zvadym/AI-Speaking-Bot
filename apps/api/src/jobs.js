@@ -83,6 +83,8 @@ const IDIOM_PRACTICE_TEST_TASK_TYPE = 'idiom_phrase_practice_test';
 const IDIOM_PRACTICE_INITIAL_SEND_COUNT = 1;
 const IDIOM_PRACTICE_DAILY_CAP = 3;
 const IDIOM_PRACTICE_MORE_ACTION_TYPE = 'idiom_phrase_more_click';
+const IDIOM_PRACTICE_MORE_XP_EVENT_TYPE = 'btn_idiom_more';
+const IDIOM_PRACTICE_MORE_XP_AMOUNT = 2;
 const FREE_LIMIT_HALF_TASK_TYPE = 'free_limit_50';
 const FREE_LIMIT_HALF_TEST_TASK_TYPE = 'free_limit_50_test';
 const FREE_LIMIT_HALF_SCAN_LIMIT = 500;
@@ -2556,6 +2558,52 @@ async function recordIdiomPracticeMoreClickOutcome(db, {
   );
 }
 
+async function grantIdiomPracticeMoreXp(client, {
+  chatId,
+  botKey,
+  callbackQueryId,
+  scheduleKey,
+  sourceMessageId,
+  deliveryIndex
+}) {
+  const normalizedChatId = Number(chatId);
+  const normalizedBotKey = normalizeBotKey(botKey);
+  const normalizedCallbackQueryId = String(callbackQueryId || '').trim();
+  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey || !normalizedCallbackQueryId) {
+    return null;
+  }
+
+  const { rows } = await client.query(
+    `SELECT *
+       FROM public.grant_xp(
+         $1::bigint,
+         $2::text,
+         $3::text,
+         $4::int,
+         $5::text,
+         false,
+         NOW(),
+         $6::jsonb
+       );`,
+    [
+      normalizedChatId,
+      normalizedBotKey,
+      IDIOM_PRACTICE_MORE_XP_EVENT_TYPE,
+      IDIOM_PRACTICE_MORE_XP_AMOUNT,
+      `xp:btn:idiom_more:${normalizedChatId}:${normalizedBotKey}:${normalizedCallbackQueryId}`,
+      JSON.stringify({
+        schedule_key: String(scheduleKey || '').trim() || null,
+        callback_query_id: normalizedCallbackQueryId,
+        source_message_id: Number.isFinite(Number(sourceMessageId)) ? Number(sourceMessageId) : null,
+        delivery_index: Number.isFinite(Number(deliveryIndex)) ? Number(deliveryIndex) : null,
+        source_group: 'idiom_more'
+      })
+    ]
+  );
+
+  return rows[0] || null;
+}
+
 export async function sendIdiomPracticeMorePhrase({
   chatId,
   botKey,
@@ -2793,6 +2841,15 @@ export async function sendIdiomPracticeMorePhrase({
         WHERE id = $1::bigint`,
       [dispatch.id, JSON.stringify(nextPayload)]
     );
+
+    await grantIdiomPracticeMoreXp(client, {
+      chatId: normalizedChatId,
+      botKey: normalizedBotKey,
+      callbackQueryId,
+      scheduleKey: normalizedScheduleKey,
+      sourceMessageId: telegramMessageId,
+      deliveryIndex: deliveredCount + 1
+    });
 
     await finalizeIdiomPracticeMoreClickEvent(client, reservedEventKey, {
       ...baseEventProperties,

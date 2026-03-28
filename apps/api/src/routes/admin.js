@@ -45,7 +45,7 @@ const REPLY_KEYBOARD_ACTION_TYPES = [
   'reply_kbd_xp_click',
   'idiom_phrase_more_click'
 ];
-const XP_BUTTON_EVENT_TYPES = ['btn_translation', 'btn_vocab', 'btn_hints'];
+const XP_BUTTON_EVENT_TYPES = ['btn_translation', 'btn_vocab', 'btn_hints', 'btn_idiom_more'];
 const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
 const NOTIFICATION_TASK_TYPES = [
   'onboarding_complete',
@@ -355,22 +355,56 @@ export function createAdminRouter(ctx, helpers) {
          WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
            AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
        ),
-       first_activity AS (
+       activity_events AS (
          SELECT
            v.chat_id,
-           MIN(date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date) AS first_day_utc
+           v.bot_key,
+           v.occurred_at
          FROM voice_usage_events v
          JOIN filtered_users u ON u.chat_id = v.chat_id
-         GROUP BY v.chat_id
+
+         UNION
+
+         SELECT
+           m.chat_id,
+           m.bot_key,
+           m.created_at AS occurred_at
+         FROM messages m
+         JOIN filtered_users u ON u.chat_id = m.chat_id
+         WHERE m.role = 'user'
+
+         UNION
+
+         SELECT
+           x.chat_id,
+           x.bot_key,
+           x.occurred_at
+         FROM xp_events x
+         JOIN filtered_users u ON u.chat_id = x.chat_id
+
+         UNION
+
+         SELECT
+           a.chat_id,
+           a.bot_key,
+           a.occurred_at
+         FROM action_events a
+         JOIN filtered_users u ON u.chat_id = a.chat_id
+       ),
+       first_activity AS (
+         SELECT
+           e.chat_id,
+           MIN(date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date) AS first_day_utc
+         FROM activity_events e
+         GROUP BY e.chat_id
        ),
        daily_active AS (
          SELECT DISTINCT
-           date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
-           v.chat_id
-         FROM voice_usage_events v
-         JOIN filtered_users u ON u.chat_id = v.chat_id
-         WHERE v.occurred_at >= (SELECT from_ts FROM params)
-           AND v.occurred_at < (SELECT to_ts FROM params)
+           date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+           e.chat_id
+         FROM activity_events e
+         WHERE e.occurred_at >= (SELECT from_ts FROM params)
+           AND e.occurred_at < (SELECT to_ts FROM params)
        ),
        counts AS (
          SELECT
@@ -560,15 +594,51 @@ export function createAdminRouter(ctx, helpers) {
          WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
            AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
        ),
-       counts AS (
+       activity_events AS (
          SELECT
-           date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+           v.chat_id,
            v.bot_key,
-           COUNT(DISTINCT v.chat_id)::int AS count
+           v.occurred_at
          FROM voice_usage_events v
          JOIN filtered_users u ON u.chat_id = v.chat_id
-         WHERE v.occurred_at >= (SELECT from_ts FROM params)
-           AND v.occurred_at < (SELECT to_ts FROM params)
+
+         UNION
+
+         SELECT
+           m.chat_id,
+           m.bot_key,
+           m.created_at AS occurred_at
+         FROM messages m
+         JOIN filtered_users u ON u.chat_id = m.chat_id
+         WHERE m.role = 'user'
+
+         UNION
+
+         SELECT
+           x.chat_id,
+           x.bot_key,
+           x.occurred_at
+         FROM xp_events x
+         JOIN filtered_users u ON u.chat_id = x.chat_id
+
+         UNION
+
+         SELECT
+           a.chat_id,
+           a.bot_key,
+           a.occurred_at
+         FROM action_events a
+         JOIN filtered_users u ON u.chat_id = a.chat_id
+         WHERE a.bot_key IS NOT NULL
+       ),
+       counts AS (
+         SELECT
+           date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
+           e.bot_key,
+           COUNT(DISTINCT e.chat_id)::int AS count
+         FROM activity_events e
+         WHERE e.occurred_at >= (SELECT from_ts FROM params)
+           AND e.occurred_at < (SELECT to_ts FROM params)
          GROUP BY 1, 2
        )
        SELECT
@@ -898,7 +968,8 @@ export function createAdminRouter(ctx, helpers) {
          d.day_utc::text AS day,
          COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_translation'), 0)::int AS btn_translation,
          COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_vocab'), 0)::int AS btn_vocab,
-         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_hints'), 0)::int AS btn_hints
+         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_hints'), 0)::int AS btn_hints,
+         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_idiom_more'), 0)::int AS btn_idiom_more
        FROM days d
        LEFT JOIN counts c USING (day_utc)
        GROUP BY d.day_utc

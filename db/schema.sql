@@ -1236,7 +1236,7 @@ CREATE TABLE public.xp_events (
     idempotency_key text NOT NULL,
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     meta jsonb DEFAULT '{}'::jsonb NOT NULL,
-    CONSTRAINT xp_events_event_type_check CHECK ((event_type = ANY (ARRAY['voice'::text, 'text'::text, 'btn_translation'::text, 'btn_vocab'::text, 'btn_hints'::text, 'starter'::text]))),
+    CONSTRAINT xp_events_event_type_check CHECK ((event_type = ANY (ARRAY['voice'::text, 'text'::text, 'btn_translation'::text, 'btn_vocab'::text, 'btn_hints'::text, 'btn_idiom_more'::text, 'starter'::text]))),
     CONSTRAINT xp_events_xp_delta_check CHECK ((xp_delta >= 0))
 );
 

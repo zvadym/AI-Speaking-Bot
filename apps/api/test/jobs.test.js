@@ -418,6 +418,24 @@ test('idiom practice more sends one extra phrase at a time up to the daily cap',
         deliveredPhraseIds.push(...params[3]);
         return { rowCount: params[3].length, rows: [] };
       }
+      if (source.includes('FROM public.grant_xp(')) {
+        assert.equal(params[2], 'btn_idiom_more');
+        assert.equal(params[3], 2);
+        return {
+          rows: [{
+            applied: true,
+            awarded_xp: 2,
+            xp_total: 42,
+            xp_daily: 8,
+            streak_current: 3,
+            streak_best: 5,
+            streak_last_day: '2026-03-28',
+            level: 1,
+            xp_into_level: 42,
+            xp_to_next: 158
+          }]
+        };
+      }
       if (source.includes('UPDATE scheduled_task_dispatches') && source.includes('SET payload_json =')) {
         dispatch.payload_json = JSON.parse(params[1]);
         return { rowCount: 1, rows: [] };
@@ -573,6 +591,24 @@ test('idiom practice more accepts dashboard test schedules', async () => {
         if (source.includes('INSERT INTO idiom_phrase_deliveries')) {
           deliveredPhraseIds.push(...params[3]);
           return { rowCount: params[3].length, rows: [] };
+        }
+        if (source.includes('FROM public.grant_xp(')) {
+          assert.equal(params[2], 'btn_idiom_more');
+          assert.equal(params[3], 2);
+          return {
+            rows: [{
+              applied: true,
+              awarded_xp: 2,
+              xp_total: 24,
+              xp_daily: 6,
+              streak_current: 2,
+              streak_best: 4,
+              streak_last_day: '2026-03-28',
+              level: 1,
+              xp_into_level: 24,
+              xp_to_next: 176
+            }]
+          };
         }
         if (source.includes('UPDATE scheduled_task_dispatches') && source.includes('SET payload_json =')) {
           dispatch.payload_json = JSON.parse(params[1]);
