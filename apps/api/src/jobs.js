@@ -551,10 +551,22 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     tone_label: 'Tone',
     example_label: 'Example',
     cta: 'Reply with this phrase in your own sentence.',
-    more_button_text: 'More',
+    more_button_text: 'Show one more phrase',
     more_sent: 'One more phrase is on the way.',
     more_limit_reached: 'You reached today\'s idiom limit.',
     more_expired: 'That idiom button has expired.'
+  },
+  ar: {
+    title: 'ممارسة يومية للتعابير الاصطلاحية',
+    translation_label: 'الترجمة',
+    meaning_label: 'المعنى',
+    tone_label: 'النبرة',
+    example_label: 'مثال',
+    cta: 'اكتب جملة من عندك باستخدام هذه العبارة.',
+    more_button_text: 'اعرض عبارة أخرى',
+    more_sent: 'سأرسل لك عبارة أخرى الآن.',
+    more_limit_reached: 'لقد وصلت إلى حد التعابير الاصطلاحية لليوم.',
+    more_expired: 'انتهت صلاحية زر التعابير الاصطلاحية هذا.'
   },
   de: {
     title: 'Taegliche Redewendungs-Praxis',
@@ -563,7 +575,7 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     tone_label: 'Ton',
     example_label: 'Beispiel',
     cta: 'Antworte mit einem eigenen Satz mit dieser Phrase.',
-    more_button_text: 'Mehr',
+    more_button_text: 'Noch eine Phrase zeigen',
     more_sent: 'Noch eine Phrase ist unterwegs.',
     more_limit_reached: 'Du hast das heutige Redewendungs-Limit erreicht.',
     more_expired: 'Dieser Redewendungs-Button ist abgelaufen.'
@@ -575,10 +587,22 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     tone_label: 'Tone',
     example_label: 'Example',
     cta: 'Reply with this phrase in your own sentence.',
-    more_button_text: 'More',
+    more_button_text: 'Show one more phrase',
     more_sent: 'One more phrase is on the way.',
     more_limit_reached: 'You reached today\'s idiom limit.',
     more_expired: 'That idiom button has expired.'
+  },
+  hi: {
+    title: 'रोज़ाना मुहावरेदार वाक्यांश अभ्यास',
+    translation_label: 'अनुवाद',
+    meaning_label: 'अर्थ',
+    tone_label: 'लहजा',
+    example_label: 'उदाहरण',
+    cta: 'इस वाक्यांश का उपयोग करके अपना एक वाक्य लिखें।',
+    more_button_text: 'एक और वाक्यांश दिखाएं',
+    more_sent: 'मैं अभी एक और वाक्यांश भेज रहा हूँ।',
+    more_limit_reached: 'आप आज की मुहावरेदार वाक्यांश सीमा तक पहुँच गए हैं।',
+    more_expired: 'यह मुहावरेदार वाक्यांश बटन अब समाप्त हो चुका है।'
   },
   it: {
     title: 'Pratica quotidiana di espressioni idiomatiche',
@@ -587,10 +611,22 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     tone_label: 'Tono',
     example_label: 'Esempio',
     cta: 'Rispondi con una tua frase usando questa espressione.',
-    more_button_text: 'Altro',
+    more_button_text: 'Mostra un\'altra espressione',
     more_sent: 'Ti mando un\'altra espressione.',
     more_limit_reached: 'Hai raggiunto il limite di oggi per le espressioni idiomatiche.',
     more_expired: 'Quel pulsante per le espressioni idiomatiche e scaduto.'
+  },
+  tr: {
+    title: 'Gunluk deyim calismasi',
+    translation_label: 'Ceviri',
+    meaning_label: 'Anlam',
+    tone_label: 'Ton',
+    example_label: 'Ornek',
+    cta: 'Bu ifadeyi kullanarak kendi cumleni yaz.',
+    more_button_text: 'Bir ifade daha goster',
+    more_sent: 'Sana hemen bir ifade daha gonderiyorum.',
+    more_limit_reached: 'Bugunku deyim limitine ulastin.',
+    more_expired: 'Bu deyim dugmesinin suresi doldu.'
   },
   uk: {
     title: 'Щоденна практика сталих фраз',
@@ -599,7 +635,7 @@ const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
     tone_label: 'Тон',
     example_label: 'Приклад',
     cta: 'Надішли власне речення з цією фразою.',
-    more_button_text: 'Ще',
+    more_button_text: 'Покажи ще одну фразу',
     more_sent: 'Надсилаю ще одну фразу.',
     more_limit_reached: 'Ти вже використав сьогоднішній ліміт ідіом.',
     more_expired: 'Ця кнопка ідіом уже неактивна.'

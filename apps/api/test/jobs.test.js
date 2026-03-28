@@ -272,7 +272,7 @@ test('admin idiom practice reminder sends one translated phrase', async () => {
   assert.match(telegramBodies[0].text, /🗣/u);
   assert.match(telegramBodies[0].text, /📝/u);
   assert.doesNotMatch(telegramBodies[0].text, /\b2\./);
-  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].text, 'Ще');
+  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].text, 'Покажи ще одну фразу');
   assert.match(
     telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data,
     /^idiom_more:manual_test:/
