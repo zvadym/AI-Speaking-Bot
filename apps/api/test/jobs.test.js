@@ -277,6 +277,7 @@ test('admin idiom practice reminder sends one translated phrase', async () => {
     telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data,
     /^idiom_more:manual_test:/
   );
+  assert.ok(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data.length <= 64);
   assert.deepEqual(deliveredPhraseIds, [101]);
 });
 

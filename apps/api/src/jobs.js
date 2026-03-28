@@ -246,7 +246,7 @@ function buildWinbackScheduleKey(dateLike) {
 }
 
 function buildManualTestScheduleKey() {
-  return `manual_test:${new Date().toISOString()}:${randomUUID()}`;
+  return `manual_test:${Date.now().toString(36)}:${randomUUID().replace(/-/g, '').slice(0, 8)}`;
 }
 
 function stableVariantIndex(seed, size) {
