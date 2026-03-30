@@ -281,7 +281,11 @@ test('admin idiom practice reminder sends one translated phrase', async () => {
   assert.deepEqual(deliveredPhraseIds, [101]);
 });
 
-test('automated idiom practice skips users who already practiced today', async () => {
+test('automated idiom practice still sends without onboarding and after same-day practice', async () => {
+  const now = new Date('2026-03-28T10:00:00.000Z');
+  const telegramBodies = [];
+  const deliveredPhraseIds = [];
+
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('FROM users u') && source.includes('practiced_today')) {
       return {
@@ -292,30 +296,88 @@ test('automated idiom practice skips users who already practiced today', async (
           bot_key: 'en-de',
           is_active: true,
           level: 'b1',
-          onboarding_sent_at: '2026-03-10T09:00:00.000Z',
+          onboarding_sent_at: null,
           practiced_today: true
         }]
       };
+    }
+
+    if (source.includes('SELECT 1') && source.includes('FROM scheduled_task_dispatches')) {
+      return { rows: [] };
     }
 
     if (source.includes('INSERT INTO scheduled_task_dispatches (')) {
       return { rowCount: 1, rows: [] };
     }
 
+    if (source.includes('SELECT id') && source.includes('FROM scheduled_task_dispatches')) {
+      return { rows: [{ id: 9022 }] };
+    }
+
+    if (source.includes('WITH candidates AS (')) {
+      assert.equal(params[2], 'en');
+      assert.equal(params[3], 'de');
+      assert.equal(params[4], 'b1_b2');
+      assert.equal(params[5], '2026-03-28');
+      assert.equal(params[6], 1);
+      return {
+        rows: [{
+          id: 201,
+          phrase_text: 'Cut to the chase',
+          meaning_text: 'Get to the main point quickly.',
+          tone_text: 'direct',
+          example_text: 'Let me cut to the chase: we need an answer today.',
+          phrase_translation: 'Komm zur Sache',
+          meaning_translation: 'Komm schnell zum Hauptpunkt.',
+          tone_translation: 'direkt',
+          example_translation: 'Kommen wir zur Sache: Wir brauchen heute eine Antwort.',
+          delivery_count: 0,
+          last_sent_at: null
+        }]
+      };
+    }
+
     if (source.includes('UPDATE scheduled_task_dispatches')) {
-      assert.equal(params[5], 'already_practiced_today');
       return { rowCount: 1, rows: [] };
     }
 
-    throw new Error(`Unexpected query in automated idiom practice skip test: ${source.slice(0, 180)}`);
-  }, async () => {
-    const result = await sendIdiomPracticeReminderCore({
-      chatId: 88,
-      botKey: 'en-de'
-    });
+    if (source.includes('UPDATE user_bots')) {
+      return { rowCount: 1, rows: [] };
+    }
 
-    assert.equal(result, null);
+    if (source.includes('INSERT INTO idiom_phrase_deliveries')) {
+      deliveredPhraseIds.push(...params[3]);
+      return { rowCount: params[3].length, rows: [] };
+    }
+
+    if (source.includes('UPDATE users')) {
+      return { rowCount: 1, rows: [] };
+    }
+
+    throw new Error(`Unexpected query in automated idiom practice send test: ${source.slice(0, 180)}`);
+  }, async () => {
+    await withMockedFetch(async (_url, init) => {
+      telegramBodies.push(JSON.parse(init.body));
+      return okTelegramResponse(944);
+    }, async () => {
+      const result = await sendIdiomPracticeReminderCore({
+        chatId: 88,
+        botKey: 'en-de',
+        now
+      });
+
+      assert.equal(result.ok, true);
+      assert.equal(result.telegramMessageId, 944);
+      assert.deepEqual(result.phraseIds, [201]);
+      assert.equal(result.scheduleKey, '2026-03-28');
+      assert.match(result.messageText, /Cut to the chase/);
+      assert.match(result.messageText, /Komm zur Sache/);
+    });
   });
+
+  assert.equal(telegramBodies.length, 1);
+  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data, 'idiom_more:2026-03-28');
+  assert.deepEqual(deliveredPhraseIds, [201]);
 });
 
 test('idiom practice more sends one extra phrase at a time up to the daily cap', async () => {

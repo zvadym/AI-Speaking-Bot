@@ -2185,10 +2185,6 @@ async function evaluateIdiomPracticeEligibility({
 
   if (!context.isActive) return { ok: false, code: 'user_bot_inactive', context };
   if (context.inactiveReason) return { ok: false, code: 'permanent_telegram_inactive', context };
-  if (!(context.onboardingSentAt instanceof Date) || !Number.isFinite(context.onboardingSentAt.getTime())) {
-    return { ok: false, code: 'onboarding_not_sent', context };
-  }
-  if (context.practicedToday) return { ok: false, code: 'already_practiced_today', context };
   if (await hasSentScheduledDispatch(IDIOM_PRACTICE_TASK_TYPE, context.chatId, context.botKey, context.scheduleKey)) {
     return { ok: false, code: 'already_sent', context };
   }
@@ -2214,47 +2210,27 @@ async function scanEligibleIdiomPracticeUsers(now = new Date()) {
      FROM user_bots ub
      JOIN users u
        ON u.chat_id = ub.chat_id
-     JOIN scheduled_task_dispatches onboarding
-       ON onboarding.chat_id = ub.chat_id
-      AND onboarding.bot_key = ub.bot_key
-      AND onboarding.task_type = $1::text
-      AND onboarding.schedule_key = $2::text
-      AND onboarding.status = 'sent'
-      AND onboarding.sent_at IS NOT NULL
      WHERE COALESCE(ub.is_active, true) = true
        AND u.inactive_reason IS NULL
-       AND ub.bot_key = ANY($3::text[])
-       AND ($4::bigint[] IS NULL OR ub.chat_id = ANY($4::bigint[]))
+       AND ub.bot_key = ANY($1::text[])
+       AND ($2::bigint[] IS NULL OR ub.chat_id = ANY($2::bigint[]))
        AND NOT EXISTS (
          SELECT 1
          FROM scheduled_task_dispatches std
-         WHERE std.task_type = $5::text
+         WHERE std.task_type = $3::text
            AND std.bot_key = ub.bot_key
            AND std.chat_id = ub.chat_id
-           AND std.schedule_key = $6::text
+           AND std.schedule_key = $4::text
            AND std.status = 'sent'
            AND std.sent_at IS NOT NULL
        )
-       AND NOT EXISTS (
-         SELECT 1
-         FROM xp_events e
-         WHERE e.chat_id = ub.chat_id
-           AND e.bot_key = ub.bot_key
-           AND e.occurred_at >= $7::timestamptz
-           AND e.occurred_at < $8::timestamptz
-           AND COALESCE((e.meta->>'practice')::boolean, false)
-       )
      ORDER BY ub.chat_id ASC, ub.bot_key ASC
-     LIMIT $9::int`,
+     LIMIT $5::int`,
     [
-      ONBOARDING_TASK_TYPE,
-      ONBOARDING_SCHEDULE_KEY,
       idiomPracticeSupportedBotKeys,
       testChatIds,
       IDIOM_PRACTICE_TASK_TYPE,
       dayRange.scheduleKey,
-      dayRange.start.toISOString(),
-      dayRange.end.toISOString(),
       env.idiomPracticeScanLimit
     ]
   );
