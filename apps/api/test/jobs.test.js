@@ -306,6 +306,18 @@ test('automated idiom practice still sends without onboarding and after same-day
       return { rows: [] };
     }
 
+    if (source.includes('FROM feedback_replies')) {
+      return { rows: [] };
+    }
+
+    if (source.includes('FROM action_events')) {
+      return { rows: [] };
+    }
+
+    if (source.includes('FROM broadcast_recipients')) {
+      return { rows: [] };
+    }
+
     if (source.includes('INSERT INTO scheduled_task_dispatches (')) {
       return { rowCount: 1, rows: [] };
     }
@@ -435,15 +447,16 @@ test('idiom practice more sends one extra phrase at a time up to the daily cap',
       if (source.includes('SELECT id, telegram_message_id, payload_json') && source.includes('FOR UPDATE')) {
         return { rows: [dispatch] };
       }
-      if (source.includes('SELECT COUNT(*)::int AS delivery_count') && source.includes('FROM idiom_phrase_deliveries')) {
+      if (source.includes('SELECT COUNT(*)::int AS delivery_count') && source.includes('AND sent_at >=')) {
         return { rows: [{ delivery_count: deliveredPhraseIds.length }] };
       }
       if (source.includes('WITH candidates AS (')) {
         assert.equal(params[2], 'uk');
         assert.equal(params[3], 'en');
         assert.equal(params[4], 'a1_a2');
-        assert.equal(params[5], scheduleKey);
-        assert.equal(params[6], 1);
+        assert.equal(params[5], '2026-03-28T00:00:00.000Z');
+        assert.equal(params[6], '2026-03-29T00:00:00.000Z');
+        assert.equal(params[7], 1);
         const candidates = [
           {
             id: 102,
@@ -619,7 +632,7 @@ test('idiom practice more accepts dashboard test schedules', async () => {
           return { rowCount: 1, rows: [] };
         }
         if (source.includes('SELECT id, telegram_message_id, payload_json') && source.includes('FOR UPDATE')) {
-          assert.deepEqual(params[0], ['idiom_phrase_practice_test']);
+          assert.equal(params[0], 'idiom_phrase_practice_test');
           assert.equal(params[1], 'uk-en');
           assert.equal(params[2], 55);
           assert.equal(params[3], scheduleKey);
@@ -712,34 +725,145 @@ test('idiom practice more accepts dashboard test schedules', async () => {
   assert.deepEqual(dispatch.payload_json.idiom_message_ids, [933, 934]);
 });
 
-test('idiom practice more marks old buttons as expired', async () => {
-  const actionEvents = [];
+test('idiom practice more accepts old buttons and uses today quota', async () => {
+  const now = new Date('2026-03-28T10:00:00.000Z');
+  const telegramBodies = [];
+  const dispatch = {
+    id: 9013,
+    telegram_message_id: 933,
+    payload_json: {
+      phrase_ids: [101],
+      idiom_message_ids: [933],
+      delivery_count: 1
+    }
+  };
+  const deliveredPhraseIds = [101];
 
   await withMockedPool({
     queryHandler: async (source, params = []) => {
+      if (source.includes('FROM users u') && source.includes('practiced_today')) {
+        assert.equal(params[0], 55);
+        assert.equal(params[1], 'uk-en');
+        return {
+          rows: [{
+            chat_id: 55,
+            first_name: 'Oksana',
+            inactive_reason: null,
+            bot_key: 'uk-en',
+            is_active: true,
+            level: 'a2',
+            onboarding_sent_at: '2026-03-10T09:00:00.000Z',
+            practiced_today: false
+          }]
+        };
+      }
       if (source.includes('INSERT INTO action_events (')) {
-        actionEvents.push(params);
         return { rowCount: 1, rows: [] };
       }
-      throw new Error(`Unexpected query in idiom more expired test: ${source.slice(0, 180)}`);
-    }
+      throw new Error(`Unexpected pool query in old idiom button test: ${source.slice(0, 180)}`);
+    },
+    connectHandler: () => ({
+      async query(sql, params = []) {
+        const source = typeof sql === 'string' ? sql : sql?.text || '';
+        if (source === 'BEGIN' || source === 'COMMIT' || source === 'ROLLBACK') {
+          return { rowCount: 0, rows: [] };
+        }
+        if (source.includes('INSERT INTO action_events (')) {
+          return { rowCount: 1, rows: [] };
+        }
+        if (source.includes('SELECT id, telegram_message_id, payload_json') && source.includes('FOR UPDATE')) {
+          assert.equal(params[0], 'idiom_phrase_practice');
+          assert.equal(params[1], 'uk-en');
+          assert.equal(params[2], 55);
+          assert.equal(params[3], '2026-03-28');
+          return { rows: [dispatch] };
+        }
+        if (source.includes('SELECT COUNT(*)::int AS delivery_count') && source.includes('AND sent_at >=')) {
+          return { rows: [{ delivery_count: deliveredPhraseIds.length }] };
+        }
+        if (source.includes('WITH candidates AS (')) {
+          assert.equal(params[2], 'uk');
+          assert.equal(params[3], 'en');
+          assert.equal(params[4], 'a1_a2');
+          assert.equal(params[5], '2026-03-28T00:00:00.000Z');
+          assert.equal(params[6], '2026-03-29T00:00:00.000Z');
+          assert.equal(params[7], 1);
+          return {
+            rows: [{
+              id: 102,
+              phrase_text: 'That figures',
+              meaning_text: 'That makes sense in a slightly negative way.',
+              tone_text: 'casual',
+              example_text: 'The train is late again? That figures.',
+              phrase_translation: 'Цього і слід було чекати',
+              meaning_translation: 'Це логічно, хоч і трохи негативно.',
+              tone_translation: 'невимушений',
+              example_translation: 'Потяг знову запізнюється? Цього і слід було чекати.',
+              delivery_count: 0,
+              last_sent_at: null
+            }]
+          };
+        }
+        if (source.includes('INSERT INTO idiom_phrase_deliveries')) {
+          deliveredPhraseIds.push(...params[3]);
+          assert.equal(params[4], '2026-03-28');
+          return { rowCount: params[3].length, rows: [] };
+        }
+        if (source.includes('FROM public.grant_xp(')) {
+          assert.equal(params[2], 'btn_idiom_more');
+          assert.equal(params[3], 2);
+          return {
+            rows: [{
+              applied: true,
+              awarded_xp: 2,
+              xp_total: 42,
+              xp_daily: 8,
+              streak_current: 3,
+              streak_best: 5,
+              streak_last_day: '2026-03-28',
+              level: 1,
+              xp_into_level: 42,
+              xp_to_next: 158
+            }]
+          };
+        }
+        if (source.includes('UPDATE scheduled_task_dispatches') && source.includes('SET payload_json =')) {
+          dispatch.payload_json = JSON.parse(params[1]);
+          return { rowCount: 1, rows: [] };
+        }
+        if (source.includes('UPDATE action_events')) {
+          return { rowCount: 1, rows: [] };
+        }
+        throw new Error(`Unexpected client query in old idiom button test: ${source.slice(0, 180)}`);
+      },
+      release() {}
+    })
   }, async () => {
-    const result = await sendIdiomPracticeMorePhrase({
-      chatId: 55,
-      botKey: 'uk-en',
-      scheduleKey: '2026-03-27',
-      callbackQueryId: 'cb-old',
-      sourceMessageId: 933,
-      now: new Date('2026-03-28T10:00:00.000Z')
-    });
+    await withMockedFetch(async (_url, init) => {
+      telegramBodies.push(JSON.parse(init.body));
+      return okTelegramResponse(934);
+    }, async () => {
+      const result = await sendIdiomPracticeMorePhrase({
+        chatId: 55,
+        botKey: 'uk-en',
+        scheduleKey: '2026-03-27',
+        callbackQueryId: 'cb-old',
+        sourceMessageId: 933,
+        now
+      });
 
-    assert.equal(result.status, 'expired');
-    assert.equal(result.callbackText, 'Ця кнопка ідіом уже неактивна.');
-    assert.equal(result.telegramMessageId, null);
+      assert.equal(result.status, 'delivered');
+      assert.equal(result.callbackText, 'Надсилаю ще одну фразу.');
+      assert.equal(result.deliveryIndex, 2);
+      assert.equal(result.telegramMessageId, 934);
+    });
   });
 
-  assert.equal(actionEvents.length, 1);
-  assert.equal(JSON.parse(actionEvents[0][4]).result, 'expired');
+  assert.equal(telegramBodies.length, 1);
+  assert.match(telegramBodies[0].text, /That figures/);
+  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data, 'idiom_more:2026-03-28');
+  assert.deepEqual(dispatch.payload_json.phrase_ids, [101, 102]);
+  assert.deepEqual(dispatch.payload_json.idiom_message_ids, [933, 934]);
 });
 
 test('automated day1 return sends generic text after 22 hours of inactivity', async () => {

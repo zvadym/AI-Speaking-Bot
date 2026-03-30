@@ -613,10 +613,13 @@ test('internal idiom practice more returns delivered result', async () => {
           if (source.includes('SELECT id, telegram_message_id, payload_json') && source.includes('FOR UPDATE')) {
             return { rows: [dispatch] };
           }
-          if (source.includes('SELECT COUNT(*)::int AS delivery_count')) {
+          if (source.includes('SELECT COUNT(*)::int AS delivery_count') && source.includes('AND sent_at >=')) {
             return { rows: [{ delivery_count: deliveredPhraseIds.length }] };
           }
           if (source.includes('WITH candidates AS (')) {
+            assert.equal(params[5], '2026-03-28T00:00:00.000Z');
+            assert.equal(params[6], '2026-03-29T00:00:00.000Z');
+            assert.equal(params[7], 1);
             return {
               rows: [{
                 id: 102,

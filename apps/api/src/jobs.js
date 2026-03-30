@@ -1968,6 +1968,68 @@ async function fetchScheduledDispatchId(taskType, chatId, botKey, scheduleKey) {
   return Number.isFinite(id) && id > 0 ? id : null;
 }
 
+async function findOrCreateScheduledDispatchForUpdate(client, {
+  taskType,
+  chatId,
+  botKey,
+  scheduleKey,
+  payloadJson = {}
+}) {
+  const lookupResult = await client.query(
+    `SELECT id, telegram_message_id, payload_json
+       FROM scheduled_task_dispatches
+      WHERE task_type = $1::text
+        AND bot_key = $2::text
+        AND chat_id = $3::bigint
+        AND schedule_key = $4::text
+      LIMIT 1
+      FOR UPDATE`,
+    [taskType, botKey, chatId, scheduleKey]
+  );
+  const existing = lookupResult.rows[0] || null;
+  if (existing) return existing;
+
+  const insertResult = await client.query(
+    `INSERT INTO scheduled_task_dispatches (
+       task_type,
+       bot_key,
+       chat_id,
+       schedule_key,
+       status,
+       claimed_at,
+       claim_expires_at,
+       attempts,
+       last_error,
+       payload_json,
+       telegram_message_id,
+       sent_at,
+       created_at,
+       updated_at
+     )
+     VALUES (
+       $1::text,
+       $2::text,
+       $3::bigint,
+       $4::text,
+       'sent',
+       NOW(),
+       NULL,
+       1,
+       NULL,
+       $5::jsonb,
+       NULL,
+       NOW(),
+       NOW(),
+       NOW()
+     )
+     ON CONFLICT (task_type, bot_key, chat_id, schedule_key) DO UPDATE
+       SET updated_at = NOW()
+     RETURNING id, telegram_message_id, payload_json`,
+    [taskType, botKey, chatId, scheduleKey, JSON.stringify(payloadJson || {})]
+  );
+  return insertResult.rows[0] || null;
+}
+
 function normalizeIdiomPracticeDispatchPayload(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   return raw;
@@ -2031,63 +2093,131 @@ async function selectIdiomPracticeBundle({
   targetLanguage,
   levelBucket,
   scheduleKey,
+  dayStart = null,
+  dayEnd = null,
   limit,
   db = pool
 }) {
   const normalizedLimit = clampInteger(limit, { min: 1, max: 10, fallback: 1 });
-  const { rows } = await db.query(
-    `WITH candidates AS (
-       SELECT
-         c.id,
-         c.phrase_text,
-         c.meaning_text,
-         c.tone_text,
-         c.example_text,
-         t.phrase_translation,
-         t.meaning_translation,
-         t.tone_translation,
-         t.example_translation,
-         COUNT(d.id)::int AS delivery_count,
-         MAX(d.sent_at) AS last_sent_at
-       FROM idiom_phrase_catalog c
-       LEFT JOIN idiom_phrase_translations t
-         ON t.phrase_id = c.id
-        AND t.base_language = $3::text
-       LEFT JOIN idiom_phrase_deliveries d
-         ON d.phrase_id = c.id
-        AND d.chat_id = $1::bigint
-        AND d.bot_key = $2::text
-       WHERE c.target_language = $4::text
-         AND c.level_bucket = $5::text
-         AND c.is_active = true
-         AND NOT EXISTS (
-           SELECT 1
-           FROM idiom_phrase_deliveries d_today
-           WHERE d_today.chat_id = $1::bigint
-             AND d_today.bot_key = $2::text
-             AND d_today.schedule_key = $6::text
-             AND d_today.phrase_id = c.id
-         )
-       GROUP BY
-         c.id,
-         c.phrase_text,
-         c.meaning_text,
-         c.tone_text,
-         c.example_text,
-         t.phrase_translation,
-         t.meaning_translation,
-         t.tone_translation,
-         t.example_translation
-     )
-     SELECT *
-       FROM candidates
-      ORDER BY
-        CASE WHEN delivery_count = 0 THEN 0 ELSE 1 END ASC,
-        last_sent_at ASC NULLS FIRST,
-        id ASC
-      LIMIT $7::int`,
-    [chatId, botKey, baseLanguage, targetLanguage, levelBucket, scheduleKey, normalizedLimit]
-  );
+  const useDayWindow = dayStart instanceof Date
+    && !Number.isNaN(dayStart.getTime())
+    && dayEnd instanceof Date
+    && !Number.isNaN(dayEnd.getTime());
+  const query = useDayWindow
+    ? `WITH candidates AS (
+         SELECT
+           c.id,
+           c.phrase_text,
+           c.meaning_text,
+           c.tone_text,
+           c.example_text,
+           t.phrase_translation,
+           t.meaning_translation,
+           t.tone_translation,
+           t.example_translation,
+           COUNT(d.id)::int AS delivery_count,
+           MAX(d.sent_at) AS last_sent_at
+         FROM idiom_phrase_catalog c
+         LEFT JOIN idiom_phrase_translations t
+           ON t.phrase_id = c.id
+          AND t.base_language = $3::text
+         LEFT JOIN idiom_phrase_deliveries d
+           ON d.phrase_id = c.id
+          AND d.chat_id = $1::bigint
+          AND d.bot_key = $2::text
+         WHERE c.target_language = $4::text
+           AND c.level_bucket = $5::text
+           AND c.is_active = true
+           AND NOT EXISTS (
+             SELECT 1
+             FROM idiom_phrase_deliveries d_today
+             WHERE d_today.chat_id = $1::bigint
+               AND d_today.bot_key = $2::text
+               AND d_today.sent_at >= $6::timestamptz
+               AND d_today.sent_at < $7::timestamptz
+               AND d_today.phrase_id = c.id
+           )
+         GROUP BY
+           c.id,
+           c.phrase_text,
+           c.meaning_text,
+           c.tone_text,
+           c.example_text,
+           t.phrase_translation,
+           t.meaning_translation,
+           t.tone_translation,
+           t.example_translation
+       )
+       SELECT *
+         FROM candidates
+        ORDER BY
+          CASE WHEN delivery_count = 0 THEN 0 ELSE 1 END ASC,
+          last_sent_at ASC NULLS FIRST,
+          id ASC
+        LIMIT $8::int`
+    : `WITH candidates AS (
+         SELECT
+           c.id,
+           c.phrase_text,
+           c.meaning_text,
+           c.tone_text,
+           c.example_text,
+           t.phrase_translation,
+           t.meaning_translation,
+           t.tone_translation,
+           t.example_translation,
+           COUNT(d.id)::int AS delivery_count,
+           MAX(d.sent_at) AS last_sent_at
+         FROM idiom_phrase_catalog c
+         LEFT JOIN idiom_phrase_translations t
+           ON t.phrase_id = c.id
+          AND t.base_language = $3::text
+         LEFT JOIN idiom_phrase_deliveries d
+           ON d.phrase_id = c.id
+          AND d.chat_id = $1::bigint
+          AND d.bot_key = $2::text
+         WHERE c.target_language = $4::text
+           AND c.level_bucket = $5::text
+           AND c.is_active = true
+           AND NOT EXISTS (
+             SELECT 1
+             FROM idiom_phrase_deliveries d_today
+             WHERE d_today.chat_id = $1::bigint
+               AND d_today.bot_key = $2::text
+               AND d_today.schedule_key = $6::text
+               AND d_today.phrase_id = c.id
+           )
+         GROUP BY
+           c.id,
+           c.phrase_text,
+           c.meaning_text,
+           c.tone_text,
+           c.example_text,
+           t.phrase_translation,
+           t.meaning_translation,
+           t.tone_translation,
+           t.example_translation
+       )
+       SELECT *
+         FROM candidates
+        ORDER BY
+          CASE WHEN delivery_count = 0 THEN 0 ELSE 1 END ASC,
+          last_sent_at ASC NULLS FIRST,
+          id ASC
+        LIMIT $7::int`;
+  const params = useDayWindow
+    ? [
+        chatId,
+        botKey,
+        baseLanguage,
+        targetLanguage,
+        levelBucket,
+        dayStart.toISOString(),
+        dayEnd.toISOString(),
+        normalizedLimit
+      ]
+    : [chatId, botKey, baseLanguage, targetLanguage, levelBucket, scheduleKey, normalizedLimit];
+  const { rows } = await db.query(query, params);
 
   return (rows || []).map((row) => ({
     id: Number(row.id),
@@ -2593,32 +2723,15 @@ export async function sendIdiomPracticeMorePhrase({
   const normalizedScheduleKey = String(scheduleKey || '').trim();
   const normalizedSourceMessageId = Number(sourceMessageId);
   const locale = resolveIdiomPracticeLocale(normalizedBotKey);
+  const isManualRequest = isManualIdiomPracticeSchedule(normalizedScheduleKey);
 
   if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey || !normalizedScheduleKey || !String(callbackQueryId || '').trim()) {
     throw createAppError('bad_request', 400, 'bad_request', { retryable: false });
   }
 
-  if (!isInteractiveIdiomPracticeSchedule(normalizedScheduleKey, now)) {
-    await recordIdiomPracticeMoreClickOutcome(pool, {
-      chatId: normalizedChatId,
-      botKey: normalizedBotKey,
-      callbackQueryId,
-      scheduleKey: normalizedScheduleKey,
-      sourceMessageId: normalizedSourceMessageId,
-      result: 'expired'
-    });
-    return {
-      ok: true,
-      status: 'expired',
-      callbackText: locale.more_expired,
-      deliveryIndex: null,
-      telegramMessageId: null
-    };
-  }
-
   const context = await loadIdiomPracticeContext(normalizedChatId, normalizedBotKey, {
-    origin: WINBACK_AUTOMATED_ORIGIN,
-    scheduleKey: normalizedScheduleKey,
+    origin: isManualRequest ? WINBACK_ADMIN_TEST_ORIGIN : WINBACK_AUTOMATED_ORIGIN,
+    scheduleKey: isManualRequest ? normalizedScheduleKey : null,
     now
   });
   if (!context) {
@@ -2638,6 +2751,8 @@ export async function sendIdiomPracticeMorePhrase({
       telegramMessageId: null
     };
   }
+  const effectiveScheduleKey = context.scheduleKey;
+  const dispatchTaskType = isManualRequest ? IDIOM_PRACTICE_TEST_TASK_TYPE : IDIOM_PRACTICE_TASK_TYPE;
 
   const client = await pool.connect();
   let reservedEventKey = null;
@@ -2649,7 +2764,7 @@ export async function sendIdiomPracticeMorePhrase({
       chatId: normalizedChatId,
       botKey: normalizedBotKey,
       callbackQueryId,
-      scheduleKey: normalizedScheduleKey,
+      scheduleKey: effectiveScheduleKey,
       sourceMessageId: normalizedSourceMessageId
     });
     reservedEventKey = reserve.idempotencyKey;
@@ -2664,36 +2779,25 @@ export async function sendIdiomPracticeMorePhrase({
       };
     }
 
-    const dispatchTaskTypes = isManualIdiomPracticeSchedule(normalizedScheduleKey)
-      ? [IDIOM_PRACTICE_TEST_TASK_TYPE]
-      : [IDIOM_PRACTICE_TASK_TYPE];
-
-    const dispatchResult = await client.query(
-      `SELECT id, telegram_message_id, payload_json
-         FROM scheduled_task_dispatches
-        WHERE task_type = ANY($1::text[])
-          AND bot_key = $2::text
-          AND chat_id = $3::bigint
-          AND schedule_key = $4::text
-          AND status = 'sent'
-          AND sent_at IS NOT NULL
-        LIMIT 1
-        FOR UPDATE`,
-      [dispatchTaskTypes, normalizedBotKey, normalizedChatId, normalizedScheduleKey]
-    );
-    const dispatch = dispatchResult.rows[0] || null;
+    const dispatch = await findOrCreateScheduledDispatchForUpdate(client, {
+      taskType: dispatchTaskType,
+      chatId: normalizedChatId,
+      botKey: normalizedBotKey,
+      scheduleKey: effectiveScheduleKey,
+      payloadJson: {
+        reminder_type: IDIOM_PRACTICE_TASK_TYPE,
+        level_bucket: context.levelBucket
+      }
+    });
     const dispatchPayload = normalizeIdiomPracticeDispatchPayload(dispatch?.payload_json);
-    const knownMessageIds = normalizeIdiomPracticeIdList([
-      dispatch?.telegram_message_id,
-      ...(Array.isArray(dispatchPayload.idiom_message_ids) ? dispatchPayload.idiom_message_ids : [])
-    ]);
     const baseEventProperties = {
-      schedule_key: normalizedScheduleKey,
+      schedule_key: effectiveScheduleKey,
+      requested_schedule_key: normalizedScheduleKey || null,
       source_message_id: Number.isFinite(normalizedSourceMessageId) && normalizedSourceMessageId > 0 ? normalizedSourceMessageId : null,
       callback_query_id: String(callbackQueryId || '').trim() || null
     };
 
-    if (!dispatch || (Number.isFinite(normalizedSourceMessageId) && normalizedSourceMessageId > 0 && !knownMessageIds.includes(normalizedSourceMessageId))) {
+    if (!dispatch) {
       await finalizeIdiomPracticeMoreClickEvent(client, reservedEventKey, {
         ...baseEventProperties,
         result: 'no_dispatch'
@@ -2709,10 +2813,24 @@ export async function sendIdiomPracticeMorePhrase({
     }
 
     const deliveriesResult = await client.query(
-      `SELECT COUNT(*)::int AS delivery_count
-         FROM idiom_phrase_deliveries
-        WHERE task_dispatch_id = $1::bigint`,
-      [dispatch.id]
+      isManualRequest
+        ? `SELECT COUNT(*)::int AS delivery_count
+             FROM idiom_phrase_deliveries
+            WHERE task_dispatch_id = $1::bigint`
+        : `SELECT COUNT(*)::int AS delivery_count
+             FROM idiom_phrase_deliveries
+            WHERE chat_id = $1::bigint
+              AND bot_key = $2::text
+              AND sent_at >= $3::timestamptz
+              AND sent_at < $4::timestamptz`,
+      isManualRequest
+        ? [dispatch.id]
+        : [
+            normalizedChatId,
+            normalizedBotKey,
+            context.dayStart.toISOString(),
+            context.dayEnd.toISOString()
+          ]
     );
     const deliveredCount = clampInteger(deliveriesResult.rows[0]?.delivery_count, {
       min: 0,
@@ -2751,7 +2869,9 @@ export async function sendIdiomPracticeMorePhrase({
       baseLanguage: context.baseLanguage,
       targetLanguage: context.targetLanguage,
       levelBucket: context.levelBucket,
-      scheduleKey: normalizedScheduleKey,
+      scheduleKey: effectiveScheduleKey,
+      dayStart: isManualRequest ? null : context.dayStart,
+      dayEnd: isManualRequest ? null : context.dayEnd,
       limit: 1,
       db: client
     });
@@ -2787,7 +2907,7 @@ export async function sendIdiomPracticeMorePhrase({
     }
 
     const remainingAfterSend = IDIOM_PRACTICE_DAILY_CAP - (deliveredCount + 1);
-    const replyMarkup = buildIdiomPracticeReplyMarkup(context, normalizedScheduleKey, remainingAfterSend);
+    const replyMarkup = buildIdiomPracticeReplyMarkup(context, effectiveScheduleKey, remainingAfterSend);
     const telegramResult = await sendTelegramTextMessage(normalizedChatId, sanitizeTelegramHtml(messageText), {
       botKey: normalizedBotKey,
       parseMode: 'HTML',
@@ -2800,7 +2920,7 @@ export async function sendIdiomPracticeMorePhrase({
       taskDispatchId: Number(dispatch.id),
       chatId: normalizedChatId,
       botKey: normalizedBotKey,
-      scheduleKey: normalizedScheduleKey,
+      scheduleKey: effectiveScheduleKey,
       levelBucket: context.levelBucket,
       phraseIds: [phrase.id],
       db: client
@@ -2822,7 +2942,7 @@ export async function sendIdiomPracticeMorePhrase({
       chatId: normalizedChatId,
       botKey: normalizedBotKey,
       callbackQueryId,
-      scheduleKey: normalizedScheduleKey,
+      scheduleKey: effectiveScheduleKey,
       sourceMessageId: telegramMessageId,
       deliveryIndex: deliveredCount + 1
     });
