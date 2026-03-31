@@ -712,22 +712,20 @@ test('admin xp button click metrics return daily click counts', async () => {
       assert.equal(params[1], '2026-03-04T00:00:00.000Z');
       assert.equal(params[2], null);
       assert.equal(params[3], null);
-      assert.deepEqual(params[4], ['btn_translation', 'btn_vocab', 'btn_hints', 'btn_idiom_more']);
+      assert.deepEqual(params[4], ['btn_translation', 'btn_vocab', 'btn_hints']);
       return {
         rows: [
           {
             day: '2026-03-01',
             btn_translation: 5,
             btn_vocab: 2,
-            btn_hints: 3,
-            btn_idiom_more: 4
+            btn_hints: 3
           },
           {
             day: '2026-03-02',
             btn_translation: 1,
             btn_vocab: 4,
-            btn_hints: 0,
-            btn_idiom_more: 2
+            btn_hints: 0
           }
         ]
       };
@@ -750,15 +748,13 @@ test('admin xp button click metrics return daily click counts', async () => {
         day: '2026-03-01',
         btn_translation: 5,
         btn_vocab: 2,
-        btn_hints: 3,
-        btn_idiom_more: 4
+        btn_hints: 3
       },
       {
         day: '2026-03-02',
         btn_translation: 1,
         btn_vocab: 4,
-        btn_hints: 0,
-        btn_idiom_more: 2
+        btn_hints: 0
       }
     ]);
   });

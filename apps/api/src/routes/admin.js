@@ -45,7 +45,7 @@ const REPLY_KEYBOARD_ACTION_TYPES = [
   'reply_kbd_xp_click',
   'idiom_phrase_more_click'
 ];
-const XP_BUTTON_EVENT_TYPES = ['btn_translation', 'btn_vocab', 'btn_hints', 'btn_idiom_more'];
+const XP_BUTTON_EVENT_TYPES = ['btn_translation', 'btn_vocab', 'btn_hints'];
 const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
 const NOTIFICATION_TASK_TYPES = [
   'onboarding_complete',
@@ -968,8 +968,7 @@ export function createAdminRouter(ctx, helpers) {
          d.day_utc::text AS day,
          COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_translation'), 0)::int AS btn_translation,
          COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_vocab'), 0)::int AS btn_vocab,
-         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_hints'), 0)::int AS btn_hints,
-         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_idiom_more'), 0)::int AS btn_idiom_more
+         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_hints'), 0)::int AS btn_hints
        FROM days d
        LEFT JOIN counts c USING (day_utc)
        GROUP BY d.day_utc

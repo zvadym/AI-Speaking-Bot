@@ -2282,8 +2282,7 @@ const replyKeyboardSeriesConfig = Object.entries(replyKeyboardActionMeta)
 const xpButtonEventMeta = {
   btn_translation: { label: 'Translate', color: 'rgba(38, 84, 124, 0.88)', order: 0 },
   btn_vocab: { label: 'Vocab', color: 'rgba(199, 90, 36, 0.88)', order: 1 },
-  btn_hints: { label: 'What to say next', color: 'rgba(92, 140, 86, 0.9)', order: 2 },
-  btn_idiom_more: { label: 'Idiom More', color: 'rgba(177, 116, 41, 0.9)', order: 3 }
+  btn_hints: { label: 'What to say next', color: 'rgba(92, 140, 86, 0.9)', order: 2 }
 };
 const xpButtonSeriesConfig = Object.entries(xpButtonEventMeta)
   .sort((a, b) => a[1].order - b[1].order)
