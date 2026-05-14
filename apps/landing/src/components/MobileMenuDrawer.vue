@@ -145,21 +145,30 @@ onBeforeUnmount(() => {
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
-  display: flex;
-  justify-content: flex-end;
-  background: color-mix(in srgb, var(--fg) 50%, transparent);
-  backdrop-filter: blur(10px);
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background:
+    radial-gradient(90% 90% at 50% 0%, rgba(34, 158, 217, 0.16), transparent 56%),
+    color-mix(in srgb, var(--fg) 56%, transparent);
+  backdrop-filter: blur(18px);
 }
 
 .drawer {
-  width: min(360px, 92vw);
-  height: 100%;
-  background: var(--bg);
-  border-left: 1px solid color-mix(in srgb, var(--fg) 14%, var(--border));
-  box-shadow: -24px 0 80px rgba(8, 12, 22, 0.22);
+  width: min(680px, 100%);
+  max-height: min(760px, calc(100dvh - 36px));
+  border-radius: var(--radius-xxl);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.58)),
+    color-mix(in srgb, var(--bg) 86%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
+  box-shadow:
+    0 40px 110px rgba(12, 52, 67, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
   display: grid;
   grid-template-rows: auto 1fr;
+  overflow: hidden;
 }
 
 .drawer-head {
@@ -187,7 +196,7 @@ onBeforeUnmount(() => {
   font-size: 16px;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .drawer-body {
@@ -222,7 +231,10 @@ onBeforeUnmount(() => {
   background: color-mix(in srgb, var(--bg) 84%, var(--surface));
   font-weight: 800;
   text-decoration: none;
-  transition: border-color 140ms ease, transform 140ms ease, background-color 140ms ease;
+  transition:
+    border-color 620ms var(--motion-spring),
+    transform 620ms var(--motion-spring),
+    background-color 620ms var(--motion-spring);
 }
 
 .nav-link:hover {

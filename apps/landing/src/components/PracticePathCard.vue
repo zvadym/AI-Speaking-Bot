@@ -1,11 +1,13 @@
 <template>
-  <RouterLink :class="['card', 'practice-card', { highlighted }]" :to="practicePathCanonicalPath">
-    <div class="flag-badge" :aria-label="title">{{ flag }}</div>
+  <RouterLink :class="['practice-card', { highlighted }]" :to="practicePathCanonicalPath">
+    <div class="practice-card-core">
+      <div class="flag-badge" :aria-label="title">{{ flag }}</div>
 
-    <div class="info">
-      <div class="title-row">
-        <div class="h3 title">{{ title }}</div>
-        <span class="go" aria-hidden="true">↗</span>
+      <div class="info">
+        <div class="title-row">
+          <div class="h3 title">{{ title }}</div>
+          <span class="go" aria-hidden="true">↗</span>
+        </div>
       </div>
     </div>
   </RouterLink>
@@ -37,12 +39,34 @@ const flag = computed(() => {
 
 <style scoped>
 .practice-card {
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: var(--radius-xl);
+  padding: 6px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.30)),
+    color-mix(in srgb, var(--surface) 70%, var(--bg));
+  box-shadow:
+    var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-decoration: none;
+  transition:
+    transform 620ms var(--motion-spring),
+    border-color 620ms var(--motion-spring),
+    box-shadow 620ms var(--motion-spring),
+    background-color 620ms var(--motion-spring);
+}
+
+.practice-card-core {
   display: grid;
   grid-template-columns: 52px 1fr;
   gap: 12px 16px;
   align-items: center;
   padding: 18px;
-  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  border-radius: calc(var(--radius-xl) - 8px);
+  background:
+    linear-gradient(135deg, rgba(34, 158, 217, 0.07), transparent 44%),
+    color-mix(in srgb, var(--surface) 58%, var(--bg));
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.82);
 }
 
 .practice-card.highlighted {
@@ -54,9 +78,18 @@ const flag = computed(() => {
 
 .practice-card:hover {
   text-decoration: none;
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--fg) 20%, var(--border));
   box-shadow: 0 16px 34px color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.practice-card:active {
+  transform: translateY(0) scale(0.995);
+}
+
+.practice-card:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 
 .info {
@@ -68,7 +101,7 @@ const flag = computed(() => {
   height: 52px;
   display: grid;
   place-items: center;
-  border-radius: 999px;
+  border-radius: 16px;
   background: color-mix(in srgb, var(--surface) 78%, var(--bg));
   border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
   box-shadow: 0 10px 24px color-mix(in srgb, var(--fg) 10%, transparent);

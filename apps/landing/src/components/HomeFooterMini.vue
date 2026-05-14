@@ -31,16 +31,19 @@ const { t } = useI18n();
 <style scoped>
 .home-footer {
   margin-top: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
   background:
+    radial-gradient(120% 140% at 8% 0%, rgba(34, 158, 217, 0.12), transparent 44%),
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--surface) 82%, #60a5fa 18%) 0%,
       var(--surface) 55%,
       color-mix(in srgb, var(--surface) 86%, #34d399 14%) 100%
     );
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-xxl);
+  box-shadow:
+    var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
   overflow: hidden;
   padding: 20px;
   text-align: center;
@@ -58,7 +61,7 @@ const { t } = useI18n();
 }
 
 .brand-name {
-  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   letter-spacing: 0;
   font-size: 18px;
@@ -89,9 +92,9 @@ const { t } = useI18n();
   line-height: 1;
   text-decoration: none;
   transition:
-    background 160ms ease,
-    border-color 160ms ease,
-    transform 160ms ease;
+    background 560ms var(--motion-spring),
+    border-color 560ms var(--motion-spring),
+    transform 560ms var(--motion-spring);
 }
 
 .links :deep(a:hover) {

@@ -28,19 +28,29 @@
     "seoDescription": "Practice speaking in Telegram with Romi. Choose a language path, send voice or text, get clear corrections, and keep the conversation moving every day.",
     "subhead": "Send a voice message or text, get a transcript, a better version, a clear explanation, and follow-up ideas without leaving the chat.",
     "heroKicker": "Real Telegram practice, not another lesson app",
-    "heroProofLabel": "Romi workflow highlights",
+    "heroProofLabel": "What Romi sends back after each message",
+    "heroProofEyebrow": "Romi reply pack",
+    "heroProofNote": "One Telegram reply, four useful parts",
     "heroProof": {
-      "voice": {
-        "value": "Voice in",
-        "label": "Speak naturally with short audio messages"
+      "transcript": {
+        "value": "Transcript",
+        "label": "Voice becomes text, so you can see exactly what you said.",
+        "sample": "“Mañana tengo una entrevista…”"
       },
-      "corrections": {
-        "value": "Fixes back",
-        "label": "Transcript, cleaner phrasing, and rule notes"
+      "correction": {
+        "value": "Natural version",
+        "label": "Same thought, rewritten with cleaner grammar and phrasing.",
+        "sample": "“Tomorrow I have a job interview…”"
       },
-      "followUp": {
-        "value": "Next reply",
-        "label": "Simple, conversational, and advanced options"
+      "explanation": {
+        "value": "Why it works",
+        "label": "Short rule note, tone guidance, and translation when needed.",
+        "sample": "por vs. para · interview context"
+      },
+      "replyOptions": {
+        "value": "Next replies",
+        "label": "Simple, natural, and advanced options to keep the chat moving.",
+        "sample": "Simple · Natural · Advanced"
       }
     },
     "demoPill": "Live",

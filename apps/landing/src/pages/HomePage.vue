@@ -23,10 +23,20 @@
               <RouterLink class="btn hero-secondary" :to="routeWithLocale('practice')">{{ t('cta.start') }}</RouterLink>
             </div>
 
-            <div class="hero-proof-grid reveal-up" style="--revealDelay: 210ms;" :aria-label="t('home.heroProofLabel')">
-              <div v-for="item in heroProofItems" :key="item.id" class="hero-proof-item">
-                <span class="hero-proof-value">{{ item.value }}</span>
-                <span class="hero-proof-label">{{ item.label }}</span>
+            <div class="hero-proof-card reveal-up" style="--revealDelay: 210ms;" :aria-label="t('home.heroProofLabel')">
+              <div class="hero-proof-head">
+                <span class="hero-proof-eyebrow">{{ t('home.heroProofEyebrow') }}</span>
+                <span class="hero-proof-note">{{ t('home.heroProofNote') }}</span>
+              </div>
+              <div class="hero-proof-grid">
+                <article v-for="item in heroProofItems" :key="item.id" class="hero-proof-item">
+                  <span class="hero-proof-index">{{ item.index }}</span>
+                  <span class="hero-proof-content">
+                    <span class="hero-proof-value">{{ item.value }}</span>
+                    <span class="hero-proof-label">{{ item.label }}</span>
+                    <span class="hero-proof-sample">{{ item.sample }}</span>
+                  </span>
+                </article>
               </div>
             </div>
           </div>
@@ -78,10 +88,12 @@
           </div>
 
           <div class="grid-2 feature-grid" style="--revealDelay: 120ms;">
-            <article v-for="item in featureCards" :key="item.id" class="card feature-card">
-              <div class="feature-tag">{{ item.tag }}</div>
-              <h3 class="h3">{{ item.title }}</h3>
-              <p class="muted feature-desc">{{ item.desc }}</p>
+            <article v-for="item in featureCards" :key="item.id" class="lux-card feature-card">
+              <div class="lux-card-core feature-card-core">
+                <div class="feature-tag">{{ item.tag }}</div>
+                <h3 class="h3">{{ item.title }}</h3>
+                <p class="muted feature-desc">{{ item.desc }}</p>
+              </div>
             </article>
           </div>
         </div>
@@ -95,20 +107,26 @@
         <div class="container reveal-up">
           <h2 class="h2">{{ t('home.howTitle') }}</h2>
           <div class="grid-3 steps" style="--revealDelay: 120ms;">
-            <div class="card">
-              <div class="step-num">1</div>
-              <div class="h3">{{ t('home.steps.oneTitle') }}</div>
-              <div class="muted">{{ t('home.steps.oneDesc') }}</div>
+            <div class="lux-card step-card">
+              <div class="lux-card-core step-card-core">
+                <div class="step-num">1</div>
+                <div class="h3">{{ t('home.steps.oneTitle') }}</div>
+                <div class="muted">{{ t('home.steps.oneDesc') }}</div>
+              </div>
             </div>
-            <div class="card">
-              <div class="step-num">2</div>
-              <div class="h3">{{ t('home.steps.twoTitle') }}</div>
-              <div class="muted">{{ t('home.steps.twoDesc') }}</div>
+            <div class="lux-card step-card">
+              <div class="lux-card-core step-card-core">
+                <div class="step-num">2</div>
+                <div class="h3">{{ t('home.steps.twoTitle') }}</div>
+                <div class="muted">{{ t('home.steps.twoDesc') }}</div>
+              </div>
             </div>
-            <div class="card">
-              <div class="step-num">3</div>
-              <div class="h3">{{ t('home.steps.threeTitle') }}</div>
-              <div class="muted">{{ t('home.steps.threeDesc') }}</div>
+            <div class="lux-card step-card">
+              <div class="lux-card-core step-card-core">
+                <div class="step-num">3</div>
+                <div class="h3">{{ t('home.steps.threeTitle') }}</div>
+                <div class="muted">{{ t('home.steps.threeDesc') }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -128,9 +146,11 @@
           </div>
 
           <div class="grid-3 reveal-up why-grid" style="--revealDelay: 120ms;">
-            <article v-for="item in whyWorksCards" :key="item.id" class="card why-card">
-              <h3 class="h3">{{ item.title }}</h3>
-              <p class="muted why-desc">{{ item.desc }}</p>
+            <article v-for="item in whyWorksCards" :key="item.id" class="lux-card why-card">
+              <div class="lux-card-core why-card-core">
+                <h3 class="h3">{{ item.title }}</h3>
+                <p class="muted why-desc">{{ item.desc }}</p>
+              </div>
             </article>
           </div>
         </div>
@@ -219,41 +239,43 @@
           </div>
 
           <div class="grid-2 pricing-grid reveal-up" style="--revealDelay: 120ms;">
-            <div v-for="tier in visiblePricingTiers" :key="tier.id" class="card tier" :class="{ featured: tier.highlight }">
-              <div class="tier-top">
-                <div class="tier-headline">
-                  <div class="h3">{{ t(`pricing.tiers.${tier.plan}.name`) }}</div>
+            <div v-for="tier in visiblePricingTiers" :key="tier.id" class="lux-card tier" :class="{ featured: tier.highlight }">
+              <div class="lux-card-core tier-core">
+                <div class="tier-top">
+                  <div class="tier-headline">
+                    <div class="h3">{{ t(`pricing.tiers.${tier.plan}.name`) }}</div>
+                  </div>
+                  <div class="muted tier-desc">{{ t(`pricing.tiers.${tier.plan}.desc`) }}</div>
                 </div>
-                <div class="muted tier-desc">{{ t(`pricing.tiers.${tier.plan}.desc`) }}</div>
+
+                <div class="price">
+                  <span v-if="tier.plan === 'free'" class="amount">{{ t('pricing.freePrice') }}</span>
+                  <template v-else>
+                    <div v-if="tier.billingInterval === 'year' && proMonthlyTier" class="price-meta">
+                      <s class="muted was">{{ formatPrice(proMonthlyTier.price) || '—' }}/{{ t('pricing.perMonth') }}</s>
+                    </div>
+                    <div class="price-main">
+                      <span class="amount">{{
+                        formatPrice(tier.billingInterval === 'year' ? tier.monthlyEquivalent : tier.price) || '—'
+                      }}</span>
+                      <span class="muted cadence">/ {{ t('pricing.perMonth') }}</span>
+                    </div>
+                  </template>
+                </div>
+
+                <ul class="muted features">
+                  <li v-for="(key, idx) in t(`pricing.tiers.${tier.plan}.features`).split('||')" :key="idx">
+                    {{ key }}
+                  </li>
+                </ul>
+
+                <p v-if="tier.billingInterval === 'year' && tier.monthlyEquivalent != null" class="muted annual-note">
+                  {{ t('pricing.annualNote', { total: formatPrice(tier.price) || '—', perMonth: formatPrice(tier.monthlyEquivalent) || '—' }) }}
+                </p>
+
+                <button v-if="tier.plan === 'free'" class="btn" type="button" @click="openTryModal">{{ t('pricing.ctaTry') }}</button>
+                <button v-else class="btn primary" type="button" @click="openTryModal">{{ t('pricing.ctaChooseTeacher') }}</button>
               </div>
-
-              <div class="price">
-                <span v-if="tier.plan === 'free'" class="amount">{{ t('pricing.freePrice') }}</span>
-                <template v-else>
-                  <div v-if="tier.billingInterval === 'year' && proMonthlyTier" class="price-meta">
-                    <s class="muted was">{{ formatPrice(proMonthlyTier.price) || '—' }}/{{ t('pricing.perMonth') }}</s>
-                  </div>
-                  <div class="price-main">
-                    <span class="amount">{{
-                      formatPrice(tier.billingInterval === 'year' ? tier.monthlyEquivalent : tier.price) || '—'
-                    }}</span>
-                    <span class="muted cadence">/ {{ t('pricing.perMonth') }}</span>
-                  </div>
-                </template>
-              </div>
-
-              <ul class="muted features">
-                <li v-for="(key, idx) in t(`pricing.tiers.${tier.plan}.features`).split('||')" :key="idx">
-                  {{ key }}
-                </li>
-              </ul>
-
-              <p v-if="tier.billingInterval === 'year' && tier.monthlyEquivalent != null" class="muted annual-note">
-                {{ t('pricing.annualNote', { total: formatPrice(tier.price) || '—', perMonth: formatPrice(tier.monthlyEquivalent) || '—' }) }}
-              </p>
-
-              <button v-if="tier.plan === 'free'" class="btn" type="button" @click="openTryModal">{{ t('pricing.ctaTry') }}</button>
-              <button v-else class="btn primary" type="button" @click="openTryModal">{{ t('pricing.ctaChooseTeacher') }}</button>
             </div>
           </div>
         </div>
@@ -272,14 +294,16 @@
         </div>
 
         <div class="container grid-3 blog-grid reveal-up" style="--revealDelay: 120ms;">
-          <RouterLink v-for="post in posts" :key="post.slug" class="card post" :to="routeWithLocale('blog-post', { slug: post.slug })">
-            <div class="muted meta">
-              <span>{{ formatDate(post.publishedAt) }}</span>
-              <span v-if="post.readingMinutes"> • {{ t('blog.readingMinutes', { n: post.readingMinutes }) }}</span>
+          <RouterLink v-for="post in posts" :key="post.slug" class="lux-card post" :to="routeWithLocale('blog-post', { slug: post.slug })">
+            <div class="lux-card-core post-core">
+              <div class="muted meta">
+                <span>{{ formatDate(post.publishedAt) }}</span>
+                <span v-if="post.readingMinutes"> • {{ t('blog.readingMinutes', { n: post.readingMinutes }) }}</span>
+              </div>
+              <div class="h3">{{ getLocalized(post.title) }}</div>
+              <p class="muted excerpt">{{ getLocalized(post.excerpt) }}</p>
+              <div class="read">{{ t('blog.read') }} →</div>
             </div>
-            <div class="h3">{{ getLocalized(post.title) }}</div>
-            <p class="muted excerpt">{{ getLocalized(post.excerpt) }}</p>
-            <div class="read">{{ t('blog.read') }} →</div>
           </RouterLink>
         </div>
         <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
@@ -290,15 +314,17 @@
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner">
         <div class="container about reveal-up">
-          <div class="card about-card">
-            <h2 class="h2">{{ t('about.title') }}</h2>
-            <p class="muted about-p">{{ t('about.p1') }}</p>
-            <p class="muted about-p">{{ t('about.p2') }}</p>
-            <ul class="muted about-list">
-              <li>{{ t('about.bullets.one') }}</li>
-              <li>{{ t('about.bullets.two') }}</li>
-              <li>{{ t('about.bullets.three') }}</li>
-            </ul>
+          <div class="lux-card about-card">
+            <div class="lux-card-core about-card-core">
+              <h2 class="h2">{{ t('about.title') }}</h2>
+              <p class="muted about-p">{{ t('about.p1') }}</p>
+              <p class="muted about-p">{{ t('about.p2') }}</p>
+              <ul class="muted about-list">
+                <li>{{ t('about.bullets.one') }}</li>
+                <li>{{ t('about.bullets.two') }}</li>
+                <li>{{ t('about.bullets.three') }}</li>
+              </ul>
+            </div>
           </div>
         </div>
         <div class="scroll-cue" aria-hidden="true"><div class="scroll-cue-icon">↓</div></div>
@@ -327,12 +353,14 @@
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner contact-inner">
         <div class="container reveal-up contact-main">
-          <article class="card contact-card">
-            <div class="contact-copy">
-              <h3 class="h3">{{ t('contact.title') }}</h3>
-              <p class="muted contact-subhead">{{ t('contact.subhead') }}</p>
+          <article class="lux-card contact-card">
+            <div class="lux-card-core contact-card-core">
+              <div class="contact-copy">
+                <h3 class="h3">{{ t('contact.title') }}</h3>
+                <p class="muted contact-subhead">{{ t('contact.subhead') }}</p>
+              </div>
+              <ContactDiscordForm />
             </div>
-            <ContactDiscordForm />
           </article>
         </div>
         <div class="container reveal-up contact-footer-wrap" style="--revealDelay: 120ms;">
@@ -344,7 +372,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import ChatConversationDemo from '../components/ChatConversationDemo.vue';
 import ContactDiscordForm from '../components/ContactDiscordForm.vue';
@@ -364,14 +392,17 @@ const selectedPricingCurrency = useState(
   () => (pricing?.default_currency || pricing?.currency || 'EUR').toString().trim().toUpperCase() || 'EUR'
 );
 const pricingExpanded = useState('pricingCurrencyExpanded', () => false);
+let revealObserver = null;
 
 const posts = computed(() => blogPosts.slice(0, 3));
 const heroProofItems = computed(() => {
-  const ids = ['voice', 'corrections', 'followUp'];
-  return ids.map((id) => ({
+  const ids = ['transcript', 'correction', 'explanation', 'replyOptions'];
+  return ids.map((id, index) => ({
     id,
+    index: String(index + 1).padStart(2, '0'),
     value: t(`home.heroProof.${id}.value`),
-    label: t(`home.heroProof.${id}.label`)
+    label: t(`home.heroProof.${id}.label`),
+    sample: t(`home.heroProof.${id}.sample`)
   }));
 });
 const featureCards = computed(() => {
@@ -712,7 +743,38 @@ function setBillingInterval(intervalRaw) {
   billingInterval.value = interval;
 }
 
+function setupRevealMotion() {
+  if (!import.meta.client) return;
+  const targets = Array.from(document.querySelectorAll('.reveal-up, .reveal-left, .reveal-right'));
+  if (!targets.length) return;
+
+  const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  if (prefersReduced || typeof IntersectionObserver === 'undefined') {
+    for (const target of targets) target.classList.add('is-visible');
+    return;
+  }
+
+  revealObserver?.disconnect();
+  revealObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add('is-visible');
+        revealObserver?.unobserve(entry.target);
+      }
+    },
+    {
+      root: null,
+      threshold: 0.12,
+      rootMargin: '0px 0px -8% 0px'
+    }
+  );
+
+  for (const target of targets) revealObserver.observe(target);
+}
+
 onMounted(() => {
+  setupRevealMotion();
   try {
     const saved = window.localStorage.getItem('pricing.billingInterval');
     if (saved === 'month' || saved === 'year') billingInterval.value = saved;
@@ -721,6 +783,11 @@ onMounted(() => {
   }
   syncSelectedPricingCurrency(pricingBaseLanguage.value);
   syncBillingIntervalWithAvailability();
+});
+
+onBeforeUnmount(() => {
+  revealObserver?.disconnect();
+  revealObserver = null;
 });
 
 watch(billingInterval, (next) => {
@@ -758,6 +825,7 @@ watch(
   z-index: 0;
   pointer-events: none;
   background:
+    radial-gradient(circle at 1px 1px, rgba(23, 33, 43, 0.035) 1px, transparent 0) 0 0 / 22px 22px,
     linear-gradient(135deg, rgba(34, 158, 217, 0.11) 0 1px, transparent 1px 38px),
     linear-gradient(45deg, rgba(38, 162, 105, 0.10) 0 1px, transparent 1px 42px),
     linear-gradient(180deg, #f7fbff 0%, var(--bg) 38%, #eef8f3 100%);
@@ -801,6 +869,7 @@ watch(
   color: color-mix(in srgb, var(--telegram-dark) 75%, var(--fg));
   font-size: 13px;
   font-weight: 900;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .hero-kicker-dot {
@@ -850,37 +919,132 @@ watch(
   clip-path: polygon(0 42%, 100% 0, 70% 100%, 47% 62%);
 }
 
+.hero-proof-card {
+  width: min(100%, 680px);
+  border-radius: 28px;
+  padding: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.30)),
+    color-mix(in srgb, var(--surface) 62%, transparent);
+  box-shadow:
+    0 22px 58px rgba(27, 76, 87, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  outline: 1px solid color-mix(in srgb, var(--telegram) 16%, transparent);
+}
+
+.hero-proof-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px 14px;
+}
+
+.hero-proof-eyebrow {
+  color: var(--telegram-dark);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.hero-proof-note {
+  max-width: 260px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+  text-align: right;
+}
+
 .hero-proof-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  max-width: 620px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .hero-proof-item {
-  min-height: 92px;
+  min-height: 138px;
   display: grid;
-  align-content: center;
-  gap: 6px;
-  border: 1px solid rgba(23, 33, 43, 0.08);
-  border-radius: var(--radius-lg);
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  border-radius: 21px;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.74);
-  box-shadow: 0 16px 38px rgba(23, 33, 43, 0.06);
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgba(34, 158, 217, 0.10), transparent 46%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.52)),
+    color-mix(in srgb, var(--bg) 72%, var(--surface));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.88),
+    inset 0 0 0 1px rgba(34, 158, 217, 0.07);
+  transition:
+    transform 620ms var(--motion-spring),
+    box-shadow 620ms var(--motion-spring);
+}
+
+.hero-proof-item:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.88),
+    inset 0 0 0 1px rgba(34, 158, 217, 0.13),
+    0 18px 38px rgba(27, 76, 87, 0.08);
+}
+
+.hero-proof-index {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--telegram) 12%, #ffffff);
+  color: var(--telegram-dark);
+  font-size: 11px;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.hero-proof-content {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.hero-proof-value,
+.hero-proof-label,
+.hero-proof-sample {
+  display: block;
 }
 
 .hero-proof-value {
   color: var(--fg);
   font-size: 15px;
-  font-weight: 900;
-  line-height: 1.1;
+  font-weight: 950;
+  line-height: 1.15;
 }
 
 .hero-proof-label {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
-  line-height: 1.35;
+  font-weight: 780;
+  line-height: 1.42;
+}
+
+.hero-proof-sample {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--telegram-dark) 88%, var(--fg));
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--telegram) 9%, #ffffff);
 }
 
 .hero-demo {
@@ -926,7 +1090,7 @@ watch(
 }
 
 .section {
-  padding: 56px 0;
+  padding: clamp(78px, 9vw, 132px) 0;
 }
 
 .section-head {
@@ -934,7 +1098,12 @@ watch(
   align-items: end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.section-head p {
+  max-width: 62ch;
+  line-height: 1.7;
 }
 
 .stacked {
@@ -985,7 +1154,7 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
   border-radius: 999px;
   padding: 8px 12px;
   background: color-mix(in srgb, var(--surface) 76%, var(--bg));
@@ -993,12 +1162,16 @@ watch(
   font-weight: 800;
   font-size: 13px;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  transition:
+    background 520ms var(--motion-spring),
+    color 520ms var(--motion-spring),
+    border-color 520ms var(--motion-spring),
+    transform 520ms var(--motion-spring);
 }
 
 .pricing-currency-chip.active {
-  background: rgba(31, 107, 99, 0.92);
-  border-color: rgba(31, 107, 99, 0.92);
+  background: color-mix(in srgb, #1f6b63 92%, var(--fg));
+  border-color: color-mix(in srgb, #1f6b63 92%, var(--fg));
   color: rgba(255, 255, 255, 0.94);
 }
 
@@ -1012,7 +1185,7 @@ watch(
   gap: 2px;
   padding: 4px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
   background: color-mix(in srgb, var(--surface) 72%, var(--bg));
 }
 
@@ -1029,7 +1202,11 @@ watch(
   font-size: 13px;
   letter-spacing: 0.01em;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  transition:
+    background 520ms var(--motion-spring),
+    color 520ms var(--motion-spring),
+    box-shadow 520ms var(--motion-spring),
+    transform 520ms var(--motion-spring);
 }
 
 .billing-option:hover {
@@ -1064,6 +1241,12 @@ watch(
   margin-top: 16px;
 }
 
+.step-card-core {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
 .feature-grid {
   margin-top: 18px;
 }
@@ -1073,8 +1256,13 @@ watch(
 }
 
 .why-card {
+  min-height: 250px;
+}
+
+.why-card-core {
   display: grid;
   gap: 10px;
+  align-content: start;
 }
 
 .why-desc {
@@ -1083,11 +1271,17 @@ watch(
 }
 
 .feature-card {
+  min-height: 250px;
+}
+
+.feature-card-core {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  align-content: start;
   background:
-    linear-gradient(135deg, rgba(34, 158, 217, 0.08), transparent 46%),
-    var(--bg);
+    linear-gradient(135deg, rgba(34, 158, 217, 0.08), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)),
+    color-mix(in srgb, var(--surface) 58%, var(--bg));
 }
 
 .feature-tag {
@@ -1098,8 +1292,7 @@ watch(
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: color-mix(in srgb, var(--fg) 80%, var(--muted));
   background: color-mix(in srgb, var(--surface) 72%, var(--bg));
 }
@@ -1114,10 +1307,10 @@ watch(
   height: 36px;
   border-radius: 999px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
   display: grid;
   place-items: center;
-  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   margin-bottom: 10px;
 }
@@ -1127,12 +1320,21 @@ watch(
 }
 
 .tier {
+  min-height: 430px;
+}
+
+.tier-core {
   display: grid;
   gap: 14px;
+  align-content: start;
 }
 
 .tier.featured {
   border-color: color-mix(in srgb, var(--fg) 22%, var(--border));
+  background:
+    linear-gradient(135deg, rgba(34, 158, 217, 0.10), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.48)),
+    color-mix(in srgb, var(--surface-strong) 68%, var(--bg));
 }
 
 .tier-headline {
@@ -1171,7 +1373,7 @@ watch(
 }
 
 .amount {
-  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   font-size: 34px;
   letter-spacing: 0;
@@ -1186,6 +1388,7 @@ watch(
   margin: 0;
   padding-left: 18px;
   line-height: 1.7;
+  min-height: 142px;
 }
 
 .annual-note {
@@ -1199,14 +1402,23 @@ watch(
 }
 
 .post {
+  min-height: 260px;
+  text-decoration: none;
+  transition:
+    transform 640ms var(--motion-spring),
+    border-color 640ms var(--motion-spring),
+    box-shadow 640ms var(--motion-spring);
+}
+
+.post-core {
   display: grid;
   gap: 10px;
-  transition: transform 120ms ease, border-color 120ms ease;
+  align-content: start;
 }
 
 .post:hover {
   text-decoration: none;
-  transform: translateY(-1px);
+  transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--fg) 22%, var(--border));
 }
 
@@ -1220,11 +1432,15 @@ watch(
 }
 
 .read {
-  margin-top: 4px;
+  margin-top: auto;
   font-weight: 800;
 }
 
 .about-card {
+  max-width: 920px;
+}
+
+.about-card-core {
   display: grid;
   gap: 12px;
 }
@@ -1249,12 +1465,18 @@ watch(
 .faq-list {
   margin-top: 18px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .faq-item {
   display: grid;
   gap: 8px;
+  border-radius: 0;
+  border: 0;
+  border-left: 3px solid color-mix(in srgb, var(--telegram) 42%, var(--border));
+  box-shadow: none;
+  background: color-mix(in srgb, var(--bg) 68%, transparent);
+  padding: 14px 0 14px 18px;
 }
 
 .faq-question {
@@ -1276,16 +1498,21 @@ watch(
   display: grid;
   place-items: center;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
   background: var(--bg);
-  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-display);
   font-size: 18px;
   font-weight: 900;
   line-height: 1;
-  animation: cue-bounce 1.3s ease-in-out infinite;
+  animation: cue-bounce 1.3s var(--motion-soft) infinite;
 }
 
 .contact-card {
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+.contact-card-core {
   display: grid;
   gap: 20px;
 }
@@ -1324,15 +1551,78 @@ watch(
   .hero-inner {
     grid-template-columns: minmax(0, 1.04fr) minmax(360px, 430px);
   }
+
+  .hero-proof-grid {
+    grid-template-columns: 1.05fr 0.95fr;
+  }
+
+  .hero-proof-item:first-child {
+    grid-row: span 2;
+    align-content: center;
+    min-height: 158px;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .feature-card {
+    grid-column: span 6;
+  }
+
+  .feature-card:nth-child(1),
+  .feature-card:nth-child(4) {
+    grid-column: span 7;
+  }
+
+  .feature-card:nth-child(2),
+  .feature-card:nth-child(3) {
+    grid-column: span 5;
+  }
+
+  .steps {
+    grid-template-columns: 0.9fr 1.1fr 0.9fr;
+    align-items: start;
+  }
+
+  .steps .step-card:nth-child(2) {
+    transform: translateY(24px);
+  }
+
+  .why-grid {
+    grid-template-columns: 1.08fr 0.92fr 1fr;
+    align-items: start;
+  }
+
+  .why-card:nth-child(1) {
+    margin-top: 22px;
+  }
+
+  .why-card:nth-child(3) {
+    margin-top: 12px;
+  }
+
+  .faq-list {
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+    gap: 12px 28px;
+  }
+
+  .faq-item:nth-child(odd) {
+    transform: translateY(8px);
+  }
 }
 
 @media (max-width: 680px) {
+  .section {
+    padding: 64px 0;
+  }
+
   .hero-proof-grid {
     grid-template-columns: 1fr;
   }
 
   .hero-proof-item {
-    min-height: 74px;
+    min-height: auto;
   }
 
   .demo-caption {
@@ -1341,6 +1631,16 @@ watch(
 }
 
 @media (max-width: 520px) {
+  .hero-proof-head {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .hero-proof-note {
+    max-width: none;
+    text-align: left;
+  }
+
   .hero-actions {
     display: grid;
   }

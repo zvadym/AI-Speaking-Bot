@@ -98,12 +98,15 @@ const languageBadgeStyle = computed(() => {
 .avatar {
   width: 100%;
   height: 100%;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  border-radius: 24%;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.22)),
+    var(--surface);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
   display: grid;
   place-items: center;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
 .avatar-picture {

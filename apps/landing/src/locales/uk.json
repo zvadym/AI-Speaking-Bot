@@ -28,19 +28,29 @@
     "seoDescription": "Practice speaking in Telegram with Romi. Choose a language path, send voice or text, get clear corrections, and keep the conversation moving every day.",
     "subhead": "Надішли голосове або текст, отримай транскрипт, природнішу версію, коротке пояснення і варіанти наступної відповіді прямо в чаті.",
     "heroKicker": "Реальна практика в Telegram, а не ще один застосунок з уроками",
-    "heroProofLabel": "Ключові кроки практики з Romi",
+    "heroProofLabel": "Що Romi повертає після кожного повідомлення",
+    "heroProofEyebrow": "Пакет відповіді Romi",
+    "heroProofNote": "Одне повідомлення в Telegram, чотири корисні частини",
     "heroProof": {
-      "voice": {
-        "value": "Голос",
-        "label": "Говори природно короткими аудіо"
+      "transcript": {
+        "value": "Транскрипт",
+        "label": "Голос стає текстом, щоб ти бачив, що саме сказав.",
+        "sample": "“Mañana tengo una entrevista…”"
       },
-      "corrections": {
-        "value": "Виправлення",
-        "label": "Транскрипт, краща фраза й правило"
+      "correction": {
+        "value": "Природна версія",
+        "label": "Та сама думка, але з чистішою граматикою і фразою.",
+        "sample": "“Tomorrow I have a job interview…”"
       },
-      "followUp": {
-        "value": "Наступна репліка",
-        "label": "Простий, розмовний і просунутий варіанти"
+      "explanation": {
+        "value": "Чому так",
+        "label": "Коротке правило, тон і переклад там, де він потрібен.",
+        "sample": "por vs. para · контекст співбесіди"
+      },
+      "replyOptions": {
+        "value": "Варіанти відповіді",
+        "label": "Простий, природний і просунутий варіанти для продовження.",
+        "sample": "Simple · Natural · Advanced"
       }
     },
     "demoPill": "Live",

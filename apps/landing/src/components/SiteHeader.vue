@@ -1,62 +1,76 @@
 <template>
   <header class="site-header">
-    <div class="container header-inner">
-      <RouterLink class="brand" :to="routeWithLocale('home')">AI Language School</RouterLink>
+    <div class="container header-shell">
+      <div class="header-topline">
+        <RouterLink class="brand" :to="routeWithLocale('home')">AI Language School</RouterLink>
 
-      <button
-        class="menu-btn"
-        type="button"
-        :aria-label="t('nav.menu')"
-        @click="openMobileMenu"
-      >
-        <span class="menu-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false">
-            <path d="M4 6.5h16v2H4v-2Zm0 4.5h16v2H4v-2Zm0 4.5h16v2H4v-2Z" />
-          </svg>
-        </span>
-      </button>
-
-      <div
-        ref="localePickerRef"
-        class="locale-picker header-locale"
-        :class="{ open: isLocaleMenuOpen }"
-        :aria-label="t('language.label')"
-      >
-        <button
-          class="locale-trigger"
-          type="button"
-          :aria-label="t('language.label')"
-          aria-haspopup="true"
-          :aria-expanded="isLocaleMenuOpen ? 'true' : 'false'"
-          @click="toggleLocaleMenu"
-        >
-          <span class="locale-trigger-main">
-            <span class="locale-trigger-flag" aria-hidden="true">{{ currentLocaleOption.flag }}</span>
-            <span class="locale-trigger-code">{{ currentLocaleOption.label }}</span>
-          </span>
-          <span class="locale-trigger-caret" aria-hidden="true">▾</span>
-        </button>
-
-        <div class="locale-menu">
-          <button
-            v-for="opt in localeOptions"
-            :key="opt.value"
-            class="locale-item"
-            type="button"
-            :aria-pressed="locale.value === opt.value"
-            @click="switchLocale(opt.value)"
-          >
-            <span class="locale-item-flag" aria-hidden="true">{{ opt.flag }}</span>
-            <span class="locale-item-meta">
-              <span class="locale-item-name">{{ opt.name }}</span>
-              <span class="locale-item-code">{{ opt.label }}</span>
+        <div class="header-actions">
+          <button type="button" class="try-now" :aria-label="t('cta.tryNow')" @click="openTryModal">
+            <span class="telegram-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M20.66 4.21a2.05 2.05 0 0 0-2.08-.24L3.61 10.3a1.17 1.17 0 0 0 .09 2.18l3.08 1.06 1.16 4.38a1.19 1.19 0 0 0 2.02.51l2.2-2.26 4.24 3.14a1.77 1.77 0 0 0 2.78-1.01l2.46-12.3a2.05 2.05 0 0 0-.98-1.79Z" />
+                <path d="m8.01 13.14 8.99-5.49a.45.45 0 0 1 .57.67l-7.39 7.36-.47 2.34-.95-3.55a1.46 1.46 0 0 1-.75-1.33Z" />
+              </svg>
             </span>
-            <span class="locale-item-check" aria-hidden="true">{{ locale.value === opt.value ? '✓' : '' }}</span>
+            <span class="try-now-text">{{ t('cta.tryNow') }}</span>
+          </button>
+
+          <div
+            ref="localePickerRef"
+            class="locale-picker header-locale"
+            :class="{ open: isLocaleMenuOpen }"
+            :aria-label="t('language.label')"
+          >
+            <button
+              class="locale-trigger"
+              type="button"
+              :aria-label="t('language.label')"
+              aria-haspopup="true"
+              :aria-expanded="isLocaleMenuOpen ? 'true' : 'false'"
+              @click="toggleLocaleMenu"
+            >
+              <span class="locale-trigger-main">
+                <span class="locale-trigger-flag" aria-hidden="true">{{ currentLocaleOption.flag }}</span>
+                <span class="locale-trigger-code">{{ currentLocaleOption.label }}</span>
+              </span>
+              <span class="locale-trigger-caret" aria-hidden="true">▾</span>
+            </button>
+
+            <div class="locale-menu">
+              <button
+                v-for="opt in localeOptions"
+                :key="opt.value"
+                class="locale-item"
+                type="button"
+                :aria-pressed="locale.value === opt.value"
+                @click="switchLocale(opt.value)"
+              >
+                <span class="locale-item-flag" aria-hidden="true">{{ opt.flag }}</span>
+                <span class="locale-item-meta">
+                  <span class="locale-item-name">{{ opt.name }}</span>
+                  <span class="locale-item-code">{{ opt.label }}</span>
+                </span>
+                <span class="locale-item-check" aria-hidden="true">{{ locale.value === opt.value ? '✓' : '' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <button
+            class="menu-btn"
+            type="button"
+            :aria-label="t('nav.menu')"
+            @click="openMobileMenu"
+          >
+            <span class="menu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 6.5h16v2H4v-2Zm0 4.5h16v2H4v-2Zm0 4.5h16v2H4v-2Z" />
+              </svg>
+            </span>
           </button>
         </div>
       </div>
 
-      <nav class="nav" aria-label="Primary">
+      <nav class="nav-row" aria-label="Primary">
         <div class="nav-rail">
           <div class="nav-links">
             <RouterLink
@@ -75,27 +89,7 @@
 
           <div class="nav-divider" aria-hidden="true" />
         </div>
-
-        <button type="button" class="try-now" :aria-label="t('cta.tryNow')" @click="openTryModal">
-          <span class="telegram-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M20.66 4.21a2.05 2.05 0 0 0-2.08-.24L3.61 10.3a1.17 1.17 0 0 0 .09 2.18l3.08 1.06 1.16 4.38a1.19 1.19 0 0 0 2.02.51l2.2-2.26 4.24 3.14a1.77 1.77 0 0 0 2.78-1.01l2.46-12.3a2.05 2.05 0 0 0-.98-1.79Z" />
-              <path d="m8.01 13.14 8.99-5.49a.45.45 0 0 1 .57.67l-7.39 7.36-.47 2.34-.95-3.55a1.46 1.46 0 0 1-.75-1.33Z" />
-            </svg>
-          </span>
-          <span class="try-now-text">{{ t('cta.tryNow') }}</span>
-        </button>
       </nav>
-
-      <button type="button" class="try-now try-now-mobile" :aria-label="t('cta.tryNow')" @click="openTryModal">
-        <span class="telegram-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false">
-            <path d="M20.66 4.21a2.05 2.05 0 0 0-2.08-.24L3.61 10.3a1.17 1.17 0 0 0 .09 2.18l3.08 1.06 1.16 4.38a1.19 1.19 0 0 0 2.02.51l2.2-2.26 4.24 3.14a1.77 1.77 0 0 0 2.78-1.01l2.46-12.3a2.05 2.05 0 0 0-.98-1.79Z" />
-            <path d="m8.01 13.14 8.99-5.49a.45.45 0 0 1 .57.67l-7.39 7.36-.47 2.34-.95-3.55a1.46 1.46 0 0 1-.75-1.33Z" />
-          </svg>
-        </span>
-        <span class="try-now-text">{{ t('cta.tryNow') }}</span>
-      </button>
     </div>
 
     <MobileMenuDrawer
@@ -122,8 +116,8 @@ const { t, locale, setAppLocale } = useI18n();
 const route = useRoute();
 
 const NAV_ITEMS = [
-  { key: 'practice', type: 'route', labelKey: 'nav.practice', routeName: 'practice', primary: true },
   { key: 'features', type: 'section', labelKey: 'nav.features', sectionId: 'features', primary: true },
+  { key: 'practice', type: 'route', labelKey: 'nav.practice', routeName: 'practice', primary: true },
   { key: 'how', type: 'section', labelKey: 'nav.how', sectionId: 'how', primary: true },
   { key: 'pricing', type: 'section', labelKey: 'nav.pricing', sectionId: 'pricing', primary: true },
   { key: 'blog', type: 'section', labelKey: 'nav.blog', sectionId: 'blog', primary: true },
@@ -421,46 +415,92 @@ onBeforeUnmount(() => {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 10;
-  backdrop-filter: blur(12px);
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
-  border-bottom: 1px solid var(--border);
+  z-index: 20;
+  padding-top: 16px;
+  background: transparent;
+  border-bottom: 0;
+  pointer-events: none;
 }
 
-.header-inner {
+.header-shell {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: 'brand nav locale';
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--fg) 11%, transparent);
+  border-radius: 30px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.58)),
+    color-mix(in srgb, var(--bg) 80%, var(--surface));
+  box-shadow:
+    0 24px 58px rgba(27, 76, 87, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+
+.header-topline {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  padding: 16px 0;
+  gap: 18px;
+  padding: 2px 4px 2px 16px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .brand {
-  grid-area: brand;
-  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   letter-spacing: 0;
   text-decoration: none;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-locale {
-  grid-area: locale;
   width: 132px;
 }
 
 .menu-btn {
   display: none;
-  grid-area: menu;
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
   background: color-mix(in srgb, var(--bg) 88%, var(--surface));
   color: var(--fg);
   cursor: pointer;
-  box-shadow: var(--shadow);
+  box-shadow:
+    0 14px 34px rgba(27, 76, 87, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition:
+    transform 520ms var(--motion-spring),
+    border-color 520ms var(--motion-spring),
+    background-color 520ms var(--motion-spring);
+}
+
+.menu-btn:hover {
+  border-color: color-mix(in srgb, var(--telegram) 28%, var(--border));
+  transform: translateY(-1px);
+}
+
+.menu-btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.menu-btn:focus-visible,
+.nav-link:focus-visible,
+.try-now:focus-visible,
+.locale-trigger:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
 }
 
 .menu-icon {
@@ -476,36 +516,33 @@ onBeforeUnmount(() => {
   fill: currentColor;
 }
 
-.nav {
-  grid-area: nav;
-  flex: 1 1 auto;
+.nav-row {
   min-width: 0;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
+  display: block;
 }
 
 .nav-rail {
-  max-width: min(760px, 100%);
-  flex: 0 1 auto;
+  width: 100%;
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 10px;
-  border: 1px solid color-mix(in srgb, var(--fg) 16%, var(--border));
-  border-radius: 999px;
-  padding: 6px;
-  background: color-mix(in srgb, var(--bg) 84%, var(--surface));
-  box-shadow: 0 10px 24px rgba(10, 14, 24, 0.08);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  border-radius: 22px;
+  padding: 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.40)),
+    color-mix(in srgb, var(--surface) 64%, rgba(255, 255, 255, 0.62));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
 }
 
 .nav-links {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 5px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -518,21 +555,25 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  padding: 8px 14px;
+  border-radius: 17px;
+  padding: 9px 15px;
   font-size: 14px;
   line-height: 1;
   font-weight: 700;
   color: color-mix(in srgb, var(--fg) 86%, var(--muted));
   text-decoration: none;
   white-space: nowrap;
-  transition: color 140ms ease, background-color 140ms ease, transform 140ms ease;
+  transition:
+    color 520ms var(--motion-spring),
+    background-color 520ms var(--motion-spring),
+    transform 520ms var(--motion-spring);
 }
 
 .nav-link:hover {
   text-decoration: none;
   color: var(--fg);
   background: color-mix(in srgb, var(--surface) 82%, var(--bg));
+  transform: translateY(-1px);
 }
 
 .nav-link.active {
@@ -566,8 +607,11 @@ onBeforeUnmount(() => {
   letter-spacing: 0.02em;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
-  transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition:
+    transform 520ms var(--motion-spring),
+    border-color 520ms var(--motion-spring),
+    background-color 520ms var(--motion-spring);
 }
 
 .try-now * {
@@ -601,11 +645,6 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.try-now-mobile {
-  display: none;
-  grid-area: try;
-}
-
 .locale-picker {
   position: relative;
   width: 100%;
@@ -619,7 +658,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--bg) 88%, var(--surface));
   color: var(--fg);
@@ -628,7 +667,10 @@ onBeforeUnmount(() => {
   font-size: 12px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: border-color 140ms ease, transform 140ms ease, background-color 140ms ease;
+  transition:
+    border-color 520ms var(--motion-spring),
+    transform 520ms var(--motion-spring),
+    background-color 520ms var(--motion-spring);
 }
 
 .locale-trigger-main {
@@ -675,7 +717,9 @@ onBeforeUnmount(() => {
   transform: translateY(-7px) scale(0.98);
   transform-origin: top right;
   pointer-events: none;
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition:
+    opacity 520ms var(--motion-spring),
+    transform 520ms var(--motion-spring);
 }
 
 .locale-picker.open .locale-menu,
@@ -759,8 +803,12 @@ onBeforeUnmount(() => {
     padding-inline: clamp(22px, 3.4vw, 34px);
   }
 
-  .nav-rail {
-    max-width: min(760px, 100%);
+  .header-topline {
+    gap: 12px;
+  }
+
+  .nav-link {
+    padding-inline: 12px;
   }
 }
 
@@ -777,44 +825,58 @@ onBeforeUnmount(() => {
     display: none;
   }
 
-  .nav {
-    gap: 10px;
-  }
-
   .nav-link {
     padding: 8px 12px;
   }
 }
 
 @media (max-width: 640px) {
-  .header-inner {
-    padding: 12px 0;
+  .header-shell {
+    gap: 0;
+    padding: 8px;
+    border-radius: 28px;
+  }
+
+  .header-topline {
     grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas:
       'brand locale menu'
       'try try try';
-    row-gap: 10px;
+    align-items: center;
+    gap: 10px;
+    padding: 2px;
+  }
+
+  .brand {
+    grid-area: brand;
+  }
+
+  .header-actions {
+    display: contents;
+  }
+
+  .nav-row {
+    display: none;
+  }
+
+  .header-actions .try-now {
+    grid-area: try;
+    width: 100%;
+    justify-content: center;
+    padding: 12px 14px;
+    font-size: 14px;
   }
 
   .header-locale {
     width: 110px;
-  }
-
-  .nav {
-    display: none;
+    grid-area: locale;
   }
 
   .menu-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .try-now-mobile {
-    display: inline-flex;
-    justify-content: center;
-    padding: 12px 14px;
-    font-size: 14px;
+    grid-area: menu;
   }
 
   .telegram-mark {
@@ -825,7 +887,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 420px) {
   .brand {
-    max-width: 70vw;
+    max-width: 46vw;
     overflow: hidden;
     text-overflow: ellipsis;
   }

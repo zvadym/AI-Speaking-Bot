@@ -155,10 +155,13 @@ function readLocalized(map) {
 
 .callout {
   margin-top: 16px;
-  padding: 14px 16px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 65%, var(--bg));
+  padding: 18px;
+  border-radius: var(--radius-xl);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.46)),
+    color-mix(in srgb, var(--surface) 65%, var(--bg));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   display: grid;
   grid-template-columns: 24px 1fr;
   gap: 10px;
@@ -171,7 +174,7 @@ function readLocalized(map) {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
   background: var(--bg);
 }
 

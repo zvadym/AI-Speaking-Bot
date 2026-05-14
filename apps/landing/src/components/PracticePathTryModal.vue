@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
   border: 1px solid color-mix(in srgb, var(--fg) 14%, var(--border));
   box-shadow:
     0 40px 90px color-mix(in srgb, var(--fg) 22%, transparent),
-    0 2px 0 rgba(0, 0, 0, 0.06);
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
   background:
     radial-gradient(120% 140% at 12% 8%, color-mix(in srgb, #229ed9 14%, transparent), transparent 50%),
     radial-gradient(120% 140% at 90% 84%, color-mix(in srgb, #34d399 10%, transparent), transparent 52%),
@@ -240,10 +240,15 @@ onBeforeUnmount(() => {
 .paths-section {
   display: grid;
   gap: 18px;
-  padding: 22px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 36%, var(--bg)), var(--bg));
+  padding: 28px;
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  border-radius: var(--radius-xxl);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.46)),
+    color-mix(in srgb, var(--surface) 56%, var(--bg));
+  box-shadow:
+    0 18px 44px rgba(27, 76, 87, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
 }
 
 .paths-section.primary {
@@ -295,17 +300,20 @@ onBeforeUnmount(() => {
 }
 
 .path-list-move {
-  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 620ms var(--motion-spring);
 }
 
 .path-list-enter-active,
 .path-list-leave-active {
-  transition: opacity 140ms ease;
+  transition:
+    opacity 520ms var(--motion-spring),
+    transform 520ms var(--motion-spring);
 }
 
 .path-list-enter-from,
 .path-list-leave-to {
   opacity: 0;
+  transform: translateY(8px);
 }
 
 .list {

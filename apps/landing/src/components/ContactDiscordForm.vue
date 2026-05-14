@@ -110,7 +110,7 @@ async function submitForm() {
 <style scoped>
 .form {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .grid {
@@ -126,25 +126,32 @@ async function submitForm() {
 
 .label {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 
 .input {
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.52)),
+    color-mix(in srgb, var(--bg) 82%, var(--surface));
   color: var(--fg);
-  padding: 12px 14px;
+  padding: 14px 16px;
   font: inherit;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.82);
+  transition:
+    border-color 520ms var(--motion-spring),
+    box-shadow 520ms var(--motion-spring),
+    transform 520ms var(--motion-spring);
 }
 
 .input:focus-visible {
-  outline: 2px solid color-mix(in srgb, #229ed9 55%, white);
-  outline-offset: 2px;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-color: color-mix(in srgb, var(--telegram) 38%, var(--border));
 }
 
 .textarea {

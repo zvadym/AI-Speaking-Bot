@@ -98,10 +98,15 @@ const { activeTargetCodeFor, toggleTarget, sortedPracticePathsFor, isPracticePat
 .practice-section {
   display: grid;
   gap: 18px;
-  padding: 22px 22px 24px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 36%, var(--bg)), var(--bg));
+  padding: 28px;
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  border-radius: var(--radius-xxl);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.46)),
+    color-mix(in srgb, var(--surface) 56%, var(--bg));
+  box-shadow:
+    var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
 }
 
 .practice-section.primary {
@@ -151,17 +156,20 @@ const { activeTargetCodeFor, toggleTarget, sortedPracticePathsFor, isPracticePat
 }
 
 .path-list-move {
-  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 620ms var(--motion-spring);
 }
 
 .path-list-enter-active,
 .path-list-leave-active {
-  transition: opacity 140ms ease;
+  transition:
+    opacity 520ms var(--motion-spring),
+    transform 520ms var(--motion-spring);
 }
 
 .path-list-enter-from,
 .path-list-leave-to {
   opacity: 0;
+  transform: translateY(8px);
 }
 
 .list {

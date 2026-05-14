@@ -30,9 +30,10 @@ const { t } = useI18n();
 
 <style scoped>
 .site-footer {
-  margin-top: 72px;
-  border-top: 1px solid var(--border);
+  margin-top: 96px;
+  border-top: 1px solid color-mix(in srgb, var(--fg) 9%, transparent);
   background:
+    radial-gradient(120% 140% at 8% 0%, rgba(34, 158, 217, 0.12), transparent 44%),
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--surface) 82%, #60a5fa 18%) 0%,
@@ -55,7 +56,7 @@ const { t } = useI18n();
 }
 
 .brand-name {
-  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-display);
   font-weight: 900;
   letter-spacing: 0;
   font-size: 18px;
@@ -109,9 +110,9 @@ const { t } = useI18n();
   line-height: 1;
   text-decoration: none;
   transition:
-    background 160ms ease,
-    border-color 160ms ease,
-    transform 160ms ease;
+    background 560ms var(--motion-spring),
+    border-color 560ms var(--motion-spring),
+    transform 560ms var(--motion-spring);
 }
 
 .links :deep(a:hover) {
