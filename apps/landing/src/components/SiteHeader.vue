@@ -438,9 +438,9 @@ onBeforeUnmount(() => {
 
 .brand {
   grid-area: brand;
-  font-family: Outfit, Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   font-weight: 900;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   text-decoration: none;
   white-space: nowrap;
 }

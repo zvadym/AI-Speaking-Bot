@@ -4,22 +4,39 @@
       <div class="parallax-bg" aria-hidden="true" />
       <div class="snap-inner">
         <div class="container hero-inner">
-          <h1 class="h1 reveal-up">{{ t('home.headline') }}</h1>
-          <p class="muted hero-sub reveal-up" style="--revealDelay: 80ms;">
-            {{ t('home.subhead') }}
-          </p>
+          <div class="hero-copy">
+            <div class="hero-kicker reveal-up">
+              <span class="hero-kicker-dot" aria-hidden="true" />
+              <span>{{ t('home.heroKicker') }}</span>
+            </div>
 
-          <div class="hero-actions reveal-up" style="--revealDelay: 140ms;">
-            <button type="button" class="btn primary" @click="openTryModal">{{ t('cta.tryNow') }}</button>
-            <RouterLink class="btn" :to="routeWithLocale('practice')">{{ t('cta.start') }}</RouterLink>
+            <h1 class="h1 reveal-up" style="--revealDelay: 50ms;">{{ t('home.headline') }}</h1>
+            <p class="muted hero-sub reveal-up" style="--revealDelay: 100ms;">
+              {{ t('home.subhead') }}
+            </p>
+
+            <div class="hero-actions reveal-up" style="--revealDelay: 150ms;">
+              <button type="button" class="btn primary hero-primary" @click="openTryModal">
+                <span class="telegram-mark-small" aria-hidden="true" />
+                {{ t('cta.tryNow') }}
+              </button>
+              <RouterLink class="btn hero-secondary" :to="routeWithLocale('practice')">{{ t('cta.start') }}</RouterLink>
+            </div>
+
+            <div class="hero-proof-grid reveal-up" style="--revealDelay: 210ms;" :aria-label="t('home.heroProofLabel')">
+              <div v-for="item in heroProofItems" :key="item.id" class="hero-proof-item">
+                <span class="hero-proof-value">{{ item.value }}</span>
+                <span class="hero-proof-label">{{ item.label }}</span>
+              </div>
+            </div>
           </div>
 
-          <div class="shot card reveal-up" style="--revealDelay: 220ms;">
-            <div class="hero-shot-head">
-              <RomiAvatar :practice-path="featuredPracticePaths[0] || null" :size="84" loading="eager" fetchpriority="high" alt="Romi" />
+          <div class="hero-demo reveal-up" style="--revealDelay: 180ms;">
+            <div class="demo-caption">
+              <span class="demo-caption-pill">{{ t('home.demoPill') }}</span>
               <div>
-                <div class="shot-title">Romi</div>
-                <div class="muted shot-copy">{{ t('practice.cardSubtitle') }}</div>
+                <div class="demo-caption-title">{{ t('home.demoTitle') }}</div>
+                <div class="muted demo-caption-text">{{ t('home.demoSubtitle') }}</div>
               </div>
             </div>
             <ChatConversationDemo scenario-id="jobInterview" />
@@ -338,7 +355,6 @@ import { featuredPracticePathKeys } from '../data/featuredPracticePaths.js';
 import { practicePaths } from '../data/practicePaths.js';
 import { pricing } from '../generated/pricing.js';
 import { normalizeLocale, routeWithLocale, useI18n } from '../i18n.js';
-import RomiAvatar from '../components/RomiAvatar.vue';
 
 const { t, tm, locale } = useI18n();
 const tryPracticeModalOpen = useState('tryPracticeModalOpen', () => false);
@@ -350,6 +366,14 @@ const selectedPricingCurrency = useState(
 const pricingExpanded = useState('pricingCurrencyExpanded', () => false);
 
 const posts = computed(() => blogPosts.slice(0, 3));
+const heroProofItems = computed(() => {
+  const ids = ['voice', 'corrections', 'followUp'];
+  return ids.map((id) => ({
+    id,
+    value: t(`home.heroProof.${id}.value`),
+    label: t(`home.heroProof.${id}.label`)
+  }));
+});
 const featureCards = computed(() => {
   const ids = ['voice', 'translation', 'followUp', 'memory'];
   return ids.map((id) => ({
@@ -734,9 +758,9 @@ watch(
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(70vw 70vw at 12% 10%, color-mix(in srgb, var(--surface) 45%, #60a5fa) 0%, transparent 65%),
-    radial-gradient(68vw 68vw at 88% 84%, color-mix(in srgb, var(--surface) 48%, #34d399) 0%, transparent 66%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bg) 88%, var(--surface)), var(--bg) 35%, color-mix(in srgb, var(--bg) 92%, var(--surface)));
+    linear-gradient(135deg, rgba(34, 158, 217, 0.11) 0 1px, transparent 1px 38px),
+    linear-gradient(45deg, rgba(38, 162, 105, 0.10) 0 1px, transparent 1px 42px),
+    linear-gradient(180deg, #f7fbff 0%, var(--bg) 38%, #eef8f3 100%);
 }
 
 .home-root > .snap-section {
@@ -749,18 +773,49 @@ watch(
 }
 
 .hero {
-  padding: 56px 0 18px;
+  padding: clamp(28px, 5vw, 54px) 0 clamp(24px, 4vw, 42px);
 }
 
 .hero-inner {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(28px, 6vw, 76px);
+  align-items: center;
+}
+
+.hero-copy {
+  display: grid;
   gap: 18px;
+  max-width: 650px;
+}
+
+.hero-kicker {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(34, 158, 217, 0.22);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: color-mix(in srgb, var(--telegram-dark) 75%, var(--fg));
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.hero-kicker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 5px rgba(38, 162, 105, 0.14);
 }
 
 .hero-sub {
-  max-width: 52ch;
+  max-width: 58ch;
   font-size: 18px;
   line-height: 1.6;
+  margin: 0;
 }
 
 .hero-actions {
@@ -769,32 +824,105 @@ watch(
   flex-wrap: wrap;
 }
 
-.shot {
-  min-height: 280px;
-  height: auto;
+.hero-primary,
+.hero-secondary {
+  min-height: 48px;
+  padding-inline: 18px;
+}
+
+.telegram-mark-small {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ffffff;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.telegram-mark-small::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  background: var(--telegram);
+  clip-path: polygon(0 42%, 100% 0, 70% 100%, 47% 62%);
+}
+
+.hero-proof-grid {
   display: grid;
-  gap: 18px;
-  place-items: start center;
-  padding: 20px;
-  background: var(--surface);
-  overflow: hidden;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 620px;
 }
 
-.hero-shot-head {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.hero-proof-item {
+  min-height: 92px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  border: 1px solid rgba(23, 33, 43, 0.08);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 16px 38px rgba(23, 33, 43, 0.06);
 }
 
-.shot-title {
-  font-size: 20px;
-  font-weight: 800;
+.hero-proof-value {
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 900;
   line-height: 1.1;
 }
 
-.shot-copy {
-  margin-top: 4px;
+.hero-proof-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.hero-demo {
+  width: min(100%, 430px);
+  justify-self: center;
+  display: grid;
+  gap: 12px;
+}
+
+.demo-caption {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(23, 33, 43, 0.08);
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 16px 38px rgba(23, 33, 43, 0.06);
+}
+
+.demo-caption-pill {
+  display: inline-grid;
+  place-items: center;
+  min-width: 52px;
+  min-height: 32px;
+  border-radius: 999px;
+  background: rgba(34, 158, 217, 0.13);
+  color: var(--telegram-dark);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.demo-caption-title {
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.demo-caption-text {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .section {
@@ -957,6 +1085,9 @@ watch(
 .feature-card {
   display: grid;
   gap: 8px;
+  background:
+    linear-gradient(135deg, rgba(34, 158, 217, 0.08), transparent 46%),
+    var(--bg);
 }
 
 .feature-tag {
@@ -986,7 +1117,7 @@ watch(
   border: 1px solid var(--border);
   display: grid;
   place-items: center;
-  font-family: Outfit, Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   font-weight: 900;
   margin-bottom: 10px;
 }
@@ -1040,10 +1171,10 @@ watch(
 }
 
 .amount {
-  font-family: Outfit, Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   font-weight: 900;
   font-size: 34px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .cadence {
@@ -1147,7 +1278,7 @@ watch(
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg);
-  font-family: Outfit, Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: Fraunces, Manrope, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   font-size: 18px;
   font-weight: 900;
   line-height: 1;
@@ -1186,6 +1317,37 @@ watch(
   }
   50% {
     transform: translateY(4px);
+  }
+}
+
+@media (min-width: 920px) {
+  .hero-inner {
+    grid-template-columns: minmax(0, 1.04fr) minmax(360px, 430px);
+  }
+}
+
+@media (max-width: 680px) {
+  .hero-proof-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-proof-item {
+    min-height: 74px;
+  }
+
+  .demo-caption {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-actions {
+    display: grid;
+  }
+
+  .hero-primary,
+  .hero-secondary {
+    width: 100%;
   }
 }
 </style>

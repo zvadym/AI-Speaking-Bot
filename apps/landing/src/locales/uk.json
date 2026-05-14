@@ -23,10 +23,29 @@
     "backToTeachers": "Назад до викладачів"
   },
   "home": {
-    "headline": "Практикуйтеся з Romi.",
+    "headline": "Говори, отримуй виправлення й продовжуй діалог у Telegram.",
     "seoTitle": "Practice Languages with Romi | Speak in Telegram",
     "seoDescription": "Practice speaking in Telegram with Romi. Choose a language path, send voice or text, get clear corrections, and keep the conversation moving every day.",
-    "subhead": "Одна дружня співрозмовниця. Кілька мовних маршрутів. Говоріть щодня в Telegram.",
+    "subhead": "Надішли голосове або текст, отримай транскрипт, природнішу версію, коротке пояснення і варіанти наступної відповіді прямо в чаті.",
+    "heroKicker": "Реальна практика в Telegram, а не ще один застосунок з уроками",
+    "heroProofLabel": "Ключові кроки практики з Romi",
+    "heroProof": {
+      "voice": {
+        "value": "Голос",
+        "label": "Говори природно короткими аудіо"
+      },
+      "corrections": {
+        "value": "Виправлення",
+        "label": "Транскрипт, краща фраза й правило"
+      },
+      "followUp": {
+        "value": "Наступна репліка",
+        "label": "Простий, розмовний і просунутий варіанти"
+      }
+    },
+    "demoPill": "Live",
+    "demoTitle": "Реальний цикл практики",
+    "demoSubtitle": "Бот слухає, виправляє, перекладає й допомагає не зупиняти діалог.",
     "tryModalTitle": "Оберіть маршрут практики",
     "tryModalSubhead": "Оберіть мовний маршрут і почніть практику з Romi у Telegram.",
     "meetTeachers": "Познайомитися з викладачами",
@@ -39,6 +58,9 @@
       "tipMsg": "Спробуй: “Я хочу практикувати speaking щодня — навіть 10 хвилин допомагає.”"
     },
     "chatDemo": {
+      "windowLabel": "Демо чату Romi у стилі Telegram",
+      "telegramSubtitle": "бот для мовної практики",
+      "composerPlaceholder": "Повідомлення",
       "you": "Ти",
       "bot": "Romi",
       "userAudio": "Голосове повідомлення",
@@ -84,7 +106,7 @@
     "teachersTitle": "Викладачі",
     "teachersDesc": "Кожен викладач має свій стиль, мови та фокус.",
     "featuredTeachersTitle": "Оберіть маршрут практики",
-    "featuredTeachersSubhead": "Pick the language path that fits your goal and start speaking with Romi in Telegram.",
+    "featuredTeachersSubhead": "Оберіть мовний маршрут під свою ціль і почніть говорити з Romi в Telegram.",
     "featuredTeachersCta": "Переглянути всі маршрути практики",
     "featuresTitle": "Функції",
     "featuresSubhead": "Голосові інструменти, що допомагають тримати розмову в русі.",

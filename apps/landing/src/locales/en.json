@@ -23,10 +23,29 @@
     "backToTeachers": "Back to teachers"
   },
   "home": {
-    "headline": "Practice with Romi.",
+    "headline": "Speak, get corrected, keep going in Telegram.",
     "seoTitle": "Practice Languages with Romi | Speak in Telegram",
     "seoDescription": "Practice speaking in Telegram with Romi. Choose a language path, send voice or text, get clear corrections, and keep the conversation moving every day.",
-    "subhead": "One friendly speaking companion. Multiple language paths. Speak every day in Telegram.",
+    "subhead": "Send a voice message or text, get a transcript, a better version, a clear explanation, and follow-up ideas without leaving the chat.",
+    "heroKicker": "Real Telegram practice, not another lesson app",
+    "heroProofLabel": "Romi workflow highlights",
+    "heroProof": {
+      "voice": {
+        "value": "Voice in",
+        "label": "Speak naturally with short audio messages"
+      },
+      "corrections": {
+        "value": "Fixes back",
+        "label": "Transcript, cleaner phrasing, and rule notes"
+      },
+      "followUp": {
+        "value": "Next reply",
+        "label": "Simple, conversational, and advanced options"
+      }
+    },
+    "demoPill": "Live",
+    "demoTitle": "A real practice loop",
+    "demoSubtitle": "The bot listens, corrects, translates, and keeps the conversation moving.",
     "tryModalTitle": "Choose your practice path",
     "tryModalSubhead": "Pick a language path to start practicing with Romi in Telegram.",
     "meetTeachers": "See teachers",
@@ -39,6 +58,9 @@
       "tipMsg": "Try: “I’d like to practice speaking every day — even 10 minutes helps.”"
     },
     "chatDemo": {
+      "windowLabel": "Telegram-style Romi chat demo",
+      "telegramSubtitle": "language practice bot",
+      "composerPlaceholder": "Message",
       "you": "You",
       "bot": "Romi",
       "userAudio": "Voice message",
