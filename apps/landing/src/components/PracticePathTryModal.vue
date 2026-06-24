@@ -157,14 +157,9 @@ onBeforeUnmount(() => {
   width: min(1040px, 100%);
   max-height: min(86vh, 920px);
   border-radius: calc(var(--radius-lg) + 4px);
-  border: 1px solid color-mix(in srgb, var(--fg) 14%, var(--border));
-  box-shadow:
-    0 40px 90px color-mix(in srgb, var(--fg) 22%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.76);
-  background:
-    radial-gradient(120% 140% at 12% 8%, color-mix(in srgb, #229ed9 14%, transparent), transparent 50%),
-    radial-gradient(120% 140% at 90% 84%, color-mix(in srgb, #34d399 10%, transparent), transparent 52%),
-    var(--bg);
+  border: 1.5px solid var(--fg);
+  box-shadow: 10px 10px 0 var(--fg);
+  background: var(--bg);
   overflow: hidden;
 }
 
@@ -174,7 +169,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 16px;
   padding: 18px 18px 14px;
-  border-bottom: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  border-bottom: 1.5px solid var(--fg);
 }
 
 .head-left {
@@ -203,19 +198,17 @@ onBeforeUnmount(() => {
 .icon {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   display: grid;
   place-items: center;
-  background:
-    radial-gradient(120% 140% at 10% 10%, color-mix(in srgb, #229ed9 22%, transparent), transparent 52%),
-    color-mix(in srgb, var(--surface) 74%, var(--bg));
-  border: 1px solid color-mix(in srgb, #229ed9 30%, var(--border));
+  background: var(--accent);
+  border: 1.5px solid var(--fg);
 }
 
 .icon svg {
   width: 22px;
   height: 22px;
-  fill: color-mix(in srgb, #229ed9 86%, var(--fg));
+  fill: var(--fg);
 }
 
 .icon-btn {
@@ -241,19 +234,15 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 18px;
   padding: 28px;
-  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  border: 1.5px solid var(--fg);
   border-radius: var(--radius-xxl);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.46)),
-    color-mix(in srgb, var(--surface) 56%, var(--bg));
-  box-shadow:
-    0 18px 44px rgba(27, 76, 87, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .paths-section.primary {
-  border-color: color-mix(in srgb, #229ed9 35%, var(--border));
-  background: linear-gradient(180deg, color-mix(in srgb, #229ed9 10%, var(--surface)), color-mix(in srgb, #229ed9 4%, var(--bg)));
+  border-color: var(--fg);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
 }
 
 .section-head {
@@ -282,9 +271,9 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
-  background: color-mix(in srgb, var(--surface) 66%, var(--bg));
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--fg);
+  background: var(--surface);
   font-size: 12px;
   font-weight: 650;
   cursor: pointer;
@@ -292,11 +281,9 @@ onBeforeUnmount(() => {
 }
 
 .section-language-pill.active {
-  border-color: color-mix(in srgb, #229ed9 45%, var(--border));
-  background:
-    radial-gradient(120% 140% at 10% 10%, color-mix(in srgb, #229ed9 12%, transparent), transparent 55%),
-    color-mix(in srgb, var(--surface) 66%, var(--bg));
-  color: color-mix(in srgb, #229ed9 85%, var(--fg));
+  border-color: var(--fg);
+  background: var(--fg);
+  color: var(--bg);
 }
 
 .path-list-move {

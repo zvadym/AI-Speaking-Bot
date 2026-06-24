@@ -149,23 +149,17 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   padding: 18px;
-  background:
-    radial-gradient(90% 90% at 50% 0%, rgba(34, 158, 217, 0.16), transparent 56%),
-    color-mix(in srgb, var(--fg) 56%, transparent);
-  backdrop-filter: blur(18px);
+  background: color-mix(in srgb, var(--fg) 62%, transparent);
+  backdrop-filter: blur(10px);
 }
 
 .drawer {
   width: min(680px, 100%);
   max-height: min(760px, calc(100dvh - 36px));
   border-radius: var(--radius-xxl);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.58)),
-    color-mix(in srgb, var(--bg) 86%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
-  box-shadow:
-    0 40px 110px rgba(12, 52, 67, 0.30),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  background: var(--surface);
+  border: 1.5px solid var(--fg);
+  box-shadow: 8px 8px 0 var(--fg);
   display: grid;
   grid-template-rows: auto 1fr;
   overflow: hidden;
@@ -177,7 +171,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 12px;
   padding: 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  border-bottom: 1.5px solid var(--fg);
 }
 
 .title {
@@ -189,14 +183,14 @@ onBeforeUnmount(() => {
 .icon-btn {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--fg) 14%, var(--border));
-  background: color-mix(in srgb, var(--surface) 60%, var(--bg));
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--fg);
+  background: var(--surface);
   color: var(--fg);
   font-size: 16px;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  box-shadow: 3px 3px 0 var(--fg);
 }
 
 .drawer-body {
@@ -218,7 +212,7 @@ onBeforeUnmount(() => {
 
 .nav-group.secondary {
   padding-top: 12px;
-  border-top: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  border-top: 1.5px solid var(--fg);
 }
 
 .nav-link {
@@ -226,35 +220,33 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  background: color-mix(in srgb, var(--bg) 84%, var(--surface));
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--fg);
+  background: var(--surface);
   font-weight: 800;
   text-decoration: none;
   transition:
-    border-color 620ms var(--motion-spring),
-    transform 620ms var(--motion-spring),
-    background-color 620ms var(--motion-spring);
+    transform 220ms var(--motion-soft),
+    box-shadow 220ms var(--motion-soft),
+    background-color 220ms var(--motion-soft);
 }
 
 .nav-link:hover {
   text-decoration: none;
-  border-color: color-mix(in srgb, var(--fg) 22%, var(--border));
-  transform: translateY(-1px);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--fg);
 }
 
 .nav-link.active {
-  border-color: color-mix(in srgb, #229ed9 32%, var(--border));
-  background:
-    radial-gradient(140% 140% at 10% 10%, color-mix(in srgb, #229ed9 14%, transparent), transparent 55%),
-    color-mix(in srgb, var(--bg) 84%, var(--surface));
+  border-color: var(--fg);
+  background: var(--accent);
 }
 
 .cta {
   display: grid;
   gap: 10px;
   padding-top: 10px;
-  border-top: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
+  border-top: 1.5px solid var(--fg);
 }
 
 .try {

@@ -1,29 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,800;9..144,900&family=Manrope:wght@400;600;700;800;900&display=swap');
 
 :root {
-  --bg: #fbfdf8;
-  --fg: #17212b;
-  --muted: #627386;
-  --muted-2: #8ca0ad;
-  --border: #d8e4e8;
-  --surface: #edf7f2;
-  --surface-strong: #e3f1ec;
+  --bg: #f7f8f2;
+  --fg: #111111;
+  --muted: #4e555f;
+  --muted-2: #767d85;
+  --border: #1b1b1b;
+  --surface: #ffffff;
+  --surface-strong: #ecefe7;
   --telegram: #229ed9;
   --telegram-dark: #178ac2;
-  --accent: #26a269;
-  --focus-ring: rgba(34, 158, 217, 0.34);
+  --accent: #d8ff3e;
+  --accent-ink: #111111;
+  --focus-ring: rgba(17, 17, 17, 0.28);
   --font-body: Manrope, ui-sans-serif, system-ui, sans-serif;
   --font-display: Fraunces, Manrope, ui-serif, Georgia, serif;
   --motion-spring: cubic-bezier(0.32, 0.72, 0, 1);
   --motion-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 28px;
-  --radius-xxl: 36px;
-  --shadow: 0 16px 42px rgba(27, 76, 87, 0.10);
-  --shadow-deep: 0 34px 86px rgba(27, 76, 87, 0.16);
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-xxl: 10px;
+  --shadow: 0 12px 0 rgba(17, 17, 17, 0.10);
+  --shadow-deep: 0 20px 0 rgba(17, 17, 17, 0.13);
 }
 
 * {
@@ -73,32 +74,30 @@ a:hover {
   gap: 10px;
   min-height: 48px;
   padding: 11px 16px 11px 18px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.44)),
-    color-mix(in srgb, var(--bg) 86%, var(--surface));
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--fg);
+  background: var(--surface);
   color: var(--fg);
-  font-weight: 800;
-  box-shadow:
-    0 12px 34px rgba(27, 76, 87, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  font-weight: 900;
+  box-shadow: 4px 4px 0 var(--fg);
   cursor: pointer;
   transition:
-    transform 520ms var(--motion-spring),
-    border-color 520ms var(--motion-spring),
-    background 520ms var(--motion-spring),
-    color 520ms var(--motion-spring),
-    box-shadow 520ms var(--motion-spring);
+    transform 220ms var(--motion-soft),
+    border-color 220ms var(--motion-soft),
+    background 220ms var(--motion-soft),
+    color 220ms var(--motion-soft),
+    box-shadow 220ms var(--motion-soft);
 }
 
 .btn:hover {
   text-decoration: none;
-  transform: translateY(-1px);
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0 var(--fg);
 }
 
 .btn:active {
-  transform: translateY(1px) scale(0.98);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--fg);
 }
 
 .btn:focus-visible {
@@ -107,14 +106,10 @@ a:hover {
 }
 
 .btn.primary {
-  background:
-    radial-gradient(120% 160% at 10% 10%, rgba(255, 255, 255, 0.36), transparent 44%),
-    linear-gradient(135deg, #1b9bd8, #1c8fc8 56%, #177fb4);
-  color: #ffffff;
-  border-color: color-mix(in srgb, var(--telegram) 72%, #ffffff);
-  box-shadow:
-    0 18px 44px rgba(34, 158, 217, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+  box-shadow: 4px 4px 0 var(--accent);
 }
 
 .btn.ghost {
@@ -124,15 +119,11 @@ a:hover {
 
 
 .card {
-  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border: 1.5px solid var(--fg);
   border-radius: var(--radius-xl);
   padding: 6px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.36)),
-    color-mix(in srgb, var(--surface) 55%, var(--bg));
-  box-shadow:
-    var(--shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .card > * {
@@ -140,26 +131,19 @@ a:hover {
 }
 
 .lux-card {
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border: 1.5px solid var(--fg);
   border-radius: var(--radius-xxl);
   padding: 7px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.28)),
-    color-mix(in srgb, var(--surface) 68%, var(--bg));
-  box-shadow:
-    var(--shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .lux-card-core {
   height: 100%;
   border-radius: calc(var(--radius-xxl) - 10px);
   padding: 22px;
-  background:
-    radial-gradient(120% 120% at 10% 0%, rgba(34, 158, 217, 0.08), transparent 46%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.46)),
-    color-mix(in srgb, var(--bg) 82%, var(--surface));
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.88);
+  background: var(--surface);
+  box-shadow: none;
 }
 
 .muted {
@@ -261,9 +245,9 @@ li {
 }
 
 .reveal-up {
-  opacity: 0;
-  transform: translate3d(0, 36px, 0);
-  filter: blur(10px);
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: none;
   transition:
     opacity 900ms var(--motion-spring),
     transform 900ms var(--motion-spring),
@@ -272,9 +256,9 @@ li {
 }
 
 .reveal-left {
-  opacity: 0;
-  transform: translate3d(-28px, 0, 0);
-  filter: blur(8px);
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: none;
   transition:
     opacity 900ms var(--motion-spring),
     transform 900ms var(--motion-spring),
@@ -282,13 +266,31 @@ li {
 }
 
 .reveal-right {
-  opacity: 0;
-  transform: translate3d(28px, 0, 0);
-  filter: blur(8px);
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: none;
   transition:
     opacity 900ms var(--motion-spring),
     transform 900ms var(--motion-spring),
     filter 900ms var(--motion-spring);
+}
+
+html.reveal-motion .reveal-up:not(.is-visible) {
+  opacity: 0;
+  transform: translate3d(0, 36px, 0);
+  filter: blur(10px);
+}
+
+html.reveal-motion .reveal-left:not(.is-visible) {
+  opacity: 0;
+  transform: translate3d(-28px, 0, 0);
+  filter: blur(8px);
+}
+
+html.reveal-motion .reveal-right:not(.is-visible) {
+  opacity: 0;
+  transform: translate3d(28px, 0, 0);
+  filter: blur(8px);
 }
 
 .reveal-up.is-visible,
@@ -308,6 +310,9 @@ li {
     transition: none;
     transform: none;
   }
+  html.reveal-motion .reveal-up:not(.is-visible),
+  html.reveal-motion .reveal-left:not(.is-visible),
+  html.reveal-motion .reveal-right:not(.is-visible),
   .reveal-up,
   .reveal-left,
   .reveal-right {

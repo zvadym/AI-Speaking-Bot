@@ -2,7 +2,10 @@
   <header class="site-header">
     <div class="container header-shell">
       <div class="header-topline">
-        <RouterLink class="brand" :to="routeWithLocale('home')">AI Language School</RouterLink>
+        <RouterLink class="brand" :to="routeWithLocale('home')">
+          <span class="brand-full">AI Language School</span>
+          <span class="brand-short">AI Language</span>
+        </RouterLink>
 
         <div class="header-actions">
           <button type="button" class="try-now" :aria-label="t('cta.tryNow')" @click="openTryModal">
@@ -416,45 +419,40 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 0;
   z-index: 20;
-  padding-top: 16px;
-  background: transparent;
-  border-bottom: 0;
-  pointer-events: none;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  border-bottom: 1.5px solid var(--fg);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
 }
 
 .header-shell {
   display: grid;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid color-mix(in srgb, var(--fg) 11%, transparent);
-  border-radius: 30px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.58)),
-    color-mix(in srgb, var(--bg) 80%, var(--surface));
-  box-shadow:
-    0 24px 58px rgba(27, 76, 87, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(18px);
-  pointer-events: auto;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.8fr) auto;
+  grid-template-areas: 'brand nav actions';
+  align-items: center;
+  gap: 24px;
+  min-height: 74px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .header-topline {
-  min-height: 52px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  padding: 2px 4px 2px 16px;
+  display: contents;
 }
 
 .header-actions {
+  grid-area: actions;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
 }
 
 .brand {
+  grid-area: brand;
   font-family: var(--font-display);
   font-weight: 900;
   letter-spacing: 0;
@@ -462,37 +460,43 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.brand-short {
+  display: none;
 }
 
 .header-locale {
-  width: 132px;
+  width: 118px;
 }
 
 .menu-btn {
   display: none;
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
-  background: color-mix(in srgb, var(--bg) 88%, var(--surface));
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--fg);
+  background: var(--surface);
   color: var(--fg);
   cursor: pointer;
-  box-shadow:
-    0 14px 34px rgba(27, 76, 87, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  box-shadow: 3px 3px 0 var(--fg);
   transition:
-    transform 520ms var(--motion-spring),
-    border-color 520ms var(--motion-spring),
-    background-color 520ms var(--motion-spring);
+    transform 220ms var(--motion-soft),
+    box-shadow 220ms var(--motion-soft),
+    background-color 220ms var(--motion-soft);
 }
 
 .menu-btn:hover {
-  border-color: color-mix(in srgb, var(--telegram) 28%, var(--border));
-  transform: translateY(-1px);
+  background: var(--accent);
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--fg);
 }
 
 .menu-btn:active {
-  transform: translateY(1px) scale(0.99);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--fg);
 }
 
 .menu-btn:focus-visible,
@@ -517,6 +521,7 @@ onBeforeUnmount(() => {
 }
 
 .nav-row {
+  grid-area: nav;
   min-width: 0;
   display: block;
 }
@@ -528,13 +533,11 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
-  border-radius: 22px;
-  padding: 5px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.40)),
-    color-mix(in srgb, var(--surface) 64%, rgba(255, 255, 255, 0.62));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .nav-links {
@@ -552,34 +555,45 @@ onBeforeUnmount(() => {
 }
 
 .nav-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 17px;
-  padding: 9px 15px;
-  font-size: 14px;
+  border-radius: 0;
+  padding: 10px 4px;
+  font-size: 13px;
   line-height: 1;
-  font-weight: 700;
-  color: color-mix(in srgb, var(--fg) 86%, var(--muted));
+  font-weight: 850;
+  color: color-mix(in srgb, var(--fg) 76%, var(--muted));
   text-decoration: none;
   white-space: nowrap;
   transition:
-    color 520ms var(--motion-spring),
-    background-color 520ms var(--motion-spring),
-    transform 520ms var(--motion-spring);
+    color 180ms var(--motion-soft),
+    background-color 180ms var(--motion-soft);
 }
 
 .nav-link:hover {
   text-decoration: none;
   color: var(--fg);
-  background: color-mix(in srgb, var(--surface) 82%, var(--bg));
-  transform: translateY(-1px);
+  background: transparent;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 2px;
+  height: 2px;
+  background: transparent;
 }
 
 .nav-link.active {
-  color: var(--bg);
+  color: var(--fg);
+}
+
+.nav-link.active::after {
   background: var(--fg);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bg) 34%, transparent);
 }
 
 .nav-divider {
@@ -595,23 +609,20 @@ onBeforeUnmount(() => {
   gap: 8px;
   flex: 0 0 auto;
   min-height: 44px;
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, #229ed9 24%, var(--border));
-  background:
-    radial-gradient(140% 140% at 10% 10%, color-mix(in srgb, #229ed9 18%, transparent), transparent 55%),
-    radial-gradient(140% 140% at 90% 84%, color-mix(in srgb, #34d399 14%, transparent), transparent 58%),
-    color-mix(in srgb, var(--bg) 90%, var(--surface));
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--fg);
+  background: var(--accent);
   color: var(--fg);
   font-weight: 900;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  box-shadow: 4px 4px 0 var(--fg);
   transition:
-    transform 520ms var(--motion-spring),
-    border-color 520ms var(--motion-spring),
-    background-color 520ms var(--motion-spring);
+    transform 220ms var(--motion-soft),
+    box-shadow 220ms var(--motion-soft),
+    background-color 220ms var(--motion-soft);
 }
 
 .try-now * {
@@ -619,12 +630,14 @@ onBeforeUnmount(() => {
 }
 
 .try-now:hover {
-  border-color: color-mix(in srgb, #229ed9 42%, var(--border));
-  transform: translateY(-1px);
+  background: var(--surface);
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0 var(--fg);
 }
 
 .try-now:active {
-  transform: translateY(0);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--fg);
 }
 
 .telegram-mark {
@@ -632,7 +645,7 @@ onBeforeUnmount(() => {
   height: 18px;
   display: grid;
   place-items: center;
-  color: color-mix(in srgb, #229ed9 78%, var(--fg));
+  color: var(--fg);
 }
 
 .telegram-mark svg {
@@ -658,9 +671,9 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  border: 1px solid color-mix(in srgb, var(--fg) 10%, var(--border));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg) 88%, var(--surface));
+  border: 1.5px solid var(--fg);
+  border-radius: var(--radius-md);
+  background: var(--surface);
   color: var(--fg);
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -668,9 +681,8 @@ onBeforeUnmount(() => {
   padding: 8px 12px;
   cursor: pointer;
   transition:
-    border-color 520ms var(--motion-spring),
-    transform 520ms var(--motion-spring),
-    background-color 520ms var(--motion-spring);
+    transform 220ms var(--motion-soft),
+    background-color 220ms var(--motion-soft);
 }
 
 .locale-trigger-main {
@@ -708,18 +720,18 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 2px;
   padding: 6px;
-  border: 1px solid color-mix(in srgb, var(--fg) 18%, var(--border));
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--bg) 78%, var(--surface));
-  box-shadow: 0 24px 56px rgba(8, 12, 22, 0.2);
+  border: 1.5px solid var(--fg);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: 6px 6px 0 var(--fg);
   backdrop-filter: blur(16px);
   opacity: 0;
   transform: translateY(-7px) scale(0.98);
   transform-origin: top right;
   pointer-events: none;
   transition:
-    opacity 520ms var(--motion-spring),
-    transform 520ms var(--motion-spring);
+    opacity 220ms var(--motion-soft),
+    transform 220ms var(--motion-soft);
 }
 
 .locale-picker.open .locale-menu,
@@ -731,14 +743,13 @@ onBeforeUnmount(() => {
 
 .locale-picker.open .locale-trigger,
 .locale-picker:focus-within .locale-trigger {
-  border-color: color-mix(in srgb, var(--fg) 30%, var(--border));
-  background: color-mix(in srgb, var(--surface) 40%, var(--bg));
+  background: var(--accent);
 }
 
 .locale-item {
   width: 100%;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -753,7 +764,7 @@ onBeforeUnmount(() => {
 .locale-item:hover,
 .locale-item:focus-visible,
 .locale-item[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--surface) 78%, var(--bg));
+  background: color-mix(in srgb, var(--accent) 42%, var(--surface));
 }
 
 .locale-item-code {
@@ -799,26 +810,20 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1020px) {
-  .site-header .container {
-    padding-inline: clamp(22px, 3.4vw, 34px);
-  }
-
-  .header-topline {
-    gap: 12px;
+  .header-shell {
+    grid-template-columns: minmax(150px, 0.6fr) minmax(0, 1.3fr) auto;
+    gap: 16px;
   }
 
   .nav-link {
-    padding-inline: 12px;
+    font-size: 12px;
   }
 }
 
 @media (max-width: 820px) {
-  .site-header .container {
+  .header-shell {
+    gap: 12px;
     padding-inline: 18px;
-  }
-
-  .nav-rail {
-    border-radius: 18px;
   }
 
   .nav-divider {
@@ -832,27 +837,11 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
   .header-shell {
-    gap: 0;
-    padding: 8px;
-    border-radius: 28px;
-  }
-
-  .header-topline {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas:
-      'brand locale menu'
-      'try try try';
-    align-items: center;
-    gap: 10px;
-    padding: 2px;
-  }
-
-  .brand {
-    grid-area: brand;
-  }
-
-  .header-actions {
-    display: contents;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'brand actions';
+    min-height: 66px;
+    gap: 12px;
+    padding-inline: 16px;
   }
 
   .nav-row {
@@ -860,23 +849,18 @@ onBeforeUnmount(() => {
   }
 
   .header-actions .try-now {
-    grid-area: try;
-    width: 100%;
-    justify-content: center;
-    padding: 12px 14px;
-    font-size: 14px;
+    width: 44px;
+    padding: 0;
   }
 
   .header-locale {
-    width: 110px;
-    grid-area: locale;
+    width: 92px;
   }
 
   .menu-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    grid-area: menu;
   }
 
   .telegram-mark {
@@ -887,13 +871,23 @@ onBeforeUnmount(() => {
 
 @media (max-width: 420px) {
   .brand {
-    max-width: 46vw;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 18px;
+  }
+
+  .brand-full {
+    display: none;
+  }
+
+  .brand-short {
+    display: inline;
   }
 
   .try-now-text {
-    white-space: normal;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
   }
 
   .locale-trigger-code {

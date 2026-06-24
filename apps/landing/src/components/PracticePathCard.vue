@@ -39,21 +39,16 @@ const flag = computed(() => {
 
 <style scoped>
 .practice-card {
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border: 1.5px solid var(--fg);
   border-radius: var(--radius-xl);
   padding: 6px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.30)),
-    color-mix(in srgb, var(--surface) 70%, var(--bg));
-  box-shadow:
-    var(--shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  background: var(--surface);
+  box-shadow: var(--shadow);
   text-decoration: none;
   transition:
-    transform 620ms var(--motion-spring),
-    border-color 620ms var(--motion-spring),
-    box-shadow 620ms var(--motion-spring),
-    background-color 620ms var(--motion-spring);
+    transform 220ms var(--motion-soft),
+    box-shadow 220ms var(--motion-soft),
+    background-color 220ms var(--motion-soft);
 }
 
 .practice-card-core {
@@ -63,24 +58,22 @@ const flag = computed(() => {
   align-items: center;
   padding: 18px;
   border-radius: calc(var(--radius-xl) - 8px);
-  background:
-    linear-gradient(135deg, rgba(34, 158, 217, 0.07), transparent 44%),
-    color-mix(in srgb, var(--surface) 58%, var(--bg));
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.82);
+  background: var(--surface);
+  box-shadow: none;
 }
 
 .practice-card.highlighted {
-  border-color: color-mix(in srgb, #229ed9 40%, var(--border));
+  border-color: var(--fg);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
   box-shadow:
-    0 16px 34px color-mix(in srgb, #229ed9 14%, transparent),
-    0 0 0 1px color-mix(in srgb, #229ed9 18%, transparent);
+    6px 6px 0 var(--fg),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 54%, transparent);
 }
 
 .practice-card:hover {
   text-decoration: none;
-  transform: translateY(-4px);
-  border-color: color-mix(in srgb, var(--fg) 20%, var(--border));
-  box-shadow: 0 16px 34px color-mix(in srgb, var(--fg) 10%, transparent);
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--fg);
 }
 
 .practice-card:active {
@@ -101,10 +94,10 @@ const flag = computed(() => {
   height: 52px;
   display: grid;
   place-items: center;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--surface) 78%, var(--bg));
-  border: 1px solid color-mix(in srgb, var(--fg) 12%, var(--border));
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--fg) 10%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 38%, var(--surface));
+  border: 1.5px solid var(--fg);
+  box-shadow: none;
   font-size: 28px;
 }
 
