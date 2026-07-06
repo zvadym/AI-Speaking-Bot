@@ -1409,6 +1409,69 @@ test('internal topic menu marks pro topics with an open lock for pro users', asy
   });
 });
 
+test('internal prepare update returns route and keyboard state without side effects', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('FROM user_bots ub') && source.includes('scheduled_task_dispatches')) {
+      assert.deepEqual(params, [42, 'uk-de']);
+      return {
+        rows: [{
+          level: 'b1',
+          reply_mode: 'text',
+          onboarding_complete_at: '2026-03-11T08:00:00.000Z',
+          topic_enabled: true,
+          topic_template_id: 'coffee',
+          topic_pack_json: { title_base: 'Coffee chat' },
+          topic_pinned_message_id: 777,
+          xp_total: 640,
+          xp_level: 4
+        }]
+      };
+    }
+
+    if (source.includes('FROM pending_feedback')) {
+      assert.deepEqual(params, [42, 'uk-de']);
+      return { rows: [{ pending: false }] };
+    }
+
+    throw new Error(`Unexpected query in internal prepare update test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      method: 'POST',
+      path: '/internal/bot/prepare-update',
+      headers: { 'X-Internal-Secret': 'internal-secret' },
+      body: {
+        bot_key: 'uk-de',
+        telegram_update: {
+          message: {
+            message_id: 1234,
+            text: '· 🧩 Coffee chat',
+            chat: { id: 42, type: 'private' },
+            from: {
+              id: 42,
+              is_bot: false,
+              username: 'alice',
+              first_name: 'Alice',
+              language_code: 'uk'
+            }
+          }
+        }
+      }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+    assert.equal(response.json.bot_key, 'uk-de');
+    assert.equal(response.json.chat_id, 42);
+    assert.equal(response.json.route, 'command.topic');
+    assert.equal(response.json.intent.source, 'reply_keyboard');
+    assert.equal(response.json.keyboard.button_intent, 'topic');
+    assert.equal(response.json.keyboard.topic_button_text, '· 🧩 Coffee chat');
+    assert.equal(response.json.keyboard.level_button_text, '· 📚 B1');
+    assert.equal(response.json.guards.pending_feedback, false);
+  });
+});
+
 test('internal n8n error notification queues a Discord event', async () => {
   const bossCalls = [];
   const app = await createApp({
