@@ -135,6 +135,15 @@ EXPLANATION_TITLES = {
 }
 
 LOADER_API_BASE_URL_DEFAULT = "http://api:3000"
+INTERNAL_SECRET_HEADER_NAME = "x-internal-secret"
+INTERNAL_SECRET_SENTINEL = "__INJECT_INTERNAL_API_SECRET__"
+HTTP_REQUEST_NODE_TYPE = "n8n-nodes-base.httpRequest"
+INTERNAL_HTTP_URL_SUFFIXES = {
+    "Loader: Start": "/internal/loader/start",
+    "Loader: Stop": "/internal/loader/stop",
+    "MSG: Topic menu": "/internal/topics/menu",
+    "API: Prepare update (shadow)": "/internal/bot/prepare-update",
+}
 
 
 def to_env_key(credential_type: str) -> str:
@@ -561,35 +570,83 @@ def patch_message_model_node(ai_data: Dict[str, Any], base_language: str, learni
     text_opts["schema"] = json.dumps(schema_obj, indent=2, ensure_ascii=False)
 
 
-def patch_loader_http_nodes(workflow_data: Dict[str, Any]) -> None:
+def patch_internal_http_urls(workflow_data: Dict[str, Any]) -> Set[str]:
     base_url = (os.environ.get("LOADER_API_BASE_URL") or LOADER_API_BASE_URL_DEFAULT).strip().rstrip("/")
-    internal_secret = (os.environ.get("INTERNAL_API_SECRET") or "").strip()
-    if not internal_secret:
-        raise ValueError("Missing required env var: INTERNAL_API_SECRET")
+    patched: Set[str] = set()
 
-    for node_name, suffix in (
-        ("Loader: Start", "/internal/loader/start"),
-        ("Loader: Stop", "/internal/loader/stop"),
-        ("MSG: Topic menu", "/internal/topics/menu"),
-    ):
+    for node_name, suffix in INTERNAL_HTTP_URL_SUFFIXES.items():
         node = find_node(workflow_data, node_name)
+        if node.get("type") != HTTP_REQUEST_NODE_TYPE:
+            raise ValueError(f"{node_name} must be an HTTP Request node")
         params = node.get("parameters")
         if not isinstance(params, dict):
             raise ValueError(f"{node_name} parameters missing/invalid")
         params["url"] = f"{base_url}{suffix}"
+        patched.add(node_name)
+
+    return patched
+
+
+def inject_internal_http_secrets(
+    workflow_data: Dict[str, Any], internal_secret: str
+) -> Set[str]:
+    secret = internal_secret.strip()
+    if not secret:
+        raise ValueError("Missing required env var: INTERNAL_API_SECRET")
+
+    injected: Set[str] = set()
+    nodes = workflow_data.get("nodes")
+    if not isinstance(nodes, list):
+        raise ValueError("Workflow nodes missing/invalid")
+
+    for node in nodes:
+        if not isinstance(node, dict) or node.get("type") != HTTP_REQUEST_NODE_TYPE:
+            continue
+
+        node_name = str(node.get("name") or "<unnamed HTTP Request>")
+        params = node.get("parameters")
+        if not isinstance(params, dict):
+            raise ValueError(f"{node_name} parameters missing/invalid")
 
         header_params = params.get("headerParameters")
         header_items = (header_params or {}).get("parameters") if isinstance(header_params, dict) else None
+        if header_items is None:
+            continue
         if not isinstance(header_items, list):
             raise ValueError(f"{node_name} headerParameters missing/invalid")
 
-        secret_set = False
-        for item in header_items:
-            if isinstance(item, dict) and item.get("name") == "x-internal-secret":
-                item["value"] = internal_secret
-                secret_set = True
-        if not secret_set:
-            raise ValueError(f"{node_name} missing x-internal-secret header")
+        matching_headers = [
+            item
+            for item in header_items
+            if isinstance(item, dict)
+            and str(item.get("name") or "").strip().lower() == INTERNAL_SECRET_HEADER_NAME
+        ]
+        if not matching_headers:
+            continue
+        if len(matching_headers) != 1:
+            raise ValueError(f"{node_name} must have exactly one {INTERNAL_SECRET_HEADER_NAME} header")
+
+        header = matching_headers[0]
+        if header.get("value") != INTERNAL_SECRET_SENTINEL:
+            raise ValueError(
+                f"{node_name} source {INTERNAL_SECRET_HEADER_NAME} value must use "
+                f"{INTERNAL_SECRET_SENTINEL}"
+            )
+
+        header["value"] = secret
+        injected.add(node_name)
+
+    return injected
+
+
+def validate_internal_http_headers(
+    required_node_names: Set[str], injected_node_names: Set[str]
+) -> None:
+    missing = sorted(required_node_names - injected_node_names)
+    if missing:
+        raise ValueError(
+            "Internal HTTP nodes missing x-internal-secret header: " + ", ".join(missing)
+        )
 
 
 def apply_openai_models(workflow_data: Dict[str, Any], models: Dict[str, str]) -> None:
@@ -925,6 +982,10 @@ def main() -> int:
         return 1
 
     env_map = {ctype: env_key for env_key, types in required.items() for ctype in types}
+    internal_secret = (os.environ.get("INTERNAL_API_SECRET") or "").strip()
+    if not internal_secret:
+        print("Missing required env var: INTERNAL_API_SECRET", file=sys.stderr)
+        return 1
 
     output_dir.mkdir(parents=True, exist_ok=True)
     try:
@@ -981,7 +1042,9 @@ def main() -> int:
         patch_set_locale_node(ai, full_locale)
         apply_openai_models(ai, openai_models)
         patch_message_model_node(ai, base, learn)
-        patch_loader_http_nodes(ai)
+        patched_internal_nodes = patch_internal_http_urls(ai)
+        injected_internal_nodes = inject_internal_http_secrets(ai, internal_secret)
+        validate_internal_http_headers(patched_internal_nodes, injected_internal_nodes)
 
         set_telegram_credential_id(ai, tg_cred)
 
@@ -1007,6 +1070,7 @@ def main() -> int:
             if has_tg:
                 default_tg = bots[0][1]["telegram_credential_id"]
                 set_telegram_credential_id(wf, default_tg)
+        inject_internal_http_secrets(wf, internal_secret)
         apply_env_credentials(wf, env_map, ignore_types={"telegramApi"})
         write_json(output_dir / path.name, wf)
         rendered += 1

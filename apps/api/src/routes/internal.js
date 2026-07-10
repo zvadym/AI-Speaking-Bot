@@ -6,11 +6,24 @@ import {
   enqueueLoaderTimeoutCleanupJob,
   sendIdiomPracticeMorePhrase
 } from '../jobs.js';
-import { BotRuntimeInputError } from '../bot-runtime/contracts.js';
+import {
+  BotRuntimeInputError,
+  PREPARED_UPDATE_CONTRACT_VERSION
+} from '../bot-runtime/contracts.js';
 import { prepareBotUpdate } from '../bot-runtime/prepare-update-service.js';
 import { normalizeBotKey } from '../shared/normalization.js';
 import { createRequireInternalApi } from '../middleware/internal-api.js';
 import { captureException } from '../sentry.js';
+
+function logPrepareUpdateTelemetry({ startedAtMs, botKey, route = null, errorCode = null }) {
+  console.info('internal-bot-prepare-update', {
+    contractVersion: PREPARED_UPDATE_CONTRACT_VERSION,
+    botKey: botKey || null,
+    route,
+    durationMs: Math.max(0, Date.now() - startedAtMs),
+    errorCode
+  });
+}
 
 export function createInternalRouter(ctx, helpers) {
   const router = Router();
@@ -171,22 +184,31 @@ export function createInternalRouter(ctx, helpers) {
   });
 
   router.post('/internal/bot/prepare-update', requireInternalApi, async (req, res) => {
+    const startedAtMs = Date.now();
     const rawBotKey = req.body?.bot_key ?? req.body?.botKey;
     const botKey = normalizeBotKey(rawBotKey);
     const telegramUpdate = req.body?.telegram_update ?? req.body?.telegramUpdate ?? req.body?.update;
 
     if (!telegramUpdate || typeof telegramUpdate !== 'object' || Array.isArray(telegramUpdate)) {
+      logPrepareUpdateTelemetry({ startedAtMs, botKey, errorCode: 'invalid_update' });
       return res.status(400).json({ error: 'invalid_update' });
     }
 
     try {
       const prepared = await prepareBotUpdate(ctx, { botKey: rawBotKey, telegramUpdate });
+      logPrepareUpdateTelemetry({
+        startedAtMs,
+        botKey: prepared.botKey,
+        route: prepared.route
+      });
       return res.json(prepared);
     } catch (error) {
       if (error instanceof BotRuntimeInputError) {
+        logPrepareUpdateTelemetry({ startedAtMs, botKey, errorCode: error.code });
         return res.status(400).json({ error: error.code });
       }
 
+      logPrepareUpdateTelemetry({ startedAtMs, botKey, errorCode: 'prepare_update_failed' });
       console.error('internal-bot-prepare-update failed', {
         botKey,
         error: error?.message || String(error)

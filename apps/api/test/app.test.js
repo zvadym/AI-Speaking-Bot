@@ -1521,6 +1521,85 @@ test('internal prepare update rejects invalid updates and unknown bots before qu
   });
 });
 
+test('internal prepare update emits bounded privacy-safe telemetry', async () => {
+  const telemetry = [];
+  const originalInfo = console.info;
+  console.info = (event, fields, ...rest) => {
+    if (event === 'internal-bot-prepare-update') {
+      telemetry.push(fields);
+      return;
+    }
+    originalInfo.call(console, event, fields, ...rest);
+  };
+
+  try {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const success = await request(app, {
+      method: 'POST',
+      path: '/internal/bot/prepare-update',
+      headers: { 'X-Internal-Secret': 'internal-secret' },
+      body: {
+        bot_key: 'uk-de',
+        telegram_update: {
+          update_id: 7654321,
+          message: {
+            message_id: 1,
+            text: 'sensitive-shadow-message',
+            chat: { id: -10042, type: 'supergroup' },
+            from: { id: 42, is_bot: false, first_name: 'Sensitive Name' }
+          }
+        }
+      }
+    });
+    assert.equal(success.status, 200);
+
+    const invalid = await request(app, {
+      method: 'POST',
+      path: '/internal/bot/prepare-update',
+      headers: { 'X-Internal-Secret': 'internal-secret' },
+      body: { bot_key: 'uk-de', telegram_update: null }
+    });
+    assert.equal(invalid.status, 400);
+  } finally {
+    console.info = originalInfo;
+  }
+
+  assert.equal(telemetry.length, 2);
+  assert.deepEqual(Object.keys(telemetry[0]), [
+    'contractVersion',
+    'botKey',
+    'route',
+    'durationMs',
+    'errorCode'
+  ]);
+  assert.deepEqual(
+    { ...telemetry[0], durationMs: 0 },
+    {
+      contractVersion: 1,
+      botKey: 'uk-de',
+      route: 'guard.private_only',
+      durationMs: 0,
+      errorCode: null
+    }
+  );
+  assert.deepEqual(
+    { ...telemetry[1], durationMs: 0 },
+    {
+      contractVersion: 1,
+      botKey: 'uk-de',
+      route: null,
+      durationMs: 0,
+      errorCode: 'invalid_update'
+    }
+  );
+  assert.equal(Number.isInteger(telemetry[0].durationMs), true);
+  assert.equal(Number.isInteger(telemetry[1].durationMs), true);
+  const serialized = JSON.stringify(telemetry);
+  assert.equal(serialized.includes('sensitive-shadow-message'), false);
+  assert.equal(serialized.includes('Sensitive Name'), false);
+  assert.equal(serialized.includes('telegram_update'), false);
+});
+
 test('internal n8n error notification queues a Discord event', async () => {
   const bossCalls = [];
   const app = await createApp({

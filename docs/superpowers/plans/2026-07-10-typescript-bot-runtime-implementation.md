@@ -417,6 +417,7 @@ npm run build
 cd ../..
 python3 -m json.tool deploy/workflows/ai-bot.json >/dev/null
 python3 -m py_compile scripts/render-n8n-workflows.py
+python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 tmpdir="$(mktemp -d)"
 set -a
 source deploy/.env.dev
