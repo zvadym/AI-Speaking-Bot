@@ -7,12 +7,12 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.test.json",
     "dev": "tsx watch src/server.js",
     "worker:dev": "tsx src/worker.js",
     "start": "node --import ./dist/instrument-api.js dist/server.js",
     "worker": "node --import ./dist/instrument-worker.js dist/worker.js",
-    "test": "tsx --test"
+    "test": "tsx --test test/*.test.js test/*.test.ts"
   },
   "dependencies": {
     "@sentry/node": "^10.43.0",

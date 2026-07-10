@@ -1,11 +1,15 @@
-import { normalizeBotKey } from '../shared/normalization.js';
-import {
-  buildPreparedUpdate,
-  normalizeTelegramUpdate
-} from './update-preparation.js';
+import type { KeyboardStateRow, Queryable } from './contracts.js';
 
-export async function fetchKeyboardState(pool, chatId, botKey) {
-  const { rows } = await pool.query(
+interface PendingFeedbackRow extends Record<string, unknown> {
+  pending?: unknown;
+}
+
+export async function fetchKeyboardState(
+  pool: Queryable,
+  chatId: number,
+  botKey: string
+): Promise<KeyboardStateRow> {
+  const { rows } = await pool.query<KeyboardStateRow>(
     `SELECT
        ub.level,
        ub.reply_mode,
@@ -37,8 +41,12 @@ export async function fetchKeyboardState(pool, chatId, botKey) {
   return rows[0] || {};
 }
 
-export async function fetchPendingFeedbackState(pool, chatId, botKey) {
-  const { rows } = await pool.query(
+export async function fetchPendingFeedbackState(
+  pool: Queryable,
+  chatId: number,
+  botKey: string
+): Promise<boolean> {
+  const { rows } = await pool.query<PendingFeedbackRow>(
     `SELECT EXISTS (
        SELECT 1
        FROM pending_feedback
@@ -50,27 +58,3 @@ export async function fetchPendingFeedbackState(pool, chatId, botKey) {
   );
   return Boolean(rows[0]?.pending);
 }
-
-export async function prepareBotUpdate(ctx, { botKey: rawBotKey, telegramUpdate }) {
-  const botKey = normalizeBotKey(rawBotKey);
-  const updateInfo = normalizeTelegramUpdate(telegramUpdate);
-  const locale = ctx.getBotLocale(botKey);
-  let keyboardState = {};
-  let pendingFeedback = false;
-
-  if (botKey && updateInfo.chat_id && updateInfo.is_private && !updateInfo.sender.is_bot) {
-    [keyboardState, pendingFeedback] = await Promise.all([
-      fetchKeyboardState(ctx.pool, updateInfo.chat_id, botKey),
-      fetchPendingFeedbackState(ctx.pool, updateInfo.chat_id, botKey)
-    ]);
-  }
-
-  return buildPreparedUpdate({
-    botKey,
-    telegramUpdate,
-    keyboardState,
-    locale,
-    pendingFeedback
-  });
-}
-

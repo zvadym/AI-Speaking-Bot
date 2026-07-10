@@ -144,8 +144,8 @@ required by the installed `pg-boss@12.14.0`:
 ```json
 {
   "build": "tsc -p tsconfig.json",
-  "typecheck": "tsc -p tsconfig.json --noEmit",
-  "test": "tsx --test",
+  "typecheck": "tsc -p tsconfig.test.json",
+  "test": "tsx --test test/*.test.js test/*.test.ts",
   "dev": "tsx watch src/server.js",
   "worker:dev": "tsx src/worker.js",
   "start": "node --import ./dist/instrument-api.js dist/server.js",
@@ -301,6 +301,7 @@ Create:
 
 - `apps/api/test/bot-runtime-contract.test.ts`
 - `apps/api/test/fixtures/telegram-updates.ts`
+- `apps/api/tsconfig.test.json`
 
 Update:
 

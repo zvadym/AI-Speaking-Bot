@@ -1443,6 +1443,7 @@ test('internal prepare update returns route and keyboard state without side effe
       body: {
         bot_key: 'uk-de',
         telegram_update: {
+          update_id: 987654,
           message: {
             message_id: 1234,
             text: '· 🧩 Coffee chat',
@@ -1460,15 +1461,63 @@ test('internal prepare update returns route and keyboard state without side effe
     });
 
     assert.equal(response.status, 200);
-    assert.equal(response.json.ok, true);
-    assert.equal(response.json.bot_key, 'uk-de');
-    assert.equal(response.json.chat_id, 42);
+    assert.equal(response.json.contractVersion, 1);
+    assert.equal(response.json.decisionId, 'v1:uk-de:987654');
+    assert.equal(response.json.botKey, 'uk-de');
+    assert.equal(response.json.updateId, 987654);
     assert.equal(response.json.route, 'command.topic');
-    assert.equal(response.json.intent.source, 'reply_keyboard');
-    assert.equal(response.json.keyboard.button_intent, 'topic');
-    assert.equal(response.json.keyboard.topic_button_text, '· 🧩 Coffee chat');
-    assert.equal(response.json.keyboard.level_button_text, '· 📚 B1');
-    assert.equal(response.json.guards.pending_feedback, false);
+    assert.equal(response.json.input.chatId, 42);
+    assert.equal(response.json.routingFacts.intentSource, 'reply_keyboard');
+    assert.equal(response.json.routingFacts.keyboardIntent, 'topic');
+    assert.equal(response.json.routingFacts.pendingFeedback, false);
+    assert.equal(response.json.context.keyboard.topicButtonText, '· 🧩 Coffee chat');
+    assert.equal(response.json.context.keyboard.levelButtonText, '· 📚 B1');
+  });
+});
+
+test('internal prepare update rejects invalid updates and unknown bots before querying', async () => {
+  await withMockedQuery(async (source) => {
+    throw new Error(`Prepare validation must not query the database: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const invalidUpdate = await request(app, {
+      method: 'POST',
+      path: '/internal/bot/prepare-update',
+      headers: { 'X-Internal-Secret': 'internal-secret' },
+      body: {
+        bot_key: 'uk-de',
+        telegram_update: {
+          message: {
+            message_id: 1,
+            text: 'missing update id',
+            chat: { id: 42, type: 'private' },
+            from: { id: 42, is_bot: false }
+          }
+        }
+      }
+    });
+    assert.equal(invalidUpdate.status, 400);
+    assert.deepEqual(invalidUpdate.json, { error: 'invalid_update' });
+
+    const unknownBot = await request(app, {
+      method: 'POST',
+      path: '/internal/bot/prepare-update',
+      headers: { 'X-Internal-Secret': 'internal-secret' },
+      body: {
+        botKey: 'missing-bot',
+        telegramUpdate: {
+          update_id: 123,
+          message: {
+            message_id: 1,
+            text: 'unknown bot',
+            chat: { id: 42, type: 'private' },
+            from: { id: 42, is_bot: false }
+          }
+        }
+      }
+    });
+    assert.equal(unknownBot.status, 400);
+    assert.deepEqual(unknownBot.json, { error: 'unknown_bot' });
   });
 });
 

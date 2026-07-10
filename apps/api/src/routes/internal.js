@@ -6,6 +6,7 @@ import {
   enqueueLoaderTimeoutCleanupJob,
   sendIdiomPracticeMorePhrase
 } from '../jobs.js';
+import { BotRuntimeInputError } from '../bot-runtime/contracts.js';
 import { prepareBotUpdate } from '../bot-runtime/prepare-update-service.js';
 import { normalizeBotKey } from '../shared/normalization.js';
 import { createRequireInternalApi } from '../middleware/internal-api.js';
@@ -170,17 +171,22 @@ export function createInternalRouter(ctx, helpers) {
   });
 
   router.post('/internal/bot/prepare-update', requireInternalApi, async (req, res) => {
-    const botKey = normalizeBotKey(req.body?.bot_key ?? req.body?.botKey);
+    const rawBotKey = req.body?.bot_key ?? req.body?.botKey;
+    const botKey = normalizeBotKey(rawBotKey);
     const telegramUpdate = req.body?.telegram_update ?? req.body?.telegramUpdate ?? req.body?.update;
 
-    if (!botKey || !telegramUpdate || typeof telegramUpdate !== 'object' || Array.isArray(telegramUpdate)) {
-      return res.status(400).json({ error: 'bad_request' });
+    if (!telegramUpdate || typeof telegramUpdate !== 'object' || Array.isArray(telegramUpdate)) {
+      return res.status(400).json({ error: 'invalid_update' });
     }
 
     try {
-      const prepared = await prepareBotUpdate(ctx, { botKey, telegramUpdate });
+      const prepared = await prepareBotUpdate(ctx, { botKey: rawBotKey, telegramUpdate });
       return res.json(prepared);
     } catch (error) {
+      if (error instanceof BotRuntimeInputError) {
+        return res.status(400).json({ error: error.code });
+      }
+
       console.error('internal-bot-prepare-update failed', {
         botKey,
         error: error?.message || String(error)
