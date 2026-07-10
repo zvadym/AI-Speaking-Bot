@@ -138,7 +138,8 @@ Add development dependencies:
 - `@types/express`
 - `@types/pg`
 
-Add `engines.node >= 20` and scripts:
+Add `engines.node >= 22.12.0` and scripts. This matches the minimum runtime
+required by the installed `pg-boss@12.14.0`:
 
 ```json
 {
@@ -200,7 +201,7 @@ points must execute from `dist`.
 
 ### Task 4: Verify R2
 
-Create `.github/workflows/api.yml` with Node.js 20 and path filters for
+Create `.github/workflows/api.yml` with Node.js 22 and path filters for
 `apps/api/**`. It runs `npm ci`, `npm test`, `npm run typecheck`, and
 `npm run build`. This gives later TypeScript releases a required automated gate.
 
