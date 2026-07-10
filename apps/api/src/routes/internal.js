@@ -11,6 +11,10 @@ import {
   PREPARED_UPDATE_CONTRACT_VERSION
 } from '../bot-runtime/contracts.js';
 import { prepareBotUpdate } from '../bot-runtime/prepare-update-service.js';
+import {
+  BotUpdateIngestionError,
+  ingestBotUpdate
+} from '../bot-runtime/ingestion-service.js';
 import { normalizeBotKey } from '../shared/normalization.js';
 import { createRequireInternalApi } from '../middleware/internal-api.js';
 import { captureException } from '../sentry.js';
@@ -218,6 +222,43 @@ export function createInternalRouter(ctx, helpers) {
         extra: { botKey }
       });
       return res.status(500).json({ error: 'prepare_update_failed' });
+    }
+  });
+
+  router.post('/internal/bot/ingest-update', requireInternalApi, async (req, res) => {
+    const rawContract = req.body?.prepared_update ?? req.body?.preparedUpdate ?? req.body;
+    const botKey = normalizeBotKey(rawContract?.botKey);
+    const route = typeof rawContract?.route === 'string'
+      ? rawContract.route.slice(0, 64)
+      : null;
+
+    try {
+      const result = await ingestBotUpdate(ctx, rawContract);
+      console.info('internal-bot-ingest-update', {
+        botKey,
+        route,
+        accepted: result.accepted,
+        duplicate: result.accepted ? result.duplicate : false,
+        errorCode: result.accepted ? null : result.error
+      });
+      return res.status(result.accepted ? 202 : 409).json(result);
+    } catch (error) {
+      if (error instanceof BotUpdateIngestionError && error.code === 'invalid_contract') {
+        return res.status(400).json({ accepted: false, error: error.code });
+      }
+
+      console.error('internal-bot-ingest-update failed', {
+        botKey,
+        route,
+        error: error instanceof BotUpdateIngestionError
+          ? error.code
+          : error?.message || String(error)
+      });
+      captureException(error, {
+        tags: { route: 'internal-bot-ingest-update' },
+        extra: { botKey, preparedRoute: route }
+      });
+      return res.status(500).json({ accepted: false, error: 'enqueue_failed' });
     }
   });
 

@@ -1,6 +1,8 @@
 import './instrument-worker.js';
 import { registerWorkerHandlers } from './jobs.js';
+import { registerBotRuntimeWorker } from './bot-runtime/register-worker.js';
 import { startWorkerBoss, stopWorkerBoss } from './queue.js';
+import { createRuntimeDeps } from './runtime.js';
 import { captureException, flushSentry } from './sentry.js';
 
 let stopping = false;
@@ -41,6 +43,13 @@ process.on('SIGTERM', () => {
 try {
   const boss = await startWorkerBoss();
   await registerWorkerHandlers(boss);
+  const runtime = createRuntimeDeps({ apiBoss: boss });
+  await registerBotRuntimeWorker(boss, {
+    pool: runtime.pool,
+    getBotLocale: runtime.getBotLocale,
+    telegramClient: runtime.telegramClient,
+    webappUrl: runtime.env.webappUrl
+  });
   console.log('Worker started');
 } catch (error) {
   console.error('Worker startup failed', error);

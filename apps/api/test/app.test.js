@@ -1600,6 +1600,62 @@ test('internal prepare update emits bounded privacy-safe telemetry', async () =>
   assert.equal(serialized.includes('telegram_update'), false);
 });
 
+test('internal bot ingestion is dark by default and validates Contract v1', async () => {
+  let sendCount = 0;
+  await withMockedQuery(async (source) => {
+    if (source.includes('FROM user_bots ub')) return { rows: [] };
+    if (source.includes('FROM pending_feedback')) return { rows: [{ pending: false }] };
+    throw new Error(`Unexpected ingestion test query: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({
+      apiBoss: {
+        async send() {
+          sendCount += 1;
+          return 'unexpected-job';
+        }
+      }
+    });
+    const prepared = await request(app, {
+      method: 'POST',
+      path: '/internal/bot/prepare-update',
+      headers: { 'X-Internal-Secret': 'internal-secret' },
+      body: {
+        bot_key: 'uk-en',
+        telegram_update: {
+          update_id: 7654999,
+          message: {
+            message_id: 1,
+            text: '/stats',
+            chat: { id: 42, type: 'private' },
+            from: { id: 42, is_bot: false }
+          }
+        }
+      }
+    });
+    assert.equal(prepared.status, 200);
+    assert.equal(prepared.json.route, 'command.stats');
+
+    const dark = await request(app, {
+      method: 'POST',
+      path: '/internal/bot/ingest-update',
+      headers: { 'X-Internal-Secret': 'internal-secret' },
+      body: prepared.json
+    });
+    assert.equal(dark.status, 409);
+    assert.deepEqual(dark.json, { accepted: false, error: 'route_not_enabled' });
+    assert.equal(sendCount, 0);
+
+    const invalid = await request(app, {
+      method: 'POST',
+      path: '/internal/bot/ingest-update',
+      headers: { 'X-Internal-Secret': 'internal-secret' },
+      body: { contractVersion: 1 }
+    });
+    assert.equal(invalid.status, 400);
+    assert.deepEqual(invalid.json, { accepted: false, error: 'invalid_contract' });
+  });
+});
+
 test('internal n8n error notification queues a Discord event', async () => {
   const bossCalls = [];
   const app = await createApp({

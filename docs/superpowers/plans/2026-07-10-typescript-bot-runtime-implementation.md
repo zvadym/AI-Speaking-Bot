@@ -444,6 +444,10 @@ Add observable prepare-update shadow
 Deploy without `--skip-n8n`, inspect shadow executions, perform the normal bot
 smoke, and observe at least 24 hours before dark handler work. Stop before R5.
 
+On 2026-07-10 the user explicitly accepted accelerating into dark R5 because
+production traffic is low. This waives only the R4 waiting period: R5 remains
+disabled by default, and no route promotion occurs before the R6 gate.
+
 ## Security Track: Rotate the Internal Secret
 
 This track is separate from route promotion and can run after R4 verification.

@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { extractBotTokens } from './bot-configs.js';
+import { parseBotRuntimeRouteFlags } from './bot-runtime/route-flags.js';
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -125,6 +126,11 @@ if (Object.keys(telegramBotTokensByBotKey).length === 0) {
   );
 }
 
+const botRuntimeRouteFlags = parseBotRuntimeRouteFlags(
+  process.env.BOT_RUNTIME_ROUTE_FLAGS_JSON,
+  Object.keys(telegramBotTokensByBotKey)
+);
+
 console.log(`Loaded Telegram bot tokens from bot config files for: ${Object.keys(telegramBotTokensByBotKey).join(', ')}`)
 
 export const env = {
@@ -137,6 +143,7 @@ export const env = {
   databaseSsl: sslEnabled,
   databaseSslRejectUnauthorized: sslRejectUnauthorized,
   telegramBotTokensByBotKey,
+  botRuntimeRouteFlags,
   telegramInitDataMaxAgeSec,
   stripeSecretKey: requireEnv('STRIPE_SECRET_KEY'),
   stripeWebhookSecret: requireEnv('STRIPE_WEBHOOK_SECRET'),

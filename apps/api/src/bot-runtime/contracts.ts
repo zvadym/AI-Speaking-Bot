@@ -1,4 +1,5 @@
 export const PREPARED_UPDATE_CONTRACT_VERSION = 1 as const;
+export const BOT_UPDATE_QUEUE_NAME = 'bot-update-process' as const;
 
 export const ROUTES = [
   'ignore',
