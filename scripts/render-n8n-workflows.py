@@ -142,7 +142,8 @@ INTERNAL_HTTP_URL_SUFFIXES = {
     "Loader: Start": "/internal/loader/start",
     "Loader: Stop": "/internal/loader/stop",
     "MSG: Topic menu": "/internal/topics/menu",
-    "API: Prepare update (shadow)": "/internal/bot/prepare-update",
+    "API: Prepare update": "/internal/bot/prepare-update",
+    "API: Ingest prepared update": "/internal/bot/ingest-update",
 }
 
 

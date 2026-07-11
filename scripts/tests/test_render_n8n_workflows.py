@@ -116,7 +116,7 @@ class InternalSecretRenderingTests(unittest.TestCase):
                 if str(header.get("name", "")).lower() == renderer.INTERNAL_SECRET_HEADER_NAME:
                     source_values.append(header.get("value"))
 
-        self.assertEqual(len(source_values), 5)
+        self.assertEqual(len(source_values), 6)
         self.assertEqual(set(source_values), {renderer.INTERNAL_SECRET_SENTINEL})
 
         rendered = copy.deepcopy(workflow)
@@ -132,31 +132,53 @@ class InternalSecretRenderingTests(unittest.TestCase):
             self.assertEqual(node["parameters"]["url"], f"http://api.test:3000{suffix}")
 
 
-class PrepareUpdateShadowTests(unittest.TestCase):
-    def test_shadow_branch_is_terminal_and_does_not_replace_legacy_connections(self):
+class PreparedUpdateDispatchTests(unittest.TestCase):
+    def test_prepare_is_ordered_and_stats_has_a_legacy_fallback(self):
         workflow = load_workflow()
 
         self.assertEqual(
             outgoing_nodes(workflow, "Create User"),
-            ["Get plan data", "Get User Data", "Code: Start prepare shadow"],
+            ["Code: Start prepare"],
         )
         self.assertEqual(
-            outgoing_nodes(workflow, "Code: Start prepare shadow"),
-            ["API: Prepare update (shadow)"],
+            outgoing_nodes(workflow, "Code: Start prepare"),
+            ["API: Prepare update"],
         )
         self.assertEqual(
-            outgoing_nodes(workflow, "API: Prepare update (shadow)"),
-            ["Code: Normalize prepare shadow"],
+            outgoing_nodes(workflow, "API: Prepare update"),
+            ["Code: Normalize prepared update"],
         )
-        self.assertEqual(outgoing_nodes(workflow, "Code: Normalize prepare shadow"), [])
+        self.assertEqual(
+            outgoing_nodes(workflow, "Code: Normalize prepared update"),
+            ["Get plan data", "Get User Data"],
+        )
+        self.assertEqual(
+            outgoing_nodes(workflow, "Track reply keyboard click"),
+            ["Switch: Prepared route"],
+        )
+        self.assertEqual(
+            outgoing_nodes(workflow, "Switch: Prepared route"),
+            ["API: Ingest prepared update", "Is /[command]"],
+        )
+        self.assertEqual(
+            outgoing_nodes(workflow, "API: Ingest prepared update"),
+            ["Runtime update accepted?"],
+        )
+        self.assertEqual(
+            outgoing_nodes(workflow, "Runtime update accepted?"),
+            ["Is /[command]"],
+        )
 
-        shadow = find_node(workflow, "API: Prepare update (shadow)")
-        self.assertTrue(shadow["continueOnFail"])
-        self.assertEqual(shadow["parameters"]["options"]["timeout"], 2000)
+        prepare = find_node(workflow, "API: Prepare update")
+        ingest = find_node(workflow, "API: Ingest prepared update")
+        self.assertTrue(prepare["continueOnFail"])
+        self.assertTrue(ingest["continueOnFail"])
+        self.assertEqual(prepare["parameters"]["options"]["timeout"], 2000)
+        self.assertEqual(ingest["parameters"]["options"]["timeout"], 2000)
 
-    def test_shadow_normalizer_emits_only_bounded_telemetry(self):
+    def test_normalizer_preserves_a_valid_contract_for_ingestion(self):
         workflow = load_workflow()
-        code = find_node(workflow, "Code: Normalize prepare shadow")["parameters"]["jsCode"]
+        code = find_node(workflow, "Code: Normalize prepared update")["parameters"]["jsCode"]
         payload = {
             "contractVersion": 1,
             "route": "message.text",
@@ -183,13 +205,20 @@ console.log(JSON.stringify(result));
 
         self.assertEqual(
             set(result),
-            {"shadow_ok", "contract_version", "route", "duration_ms", "failure_reason"},
+            {
+                "prepare_ok",
+                "contract_version",
+                "route",
+                "duration_ms",
+                "failure_reason",
+                "prepared_update",
+            },
         )
-        self.assertTrue(result["shadow_ok"])
+        self.assertTrue(result["prepare_ok"])
         self.assertEqual(result["contract_version"], 1)
         self.assertEqual(result["route"], "message.text")
         self.assertLessEqual(result["duration_ms"], 60000)
-        self.assertNotIn("sensitive-shadow-message", json.dumps(result))
+        self.assertEqual(result["prepared_update"], payload)
 
 
 if __name__ == "__main__":
