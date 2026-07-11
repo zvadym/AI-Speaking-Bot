@@ -4,6 +4,10 @@ import type { BotAiClient } from '../bot-ai.js';
 import type { PreparedUpdate } from '../contracts.js';
 import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
+import {
+  enforcePracticeQuota,
+  type PracticeQuotaGuard
+} from '../practice-quota.js';
 import { BOT_RUNTIME_HANDLER_VERSIONS } from '../route-flags.js';
 import {
   deliverTelegramText,
@@ -43,35 +47,6 @@ function localeRecord(value: unknown): Locale {
 function localeText(locale: Locale, key: string, fallback: string): string {
   const value = String(locale[key] || '').trim();
   return value || fallback;
-}
-
-async function voiceLimitReached(pool: Pool, chatId: number, botKey: string): Promise<boolean> {
-  const result = await pool.query<{ limit_seconds: number; used_seconds: number }>(
-    `WITH effective AS (
-       SELECT CASE
-         WHEN override_plan_tier IS NOT NULL AND override_expires_at > NOW() THEN override_plan_tier
-         WHEN plan_expires_at IS NOT NULL AND plan_expires_at > NOW() THEN plan_tier
-         ELSE 'free'
-       END AS tier
-       FROM users WHERE chat_id = $1
-     ), plan AS (
-       SELECT voice_seconds_limit, voice_limit_period
-       FROM plans WHERE tier = (SELECT tier FROM effective) LIMIT 1
-     )
-     SELECT
-       COALESCE((SELECT voice_seconds_limit FROM plan), 0)::int AS limit_seconds,
-       COALESCE(SUM(uh.in_voice_seconds + uh.out_voice_seconds), 0)::int AS used_seconds
-     FROM usage_hourly uh
-     WHERE uh.chat_id = $1
-       AND uh.bot_key = $2
-       AND (
-         COALESCE((SELECT voice_limit_period FROM plan), 'lifetime') <> 'month'
-         OR uh.hour_start >= date_trunc('month', NOW())
-       )`,
-    [chatId, botKey]
-  );
-  const limit = Number(result.rows[0]?.limit_seconds || 0);
-  return limit > 0 && Number(result.rows[0]?.used_seconds || 0) >= limit;
 }
 
 async function recordVoiceUsage(
@@ -125,6 +100,8 @@ export function createVoiceConversationHandler({
   getBotLocale,
   telegramClient,
   ai,
+  webappUrl,
+  quotaGuard = enforcePracticeQuota,
   effectRunner = runBotUpdateEffect,
   textDeliverer = deliverTelegramText,
   voiceDeliverer = deliverTelegramVoice
@@ -133,6 +110,8 @@ export function createVoiceConversationHandler({
   getBotLocale(botKey: string): unknown;
   telegramClient: VoiceTelegramClient;
   ai: BotAiClient;
+  webappUrl: string;
+  quotaGuard?: PracticeQuotaGuard;
   effectRunner?: typeof runBotUpdateEffect;
   textDeliverer?: typeof deliverTelegramText;
   voiceDeliverer?: typeof deliverTelegramVoice;
@@ -166,15 +145,14 @@ export function createVoiceConversationHandler({
           text: localeText(locale, 'msg_too_long', 'Please keep voice messages under 25 seconds.')
         });
       }
-      if (await voiceLimitReached(pool, chatId, update.botKey)) {
-        return textDeliverer({
-          pool,
-          update,
-          telegramClient,
-          stepKey: 'message.voice:limit:v1',
-          text: localeText(locale, 'msg_limit_reached', 'Your voice practice limit has been reached.')
-        });
-      }
+      const entryQuota = await quotaGuard({
+        pool,
+        update,
+        getBotLocale,
+        telegramClient,
+        webappUrl
+      });
+      if (!entryQuota.allowed) return entryQuota.outcome;
 
       await Promise.allSettled([
         telegramClient.callTelegramApi(update.botKey, 'sendChatAction', {
@@ -260,6 +238,23 @@ export function createVoiceConversationHandler({
       }
 
       if (String(result.replyMode).toLowerCase() === 'voice') {
+        const ttsQuota = await quotaGuard({
+          pool,
+          update,
+          getBotLocale,
+          telegramClient,
+          webappUrl,
+          beforeBlockedDelivery: () => textDeliverer({
+            pool,
+            update,
+            telegramClient,
+            stepKey: 'message.voice:reply:v1',
+            text: reply,
+            replyMarkup: conversationReplyMarkup(assistantMessageId, locale)
+          })
+        });
+        if (!ttsQuota.allowed) return ttsQuota.outcome;
+
         let speech: Buffer;
         try {
           speech = await ai.speech(update.botKey, reply);

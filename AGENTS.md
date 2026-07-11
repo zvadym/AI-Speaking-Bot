@@ -79,6 +79,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Telegram sends each bot update to `/telegram/webhook/:botKey`.
 - The API validates the per-bot webhook secret, persists ingestion state, and enqueues a pg-boss job.
 - `apps/api/src/bot-runtime` owns route preparation, typed handlers, AI calls, durable effects, and Telegram delivery.
+- `apps/api/src/bot-runtime/entitlement-context.ts` is the single source of truth for effective plan and practice quota; usage is global by `chat_id` across all bots.
 - `deploy/prompts/*.md` and `shared/llm-prompts/*.md` are loaded directly by the API and worker.
 - `apps/api/scripts/telegram-webhooks.mjs set|inspect|delete` manages all configured Telegram webhooks.
 

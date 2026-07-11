@@ -248,13 +248,15 @@ export async function registerBotRuntimeWorker(
       pool,
       getBotLocale,
       telegramClient,
-      ai
+      ai,
+      webappUrl
     }),
     createVoiceConversationHandler({
       pool,
       getBotLocale,
       telegramClient,
-      ai
+      ai,
+      webappUrl
     }),
     createVoiceFeedbackHandler({
       pool,

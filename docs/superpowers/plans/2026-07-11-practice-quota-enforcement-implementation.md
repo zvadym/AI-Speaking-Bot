@@ -34,8 +34,8 @@ plan amounts, billing state, or non-practice routes.
 - Pass `webappUrl` into both handler factories from worker registration.
 - Reload entitlement before TTS; skip TTS and return the durable paywall when
   inbound usage consumes the final remainder.
-- Bump handler versions for `message.text` and `message.voice` so queued jobs
-  cannot silently execute against mismatched behavior.
+- Keep handler versions unchanged because the prepared contract is unchanged;
+  this lets already-accepted jobs drain safely across the rolling restart.
 - Verification: handler regression tests prove blocked updates never reach AI.
 
 ### Step 4: Full local verification

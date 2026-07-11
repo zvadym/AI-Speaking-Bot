@@ -132,6 +132,10 @@ function statsContext(overrides: Partial<StatsContext> = {}): StatsContext {
   };
 }
 
+async function allowPracticeQuota() {
+  return { allowed: true as const, context: statsContext() };
+}
+
 function xpContext(overrides: Partial<XpContext> = {}): XpContext {
   return {
     xpTotal: 450,
@@ -595,6 +599,8 @@ test('text conversation reuses generated state and delivers correction before re
   const deliveries: Array<Record<string, unknown>> = [];
   const handler = createTextConversationHandler({
     pool: unusedPool,
+    webappUrl: 'https://example.test/app',
+    quotaGuard: allowPracticeQuota,
     getBotLocale: () => ({
       btn_translation: 'Translation',
       btn_vocab: 'Vocabulary',
@@ -638,6 +644,40 @@ test('text conversation reuses generated state and delivers correction before re
   assert.match(JSON.stringify(deliveries[1].replyMarkup), /tr:555:000/);
 });
 
+test('text conversation blocks before typing and AI when global quota is exhausted', async () => {
+  const methods: string[] = [];
+  let conversationEffects = 0;
+  const handler = createTextConversationHandler({
+    pool: unusedPool,
+    webappUrl: 'https://example.test/app',
+    getBotLocale: () => ({}),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; },
+      async callTelegramApi(_botKey, method) {
+        methods.push(method);
+        return {};
+      }
+    },
+    ai: unusedAi,
+    quotaGuard: async () => ({
+      allowed: false,
+      context: statsContext({ limitReached: true, remainingSeconds: 0 }),
+      outcome: { status: 'delivered', telegramMessageId: 91 }
+    }),
+    effectRunner: async <T extends Record<string, unknown>>() => {
+      conversationEffects += 1;
+      return { duplicate: false, result: {} as T };
+    }
+  });
+
+  assert.deepEqual(await handler.execute(preparedText(9353)), {
+    status: 'delivered',
+    telegramMessageId: 91
+  });
+  assert.deepEqual(methods, []);
+  assert.equal(conversationEffects, 0);
+});
+
 test('voice conversation reuses STT state and delivers transcript before text reply', async () => {
   const update = preparedVoice();
   const deliveries: Array<Record<string, unknown>> = [];
@@ -648,6 +688,8 @@ test('voice conversation reuses STT state and delivers transcript before text re
   } as unknown as Pool;
   const handler = createVoiceConversationHandler({
     pool,
+    webappUrl: 'https://example.test/app',
+    quotaGuard: allowPracticeQuota,
     getBotLocale: () => ({ user_text_prefix_multiline: 'You said:\n' }),
     telegramClient: {
       async sendTelegramTextMessage() { return { message_id: 1 }; },
@@ -685,6 +727,106 @@ test('voice conversation reuses STT state and delivers transcript before text re
     'message.voice:reply:v1'
   ]);
   assert.match(String(deliveries[0].text), /I went home/);
+});
+
+test('voice conversation blocks before Telegram file download and AI', async () => {
+  let downloads = 0;
+  let effects = 0;
+  const handler = createVoiceConversationHandler({
+    pool: unusedPool,
+    webappUrl: 'https://example.test/app',
+    getBotLocale: () => ({}),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; },
+      async sendTelegramVoiceMessage() { return { message_id: 2 }; },
+      async downloadTelegramFile() {
+        downloads += 1;
+        return Buffer.from('voice');
+      },
+      async callTelegramApi() { return {}; }
+    },
+    ai: unusedAi,
+    quotaGuard: async () => ({
+      allowed: false,
+      context: statsContext({ limitReached: true, remainingSeconds: 0 }),
+      outcome: { status: 'delivered', telegramMessageId: 92 }
+    }),
+    effectRunner: async <T extends Record<string, unknown>>() => {
+      effects += 1;
+      return { duplicate: false, result: {} as T };
+    }
+  });
+
+  assert.deepEqual(await handler.execute(preparedVoice(9354)), {
+    status: 'delivered',
+    telegramMessageId: 92
+  });
+  assert.equal(downloads, 0);
+  assert.equal(effects, 0);
+});
+
+test('voice conversation skips TTS when inbound usage consumes final quota', async () => {
+  const deliveries: Array<Record<string, unknown>> = [];
+  let quotaCalls = 0;
+  let speechCalls = 0;
+  const handler = createVoiceConversationHandler({
+    pool: unusedPool,
+    webappUrl: 'https://example.test/app',
+    getBotLocale: () => ({ user_text_prefix_multiline: 'You said:\n' }),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; },
+      async sendTelegramVoiceMessage() { return { message_id: 2 }; },
+      async downloadTelegramFile() { return Buffer.from('voice'); },
+      async callTelegramApi() { return {}; }
+    },
+    ai: {
+      ...unusedAi,
+      async speech() {
+        speechCalls += 1;
+        return Buffer.from('speech');
+      }
+    },
+    quotaGuard: async (input) => {
+      quotaCalls += 1;
+      if (quotaCalls === 1) return { allowed: true, context: statsContext() };
+      await input.beforeBlockedDelivery?.();
+      return {
+        allowed: false,
+        context: statsContext({ limitReached: true, remainingSeconds: 0 }),
+        outcome: { status: 'delivered', telegramMessageId: 93 }
+      };
+    },
+    effectRunner: async <T extends Record<string, unknown>>() => ({
+      duplicate: true,
+      result: {
+        transcript: 'I went home.',
+        assistantMessageId: 557,
+        replyMode: 'voice',
+        response: {
+          detected_language: 'en',
+          is_target_language: true,
+          has_mistakes: false,
+          reply_text: 'What did you do there?',
+          explanation_html: '<b>Good</b>'
+        }
+      } as unknown as T
+    }),
+    textDeliverer: async (input) => {
+      deliveries.push(input as unknown as Record<string, unknown>);
+      return { status: 'delivered', telegramMessageId: deliveries.length };
+    }
+  });
+
+  assert.deepEqual(await handler.execute(preparedVoice(9355)), {
+    status: 'delivered',
+    telegramMessageId: 93
+  });
+  assert.equal(quotaCalls, 2);
+  assert.equal(speechCalls, 0);
+  assert.deepEqual(deliveries.map((item) => item.stepKey), [
+    'message.voice:transcript:v1',
+    'message.voice:reply:v1'
+  ]);
 });
 
 test('feedback command uses one effect and a durable confirmation delivery', async () => {

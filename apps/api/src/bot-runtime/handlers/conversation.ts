@@ -4,6 +4,10 @@ import type { BotAiClient, ConversationAiResult } from '../bot-ai.js';
 import type { PreparedUpdate } from '../contracts.js';
 import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
+import {
+  enforcePracticeQuota,
+  type PracticeQuotaGuard
+} from '../practice-quota.js';
 import { BOT_RUNTIME_HANDLER_VERSIONS } from '../route-flags.js';
 import {
   deliverTelegramText,
@@ -165,6 +169,8 @@ export function createTextConversationHandler({
   getBotLocale,
   telegramClient,
   ai,
+  webappUrl,
+  quotaGuard = enforcePracticeQuota,
   effectRunner = runBotUpdateEffect,
   textDeliverer = deliverTelegramText
 }: {
@@ -172,6 +178,8 @@ export function createTextConversationHandler({
   getBotLocale(botKey: string): unknown;
   telegramClient: ConversationTelegramClient;
   ai: BotAiClient;
+  webappUrl: string;
+  quotaGuard?: PracticeQuotaGuard;
   effectRunner?: typeof runBotUpdateEffect;
   textDeliverer?: typeof deliverTelegramText;
 }): BotHandler<'message.text'> {
@@ -184,6 +192,15 @@ export function createTextConversationHandler({
       if (chatId === null || !Number.isSafeInteger(chatId) || chatId <= 0 || !text) {
         throw new BotRuntimeHandlerError('invalid_text_message', { retryable: false });
       }
+      const quota = await quotaGuard({
+        pool,
+        update,
+        getBotLocale,
+        telegramClient,
+        webappUrl
+      });
+      if (!quota.allowed) return quota.outcome;
+
       await Promise.allSettled([
         telegramClient.callTelegramApi(update.botKey, 'sendChatAction', {
           chat_id: chatId,
