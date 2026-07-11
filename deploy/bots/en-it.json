@@ -14,7 +14,6 @@
   ],
   "bot_voice": "Nova",
   "telegram_url": "https://t.me/language_en_it_bot",
-  "telegram_credential_id": "AlxHEIUzoTwaPctH",
   "telegram_bot_token": "REDACTED_SECRET",
   "locale": {
     "btn_translation": "Translation 🇬🇧",

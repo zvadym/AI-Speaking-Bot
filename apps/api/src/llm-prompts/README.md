@@ -6,7 +6,7 @@ Scope:
 
 Out of scope:
 - bot/runtime tutor prompts in `deploy/prompts/`
-  Those are the source of truth for rendered n8n workflow prompts and should stay there.
+  Those are the source of truth for the typed Telegram bot runtime and should stay there.
 
 Template format:
 - Markdown files with `{{variable_name}}` placeholders

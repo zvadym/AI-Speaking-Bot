@@ -279,11 +279,6 @@ if git show-ref --verify --quiet "refs/remotes/origin/${DEPLOY_BRANCH}"; then
   git checkout -B "${DEPLOY_BRANCH}" "origin/${DEPLOY_BRANCH}"
 fi
 
-step "2.7/7: Prepare n8n data dir ownership for container user (uid 1000)"
-mkdir -p deploy/n8n-data
-sudo chown -R 1000:1000 deploy/n8n-data
-sudo chmod 700 deploy/n8n-data
-
 echo "Remote setup OK."
 python3 --version || true
 docker --version || true
@@ -294,7 +289,6 @@ if [[ "${UPLOAD_CONFIG}" == "true" ]]; then
   log "📤 Step 3/4: Upload git-ignored env files to remote (won't overwrite by default)"
   upload_ignored_file "deploy/.env.api"
   upload_ignored_file "deploy/.env.miniapp"
-  upload_ignored_file "deploy/.env.prod"
 else
   log "⏭️  Step 3/4: Skipping config upload (UPLOAD_CONFIG=false)"
 fi

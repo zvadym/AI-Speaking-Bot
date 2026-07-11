@@ -1,10 +1,10 @@
 # Prompt Templates (`deploy/prompts/*.md`)
 
-This directory is the source of truth for LLM prompt text used by rendered
-multi-bot workflows.
+This directory is the source of truth for LLM prompt text used by the typed
+multi-bot runtime.
 
 Shared reusable tone partials live in `shared/llm-prompts/` and are injected
-when templates are rendered.
+when templates are rendered at runtime.
 
 Templates:
 
@@ -14,7 +14,7 @@ Templates:
 - `model_summary_prompt.md`
 - `model_vocab_prompt.md`
 
-They are loaded and rendered by `scripts/render-n8n-workflows.py` for each bot.
+They are loaded by `apps/api/src/bot-runtime/bot-ai.ts` for each bot.
 
 ## Available placeholders
 

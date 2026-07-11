@@ -151,7 +151,6 @@ export const env = {
   stripePortalConfigId: process.env.STRIPE_PORTAL_CONFIG_ID || '',
   jwtSecret: requireEnv('JWT_SECRET'),
   corsOrigins,
-  planChangedWebhookUrl: process.env.PLAN_CHANGED_WEBHOOK_URL || '',
   adminDashboardPassword: process.env.ADMIN_DASHBOARD_PASSWORD || '',
   internalApiSecret: process.env.INTERNAL_API_SECRET || '',
   openaiApiKey: (process.env.OPENAI_API_KEY || '').toString().trim(),
@@ -182,5 +181,4 @@ export const env = {
   jobRetryMaxAttempts: optionalInteger('JOB_RETRY_MAX_ATTEMPTS', 5, { min: 1, max: 100 }),
   defaultBotKey: (process.env.DEFAULT_BOT_KEY || 'uk-de').toString().trim().toLowerCase(),
   botKeyByTargetLang: optionalJsonObject('BOT_KEY_BY_TARGET_LANG_JSON'),
-  webhooksAppendBotKey: optionalBoolean('WEBHOOKS_APPEND_BOT_KEY', false)
 };

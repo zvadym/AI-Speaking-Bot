@@ -5,7 +5,3 @@ learn-language-api.notarobot.dev {
 learn-language-app.notarobot.dev {
   reverse_proxy miniapp:80
 }
-
-learn-language-n8n.notarobot.dev {
-  reverse_proxy n8n:5678
-}

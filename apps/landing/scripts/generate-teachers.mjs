@@ -145,7 +145,7 @@ function buildPracticePath(config, filename, legacyTeacher) {
 
 function assertNoSecrets(row) {
   const serialized = JSON.stringify(row);
-  const secretHints = ['telegram_bot_token', 'telegram_credential_id', 'model_system_prompt', 'model_support_prompt'];
+  const secretHints = ['telegram_bot_token', 'model_system_prompt', 'model_support_prompt'];
   for (const hint of secretHints) {
     if (serialized.includes(hint)) throw new Error(`Generated output unexpectedly contains "${hint}"`);
   }

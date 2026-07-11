@@ -13,27 +13,20 @@ HEALTH_ATTEMPTS="${HEALTH_ATTEMPTS:-10}"
 HEALTH_DELAY_SEC="${HEALTH_DELAY_SEC:-3}"
 HEALTH_TIMEOUT_SEC="${HEALTH_TIMEOUT_SEC:-5}"
 SKIP_HEALTHCHECKS="${SKIP_HEALTHCHECKS:-false}"
-SKIP_N8N="${SKIP_N8N:-false}"
 RESTART_ALL="${RESTART_ALL:-false}"
 UPDATE_PHRASES="${UPDATE_PHRASES:-false}"
-OPENAI_MODELS_CONFIG="${OPENAI_MODELS_CONFIG:-deploy/workflows/openai-models.json}"
 
-# Override these when deploying to a new server before DNS is updated.
-# Set any of them to empty string to skip that check.
 HEALTHCHECK_API_URL="${HEALTHCHECK_API_URL:-https://learn-language-api.notarobot.dev/healthz}"
 HEALTHCHECK_APP_URL="${HEALTHCHECK_APP_URL:-https://learn-language-app.notarobot.dev/}"
-HEALTHCHECK_N8N_URL="${HEALTHCHECK_N8N_URL:-https://learn-language-n8n.notarobot.dev/}"
-HEALTHCHECK_N8N_LOCAL_URL="${HEALTHCHECK_N8N_LOCAL_URL:-http://127.0.0.1:5678/}"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/deploy-remote.sh [--skip-n8n] [--restart-all] [--help]
+Usage: scripts/deploy-remote.sh [--restart-all] [--update-phrases] [--help]
 
 Options:
-  --skip-n8n  Skip n8n workflow render/import/activation and n8n-specific health checks.
-  --restart-all  Force full service restart, including restart-based n8n workflow activation.
-  --update-phrases  Import idiom phrase catalog after build.
-  --help      Show this help message.
+  --restart-all     Force recreation of all application containers.
+  --update-phrases  Import the idiom phrase catalog after the build.
+  --help            Show this help message.
 EOF
 }
 
@@ -41,17 +34,8 @@ log() {
   echo "==> $1"
 }
 
-if [[ "${SSH_FORWARD_AGENT}" != "true" && "${SSH_FORWARD_AGENT}" != "false" ]]; then
-  echo "Invalid SSH_FORWARD_AGENT=${SSH_FORWARD_AGENT} (expected: true|false)" >&2
-  exit 1
-fi
-
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --skip-n8n)
-      SKIP_N8N="true"
-      shift
-      ;;
     --restart-all)
       RESTART_ALL="true"
       shift
@@ -72,20 +56,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "${SKIP_N8N}" != "true" && "${SKIP_N8N}" != "false" ]]; then
-  echo "Invalid SKIP_N8N=${SKIP_N8N} (expected: true|false)" >&2
-  exit 1
-fi
-
-if [[ "${RESTART_ALL}" != "true" && "${RESTART_ALL}" != "false" ]]; then
-  echo "Invalid RESTART_ALL=${RESTART_ALL} (expected: true|false)" >&2
-  exit 1
-fi
-
-if [[ "${UPDATE_PHRASES}" != "true" && "${UPDATE_PHRASES}" != "false" ]]; then
-  echo "Invalid UPDATE_PHRASES=${UPDATE_PHRASES} (expected: true|false)" >&2
-  exit 1
-fi
+for value_name in SSH_FORWARD_AGENT SKIP_HEALTHCHECKS RESTART_ALL UPDATE_PHRASES; do
+  value="${!value_name}"
+  if [[ "${value}" != "true" && "${value}" != "false" ]]; then
+    echo "Invalid ${value_name}=${value} (expected: true|false)" >&2
+    exit 1
+  fi
+done
 
 ssh_cmd() {
   if [[ "${SSH_FORWARD_AGENT}" == "true" ]]; then
@@ -95,224 +72,94 @@ ssh_cmd() {
   fi
 }
 
-log "🔌 Step 1/9: Check SSH connectivity to ${DEPLOY_HOST}"
+log "Check SSH connectivity to ${DEPLOY_HOST}"
 ssh_cmd -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >/dev/null
 
-log "🚀 Step 2/9: Run remote deploy commands"
+log "Deploy ${DEPLOY_BRANCH} to ${DEPLOY_HOST}"
 ssh_cmd "${DEPLOY_HOST}" \
-  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' SKIP_N8N='${SKIP_N8N}' RESTART_ALL='${RESTART_ALL}' UPDATE_PHRASES='${UPDATE_PHRASES}' OPENAI_MODELS_CONFIG='${OPENAI_MODELS_CONFIG}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' HEALTHCHECK_N8N_URL='${HEALTHCHECK_N8N_URL}' HEALTHCHECK_N8N_LOCAL_URL='${HEALTHCHECK_N8N_LOCAL_URL}' bash -se" <<'REMOTE'
+  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' RESTART_ALL='${RESTART_ALL}' UPDATE_PHRASES='${UPDATE_PHRASES}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' bash -se" <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
 
-step "📁 2.1/10: Verify repo directory"
-if [[ ! -d "${DEPLOY_DIR}" ]]; then
-  echo "Missing ${DEPLOY_DIR} on server" >&2
-  exit 1
-fi
+step "Verify repository"
 cd "${DEPLOY_DIR}"
 
-step "🧹 2.2/10: Hard reset repo to origin/${DEPLOY_BRANCH} (preserve server env files)"
-preserved_files=(
-  deploy/.env
-  deploy/.env.api
-  deploy/.env.miniapp
-  deploy/.env.prod
-  deploy/.env.dev
-)
+preserved_files=(deploy/.env.api deploy/.env.miniapp)
 backup_dir="$(mktemp -d)"
-cleanup_backup() {
-  rm -rf "${backup_dir}"
-}
-trap cleanup_backup EXIT
-
-for f in "${preserved_files[@]}"; do
-  if [[ -f "${f}" ]]; then
-    mkdir -p "${backup_dir}/$(dirname "${f}")"
-    cp "${f}" "${backup_dir}/${f}"
+trap 'rm -rf "${backup_dir}"' EXIT
+for file in "${preserved_files[@]}"; do
+  if [[ -f "${file}" ]]; then
+    mkdir -p "${backup_dir}/$(dirname "${file}")"
+    cp "${file}" "${backup_dir}/${file}"
   fi
 done
 
+step "Update source"
 git fetch origin
-
 git checkout -f "${DEPLOY_BRANCH}"
-
 git reset --hard "origin/${DEPLOY_BRANCH}"
-
-for f in "${preserved_files[@]}"; do
-  if [[ -f "${backup_dir}/${f}" ]]; then
-    cp "${backup_dir}/${f}" "${f}"
+for file in "${preserved_files[@]}"; do
+  if [[ -f "${backup_dir}/${file}" ]]; then
+    cp "${backup_dir}/${file}" "${file}"
   fi
 done
 
-unexpected_changes="$(git status --porcelain | awk '$2 != "deploy/.env" && $2 != "deploy/.env.api" && $2 != "deploy/.env.miniapp" && $2 != "deploy/.env.prod" && $2 != "deploy/.env.dev" { print }')"
-if [[ -n "${unexpected_changes}" ]]; then
-  echo "Repo has unexpected local changes after reset:" >&2
-  echo "${unexpected_changes}" >&2
-  exit 1
-fi
-
-step "🔐 2.3/10: Verify required env files (won't overwrite)"
-required_env_files=(deploy/.env deploy/.env.api deploy/.env.miniapp)
-if [[ "${SKIP_N8N}" != "true" ]]; then
-  required_env_files+=(deploy/.env.prod)
-fi
-for f in "${required_env_files[@]}"; do
-  if [[ ! -f "$f" ]]; then
-    echo "Missing $f on server" >&2
+for file in deploy/.env.api deploy/.env.miniapp; do
+  if [[ ! -f "${file}" ]]; then
+    echo "Missing ${file} on server" >&2
     exit 1
   fi
 done
 
-if [[ "${SKIP_N8N}" == "true" ]]; then
-  step "⏭️ 2.3.1/10: Skip n8n data dir permissions (--skip-n8n)"
-else
-  step "🗂️ 2.3.1/10: Ensure n8n data dir is writable by n8n (uid 1000)"
-  mkdir -p deploy/n8n-data
-  docker run --rm -u 0:0 -v "$PWD/deploy/n8n-data:/data" alpine:3.20 sh -c 'chown -R 1000:1000 /data && chmod 700 /data'
-fi
-
-step "🌱 2.3.2/10: Load env for build args + workflow render"
 set -a
 source deploy/.env.api
 source deploy/.env.miniapp
-if [[ "${SKIP_N8N}" != "true" ]]; then
-  source deploy/.env.prod
-fi
 set +a
 
-if [[ "${SKIP_N8N}" == "true" ]]; then
-  step "⏭️ 2.3.3/10: Skip n8n workflow render (--skip-n8n)"
-else
-  step "🧠 2.3.3/10: Verify OpenAI models config"
-  if [[ ! -f "${OPENAI_MODELS_CONFIG}" ]]; then
-    echo "Missing ${OPENAI_MODELS_CONFIG} on server" >&2
-    exit 1
-  fi
-
-  step "🧩 2.3.4/10: Render n8n workflows"
-  python3 scripts/render-n8n-workflows.py --input deploy/workflows --output deploy/workflows/.rendered --models-config "${OPENAI_MODELS_CONFIG}"
-fi
-
-step "🗄️ 2.4/10: Run DB migrations"
+step "Run database migrations"
 bash "${MIGRATE_SCRIPT}"
 
-if [[ "${SKIP_N8N}" == "true" ]]; then
-  step "🐳 2.5/10: Build api/worker/miniapp images (--skip-n8n)"
-  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build api worker miniapp
-  if [[ "${UPDATE_PHRASES}" == "true" ]]; then
-    step "🧠 2.6/10: Import idiom phrase catalog (--update-phrases)"
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
-      -e IDIOM_PHRASES_DIR=/deploy/phrases \
-      api node ./scripts/import-idiom-phrases.mjs </dev/null
-  else
-    step "⏭️ 2.6/10: Skip idiom phrase import (pass --update-phrases to enable)"
-  fi
-  step "🚀 2.7/10: Restart api/worker/miniapp/caddy only (--skip-n8n)"
-  if [[ "${RESTART_ALL}" == "true" ]]; then
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --no-deps api worker miniapp caddy
-  else
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --no-deps api worker miniapp caddy
-  fi
-else
-  step "🐳 2.5/10: Build service images"
-  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build
-  if [[ "${UPDATE_PHRASES}" == "true" ]]; then
-    step "🧠 2.6/10: Import idiom phrase catalog (--update-phrases)"
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
-      -e IDIOM_PHRASES_DIR=/deploy/phrases \
-      api node ./scripts/import-idiom-phrases.mjs </dev/null
-  else
-    step "⏭️ 2.6/10: Skip idiom phrase import (pass --update-phrases to enable)"
-  fi
-  step "🚀 2.7/10: Restart services"
-  if [[ "${RESTART_ALL}" == "true" ]]; then
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --force-recreate --remove-orphans
-  else
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up -d --remove-orphans
-  fi
+step "Build application images"
+docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" build api worker miniapp
+
+if [[ "${UPDATE_PHRASES}" == "true" ]]; then
+  step "Import idiom phrase catalog"
+  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps \
+    -e IDIOM_PHRASES_DIR=/deploy/phrases api node ./scripts/import-idiom-phrases.mjs </dev/null
 fi
 
-if [[ "${SKIP_N8N}" == "true" ]]; then
-  step "⏭️ 2.8/10: Skip n8n stop/import/activation (--skip-n8n)"
-else
-  if [[ "${RESTART_ALL}" == "true" ]]; then
-    step "🛑 2.8/10: Stop n8n (pre-import, --restart-all)"
-    docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" stop n8n >/dev/null 2>&1 || true
+step "Start application services"
+up_args=(-d --remove-orphans)
+if [[ "${RESTART_ALL}" == "true" ]]; then
+  up_args+=(--force-recreate)
+fi
+docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" up "${up_args[@]}" api worker miniapp caddy
 
-    step "🧹 2.9/10: Unpublish/deactivate ALL n8n workflows (--restart-all)"
-    COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" STOP_N8N_BEFORE=false bash scripts/unpublish-all-n8n-workflows.sh
-  else
-    step "♻️ 2.8/10: Keep n8n running during workflow import/publish"
-  fi
+check_url() {
+  local url="$1"
+  for attempt in $(seq 1 "${HEALTH_ATTEMPTS}"); do
+    if curl -fsS --max-time "${HEALTH_TIMEOUT_SEC}" "${url}" >/dev/null; then
+      echo "${url} OK"
+      return 0
+    fi
+    echo "${url} not ready (${attempt}/${HEALTH_ATTEMPTS})"
+    sleep "${HEALTH_DELAY_SEC}"
+  done
+  return 1
+}
 
-  step "📦 2.10/10: Import n8n workflows"
-  docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" run -T --rm --no-deps n8n-import </dev/null
-
-  if [[ "${RESTART_ALL}" == "true" ]]; then
-    step "✅ 2.11/10: Activate n8n workflows with restart (--restart-all)"
-    COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" STOP_N8N_BEFORE=false RESTART_N8N_AFTER=true bash scripts/activate-n8n-workflows.sh
-  else
-    step "✅ 2.11/10: Publish n8n workflows live"
-    COMPOSE_FILE="${COMPOSE_FILE}" PROJECT="${PROJECT}" WORKFLOWS_DIR="deploy/workflows/.rendered" STOP_N8N_BEFORE=false RESTART_N8N_AFTER=false bash scripts/activate-n8n-workflows.sh
-  fi
+if [[ "${SKIP_HEALTHCHECKS}" != "true" ]]; then
+  step "Run HTTP health checks"
+  [[ -z "${HEALTHCHECK_API_URL}" ]] || check_url "${HEALTHCHECK_API_URL}"
+  [[ -z "${HEALTHCHECK_APP_URL}" ]] || check_url "${HEALTHCHECK_APP_URL}"
 fi
 
-step "✅ 2.12/10: Health checks"
-if [[ "${SKIP_HEALTHCHECKS}" == "true" ]]; then
-  echo "⚠️ SKIP_HEALTHCHECKS=true; skipping health checks"
-elif command -v curl >/dev/null 2>&1; then
-  check_url() {
-    local url="$1"
-    local attempts="${HEALTH_ATTEMPTS}"
-    local delay="${HEALTH_DELAY_SEC}"
-    local timeout="${HEALTH_TIMEOUT_SEC}"
-    for i in $(seq 1 "${attempts}"); do
-      if curl -fsS --max-time "${timeout}" "${url}" >/dev/null; then
-        echo "✅ ${url} OK"
-        return 0
-      fi
-      echo "⏳ ${url} not ready (attempt ${i}/${attempts})"
-      sleep "${delay}"
-    done
-    return 1
-  }
+step "Register and verify Telegram webhooks"
+docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T api \
+  node ./scripts/telegram-webhooks.mjs set
+docker compose -p "${PROJECT}" -f "${COMPOSE_FILE}" exec -T api \
+  node ./scripts/telegram-webhooks.mjs inspect
 
-  check_url_http() {
-    local url="$1"
-    local ok_codes="$2"
-    local attempts="${HEALTH_ATTEMPTS}"
-    local delay="${HEALTH_DELAY_SEC}"
-    local timeout="${HEALTH_TIMEOUT_SEC}"
-    for i in $(seq 1 "${attempts}"); do
-      local code
-      code="$(curl -sS -o /dev/null -w "%{http_code}" --max-time "${timeout}" "${url}" || true)"
-      if echo " ${ok_codes} " | grep -q " ${code} "; then
-        echo "✅ ${url} OK (${code})"
-        return 0
-      fi
-      echo "⏳ ${url} not ready (attempt ${i}/${attempts}, code=${code})"
-      sleep "${delay}"
-    done
-    return 1
-  }
-
-  if [[ -n "${HEALTHCHECK_API_URL:-}" ]]; then
-    check_url "${HEALTHCHECK_API_URL}"
-  fi
-  if [[ -n "${HEALTHCHECK_APP_URL:-}" ]]; then
-    check_url "${HEALTHCHECK_APP_URL}"
-  fi
-  if [[ "${SKIP_N8N}" != "true" && -n "${HEALTHCHECK_N8N_URL:-}" ]]; then
-    check_url_http "${HEALTHCHECK_N8N_URL}" "200 301 302 401 403"
-  fi
-  if [[ "${SKIP_N8N}" != "true" && -n "${HEALTHCHECK_N8N_LOCAL_URL:-}" ]]; then
-    check_url_http "${HEALTHCHECK_N8N_LOCAL_URL}" "200 301 302 401 403"
-  fi
-  echo "✅ Health checks OK"
-else
-  echo "⚠️ curl not found; skipping health checks"
-fi
+step "Deployment complete"
 REMOTE
-
-log "🎉 Done"

@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Router } from 'express';
 import {
-  enqueueDiscordEventNotificationJob,
   enqueueLoaderRotateJob,
   enqueueLoaderTimeoutCleanupJob,
   sendIdiomPracticeMorePhrase
@@ -309,61 +308,6 @@ export function createInternalRouter(ctx, helpers) {
         });
       }
       return res.status(500).json({ error: 'idiom_practice_more_failed' });
-    }
-  });
-
-  router.post('/internal/notifications/n8n-error', requireInternalApi, async (req, res) => {
-    const executionId = (req.body?.execution_id ?? req.body?.executionId ?? '').toString().trim();
-    const workflowId = (req.body?.workflow_id ?? req.body?.workflowId ?? '').toString().trim();
-    const workflowName = (req.body?.workflow_name ?? req.body?.workflowName ?? '').toString().trim();
-    const errorMessage = (req.body?.error_message ?? req.body?.errorMessage ?? req.body?.message ?? '').toString().trim();
-    const mode = (req.body?.mode ?? '').toString().trim();
-    const lastNode = (req.body?.last_node ?? req.body?.lastNode ?? '').toString().trim();
-    const url = (req.body?.url ?? req.body?.execution_url ?? req.body?.executionUrl ?? '').toString().trim();
-    const botKey = normalizeBotKey(req.body?.bot_key ?? req.body?.botKey ?? null);
-
-    if (!workflowName && !workflowId) {
-      return res.status(400).json({ error: 'workflow_required' });
-    }
-    if (!errorMessage) {
-      return res.status(400).json({ error: 'error_message_required' });
-    }
-    if (!ctx.apiBoss || !ctx.env.discordEventsWebhookUrl) {
-      return res.status(202).json({ ok: true, queued: false, reason: 'discord_events_not_configured' });
-    }
-
-    try {
-      const singletonKey = executionId
-        ? `discord_event:n8n_execution_error:${executionId}`
-        : undefined;
-      await enqueueDiscordEventNotificationJob(
-        ctx.apiBoss,
-        {
-          type: 'n8n_execution_error',
-          execution_id: executionId || null,
-          workflow_id: workflowId || null,
-          workflow_name: workflowName || null,
-          error_message: errorMessage,
-          mode: mode || null,
-          last_node: lastNode || null,
-          url: url || null,
-          bot_key: botKey || null
-        },
-        { singletonKey }
-      );
-      return res.status(202).json({ ok: true, queued: true });
-    } catch (error) {
-      console.error('internal-notifications-n8n-error failed', {
-        executionId,
-        workflowId,
-        workflowName,
-        error: error?.message || String(error)
-      });
-      captureException(error, {
-        tags: { route: 'internal-notifications-n8n-error' },
-        extra: { executionId, workflowId, workflowName }
-      });
-      return res.status(500).json({ error: 'notification_enqueue_failed' });
     }
   });
 

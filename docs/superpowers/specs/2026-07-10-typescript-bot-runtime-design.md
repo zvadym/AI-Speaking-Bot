@@ -467,3 +467,9 @@ The migration is successful when:
 - each route can be promoted or rolled back independently until final cleanup
 - the API and worker own business behavior, while n8n is only a replaceable
   ingress adapter
+# Historical Migration Design
+
+This design describes the transition architecture used during the July 2026
+cutover. The temporary n8n adapter documented below has been retired. Current
+runtime and deployment contracts are documented in `AGENTS.md` and
+`deploy/README.md`.

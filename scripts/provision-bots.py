@@ -193,7 +193,6 @@ REQUIRED_KEYS = [
     "bot_key",
     "base_language",
     "learning_language",
-    "telegram_credential_id",
     "telegram_bot_token",
     "locale",
 ]
@@ -1019,7 +1018,6 @@ def collect_bot_input(
         error_message="Token must look like '<digits>:<secret>'",
         secret=True,
     )
-    telegram_credential_id = prompt_text("telegram_credential_id (from n8n)")
     photo_raw = prompt_text("profile_photo_path (optional, repo-relative)", required=False, default="")
 
     return {
@@ -1036,7 +1034,6 @@ def collect_bot_input(
         "teacher_style_tags": style_tags,
         "bot_voice": bot_voice,
         "telegram_bot_token": telegram_bot_token,
-        "telegram_credential_id": telegram_credential_id,
         "profile_photo_path": photo_raw,
     }
 
@@ -1059,7 +1056,6 @@ def build_bot_config(template: Dict[str, Any], intake: Dict[str, Any], miniapp_u
     config["telegram_url"] = f"https://t.me/{intake['bot_username']}"
     config["username"] = intake["bot_username"]
     config["telegram_bot_token"] = intake["telegram_bot_token"]
-    config["telegram_credential_id"] = intake["telegram_credential_id"]
 
     base = intake["base_language"]
     description = first_non_empty(

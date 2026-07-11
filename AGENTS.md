@@ -4,10 +4,10 @@ This file orients automated agents working in this repo. Keep it accurate as the
 
 ## Project Overview
 - Multi-bot Telegram language-learning product with voice transcription, corrections, feedback threads, broadcasts, admin metrics, and paid plans.
-- n8n orchestrates bot workflows; the API and Mini-app are custom services backed by Postgres and Stripe.
+- The API accepts Telegram webhooks directly and pg-boss workers execute the typed bot pipelines backed by Postgres, OpenAI, and Stripe.
 - `deploy/bots/*.json` is the runtime source of truth for bot/language-pair configuration and also feeds landing-page generation.
 - Topic catalogs are DB-backed per bot pair; `bot_topic_catalog` is the only source of truth.
-- The app stack (`api` + `miniapp` + `n8n` + `caddy`) deploys via Docker Compose; the marketing landing site in `apps/landing` deploys separately to Vercel.
+- The app stack (`api` + `worker` + `miniapp` + `caddy`) deploys via Docker Compose; the marketing landing site in `apps/landing` deploys separately to Vercel.
 
 ## Repo Layout
 - `apps/api`: Node.js (Express, ESM) API for Telegram auth, Stripe billing, and DB access.
@@ -15,12 +15,11 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - `apps/landing`: Nuxt 3 marketing site for `ai-language-school.online`; prerenders teacher/blog pages and generates static output for Vercel.
 - `db/migrations`: Forward-only SQL migrations (dbmate).
 - `db/schema.sql`: Canonical Postgres schema snapshot generated from migrations.
-- `deploy`: Docker Compose stack, Caddy config, env files, n8n workflows, prompts, and bot configs.
-- `deploy/bots`: Production bot configs consumed by the API, workflow renderer, and landing generators.
-- `deploy/bots-dev`: Local-only bot configs for local n8n credentials; JSON files here are gitignored.
-- `deploy/prompts`: Template source of truth for rendered multi-bot LLM prompts.
+- `deploy`: Docker Compose stack, Caddy config, env files, prompts, phrases, and bot configs.
+- `deploy/bots`: Production bot configs consumed by the API and landing generators.
+- `deploy/prompts`: Template source of truth for the typed multi-bot runtime's LLM prompts.
 - `deploy/phrases`: Curated idiomatic phrase JSON files imported into the DB for daily idiom-practice notifications.
-- `scripts`: Local dev, migration, deploy, workflow render/import/activation, and bot provisioning helpers.
+- `scripts`: Local dev, migration, deploy, webhook management, and bot provisioning helpers.
 
 ## Local Dev
 - API:
@@ -33,9 +32,6 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Landing:
   - `scripts/dev-landing.sh` (loads `deploy/.env.landing` if present).
   - Or `cd apps/landing && npm install && npm run dev`.
-- Local n8n:
-  - `scripts/dev-n8n-full.sh` renders, imports, and activates local workflows.
-  - Individual steps: `scripts/dev-n8n-render.sh`, `scripts/dev-n8n-import.sh`, `scripts/dev-n8n-activate.sh`.
 - API has a `node:test` suite; run it with `cd apps/api && npm test`.
 
 ## Env & Secrets
@@ -45,13 +41,12 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - API optional env vars: `API_PORT`, `API_BASE_URL`, `CORS_ORIGINS`,
   `DATABASE_SSL`, `DATABASE_SSL_REJECT_UNAUTHORIZED`, `TELEGRAM_INITDATA_MAX_AGE`,
   `STRIPE_BILLING_PRODUCT_ID` (required to manage Stripe product prices from the admin dashboard),
-  `STRIPE_PORTAL_CONFIG_ID`, `WEBAPP_RETURN_URL`, `PLAN_CHANGED_WEBHOOK_URL`,
+  `STRIPE_PORTAL_CONFIG_ID`, `WEBAPP_RETURN_URL`,
   `DISCORD_EVENTS_WEBHOOK_URL`, `DISCORD_USER_MILESTONE_STEP`,
-  `ADMIN_DASHBOARD_PASSWORD`, `BROADCAST_WEBHOOK_URL`, `BROADCAST_WEBHOOK_SECRET`,
+  `ADMIN_DASHBOARD_PASSWORD`,
   `BROADCAST_MAX_RECIPIENTS`, `BROADCAST_PROCESS_BATCH_SIZE`,
   `BROADCAST_PER_MESSAGE_DELAY_MS`, `BROADCAST_MEDIA_CHAT_ID`, `DEFAULT_BOT_KEY`,
-  `BOT_KEY_BY_TARGET_LANG_JSON`, `BOT_RUNTIME_ROUTE_FLAGS_JSON`,
-  `WEBHOOKS_APPEND_BOT_KEY`, `OPENAI_API_KEY`,
+  `BOT_KEY_BY_TARGET_LANG_JSON`, `BOT_RUNTIME_ROUTE_FLAGS_JSON`, `OPENAI_API_KEY`,
   `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`,
   `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_PROFILE_SESSION_SAMPLE_RATE`,
   `TOPIC_GENERATION_MODEL`, `IDIOM_PRACTICE_SEND_HOUR_UTC`,
@@ -65,11 +60,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
     `LANDING_DISCORD_WEBHOOK_URL`,
     and legacy fallbacks `VITE_SITE_URL`, `API_BASE_URL`, `VITE_API_BASE`.
   - `apps/landing/scripts/generate-pricing.mjs` fetches `/public/plans` at build time; in CI/Vercel it fails hard if pricing env is missing.
-- n8n:
-  - `deploy/.env` is used by Docker Compose for the running instance.
-  - `deploy/.env.prod` and `deploy/.env.dev` provide credential IDs for workflow rendering.
-  - n8n execution failures can POST into API route `/internal/notifications/n8n-error` with `X-Internal-Secret`.
-- Do not commit secrets. `deploy/.env.api`, `deploy/.env.miniapp`, `deploy/.env.prod`, `deploy/.env.dev`, and `deploy/bots-dev/*.json` are gitignored, but `deploy/.env` is still not ignored.
+- Do not commit secrets. `deploy/.env.api` and `deploy/.env.miniapp` are gitignored.
 
 ## DB / Migrations
 - Run migrations via `deploy/migrate.sh` (uses `ghcr.io/amacneil/dbmate:2.12`).
@@ -80,24 +71,22 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Every migration PR must include the corresponding `db/schema.sql` update.
 
 ## Deployment
-- `deploy/deploy.sh` runs migrations and `docker compose` for API + mini-app + Caddy + n8n.
-- `scripts/deploy-remote.sh` performs the same on the server via SSH and renders workflows.
+- `deploy/deploy.sh` runs migrations, starts API + worker + mini-app + Caddy, and registers Telegram webhooks.
+- `scripts/deploy-remote.sh` performs the same on the server via SSH.
 - `scripts/vercel-deploy-landing.sh [prod|preview]` deploys `apps/landing` to Vercel.
 
-## n8n Workflows
-- Source: `deploy/workflows`.
-- Template workflow: `ai-bot.json`. Loader rotation and dynamic topic menu delivery now run via API + worker jobs.
-- In multi-bot mode, `scripts/render-n8n-workflows.py` renders per-bot workflow JSON into `deploy/workflows/.rendered`.
-- Prompt templates come from `deploy/prompts/*.md` and render fails on missing or unresolved placeholders.
-- Render: `scripts/render-n8n-workflows.py --input deploy/workflows --output deploy/workflows/.rendered`.
-- Activate: `scripts/activate-n8n-workflows.sh`.
-- Use `scripts/convert-workflow-to-template.py` when pulling bot-specific PROD workflow edits back into template files.
+## Bot Runtime
+- Telegram sends each bot update to `/telegram/webhook/:botKey`.
+- The API validates the per-bot webhook secret, persists ingestion state, and enqueues a pg-boss job.
+- `apps/api/src/bot-runtime` owns route preparation, typed handlers, AI calls, durable effects, and Telegram delivery.
+- `deploy/prompts/*.md` and `shared/llm-prompts/*.md` are loaded directly by the API and worker.
+- `apps/api/scripts/telegram-webhooks.mjs set|inspect|delete` manages all configured Telegram webhooks.
 
 ## Bot Configs
-- Production bot configs live in `deploy/bots/*.json`; local n8n variants live in `deploy/bots-dev/*.json`.
+- Production bot configs live in `deploy/bots/*.json`.
 - API startup reads `deploy/bots/*.json` directly via `apps/api/src/bot-configs.js`.
 - `scripts/provision-bots.py sync` validates/normalizes Telegram presentation fields; `scripts/provision-bots.py apply` pushes them to Telegram.
-- When changing bot config shape or meaning, verify all three consumers: API, workflow renderer, and landing generators.
+- When changing bot config shape or meaning, verify both consumers: API and landing generators.
 
 ## Topics
 - Canonical topic catalogs live in Postgres table `bot_topic_catalog`, keyed by `bot_key + topic_id`.
@@ -115,8 +104,8 @@ This file orients automated agents working in this repo. Keep it accurate as the
 ## Conventions / Safety
 - API code is ESM; keep `import`/`export` style.
 - Avoid hardcoding secrets; use env vars.
-- When changing API responses used by the mini-app, landing generators, or n8n, update the consumer in the same change.
-- When changing bot config fields, workflow prompt placeholders, or generated landing inputs, update the relevant docs/scripts together.
+- When changing API responses used by the mini-app or landing generators, update the consumer in the same change.
+- When changing bot config fields, runtime prompt placeholders, or generated landing inputs, update the relevant docs/scripts together.
 - When changing idiom phrase source shape or file naming under `deploy/phrases`, update the DB import script and reminder delivery code together.
 - Prefer editing source templates over generated outputs.
 - If you add new env vars, update docs and consider `.gitignore` as needed.

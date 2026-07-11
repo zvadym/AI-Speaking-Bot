@@ -3,8 +3,8 @@
 Each file defines one Telegram bot for a fixed language pair and provides:
 
 - Language pair (`base_language`, `learning_language`)
-- Runtime credentials (`telegram_bot_token`, `telegram_credential_id`)
-- Workflow locale/prompt data (`locale`, model prompt fields)
+- Runtime credentials (`telegram_bot_token`)
+- Runtime locale and prompt data (`locale`, model prompt fields)
 - **Telegram presentation data** in `telegram_presentation` (hard cutover)
 
 These config files are mounted into the API container at `/deploy/bots` and read at startup.
@@ -35,7 +35,6 @@ Example:
   "bot_key": "en-de",
   "base_language": "en",
   "learning_language": "de",
-  "telegram_credential_id": "AbCdEf123",
   "telegram_bot_token": "123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
   "telegram_presentation": {
     "name": "Emma",
@@ -70,7 +69,7 @@ It defines required fields, length limits, regex, and Telegram method mapping.
 
 ## Locale Keys For Bottom Keyboard
 
-The workflow also reads these `locale` keys to build the persistent bottom keyboard labels:
+The TypeScript bot runtime reads these `locale` keys to build the persistent bottom keyboard labels:
 
 - `keyboard_btn_level_prefix`
 - `keyboard_btn_topic_prefix`
@@ -82,7 +81,7 @@ The workflow also reads these `locale` keys to build the persistent bottom keybo
 
 They should be localized in the bot's base language and kept short because Telegram reply-keyboard buttons have limited horizontal space.
 
-The `/xp` workflow also expects these `locale` keys for the expanded progress card:
+The `/xp` handler also expects these `locale` keys for the expanded progress card:
 
 - `xp_today_title`
 - `xp_daily_cap_label`
@@ -99,7 +98,7 @@ The API automated notifications also read these locale keys when present:
 - `locale.notifications.free_limit_50.message_html`
 - `locale.notifications.idiom_phrase_practice.*`
 
-The main chat workflow also expects:
+The main chat runtime also expects:
 
 - `locale.msg_needs_text_or_voice` for unsupported media in the regular practice flow, for example a photo sent without text
 
@@ -174,6 +173,5 @@ python3 scripts/provision-bots.py apply --all --bots-dir deploy/bots-dev
 
 ## Out of Scope
 
-- Workflow `/start` message (`locale.hi_message_text`)
-- Other workflow locale/model prompt text sync
-- n8n render/import/activate pipeline
+- Runtime `/start` message (`locale.hi_message_text`)
+- Other runtime locale/model prompt text sync

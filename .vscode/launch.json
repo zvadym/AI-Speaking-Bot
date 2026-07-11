@@ -18,15 +18,15 @@
     {
       "type": "node-terminal",
       "request": "launch",
-      "name": "n8n (docker)",
-      "command": "docker compose --env-file deploy/.env.dev -f deploy/docker-compose.yml up -d --force-recreate",
+      "name": "Worker",
+      "command": "cd apps/api && npm run worker:dev",
       "cwd": "${workspaceFolder}"
     }
   ],
   "compounds": [
     {
       "name": "All",
-      "configurations": ["API", "Mini-app", "n8n (docker)"]
+      "configurations": ["API", "Worker", "Mini-app"]
     }
   ]
 }

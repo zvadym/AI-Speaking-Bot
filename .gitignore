@@ -12,13 +12,8 @@ apps/**/.vercel
 apps/landing/.env
 deploy/.env.api
 deploy/.env.miniapp
-deploy/.env.prod
-deploy/.env.dev
-deploy/bots-dev/*.json
+# Retired service state remains ignored during rollback retention.
 deploy/n8n-data
-deploy/workflows/.rendered
-deploy/workflows/.prod-export
-deploy/workflows/to_convert
 .vercel
 .codex
 .cursor

@@ -17,14 +17,12 @@ const [{ createApiHelpers }, { QUEUE_DISCORD_EVENT_SEND }] = await Promise.all([
   import('../src/queue.js')
 ]);
 
-function createHelpers({ poolQuery, bossSend }) {
+function createHelpers({ poolQuery, bossSend, sendTelegramTextMessage = async () => ({ message_id: 1 }) }) {
   return createApiHelpers({
     env: {
       defaultBotKey: 'uk-de',
       discordEventsWebhookUrl: 'https://discord.test/api/webhooks/123',
       discordUserMilestoneStep: 100,
-      planChangedWebhookUrl: '',
-      webhooksAppendBotKey: false,
       botKeyByTargetLang: {}
     },
     pool: {
@@ -46,7 +44,7 @@ function createHelpers({ poolQuery, bossSend }) {
     publicBotMetaForKey: () => null,
     getBotLocale: () => ({}),
     telegramClient: {
-      sendTelegramTextMessage: async () => ({ message_id: 1 }),
+      sendTelegramTextMessage,
       uploadTelegramMediaToChat: async () => null,
       deleteTelegramMessage: async () => null
     },
@@ -98,6 +96,7 @@ test('upsertUser queues a Discord milestone when total users reaches the configu
 
 test('handleStripeEvent queues a Discord notification only for the first paid conversion', async () => {
   const bossCalls = [];
+  const telegramCalls = [];
   const helpers = createHelpers({
     poolQuery: async (source, params = []) => {
       if (source.includes('SELECT chat_id') && source.includes('WHERE stripe_customer_id = $1') && source.includes('LIMIT 1')) {
@@ -133,6 +132,10 @@ test('handleStripeEvent queues a Discord notification only for the first paid co
     bossSend: async (...args) => {
       bossCalls.push(args);
       return 'job-2';
+    },
+    sendTelegramTextMessage: async (...args) => {
+      telegramCalls.push(args);
+      return { message_id: 1 };
     }
   });
 
@@ -165,6 +168,7 @@ test('handleStripeEvent queues a Discord notification only for the first paid co
   assert.equal(bossCalls[0][1].chat_id, 42);
   assert.equal(bossCalls[0][1].plan_tier, 'pro');
   assert.equal(bossCalls[0][2].singletonKey, 'discord_event:new_paid_user:42');
+  assert.deepEqual(telegramCalls, [[42, '🎉 Твій план змінено: FREE → PRO ✨', { botKey: 'uk-de' }]]);
 });
 
 test('sendDiscordEventNotification supports user feedback events', async () => {

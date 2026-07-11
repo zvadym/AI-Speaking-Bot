@@ -740,3 +740,9 @@ seven days:
 
 The final workflow retains only Telegram ingress, credentials, the runtime call,
 and operational error handling.
+# Historical Migration Plan
+
+This plan records the staged migration that was completed in July 2026. Its
+n8n commands and rollout steps are retained for audit context and must not be
+used for current development or deployment. See `AGENTS.md`, `DEV_DEPLOY.md`,
+and `deploy/README.md` for the current TypeScript runtime.

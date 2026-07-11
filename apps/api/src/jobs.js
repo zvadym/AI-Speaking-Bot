@@ -151,7 +151,7 @@ const LOADER_ROTATE_INTERVAL_MS = 5000;
 const LOADER_TIMEOUT_SECONDS = 60;
 const LOADER_TIMEOUT_MS = LOADER_TIMEOUT_SECONDS * 1000;
 const LOADER_ROTATE_CONCURRENCY = 10;
-const DISCORD_EVENT_TYPES = new Set(['new_paid_user', 'user_milestone', 'n8n_execution_error', 'user_feedback']);
+const DISCORD_EVENT_TYPES = new Set(['new_paid_user', 'user_milestone', 'user_feedback']);
 const botCatalog = createPublicBotCatalogLookup(botConfigs, env.telegramBotTokensByBotKey || {});
 const { metaForKey: publicBotMetaForKey } = botCatalog;
 const idiomPracticeSupportedBotKeys = Object.values(botConfigs)
@@ -2576,7 +2576,7 @@ async function reserveIdiomPracticeMoreClickEvent(client, {
        $1::bigint,
        $2::text,
        $3::text,
-       'workflow',
+       'worker',
        $4::text,
        $5::jsonb,
        NOW()
@@ -2640,7 +2640,7 @@ async function recordIdiomPracticeMoreClickOutcome(db, {
        $1::bigint,
        $2::text,
        $3::text,
-       'workflow',
+       'worker',
        $4::text,
        $5::jsonb,
        NOW()

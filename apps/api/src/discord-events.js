@@ -86,23 +86,6 @@ function buildUserMilestoneEmbed(event, botMetaForKey) {
   };
 }
 
-function buildN8nErrorEmbed(event, botMetaForKey) {
-  return {
-    title: 'n8n execution error',
-    color: 0xe74c3c,
-    description: maskMentions(cleanText(event.error_message || event.message || 'Execution failed', 1500)),
-    fields: [
-      field('Workflow', cleanLine(event.workflow_name || '', 160) || cleanLine(event.workflow_id || '', 120) || 'unknown'),
-      field('Execution ID', cleanLine(event.execution_id || '', 120) || '-', true),
-      field('Bot', botLabel(event.bot_key, botMetaForKey), true),
-      field('Mode', cleanLine(event.mode || '', 64) || '-', true),
-      field('Last Node', cleanLine(event.last_node || '', 160) || '-', false),
-      field('URL', cleanLine(event.url || '', 300) || '-', false)
-    ],
-    timestamp: new Date().toISOString()
-  };
-}
-
 function buildUserFeedbackEmbed(event, botMetaForKey) {
   const category = cleanLine(event.category || '', 64) || 'unknown';
   const source = cleanLine(event.source || '', 64) || 'unknown';
@@ -132,9 +115,6 @@ function buildEmbed(event, botMetaForKey) {
   }
   if (type === 'user_milestone') {
     return buildUserMilestoneEmbed(event, botMetaForKey);
-  }
-  if (type === 'n8n_execution_error') {
-    return buildN8nErrorEmbed(event, botMetaForKey);
   }
   if (type === 'user_feedback') {
     return buildUserFeedbackEmbed(event, botMetaForKey);

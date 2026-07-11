@@ -51,6 +51,15 @@ const BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW = 8;
 const BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN = 64;
 const BROADCAST_INLINE_KEYBOARD_MAX_CALLBACK_DATA_LEN = 64;
 const BROADCAST_INLINE_KEYBOARD_MAX_URL_LEN = 2048;
+const PLAN_CHANGED_TEXT_BY_LANGUAGE = {
+  ar: 'تم تغيير خطتك',
+  de: 'Dein Tarif wurde geändert',
+  en: 'Your plan has changed',
+  hi: 'आपका प्लान बदल गया है',
+  it: 'Il tuo piano è stato modificato',
+  tr: 'Planın değiştirildi',
+  uk: 'Твій план змінено'
+};
 
 const billingCurrencyDetailsByCode = getBillingCurrencyDetails();
 const supportedBillingCurrencyCodes = new Set(Object.keys(billingCurrencyDetailsByCode));
@@ -1365,37 +1374,6 @@ export function createApiHelpers(ctx) {
     };
   }
 
-  function webhookUrlForBot(templateUrl, hookName, botKeyRaw, { forceAppendBotKey = false } = {}) {
-    const template = (templateUrl ?? '').toString().trim();
-    if (!template) return '';
-    const botKey = normalizeBotKey(botKeyRaw);
-    if (!botKey) return template;
-
-    if (template.includes('{bot_key}')) {
-      return template.split('{bot_key}').join(botKey);
-    }
-
-    if (!env.webhooksAppendBotKey && !forceAppendBotKey) {
-      return template;
-    }
-
-    try {
-      const u = new URL(template);
-      const suffix = `-${botKey}`;
-      if (u.pathname.endsWith(suffix)) return u.toString();
-      if (u.pathname.endsWith(`/${hookName}`)) {
-        u.pathname = `${u.pathname}${suffix}`;
-        return u.toString();
-      }
-      return template;
-    } catch {
-      const suffix = `-${botKey}`;
-      if (template.endsWith(suffix)) return template;
-      if (template.endsWith(`/${hookName}`)) return `${template}${suffix}`;
-      return template;
-    }
-  }
-
   function parseUtcBoundary(raw, fallbackDate) {
     const value = (raw ?? '').toString().trim();
     if (!value) return fallbackDate;
@@ -2064,45 +2042,33 @@ export function createApiHelpers(ctx) {
   }
 
   async function notifyPlanChanged(payload) {
-    if (!env.planChangedWebhookUrl) return;
     try {
       const botKey = await resolveUserBotKey(payload?.chat_id);
-      const url = webhookUrlForBot(env.planChangedWebhookUrl, 'plan-changed', botKey);
-      let resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!resp.ok) {
-        let body = await resp.text().catch(() => '');
+      const chatId = Number(payload?.chat_id);
+      if (!Number.isFinite(chatId)) return;
 
-        if (resp.status === 404 && botKey) {
-          const fallbackUrl = webhookUrlForBot(env.planChangedWebhookUrl, 'plan-changed', botKey, {
-            forceAppendBotKey: true
-          });
-          if (fallbackUrl && fallbackUrl !== url) {
-            const fallbackResp = await fetch(fallbackUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-            if (fallbackResp.ok) return;
-            resp = fallbackResp;
-            body = await fallbackResp.text().catch(() => '');
-            console.warn('Plan change webhook fallback failed', {
-              status: fallbackResp.status,
-              url: fallbackUrl,
-              body
-            });
-            return;
-          }
-        }
+      const locale = getBotLocale(botKey);
+      const baseLanguage = normalizeLanguageCode(
+        publicBotMetaForKey(botKey)?.base_language || botKey?.split('-')[0] || 'en'
+      ) || 'en';
+      const oldTier = normalizeOptionalText(locale?.[`tier_${payload?.old_tier}`], 40)
+        || normalizeOptionalText(payload?.old_tier, 40)?.toUpperCase()
+        || '-';
+      const newTier = normalizeOptionalText(locale?.[`tier_${payload?.new_tier}`], 40)
+        || normalizeOptionalText(payload?.new_tier, 40)?.toUpperCase()
+        || '-';
+      const prefix = PLAN_CHANGED_TEXT_BY_LANGUAGE[baseLanguage]
+        || PLAN_CHANGED_TEXT_BY_LANGUAGE.en;
+      const emoji = payload?.new_tier === 'free' ? 'ℹ️' : '🎉';
 
-        console.warn('Plan change webhook failed', { status: resp.status, url, body });
-      }
+      await sendTelegramTextMessage(
+        chatId,
+        `${emoji} ${prefix}: ${oldTier} → ${newTier} ✨`,
+        { botKey }
+      );
     } catch (err) {
-      console.error('Plan change webhook failed', err);
-      captureException(err, { tags: { subsystem: 'plan-change-webhook' } });
+      console.error('Plan change Telegram notification failed', err);
+      captureException(err, { tags: { subsystem: 'plan-change-telegram' } });
     }
   }
 
@@ -2635,7 +2601,6 @@ export function createApiHelpers(ctx) {
     upsertLoaderState,
     upsertUser,
     validateBroadcastBotSelection,
-    webhookUrlForBot,
     withBroadcastStreakRange
   };
 }
