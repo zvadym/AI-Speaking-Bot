@@ -108,10 +108,6 @@ export async function executeConversation(
     history: historyResult.rows,
     topic
   });
-  if (!String(response.explanation_html || '').trim()) {
-    throw new Error('conversation_explanation_missing');
-  }
-
   await client.query(
     `INSERT INTO messages (chat_id, role, content, bot_key, topic_template_id)
      VALUES ($1, 'user', $2, $3, $4)`,
