@@ -111,6 +111,7 @@ test('practice quota records and delivers one localized subscription paywall', a
   assert.deepEqual(result.outcome, { status: 'delivered', telegramMessageId: 88 });
   assert.deepEqual(effectSteps, [PRACTICE_QUOTA_EFFECT_STEP_KEY]);
   assert.match(queries[0].sql, /'paywall_shown', 'bot_runtime'/);
+  assert.match(queries[0].sql, /\$1::bigint, \$2::text/);
   assert.match(queries[0].sql, /ON CONFLICT \(idempotency_key\) DO NOTHING/);
   assert.equal(queries[0].params[0], update.input.chatId);
   assert.equal(queries[0].params[1], 'uk-en');

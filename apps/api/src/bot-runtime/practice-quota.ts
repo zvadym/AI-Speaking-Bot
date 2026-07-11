@@ -54,7 +54,7 @@ async function recordPaywallShown(client: PoolClient, update: PreparedUpdate): P
     `INSERT INTO action_events (
        chat_id, bot_key, action_type, source, idempotency_key, properties, occurred_at
      ) VALUES (
-       $1, $2, 'paywall_shown', 'bot_runtime',
+       $1::bigint, $2::text, 'paywall_shown', 'bot_runtime',
        'paywall_shown:' || $1::text || ':' || $2::text || ':' ||
          to_char(date_trunc('day', NOW() AT TIME ZONE 'UTC'), 'YYYY-MM-DD'),
        $3::jsonb,
