@@ -1,5 +1,5 @@
 import './instrument-worker.js';
-import { registerWorkerHandlers } from './jobs.js';
+import { registerWorkerHandlers, sendIdiomPracticeMorePhrase } from './jobs.js';
 import { registerBotRuntimeWorker } from './bot-runtime/register-worker.js';
 import { startWorkerBoss, stopWorkerBoss } from './queue.js';
 import { createRuntimeDeps } from './runtime.js';
@@ -51,7 +51,9 @@ try {
     getBotLocale: runtime.getBotLocale,
     telegramClient: runtime.telegramClient,
     webappUrl: runtime.env.webappUrl,
-    topicMenuHelpers: helpers
+    topicMenuHelpers: helpers,
+    getBotConfig: (botKey) => runtime.botConfigs[botKey] || null,
+    sendIdiomMore: sendIdiomPracticeMorePhrase
   });
   console.log('Worker started');
 } catch (error) {

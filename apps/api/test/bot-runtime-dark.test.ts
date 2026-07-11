@@ -18,7 +18,11 @@ import {
 } from '../src/bot-runtime/handlers/stats.js';
 import { createPreferenceHandlers } from '../src/bot-runtime/handlers/preferences.js';
 import { createFeedbackHandlers } from '../src/bot-runtime/handlers/feedback.js';
-import { createTopicMenuHandler } from '../src/bot-runtime/handlers/topic-menu.js';
+import { createCallbackActionHandlers } from '../src/bot-runtime/handlers/callback-actions.js';
+import {
+  createTopicActionHandler,
+  createTopicMenuHandler
+} from '../src/bot-runtime/handlers/topic-menu.js';
 import { buildStaticRouteMessage } from '../src/bot-runtime/handlers/static-routes.js';
 import { processBotUpdateJob } from '../src/bot-runtime/register-worker.js';
 import {
@@ -71,6 +75,19 @@ function preparedFeedback(updateId = 9301): PreparedUpdate & { route: 'command.f
   });
   assert.equal(prepared.route, 'command.feedback');
   return prepared as PreparedUpdate & { route: 'command.feedback' };
+}
+
+function preparedCallback<R extends PreparedUpdate['route']>(
+  route: R,
+  data: string,
+  updateId = 9401
+): PreparedUpdate & { route: R } {
+  const prepared = buildPreparedUpdate({
+    botKey: 'uk-en',
+    input: normalizeTelegramUpdate(callbackUpdate({ updateId, data }))
+  });
+  assert.equal(prepared.route, route);
+  return prepared as PreparedUpdate & { route: R };
 }
 
 function statsContext(overrides: Partial<StatsContext> = {}): StatsContext {
@@ -411,6 +428,9 @@ test('topic menu reloads current tier and state before formatting', async () => 
       async fetchTopicCatalogRows() {
         return [{ topic_id: 'travel', title_base: 'Travel' }];
       },
+      async fetchTopicCatalogItem() {
+        return { topic_id: 'travel', title_base: 'Travel' };
+      },
       normalizeTopicPackValue(value) {
         return value as Record<string, unknown>;
       },
@@ -435,6 +455,82 @@ test('topic menu reloads current tier and state before formatting', async () => 
   });
   assert.equal(deliveries[0].text, 'Topics\n\nCurrent: My trip');
   assert.equal(deliveries[0].stepKey, 'command.topic:menu:v1');
+});
+
+test('static callback actions acknowledge once and use durable text delivery', async () => {
+  const update = preparedCallback('callback.lang', 'lang:en');
+  const acknowledgements: string[] = [];
+  const deliveries: Array<Record<string, unknown>> = [];
+  const handlers = createCallbackActionHandlers({
+    pool: unusedPool,
+    getBotLocale: () => ({ callback_saved: 'Saved' }),
+    getBotConfig: () => ({ learning_language: 'en' }),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; },
+      async answerTelegramCallbackQuery(_id, text) {
+        acknowledgements.push(String(text));
+      }
+    },
+    async sendIdiomMore() { return {}; },
+    textDeliverer: async (input) => {
+      deliveries.push(input as unknown as Record<string, unknown>);
+      return { status: 'delivered', telegramMessageId: 71 };
+    }
+  });
+  const handler = handlers.find((item) => item.route === 'callback.lang');
+  assert.ok(handler);
+  assert.deepEqual(await handler.execute(update), {
+    status: 'delivered',
+    telegramMessageId: 71
+  });
+  assert.deepEqual(acknowledgements, ['Saved']);
+  assert.equal(deliveries[0].stepKey, 'callback.lang:message:v1');
+  assert.match(String(deliveries[0].text), /EN/);
+});
+
+test('topic clear reuses effect state and restores the persistent keyboard', async () => {
+  const update = preparedCallback('callback.topic', 'topic:clear', 9402);
+  const telegramMethods: string[] = [];
+  const deliveries: Array<Record<string, unknown>> = [];
+  const handler = createTopicActionHandler({
+    pool: unusedPool,
+    getBotLocale: () => ({ topic_clear_done: 'Cleared' }),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; },
+      async answerTelegramCallbackQuery() {},
+      async callTelegramApi(_botKey, method) {
+        telegramMethods.push(method);
+        return {};
+      }
+    },
+    helpers: {
+      async fetchEffectiveTierForChat() { return 'free'; },
+      async fetchTopicCatalogRows() { return []; },
+      async fetchTopicCatalogItem() { return null; },
+      normalizeTopicPackValue() { return null; },
+      formatTopicMenuLabel() { return ''; },
+      buildTopicMenuReplyMarkup() { return {}; }
+    },
+    effectRunner: async <T extends Record<string, unknown>>() => ({
+      duplicate: true,
+      result: { pinnedMessageId: 123 } as unknown as T
+    }),
+    keyboardStateLoader: async () => ({
+      onboarding_complete_at: '2026-01-01T00:00:00Z',
+      reply_mode: 'text'
+    }),
+    textDeliverer: async (input) => {
+      deliveries.push(input as unknown as Record<string, unknown>);
+      return { status: 'delivered', telegramMessageId: 72 };
+    }
+  });
+  assert.deepEqual(await handler.execute(update), {
+    status: 'delivered',
+    telegramMessageId: 72
+  });
+  assert.deepEqual(telegramMethods, ['unpinChatMessage']);
+  assert.equal(deliveries[0].stepKey, 'callback.topic:cleared-message:v1');
+  assert.ok(deliveries[0].replyMarkup);
 });
 
 test('feedback command uses one effect and a durable confirmation delivery', async () => {

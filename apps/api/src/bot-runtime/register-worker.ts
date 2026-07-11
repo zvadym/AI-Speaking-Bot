@@ -18,10 +18,16 @@ import {
   type PreferenceTelegramClient
 } from './handlers/preferences.js';
 import { createFeedbackHandlers } from './handlers/feedback.js';
+import {
+  createCallbackActionHandlers,
+  type IdiomMoreSender
+} from './handlers/callback-actions.js';
 import { createStaticRouteHandlers } from './handlers/static-routes.js';
 import { createStatsHandler } from './handlers/stats.js';
 import {
+  createTopicActionHandler,
   createTopicMenuHandler,
+  type TopicTelegramClient,
   type TopicMenuHelpers
 } from './handlers/topic-menu.js';
 import { createXpHandler } from './handlers/xp.js';
@@ -192,21 +198,38 @@ export async function registerBotRuntimeWorker(
     getBotLocale,
     telegramClient,
     webappUrl,
-    topicMenuHelpers
+    topicMenuHelpers,
+    getBotConfig,
+    sendIdiomMore
   }: {
     pool: Pool;
     getBotLocale(botKey: string): unknown;
-    telegramClient: PreferenceTelegramClient;
+    telegramClient: PreferenceTelegramClient & TopicTelegramClient;
     webappUrl: string;
     topicMenuHelpers: TopicMenuHelpers;
+    getBotConfig(botKey: string): Record<string, unknown> | null;
+    sendIdiomMore: IdiomMoreSender;
   }
 ): Promise<void> {
   const registry = createBotHandlerRegistry([
     ...createStaticRouteHandlers({ pool, getBotLocale, telegramClient }),
     ...createPreferenceHandlers({ pool, getBotLocale, telegramClient }),
     ...createFeedbackHandlers({ pool, getBotLocale, telegramClient }),
+    ...createCallbackActionHandlers({
+      pool,
+      getBotLocale,
+      getBotConfig,
+      telegramClient,
+      sendIdiomMore
+    }),
     createStatsHandler({ pool, getBotLocale, telegramClient, webappUrl }),
     createXpHandler({ pool, getBotLocale, telegramClient }),
+    createTopicActionHandler({
+      pool,
+      getBotLocale,
+      telegramClient,
+      helpers: topicMenuHelpers
+    }),
     createTopicMenuHandler({
       pool,
       getBotLocale,
