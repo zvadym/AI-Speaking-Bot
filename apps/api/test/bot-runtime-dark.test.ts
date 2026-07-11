@@ -30,8 +30,10 @@ import {
 import { buildStaticRouteMessage } from '../src/bot-runtime/handlers/static-routes.js';
 import { processBotUpdateJob } from '../src/bot-runtime/register-worker.js';
 import {
+  BOT_RUNTIME_HANDLER_VERSIONS,
   parseBotRuntimeRouteFlags
 } from '../src/bot-runtime/route-flags.js';
+import { ROUTES } from '../src/bot-runtime/contracts.js';
 import type { StatsContext } from '../src/bot-runtime/stats-context.js';
 import { buildStatsMessage } from '../src/bot-runtime/stats-message.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
@@ -189,6 +191,10 @@ test('route flags are dark by default and reject unsafe configuration', () => {
     () => parseBotRuntimeRouteFlags('{"uk-en":"command.stats"}', ['uk-en']),
     /must map to an array/
   );
+});
+
+test('typed runtime has a versioned handler for every prepared route', () => {
+  assert.deepEqual(Object.keys(BOT_RUNTIME_HANDLER_VERSIONS).sort(), [...ROUTES].sort());
 });
 
 test('Contract v1 validation rejects a mismatched deterministic decision ID', () => {

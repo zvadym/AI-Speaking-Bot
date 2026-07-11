@@ -14,6 +14,7 @@ import { createAuthRouter } from './routes/auth.js';
 import { createMeRouter } from './routes/me.js';
 import { createBillingRouter } from './routes/billing.js';
 import { createAdminRouter } from './routes/admin.js';
+import { createTelegramWebhookRouter } from './routes/telegram-webhook.js';
 import { ensureSentryInitialized, setupExpressErrorHandler } from './sentry.js';
 
 export async function shutdown(signal) {
@@ -35,6 +36,7 @@ export async function createApp({ apiBoss = undefined, configureApp = undefined 
   app.use(morgan('tiny'));
   app.use('/stripe/webhook', express.raw({ type: 'application/json' }), createStripeWebhookRouter(ctx, helpers));
   app.use(express.json());
+  app.use(createTelegramWebhookRouter(ctx));
   app.use(createPublicRouter(ctx, helpers));
   app.use(createInternalRouter(ctx, helpers));
   app.use(createAuthRouter(ctx, helpers));
