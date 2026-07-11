@@ -156,6 +156,8 @@ export const env = {
   internalApiSecret: process.env.INTERNAL_API_SECRET || '',
   openaiApiKey: (process.env.OPENAI_API_KEY || '').toString().trim(),
   botRuntimeModel: (process.env.BOT_RUNTIME_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4',
+  botTranscriptionModel: (process.env.BOT_TRANSCRIPTION_MODEL || 'gpt-4o-transcribe').toString().trim() || 'gpt-4o-transcribe',
+  botTtsModel: (process.env.BOT_TTS_MODEL || 'gpt-4o-mini-tts').toString().trim() || 'gpt-4o-mini-tts',
   sentryDsn: (process.env.SENTRY_DSN || '').toString().trim(),
   sentryEnvironment: (process.env.SENTRY_ENVIRONMENT || '').toString().trim(),
   sentryRelease: (process.env.SENTRY_RELEASE || '').toString().trim(),

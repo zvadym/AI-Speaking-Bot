@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -58,6 +58,8 @@ export interface BotAiClient {
     topic: UnknownRecord | null;
   }): Promise<FollowUpHints>;
   vocabulary(botKey: string, assistantReply: string): Promise<VocabularyItem[]>;
+  transcribe(botKey: string, audio: Buffer, options?: { baseLanguage?: boolean }): Promise<string>;
+  speech(botKey: string, text: string): Promise<Buffer>;
 }
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -261,15 +263,19 @@ function topicPrompt(topic: UnknownRecord | null): string {
 export function createBotAiClient({
   apiKey,
   model,
+  transcriptionModel = 'gpt-4o-transcribe',
+  ttsModel = 'gpt-4o-mini-tts',
   getBotConfig,
   createClient = (key: string) => new OpenAI({ apiKey: key })
 }: {
   apiKey: string;
   model: string;
+  transcriptionModel?: string;
+  ttsModel?: string;
   getBotConfig(botKey: string): UnknownRecord | null;
-  createClient?: (apiKey: string) => Pick<OpenAI, 'responses'>;
+  createClient?: (apiKey: string) => Pick<OpenAI, 'responses' | 'audio'>;
 }): BotAiClient {
-  let client: Pick<OpenAI, 'responses'> | null = null;
+  let client: Pick<OpenAI, 'responses' | 'audio'> | null = null;
   const openai = () => {
     if (!apiKey) throw new Error('missing_openai_api_key');
     client ||= createClient(apiKey);
@@ -388,6 +394,34 @@ export function createBotAiClient({
         VOCAB_SCHEMA as unknown as UnknownRecord
       );
       return Array.isArray(result.items) ? result.items as VocabularyItem[] : [];
+    },
+
+    async transcribe(botKey, audio, options = {}) {
+      const config = configFor(botKey);
+      const context = promptContext(botKey, config);
+      const language = options.baseLanguage
+        ? context.base_language_code
+        : context.target_language_code;
+      const result = await openai().audio.transcriptions.create({
+        file: await toFile(audio, 'voice.ogg', { type: 'audio/ogg' }),
+        model: transcriptionModel,
+        language,
+        response_format: 'json',
+        prompt: 'Transcribe literally. Preserve learner errors and repetitions. Do not correct or rewrite.'
+      });
+      return String(result.text || '').trim();
+    },
+
+    async speech(botKey, text) {
+      const config = configFor(botKey);
+      const voice = String(config.bot_voice || 'marin').trim().toLowerCase();
+      const result = await openai().audio.speech.create({
+        model: ttsModel,
+        voice: voice as never,
+        input: text,
+        response_format: 'opus'
+      });
+      return Buffer.from(await result.arrayBuffer());
     }
   };
 }

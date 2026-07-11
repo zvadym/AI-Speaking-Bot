@@ -30,9 +30,10 @@ interface ConversationContext extends Record<string, unknown> {
   topic_pack_json: unknown;
 }
 
-interface ConversationEffectResult extends Record<string, unknown> {
+export interface ConversationEffectResult extends Record<string, unknown> {
   assistantMessageId: number | null;
   response: ConversationAiResult;
+  replyMode: string;
 }
 
 function localeRecord(value: unknown): Locale {
@@ -56,11 +57,12 @@ function topicValue(raw: unknown, enabled: unknown): Record<string, unknown> | n
     : null;
 }
 
-async function executeConversation(
+export async function executeConversation(
   client: PoolClient,
   update: PreparedUpdate,
   ai: BotAiClient,
-  text: string
+  text: string,
+  inputMode: 'text' | 'voice' = 'text'
 ): Promise<ConversationEffectResult> {
   const chatId = update.input.chatId as number;
   const contextResult = await client.query<ConversationContext>(
@@ -99,7 +101,7 @@ async function executeConversation(
   const response = await ai.respond({
     botKey: update.botKey,
     level: String(context.level || 'a1'),
-    inputMode: 'text',
+    inputMode,
     text,
     profileSummary: String(context.profile_summary || ''),
     shortSummary: String(context.short_summary || ''),
@@ -138,10 +140,10 @@ async function executeConversation(
     );
     assistantMessageId = Number(inserted.rows[0]?.id) || null;
   }
-  return { assistantMessageId, response };
+  return { assistantMessageId, response, replyMode: String(context.reply_mode || 'text') };
 }
 
-function replyMarkup(messageId: number, locale: Locale) {
+export function conversationReplyMarkup(messageId: number, locale: Locale) {
   return {
     inline_keyboard: [
       [
@@ -242,7 +244,7 @@ export function createTextConversationHandler({
         telegramClient,
         stepKey: 'message.text:reply:v1',
         text: reply,
-        replyMarkup: replyMarkup(result.assistantMessageId, locale)
+        replyMarkup: conversationReplyMarkup(result.assistantMessageId, locale)
       });
     }
   };

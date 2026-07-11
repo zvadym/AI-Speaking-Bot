@@ -28,8 +28,10 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'command.unknown': 1,
   'reply_keyboard.voice_toggle': 1,
   'pending_feedback.text': 1,
+  'pending_feedback.voice': 1,
   'pending_feedback.unsupported': 1,
   'message.text': 1,
+  'message.voice': 1,
   'message.unsupported': 1
 } as const satisfies Partial<Record<Route, number>>;
 

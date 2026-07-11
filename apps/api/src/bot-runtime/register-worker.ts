@@ -40,6 +40,11 @@ import {
   createTextConversationHandler,
   type ConversationTelegramClient
 } from './handlers/conversation.js';
+import {
+  createVoiceConversationHandler,
+  createVoiceFeedbackHandler,
+  type VoiceTelegramClient
+} from './handlers/voice.js';
 
 interface WorkerJob {
   id: string;
@@ -214,7 +219,7 @@ export async function registerBotRuntimeWorker(
   }: {
     pool: Pool;
     getBotLocale(botKey: string): unknown;
-    telegramClient: PreferenceTelegramClient & TopicTelegramClient & SupportTelegramClient & ConversationTelegramClient;
+    telegramClient: PreferenceTelegramClient & TopicTelegramClient & SupportTelegramClient & ConversationTelegramClient & VoiceTelegramClient;
     webappUrl: string;
     topicMenuHelpers: TopicMenuHelpers;
     getBotConfig(botKey: string): Record<string, unknown> | null;
@@ -240,6 +245,18 @@ export async function registerBotRuntimeWorker(
       ai
     }),
     createTextConversationHandler({
+      pool,
+      getBotLocale,
+      telegramClient,
+      ai
+    }),
+    createVoiceConversationHandler({
+      pool,
+      getBotLocale,
+      telegramClient,
+      ai
+    }),
+    createVoiceFeedbackHandler({
       pool,
       getBotLocale,
       telegramClient,

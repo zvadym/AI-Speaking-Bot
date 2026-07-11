@@ -244,6 +244,61 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     return { messageId: result?.message_id ?? null, fileId };
   }
 
+  async function downloadTelegramFile(fileId, { botKey = null } = {}) {
+    const normalizedBotKey = normalizeBotKey(botKey);
+    const token = resolveTelegramBotToken(normalizedBotKey);
+    if (!token) {
+      const err = new Error('missing_telegram_bot_token');
+      err.code = 'missing_telegram_bot_token';
+      throw err;
+    }
+    const file = await callTelegramApi(normalizedBotKey, 'getFile', {
+      file_id: String(fileId || '')
+    });
+    const filePath = String(file?.file_path || '').trim();
+    if (!filePath || filePath.includes('..')) {
+      const err = new Error('telegram_file_path_missing');
+      err.code = 'telegram_file_path_missing';
+      throw err;
+    }
+    const response = await fetchImpl(`https://api.telegram.org/file/bot${token}/${filePath}`);
+    if (!response.ok) {
+      const err = new Error(`telegram_file_http_${response.status}`);
+      err.telegramStatus = response.status;
+      throw err;
+    }
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  async function sendTelegramVoiceMessage(chatId, buffer, {
+    botKey = null,
+    filename = 'reply.ogg'
+  } = {}) {
+    const normalizedBotKey = normalizeBotKey(botKey);
+    const token = resolveTelegramBotToken(normalizedBotKey);
+    if (!token) {
+      const err = new Error('missing_telegram_bot_token');
+      err.code = 'missing_telegram_bot_token';
+      throw err;
+    }
+    const formData = new FormData();
+    formData.set('chat_id', String(Number(chatId)));
+    formData.set('voice', new Blob([buffer], { type: 'audio/ogg' }), filename);
+    const response = await fetchImpl(`https://api.telegram.org/bot${token}/sendVoice`, {
+      method: 'POST',
+      body: formData
+    });
+    let payload = null;
+    try { payload = await response.json(); } catch { payload = null; }
+    if (!response.ok || !payload?.ok) {
+      const err = new Error(payload?.description || `telegram_http_${response.status}`);
+      err.telegramStatus = response.status;
+      err.telegramDescription = payload?.description || null;
+      throw err;
+    }
+    return payload.result || null;
+  }
+
   async function editTelegramMessageText(chatId, messageId, text, {
     botKey = null,
     parseMode = null,
@@ -286,6 +341,8 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     sendTelegramPhotoMessage,
     sendTelegramVideoMessage,
     uploadTelegramMediaToChat,
+    downloadTelegramFile,
+    sendTelegramVoiceMessage,
     editTelegramMessageText,
     answerTelegramCallbackQuery,
     deleteTelegramMessage

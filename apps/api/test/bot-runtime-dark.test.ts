@@ -21,6 +21,7 @@ import { createFeedbackHandlers } from '../src/bot-runtime/handlers/feedback.js'
 import { createCallbackActionHandlers } from '../src/bot-runtime/handlers/callback-actions.js';
 import { createSupportCallbackHandlers } from '../src/bot-runtime/handlers/support-callbacks.js';
 import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
+import { createVoiceConversationHandler } from '../src/bot-runtime/handlers/voice.js';
 import type { BotAiClient } from '../src/bot-runtime/bot-ai.js';
 import {
   createTopicActionHandler,
@@ -37,7 +38,7 @@ import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import type { XpContext } from '../src/bot-runtime/xp-context.js';
 import { buildXpMessage } from '../src/bot-runtime/xp-message.js';
-import { callbackUpdate, messageUpdate } from './fixtures/telegram-updates.js';
+import { callbackUpdate, messageUpdate, voice } from './fixtures/telegram-updates.js';
 
 const unusedPool = null as unknown as Pool;
 
@@ -87,6 +88,15 @@ function preparedText(updateId = 9351): PreparedUpdate & { route: 'message.text'
   });
   assert.equal(prepared.route, 'message.text');
   return prepared as PreparedUpdate & { route: 'message.text' };
+}
+
+function preparedVoice(updateId = 9352): PreparedUpdate & { route: 'message.voice' } {
+  const prepared = buildPreparedUpdate({
+    botKey: 'uk-en',
+    input: normalizeTelegramUpdate(messageUpdate({ updateId, voice }))
+  });
+  assert.equal(prepared.route, 'message.voice');
+  return prepared as PreparedUpdate & { route: 'message.voice' };
 }
 
 const unusedAi = null as unknown as BotAiClient;
@@ -172,8 +182,8 @@ test('route flags are dark by default and reject unsafe configuration', () => {
     /unknown bot key/
   );
   assert.throws(
-    () => parseBotRuntimeRouteFlags('{"uk-en":["message.voice"]}', ['uk-en']),
-    /unimplemented route/
+    () => parseBotRuntimeRouteFlags('{"uk-en":["not-a-route"]}', ['uk-en']),
+    /unknown route/
   );
   assert.throws(
     () => parseBotRuntimeRouteFlags('{"uk-en":"command.stats"}', ['uk-en']),
@@ -620,6 +630,55 @@ test('text conversation reuses generated state and delivers correction before re
     'message.text:reply:v1'
   ]);
   assert.match(JSON.stringify(deliveries[1].replyMarkup), /tr:555:000/);
+});
+
+test('voice conversation reuses STT state and delivers transcript before text reply', async () => {
+  const update = preparedVoice();
+  const deliveries: Array<Record<string, unknown>> = [];
+  const pool = {
+    async query() {
+      return { rows: [{ limit_seconds: 0, used_seconds: 0 }] };
+    }
+  } as unknown as Pool;
+  const handler = createVoiceConversationHandler({
+    pool,
+    getBotLocale: () => ({ user_text_prefix_multiline: 'You said:\n' }),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; },
+      async sendTelegramVoiceMessage() { return { message_id: 2 }; },
+      async downloadTelegramFile() { return Buffer.from('voice'); },
+      async callTelegramApi() { return {}; }
+    },
+    ai: unusedAi,
+    effectRunner: async <T extends Record<string, unknown>>() => ({
+      duplicate: true,
+      result: {
+        transcript: 'I went home.',
+        assistantMessageId: 556,
+        replyMode: 'text',
+        response: {
+          detected_language: 'en',
+          is_target_language: true,
+          has_mistakes: false,
+          reply_text: 'What did you do there?',
+          explanation_html: '<b>Good</b>'
+        }
+      } as unknown as T
+    }),
+    textDeliverer: async (input) => {
+      deliveries.push(input as unknown as Record<string, unknown>);
+      return { status: 'delivered', telegramMessageId: deliveries.length };
+    }
+  });
+  assert.deepEqual(await handler.execute(update), {
+    status: 'delivered',
+    telegramMessageId: 2
+  });
+  assert.deepEqual(deliveries.map((item) => item.stepKey), [
+    'message.voice:transcript:v1',
+    'message.voice:reply:v1'
+  ]);
+  assert.match(String(deliveries[0].text), /I went home/);
 });
 
 test('feedback command uses one effect and a durable confirmation delivery', async () => {
