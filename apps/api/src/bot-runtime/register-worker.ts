@@ -13,8 +13,17 @@ import {
   normalizeBotRuntimeHandlerError,
   type BotHandlerRegistry
 } from './handler-registry.js';
+import {
+  createPreferenceHandlers,
+  type PreferenceTelegramClient
+} from './handlers/preferences.js';
+import { createFeedbackHandlers } from './handlers/feedback.js';
 import { createStaticRouteHandlers } from './handlers/static-routes.js';
 import { createStatsHandler } from './handlers/stats.js';
+import {
+  createTopicMenuHandler,
+  type TopicMenuHelpers
+} from './handlers/topic-menu.js';
 import { createXpHandler } from './handlers/xp.js';
 
 interface WorkerJob {
@@ -182,18 +191,28 @@ export async function registerBotRuntimeWorker(
     pool,
     getBotLocale,
     telegramClient,
-    webappUrl
+    webappUrl,
+    topicMenuHelpers
   }: {
     pool: Pool;
     getBotLocale(botKey: string): unknown;
-    telegramClient: Parameters<typeof createStatsHandler>[0]['telegramClient'];
+    telegramClient: PreferenceTelegramClient;
     webappUrl: string;
+    topicMenuHelpers: TopicMenuHelpers;
   }
 ): Promise<void> {
   const registry = createBotHandlerRegistry([
     ...createStaticRouteHandlers({ pool, getBotLocale, telegramClient }),
+    ...createPreferenceHandlers({ pool, getBotLocale, telegramClient }),
+    ...createFeedbackHandlers({ pool, getBotLocale, telegramClient }),
     createStatsHandler({ pool, getBotLocale, telegramClient, webappUrl }),
-    createXpHandler({ pool, getBotLocale, telegramClient })
+    createXpHandler({ pool, getBotLocale, telegramClient }),
+    createTopicMenuHandler({
+      pool,
+      getBotLocale,
+      telegramClient,
+      helpers: topicMenuHelpers
+    })
   ]);
 
   await boss.work(

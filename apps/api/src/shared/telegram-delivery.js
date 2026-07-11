@@ -252,6 +252,16 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     });
   }
 
+  async function answerTelegramCallbackQuery(callbackQueryId, text = '', { botKey = null, showAlert = false } = {}) {
+    const body = {
+      callback_query_id: String(callbackQueryId),
+      show_alert: Boolean(showAlert)
+    };
+    const safeText = String(text || '').trim();
+    if (safeText) body.text = safeText.slice(0, 200);
+    return callTelegramApi(botKey, 'answerCallbackQuery', body);
+  }
+
   async function deleteTelegramMessage(chatId, messageId, { botKey = null } = {}) {
     return callTelegramApi(botKey, 'deleteMessage', {
       chat_id: Number(chatId),
@@ -267,6 +277,7 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     sendTelegramVideoMessage,
     uploadTelegramMediaToChat,
     editTelegramMessageText,
+    answerTelegramCallbackQuery,
     deleteTelegramMessage
   };
 }

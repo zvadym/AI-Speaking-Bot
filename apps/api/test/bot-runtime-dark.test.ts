@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { parsePreparedUpdateContract, PreparedUpdateContractError } from '../src/bot-runtime/contract-validation.js';
 import type { PreparedUpdate } from '../src/bot-runtime/contracts.js';
 import {
@@ -16,6 +16,9 @@ import {
   classifyTelegramDeliveryError,
   createStatsHandler
 } from '../src/bot-runtime/handlers/stats.js';
+import { createPreferenceHandlers } from '../src/bot-runtime/handlers/preferences.js';
+import { createFeedbackHandlers } from '../src/bot-runtime/handlers/feedback.js';
+import { createTopicMenuHandler } from '../src/bot-runtime/handlers/topic-menu.js';
 import { buildStaticRouteMessage } from '../src/bot-runtime/handlers/static-routes.js';
 import { processBotUpdateJob } from '../src/bot-runtime/register-worker.js';
 import {
@@ -27,7 +30,7 @@ import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import type { XpContext } from '../src/bot-runtime/xp-context.js';
 import { buildXpMessage } from '../src/bot-runtime/xp-message.js';
-import { messageUpdate } from './fixtures/telegram-updates.js';
+import { callbackUpdate, messageUpdate } from './fixtures/telegram-updates.js';
 
 const unusedPool = null as unknown as Pool;
 
@@ -38,6 +41,36 @@ function preparedStats(updateId = 9001): PreparedUpdate & { route: 'command.stat
   });
   assert.equal(prepared.route, 'command.stats');
   return prepared as PreparedUpdate & { route: 'command.stats' };
+}
+
+function preparedReplyCallback(updateId = 9101): PreparedUpdate & { route: 'callback.reply' } {
+  const prepared = buildPreparedUpdate({
+    botKey: 'uk-en',
+    input: normalizeTelegramUpdate(callbackUpdate({ updateId, data: 'reply:text' }))
+  });
+  assert.equal(prepared.route, 'callback.reply');
+  return prepared as PreparedUpdate & { route: 'callback.reply' };
+}
+
+function preparedTopic(updateId = 9201): PreparedUpdate & { route: 'command.topic' } {
+  const prepared = buildPreparedUpdate({
+    botKey: 'uk-en',
+    input: normalizeTelegramUpdate(messageUpdate({ updateId, text: '/topic' }))
+  });
+  assert.equal(prepared.route, 'command.topic');
+  return prepared as PreparedUpdate & { route: 'command.topic' };
+}
+
+function preparedFeedback(updateId = 9301): PreparedUpdate & { route: 'command.feedback' } {
+  const prepared = buildPreparedUpdate({
+    botKey: 'uk-en',
+    input: normalizeTelegramUpdate(messageUpdate({
+      updateId,
+      text: '/feedback Useful bot'
+    }))
+  });
+  assert.equal(prepared.route, 'command.feedback');
+  return prepared as PreparedUpdate & { route: 'command.feedback' };
 }
 
 function statsContext(overrides: Partial<StatsContext> = {}): StatsContext {
@@ -289,6 +322,159 @@ test('static command formatters preserve legacy menu callback payloads', () => {
       { text: 'Voice', callback_data: 'reply:voice' }
     ]]
   });
+});
+
+test('preference callbacks reuse the persisted effect result and confirm once', async () => {
+  const update = preparedReplyCallback();
+  const callbackCalls: string[] = [];
+  const deliveries: Array<Record<string, unknown>> = [];
+  const handler = createPreferenceHandlers({
+    pool: unusedPool,
+    getBotLocale: () => ({
+      callback_saved: 'Saved',
+      reply_mode_saved_prefix: 'Mode: ',
+      reply_mode_text: 'text',
+      keyboard_btn_topic_none: 'Free chat',
+      keyboard_btn_voice_text: 'Text',
+      keyboard_btn_voice_voice: 'Voice',
+      keyboard_btn_xp_prefix: 'XP'
+    }),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; },
+      async answerTelegramCallbackQuery(callbackId) {
+        callbackCalls.push(`answer:${callbackId}`);
+        return true;
+      },
+      async deleteTelegramMessage(_chatId, messageId) {
+        callbackCalls.push(`delete:${messageId}`);
+        return true;
+      }
+    },
+    effectRunner: async <T extends Record<string, unknown>>() => ({
+      duplicate: true,
+      result: { replyMode: 'text' } as unknown as T
+    }),
+    keyboardStateLoader: async () => ({
+      level: 'b1',
+      reply_mode: 'text',
+      onboarding_complete_at: new Date(),
+      topic_enabled: false,
+      xp_total: 25,
+      xp_level: 1
+    }),
+    textDeliverer: async (input) => {
+      deliveries.push(input as unknown as Record<string, unknown>);
+      return { status: 'delivered', telegramMessageId: 22 };
+    }
+  }).find((candidate) => candidate.route === 'callback.reply');
+  assert.ok(handler);
+
+  assert.deepEqual(await handler.execute(update), {
+    status: 'delivered',
+    telegramMessageId: 22
+  });
+  assert.deepEqual(callbackCalls, [
+    `answer:${update.input.callbackQuery?.id}`,
+    `delete:${update.input.callbackQuery?.messageId}`
+  ]);
+  assert.equal(deliveries.length, 1);
+  assert.equal(deliveries[0].text, 'Mode: text');
+  assert.equal(deliveries[0].stepKey, 'callback.reply:confirmation:v1');
+});
+
+test('topic menu reloads current tier and state before formatting', async () => {
+  const update = preparedTopic();
+  const deliveries: Array<Record<string, unknown>> = [];
+  const pool = {
+    async query() {
+      return {
+        rows: [{
+          topic_enabled: true,
+          topic_template_id: 'travel',
+          topic_pack_json: { title_base: 'My trip' }
+        }]
+      };
+    }
+  } as unknown as Pool;
+  const handler = createTopicMenuHandler({
+    pool,
+    getBotLocale: () => ({
+      topic_menu_title: 'Topics',
+      topic_menu_current_prefix: 'Current: ',
+      topic_menu_current_none: 'None'
+    }),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; }
+    },
+    helpers: {
+      async fetchEffectiveTierForChat() { return 'pro'; },
+      async fetchTopicCatalogRows() {
+        return [{ topic_id: 'travel', title_base: 'Travel' }];
+      },
+      normalizeTopicPackValue(value) {
+        return value as Record<string, unknown>;
+      },
+      formatTopicMenuLabel(topic, _locale, options) {
+        assert.equal(options.userTier, 'pro');
+        return String(topic.title_base);
+      },
+      buildTopicMenuReplyMarkup(_catalog, _locale, options) {
+        assert.equal(options.userTier, 'pro');
+        return { inline_keyboard: [[{ text: 'Travel', callback_data: 'topic:travel' }]] };
+      }
+    },
+    textDeliverer: async (input) => {
+      deliveries.push(input as unknown as Record<string, unknown>);
+      return { status: 'delivered', telegramMessageId: 44 };
+    }
+  });
+
+  assert.deepEqual(await handler.execute(update), {
+    status: 'delivered',
+    telegramMessageId: 44
+  });
+  assert.equal(deliveries[0].text, 'Topics\n\nCurrent: My trip');
+  assert.equal(deliveries[0].stepKey, 'command.topic:menu:v1');
+});
+
+test('feedback command uses one effect and a durable confirmation delivery', async () => {
+  const update = preparedFeedback();
+  const effectSteps: string[] = [];
+  const deliveries: Array<Record<string, unknown>> = [];
+  const handler = createFeedbackHandlers({
+    pool: unusedPool,
+    getBotLocale: () => ({ msg_feedback_thanks: 'Received' }),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; }
+    },
+    effectRunner: async <T extends Record<string, unknown>>(
+      _pool: Pool,
+      input: {
+        decisionId: string;
+        stepKey: string;
+        execute(client: PoolClient): Promise<T>;
+      }
+    ) => {
+      effectSteps.push(input.stepKey);
+      return {
+        duplicate: false,
+        result: { outcome: 'saved' } as unknown as T
+      };
+    },
+    textDeliverer: async (input) => {
+      deliveries.push(input as unknown as Record<string, unknown>);
+      return { status: 'delivered', telegramMessageId: 55 };
+    }
+  }).find((candidate) => candidate.route === 'command.feedback');
+  assert.ok(handler);
+
+  assert.deepEqual(await handler.execute(update), {
+    status: 'delivered',
+    telegramMessageId: 55
+  });
+  assert.deepEqual(effectSteps, ['command.feedback:state:v1']);
+  assert.equal(deliveries[0].text, 'Received');
+  assert.equal(deliveries[0].stepKey, 'command.feedback:saved:v1');
 });
 
 test('stats handler returns delivered records without sending again', async () => {
