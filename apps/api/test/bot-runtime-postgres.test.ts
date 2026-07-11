@@ -9,6 +9,7 @@ import {
   claimBotUpdateExecution,
   markBotUpdateExecutionSucceeded
 } from '../src/bot-runtime/execution-repository.js';
+import { runBotUpdateEffect } from '../src/bot-runtime/effect-repository.js';
 import type { PreparedUpdate } from '../src/bot-runtime/contracts.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
@@ -95,6 +96,37 @@ test('execution claims and delivery attempts are durable under concurrency', {
     if (reconciled.action === 'unknown') {
       assert.equal(reconciled.errorCode, 'previous_attempt_incomplete');
     }
+
+    const fourthContract = preparedStats(updateId + 3);
+    await claimBotUpdateExecution(pool, {
+      contract: fourthContract,
+      handlerVersion: 1,
+      jobId: '00000000-0000-4000-8000-000000000016'
+    });
+    let effectCalls = 0;
+    const effects = await Promise.all([
+      runBotUpdateEffect(pool, {
+        decisionId: fourthContract.decisionId,
+        stepKey: 'test-effect:v1',
+        execute: async (client) => {
+          effectCalls += 1;
+          await client.query('SELECT pg_sleep(0.05)');
+          return { value: 42 };
+        }
+      }),
+      runBotUpdateEffect(pool, {
+        decisionId: fourthContract.decisionId,
+        stepKey: 'test-effect:v1',
+        execute: async () => {
+          effectCalls += 1;
+          return { value: 99 };
+        }
+      })
+    ]);
+    assert.equal(effectCalls, 1);
+    assert.equal(effects.filter((effect) => effect.duplicate).length, 1);
+    assert.equal(effects[0].result.value, effects[1].result.value);
+    assert.equal([42, 99].includes(Number(effects[0].result.value)), true);
   } finally {
     try {
       await pool.query(
@@ -103,7 +135,8 @@ test('execution claims and delivery attempts are durable under concurrency', {
         [[
           contract.decisionId,
           `v1:uk-en:${updateId + 1}`,
-          `v1:uk-en:${updateId + 2}`
+          `v1:uk-en:${updateId + 2}`,
+          `v1:uk-en:${updateId + 3}`
         ]]
       );
     } finally {

@@ -77,7 +77,7 @@ export async function claimBotUpdateExecution(
          started_at
        )
        VALUES ($1, $2, $3, $4, $5, $6, 'running', 1, $7::uuid, NOW() + make_interval(secs => $8), NOW())
-       ON CONFLICT (decision_id) DO NOTHING
+       ON CONFLICT DO NOTHING
        RETURNING attempts`,
       [
         contract.decisionId,
@@ -110,8 +110,11 @@ export async function claimBotUpdateExecution(
          lease_expires_at <= NOW() AS lease_expired
        FROM bot_update_executions
        WHERE decision_id = $1
+          OR (bot_key = $2 AND update_id = $3)
+       ORDER BY (decision_id = $1) DESC
+       LIMIT 1
        FOR UPDATE`,
-      [contract.decisionId]
+      [contract.decisionId, contract.botKey, contract.updateId]
     );
     const row = existing.rows[0];
     if (!row) throw new Error('execution_conflict_without_row');
