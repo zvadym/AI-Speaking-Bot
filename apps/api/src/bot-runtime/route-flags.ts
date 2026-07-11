@@ -7,6 +7,10 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'guard.bot_sender': 1,
   'callback.busy': 1,
   'callback.idiom_more': 1,
+  'callback.transcript_translate': 1,
+  'callback.translate': 1,
+  'callback.hints': 1,
+  'callback.vocab': 1,
   'callback.lang': 1,
   'callback.level': 1,
   'callback.reply': 1,
@@ -25,6 +29,7 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'reply_keyboard.voice_toggle': 1,
   'pending_feedback.text': 1,
   'pending_feedback.unsupported': 1,
+  'message.text': 1,
   'message.unsupported': 1
 } as const satisfies Partial<Record<Route, number>>;
 

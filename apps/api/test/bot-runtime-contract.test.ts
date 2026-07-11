@@ -201,6 +201,7 @@ test('Contract v1 is camelCase and excludes the raw Telegram update', () => {
   ]);
   assert.equal(prepared.input.updateId, 2500);
   assert.equal(prepared.input.callbackQuery?.data, 'tr:456:pro');
+  assert.equal(prepared.input.callbackQuery?.messageText, 'Assistant reply');
   assert.equal(prepared.routingFacts.callback?.payload, '456:pro');
   assert.equal('update' in prepared.input, false);
 

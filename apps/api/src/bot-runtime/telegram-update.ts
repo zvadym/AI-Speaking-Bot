@@ -69,7 +69,8 @@ export function normalizeTelegramUpdate(rawUpdate: unknown): NormalizedTelegramU
         id: trimString(rawCallbackQuery.id),
         data: trimString(rawCallbackQuery.data),
         userId: finiteNumber(asObject(rawCallbackQuery.from).id),
-        messageId: callbackMessageId
+        messageId: callbackMessageId,
+        messageText: trimString(rawCallbackMessage?.text)
       }
     : null;
 

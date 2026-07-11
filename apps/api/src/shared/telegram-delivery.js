@@ -244,12 +244,22 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     return { messageId: result?.message_id ?? null, fileId };
   }
 
-  async function editTelegramMessageText(chatId, messageId, text, { botKey = null } = {}) {
-    return callTelegramApi(botKey, 'editMessageText', {
+  async function editTelegramMessageText(chatId, messageId, text, {
+    botKey = null,
+    parseMode = null,
+    replyMarkup = null
+  } = {}) {
+    const body = {
       chat_id: Number(chatId),
       message_id: Number(messageId),
       text
-    });
+    };
+    const normalizedParseMode = normalizeTelegramParseMode(parseMode);
+    if (normalizedParseMode) body.parse_mode = normalizedParseMode;
+    if (replyMarkup && typeof replyMarkup === 'object' && !Array.isArray(replyMarkup)) {
+      body.reply_markup = replyMarkup;
+    }
+    return callTelegramApi(botKey, 'editMessageText', body);
   }
 
   async function answerTelegramCallbackQuery(callbackQueryId, text = '', { botKey = null, showAlert = false } = {}) {

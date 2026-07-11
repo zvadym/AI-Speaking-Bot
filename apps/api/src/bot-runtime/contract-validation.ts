@@ -80,6 +80,9 @@ export function parsePreparedUpdateContract(value: unknown): PreparedUpdate {
     const callback = asRecord(input.callbackQuery);
     if (typeof callback.id !== 'string' || callback.id.length > 512) invalidContract();
     if (typeof callback.data !== 'string' || callback.data.length > 4096) invalidContract();
+    if (typeof callback.messageText !== 'string' || callback.messageText.length > 4096) {
+      invalidContract();
+    }
     if (!isSafeIntegerOrNull(callback.userId) || !isSafeIntegerOrNull(callback.messageId)) {
       invalidContract();
     }

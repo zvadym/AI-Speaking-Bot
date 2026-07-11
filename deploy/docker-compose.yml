@@ -11,6 +11,8 @@ services:
       - NODE_ENV=production
     volumes:
       - ./bots:/deploy/bots:ro
+      - ./prompts:/deploy/prompts:ro
+      - ../shared/llm-prompts:/shared/llm-prompts:ro
       - ./phrases:/deploy/phrases:ro
     expose:
       - "3000"
@@ -26,6 +28,8 @@ services:
       - NODE_ENV=production
     volumes:
       - ./bots:/deploy/bots:ro
+      - ./prompts:/deploy/prompts:ro
+      - ../shared/llm-prompts:/shared/llm-prompts:ro
 
   miniapp:
     build:

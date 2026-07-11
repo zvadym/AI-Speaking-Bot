@@ -25,12 +25,21 @@ import {
 import { createStaticRouteHandlers } from './handlers/static-routes.js';
 import { createStatsHandler } from './handlers/stats.js';
 import {
+  createSupportCallbackHandlers,
+  type SupportTelegramClient
+} from './handlers/support-callbacks.js';
+import type { BotAiClient } from './bot-ai.js';
+import {
   createTopicActionHandler,
   createTopicMenuHandler,
   type TopicTelegramClient,
   type TopicMenuHelpers
 } from './handlers/topic-menu.js';
 import { createXpHandler } from './handlers/xp.js';
+import {
+  createTextConversationHandler,
+  type ConversationTelegramClient
+} from './handlers/conversation.js';
 
 interface WorkerJob {
   id: string;
@@ -200,15 +209,17 @@ export async function registerBotRuntimeWorker(
     webappUrl,
     topicMenuHelpers,
     getBotConfig,
-    sendIdiomMore
+    sendIdiomMore,
+    ai
   }: {
     pool: Pool;
     getBotLocale(botKey: string): unknown;
-    telegramClient: PreferenceTelegramClient & TopicTelegramClient;
+    telegramClient: PreferenceTelegramClient & TopicTelegramClient & SupportTelegramClient & ConversationTelegramClient;
     webappUrl: string;
     topicMenuHelpers: TopicMenuHelpers;
     getBotConfig(botKey: string): Record<string, unknown> | null;
     sendIdiomMore: IdiomMoreSender;
+    ai: BotAiClient;
   }
 ): Promise<void> {
   const registry = createBotHandlerRegistry([
@@ -221,6 +232,18 @@ export async function registerBotRuntimeWorker(
       getBotConfig,
       telegramClient,
       sendIdiomMore
+    }),
+    ...createSupportCallbackHandlers({
+      pool,
+      getBotLocale,
+      telegramClient,
+      ai
+    }),
+    createTextConversationHandler({
+      pool,
+      getBotLocale,
+      telegramClient,
+      ai
     }),
     createStatsHandler({ pool, getBotLocale, telegramClient, webappUrl }),
     createXpHandler({ pool, getBotLocale, telegramClient }),

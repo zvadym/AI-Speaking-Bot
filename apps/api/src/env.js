@@ -155,6 +155,7 @@ export const env = {
   adminDashboardPassword: process.env.ADMIN_DASHBOARD_PASSWORD || '',
   internalApiSecret: process.env.INTERNAL_API_SECRET || '',
   openaiApiKey: (process.env.OPENAI_API_KEY || '').toString().trim(),
+  botRuntimeModel: (process.env.BOT_RUNTIME_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4',
   sentryDsn: (process.env.SENTRY_DSN || '').toString().trim(),
   sentryEnvironment: (process.env.SENTRY_ENVIRONMENT || '').toString().trim(),
   sentryRelease: (process.env.SENTRY_RELEASE || '').toString().trim(),

@@ -77,6 +77,7 @@ export interface NormalizedCallbackQuery {
   data: string;
   userId: number | null;
   messageId: number | null;
+  messageText: string;
 }
 
 export interface NormalizedTelegramUpdate {

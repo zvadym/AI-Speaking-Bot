@@ -4,6 +4,7 @@ import { registerBotRuntimeWorker } from './bot-runtime/register-worker.js';
 import { startWorkerBoss, stopWorkerBoss } from './queue.js';
 import { createRuntimeDeps } from './runtime.js';
 import { createApiHelpers } from './services/api-helpers.js';
+import { createBotAiClient } from './bot-runtime/bot-ai.js';
 import { captureException, flushSentry } from './sentry.js';
 
 let stopping = false;
@@ -46,6 +47,11 @@ try {
   await registerWorkerHandlers(boss);
   const runtime = createRuntimeDeps({ apiBoss: boss });
   const helpers = createApiHelpers(runtime);
+  const botAi = createBotAiClient({
+    apiKey: runtime.env.openaiApiKey,
+    model: runtime.env.botRuntimeModel,
+    getBotConfig: (botKey) => runtime.botConfigs[botKey] || null
+  });
   await registerBotRuntimeWorker(boss, {
     pool: runtime.pool,
     getBotLocale: runtime.getBotLocale,
@@ -53,7 +59,8 @@ try {
     webappUrl: runtime.env.webappUrl,
     topicMenuHelpers: helpers,
     getBotConfig: (botKey) => runtime.botConfigs[botKey] || null,
-    sendIdiomMore: sendIdiomPracticeMorePhrase
+    sendIdiomMore: sendIdiomPracticeMorePhrase,
+    ai: botAi
   });
   console.log('Worker started');
 } catch (error) {

@@ -19,6 +19,9 @@ import {
 import { createPreferenceHandlers } from '../src/bot-runtime/handlers/preferences.js';
 import { createFeedbackHandlers } from '../src/bot-runtime/handlers/feedback.js';
 import { createCallbackActionHandlers } from '../src/bot-runtime/handlers/callback-actions.js';
+import { createSupportCallbackHandlers } from '../src/bot-runtime/handlers/support-callbacks.js';
+import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
+import type { BotAiClient } from '../src/bot-runtime/bot-ai.js';
 import {
   createTopicActionHandler,
   createTopicMenuHandler
@@ -76,6 +79,17 @@ function preparedFeedback(updateId = 9301): PreparedUpdate & { route: 'command.f
   assert.equal(prepared.route, 'command.feedback');
   return prepared as PreparedUpdate & { route: 'command.feedback' };
 }
+
+function preparedText(updateId = 9351): PreparedUpdate & { route: 'message.text' } {
+  const prepared = buildPreparedUpdate({
+    botKey: 'uk-en',
+    input: normalizeTelegramUpdate(messageUpdate({ updateId, text: 'I goed home.' }))
+  });
+  assert.equal(prepared.route, 'message.text');
+  return prepared as PreparedUpdate & { route: 'message.text' };
+}
+
+const unusedAi = null as unknown as BotAiClient;
 
 function preparedCallback<R extends PreparedUpdate['route']>(
   route: R,
@@ -158,7 +172,7 @@ test('route flags are dark by default and reject unsafe configuration', () => {
     /unknown bot key/
   );
   assert.throws(
-    () => parseBotRuntimeRouteFlags('{"uk-en":["message.text"]}', ['uk-en']),
+    () => parseBotRuntimeRouteFlags('{"uk-en":["message.voice"]}', ['uk-en']),
     /unimplemented route/
   );
   assert.throws(
@@ -531,6 +545,81 @@ test('topic clear reuses effect state and restores the persistent keyboard', asy
   assert.deepEqual(telegramMethods, ['unpinChatMessage']);
   assert.equal(deliveries[0].stepKey, 'callback.topic:cleared-message:v1');
   assert.ok(deliveries[0].replyMarkup);
+});
+
+test('support translation callback reuses cached AI effect and edits the source message', async () => {
+  const update = preparedCallback('callback.translate', 'tr:123:000', 9403);
+  const edits: Array<Record<string, unknown>> = [];
+  const handler = createSupportCallbackHandlers({
+    pool: unusedPool,
+    getBotLocale: () => ({ translation_header: 'Translation:' }),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; },
+      async answerTelegramCallbackQuery() {},
+      async editTelegramMessageText(chatId, sourceMessageId, text, options) {
+        edits.push({ chatId, sourceMessageId, text, options });
+        return {};
+      }
+    },
+    ai: unusedAi,
+    effectRunner: async <T extends Record<string, unknown>>() => ({
+      duplicate: true,
+      result: { translation: 'Переклад' } as unknown as T
+    })
+  }).find((item) => item.route === 'callback.translate');
+  assert.ok(handler);
+  assert.deepEqual(await handler.execute(update), { status: 'noop' });
+  assert.equal(edits.length, 1);
+  assert.match(String(edits[0].text), /Translation:\nПереклад/);
+});
+
+test('text conversation reuses generated state and delivers correction before reply', async () => {
+  const update = preparedText();
+  const methods: string[] = [];
+  const deliveries: Array<Record<string, unknown>> = [];
+  const handler = createTextConversationHandler({
+    pool: unusedPool,
+    getBotLocale: () => ({
+      btn_translation: 'Translation',
+      btn_vocab: 'Vocabulary',
+      btn_follow_up_hints: 'Hints'
+    }),
+    telegramClient: {
+      async sendTelegramTextMessage() { return { message_id: 1 }; },
+      async callTelegramApi(_botKey, method) {
+        methods.push(method);
+        return {};
+      }
+    },
+    ai: unusedAi,
+    effectRunner: async <T extends Record<string, unknown>>() => ({
+      duplicate: true,
+      result: {
+        assistantMessageId: 555,
+        response: {
+          detected_language: 'en',
+          is_target_language: true,
+          has_mistakes: true,
+          reply_text: 'What did you do there?',
+          explanation_html: '<b>Correction</b>: I went home.'
+        }
+      } as unknown as T
+    }),
+    textDeliverer: async (input) => {
+      deliveries.push(input as unknown as Record<string, unknown>);
+      return { status: 'delivered', telegramMessageId: deliveries.length };
+    }
+  });
+  assert.deepEqual(await handler.execute(update), {
+    status: 'delivered',
+    telegramMessageId: 2
+  });
+  assert.deepEqual(methods, ['sendChatAction']);
+  assert.deepEqual(deliveries.map((item) => item.stepKey), [
+    'message.text:correction:v1',
+    'message.text:reply:v1'
+  ]);
+  assert.match(JSON.stringify(deliveries[1].replyMarkup), /tr:555:000/);
 });
 
 test('feedback command uses one effect and a durable confirmation delivery', async () => {
