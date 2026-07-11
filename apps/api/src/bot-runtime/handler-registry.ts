@@ -1,7 +1,7 @@
 import type { PreparedUpdate, Route } from './contracts.js';
 
 export interface BotHandlerOutcome {
-  status: 'delivered' | 'duplicate';
+  status: 'delivered' | 'duplicate' | 'noop';
   telegramMessageId?: number | null;
 }
 

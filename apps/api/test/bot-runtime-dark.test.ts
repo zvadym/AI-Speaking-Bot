@@ -16,6 +16,7 @@ import {
   classifyTelegramDeliveryError,
   createStatsHandler
 } from '../src/bot-runtime/handlers/stats.js';
+import { buildStaticRouteMessage } from '../src/bot-runtime/handlers/static-routes.js';
 import { processBotUpdateJob } from '../src/bot-runtime/register-worker.js';
 import {
   parseBotRuntimeRouteFlags
@@ -24,6 +25,8 @@ import type { StatsContext } from '../src/bot-runtime/stats-context.js';
 import { buildStatsMessage } from '../src/bot-runtime/stats-message.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
+import type { XpContext } from '../src/bot-runtime/xp-context.js';
+import { buildXpMessage } from '../src/bot-runtime/xp-message.js';
 import { messageUpdate } from './fixtures/telegram-updates.js';
 
 const unusedPool = null as unknown as Pool;
@@ -53,6 +56,23 @@ function statsContext(overrides: Partial<StatsContext> = {}): StatsContext {
   };
 }
 
+function xpContext(overrides: Partial<XpContext> = {}): XpContext {
+  return {
+    xpTotal: 450,
+    streakCurrent: 3,
+    streakBest: 7,
+    level: 3,
+    xpIntoLevel: 50,
+    xpPerLevel: 200,
+    xpToNext: 150,
+    xpDailyToday: 125,
+    xpDailyLimit: 250,
+    xpDailyRemaining: 125,
+    streakMultiplier: 1,
+    ...overrides
+  };
+}
+
 const statsLocale = {
   stats_title: '<b>Stats</b>',
   stats_plan_prefix: 'Plan: ',
@@ -77,6 +97,11 @@ test('route flags are dark by default and reject unsafe configuration', () => {
   assert.equal(parseBotRuntimeRouteFlags('', ['uk-en']).size, 0);
   const enabled = parseBotRuntimeRouteFlags('{"uk-en":["command.stats"]}', ['uk-en']);
   assert.equal(enabled.get('uk-en')?.has('command.stats'), true);
+  const easyRoutes = parseBotRuntimeRouteFlags(
+    '{"uk-en":["command.xp","command.level","command.voice"]}',
+    ['uk-en']
+  );
+  assert.equal(easyRoutes.get('uk-en')?.has('command.xp'), true);
 
   assert.throws(
     () => parseBotRuntimeRouteFlags('{"missing":["command.stats"]}', ['uk-en']),
@@ -196,6 +221,74 @@ test('stats formatter preserves the legacy free and paid layouts', () => {
     paid.text,
     '<b>Stats</b>\n\nPlan: PRO\nValid until: 2026-08-10\n\n<b>This month</b>\nPractice: <code>[■■■■■■]</code>\n\nAutorenew: on\nPending: to FREE later\n\nFooter'
   );
+});
+
+test('XP formatter preserves progress bars and the persistent keyboard', () => {
+  const update = preparedStats();
+  const message = buildXpMessage({
+    context: xpContext(),
+    locale: {
+      xp_title: '<b>Progress</b>',
+      xp_streak_label: 'Streak',
+      xp_best_label: 'Best',
+      xp_level_label: 'Level',
+      xp_total_label: 'XP',
+      xp_today_title: 'Today',
+      xp_daily_cap_label: 'Cap',
+      xp_today_left_label: 'Left',
+      xp_level_progress_label: 'Level progress',
+      xp_next_label: 'Next',
+      xp_streak_bonus_label: 'Bonus',
+      xp_streak_bonus_pending: 'Pending'
+    },
+    keyboard: update.context.keyboard
+  });
+
+  assert.match(message.text, /<code>\[■■■■□□□□\]<\/code> <b>125<\/b> \/ 250 XP/);
+  assert.match(message.text, /<code>\[■■□□□□□□\]<\/code> <b>50<\/b> \/ 200 XP/);
+  assert.deepEqual(message.replyMarkup.keyboard, [
+    [
+      { text: update.context.keyboard.topicButtonText },
+      { text: update.context.keyboard.levelButtonText }
+    ],
+    [
+      { text: update.context.keyboard.voiceButtonText },
+      { text: update.context.keyboard.xpButtonText }
+    ]
+  ]);
+});
+
+test('static command formatters preserve legacy menu callback payloads', () => {
+  const update = preparedStats();
+  const level = buildStaticRouteMessage('command.level', update, {
+    choose_level_text: 'Choose level'
+  });
+  assert.equal(level?.text, 'Choose level');
+  assert.deepEqual(level?.replyMarkup, {
+    inline_keyboard: [
+      [
+        { text: 'A1', callback_data: 'level:a1' },
+        { text: 'A2', callback_data: 'level:a2' },
+        { text: 'B1', callback_data: 'level:b1' }
+      ],
+      [
+        { text: 'B2', callback_data: 'level:b2' },
+        { text: 'C1', callback_data: 'level:c1' }
+      ]
+    ]
+  });
+
+  const voice = buildStaticRouteMessage('command.voice', update, {
+    choose_voice_mode_text: 'Choose mode',
+    voice_mode_text: 'Text',
+    voice_mode_voice: 'Voice'
+  });
+  assert.deepEqual(voice?.replyMarkup, {
+    inline_keyboard: [[
+      { text: 'Text', callback_data: 'reply:text' },
+      { text: 'Voice', callback_data: 'reply:voice' }
+    ]]
+  });
 });
 
 test('stats handler returns delivered records without sending again', async () => {

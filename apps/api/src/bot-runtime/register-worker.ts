@@ -13,7 +13,9 @@ import {
   normalizeBotRuntimeHandlerError,
   type BotHandlerRegistry
 } from './handler-registry.js';
+import { createStaticRouteHandlers } from './handlers/static-routes.js';
 import { createStatsHandler } from './handlers/stats.js';
+import { createXpHandler } from './handlers/xp.js';
 
 interface WorkerJob {
   id: string;
@@ -189,7 +191,9 @@ export async function registerBotRuntimeWorker(
   }
 ): Promise<void> {
   const registry = createBotHandlerRegistry([
-    createStatsHandler({ pool, getBotLocale, telegramClient, webappUrl })
+    ...createStaticRouteHandlers({ pool, getBotLocale, telegramClient }),
+    createStatsHandler({ pool, getBotLocale, telegramClient, webappUrl }),
+    createXpHandler({ pool, getBotLocale, telegramClient })
   ]);
 
   await boss.work(

@@ -2,7 +2,18 @@ import { normalizeBotKey } from '../shared/normalization.js';
 import { ROUTES, type Route } from './contracts.js';
 
 export const BOT_RUNTIME_HANDLER_VERSIONS = {
-  'command.stats': 1
+  'ignore': 1,
+  'guard.private_only': 1,
+  'guard.bot_sender': 1,
+  'command.start': 1,
+  'command.voice': 1,
+  'command.lang': 1,
+  'command.level': 1,
+  'command.stats': 1,
+  'command.xp': 1,
+  'command.unknown': 1,
+  'pending_feedback.unsupported': 1,
+  'message.unsupported': 1
 } as const satisfies Partial<Record<Route, number>>;
 
 export type ImplementedBotRuntimeRoute = keyof typeof BOT_RUNTIME_HANDLER_VERSIONS;
