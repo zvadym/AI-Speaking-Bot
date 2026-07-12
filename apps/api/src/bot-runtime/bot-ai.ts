@@ -2,6 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import OpenAI, { toFile } from 'openai';
+import {
+  observeLlmCall,
+  type LlmCallRecorder,
+  type LlmTraceContext
+} from './llm-telemetry.js';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -14,6 +19,7 @@ export interface ConversationAiInput {
   shortSummary: string;
   history: Array<{ role: string; content: string }>;
   topic: UnknownRecord | null;
+  trace?: LlmTraceContext;
 }
 
 export interface ConversationAiResult extends UnknownRecord {
@@ -49,17 +55,26 @@ export interface VocabularyItem extends UnknownRecord {
 
 export interface BotAiClient {
   respond(input: ConversationAiInput): Promise<ConversationAiResult>;
-  translate(botKey: string, text: string): Promise<string>;
+  translate(botKey: string, text: string, trace?: LlmTraceContext): Promise<string>;
   hints(input: {
     botKey: string;
     level: string;
     userMessage: string;
     assistantReply: string;
     topic: UnknownRecord | null;
+    trace?: LlmTraceContext;
   }): Promise<FollowUpHints>;
-  vocabulary(botKey: string, assistantReply: string): Promise<VocabularyItem[]>;
-  transcribe(botKey: string, audio: Buffer, options?: { baseLanguage?: boolean }): Promise<string>;
-  speech(botKey: string, text: string): Promise<Buffer>;
+  vocabulary(
+    botKey: string,
+    assistantReply: string,
+    trace?: LlmTraceContext
+  ): Promise<VocabularyItem[]>;
+  transcribe(
+    botKey: string,
+    audio: Buffer,
+    options?: { baseLanguage?: boolean; trace?: LlmTraceContext }
+  ): Promise<string>;
+  speech(botKey: string, text: string, trace?: LlmTraceContext): Promise<Buffer>;
 }
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -263,15 +278,19 @@ function topicPrompt(topic: UnknownRecord | null): string {
 export function createBotAiClient({
   apiKey,
   model,
+  supportModel = model,
   transcriptionModel = 'gpt-4o-transcribe',
   ttsModel = 'gpt-4o-mini-tts',
+  recordLlmCall,
   getBotConfig,
   createClient = (key: string) => new OpenAI({ apiKey: key })
 }: {
   apiKey: string;
   model: string;
+  supportModel?: string;
   transcriptionModel?: string;
   ttsModel?: string;
+  recordLlmCall?: LlmCallRecorder;
   getBotConfig(botKey: string): UnknownRecord | null;
   createClient?: (apiKey: string) => Pick<OpenAI, 'responses' | 'audio'>;
 }): BotAiClient {
@@ -283,31 +302,43 @@ export function createBotAiClient({
   };
 
   async function structured(
+    selectedModel: string,
+    operation: string,
+    trace: LlmTraceContext,
     system: string,
     user: string,
     name: string,
     schema: UnknownRecord
   ): Promise<UnknownRecord> {
-    const response = await openai().responses.create({
-      model,
-      input: [
-        { role: 'system', content: system },
-        { role: 'user', content: user }
-      ],
-      text: {
-        format: {
-          type: 'json_schema',
-          name,
-          schema,
-          verbosity: 'low'
+    const observed = await observeLlmCall({
+      trace,
+      operation,
+      model: selectedModel,
+      record: recordLlmCall,
+      call: async () => {
+        const response = await openai().responses.create({
+          model: selectedModel,
+          input: [
+            { role: 'system', content: system },
+            { role: 'user', content: user }
+          ],
+          text: {
+            format: {
+              type: 'json_schema',
+              name,
+              schema,
+              verbosity: 'low'
+            }
+          }
+        } as never);
+        const parsed = JSON.parse(responseText(response));
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          throw new Error('openai_invalid_structured_output');
         }
+        return { value: parsed as UnknownRecord, usage: response.usage };
       }
-    } as never);
-    const parsed = JSON.parse(responseText(response));
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('openai_invalid_structured_output');
-    }
-    return parsed as UnknownRecord;
+    });
+    return observed.value;
   }
 
   const configFor = (botKey: string) => getBotConfig(botKey) || {};
@@ -321,6 +352,9 @@ export function createBotAiClient({
         .map((item) => `${item.role}: ${item.content}`)
         .join('\n');
       return await structured(
+        model,
+        'conversation.respond',
+        input.trace || { botKey: input.botKey },
         renderPrompt('model_system_prompt', input.botKey, config),
         [
           `Target language: ${context.target_language_label}`,
@@ -348,10 +382,13 @@ export function createBotAiClient({
       ) as ConversationAiResult;
     },
 
-    async translate(botKey, text) {
+    async translate(botKey, text, trace = { botKey }) {
       const config = configFor(botKey);
       const context = promptContext(botKey, config);
       const result = await structured(
+        supportModel,
+        'support.translate',
+        trace,
         renderPrompt('model_support_prompt', botKey, config),
         `Base language code: ${context.base_language_code}\nText to translate:\n${text}`,
         'translation_schema',
@@ -364,6 +401,9 @@ export function createBotAiClient({
       const config = configFor(input.botKey);
       const context = promptContext(input.botKey, config);
       return await structured(
+        supportModel,
+        'support.hints',
+        input.trace || { botKey: input.botKey },
         renderPrompt('model_hints_prompt', input.botKey, config),
         [
           `Target language: ${context.target_language_label}`,
@@ -379,10 +419,13 @@ export function createBotAiClient({
       ) as FollowUpHints;
     },
 
-    async vocabulary(botKey, assistantReply) {
+    async vocabulary(botKey, assistantReply, trace = { botKey }) {
       const config = configFor(botKey);
       const context = promptContext(botKey, config);
       const result = await structured(
+        supportModel,
+        'support.vocabulary',
+        trace,
         renderPrompt('model_vocab_prompt', botKey, config),
         [
           `Base language code: ${context.base_language_code}`,
@@ -402,24 +445,36 @@ export function createBotAiClient({
       const language = options.baseLanguage
         ? context.base_language_code
         : context.target_language_code;
-      const result = await openai().audio.transcriptions.create({
-        file: await toFile(audio, 'voice.ogg', { type: 'audio/ogg' }),
+      const result = await observeLlmCall({
+        trace: options.trace || { botKey },
+        operation: options.baseLanguage ? 'feedback.transcribe' : 'conversation.transcribe',
         model: transcriptionModel,
-        language,
-        response_format: 'json',
-        prompt: 'Transcribe literally. Preserve learner errors and repetitions. Do not correct or rewrite.'
+        record: recordLlmCall,
+        call: async () => openai().audio.transcriptions.create({
+          file: await toFile(audio, 'voice.ogg', { type: 'audio/ogg' }),
+          model: transcriptionModel,
+          language,
+          response_format: 'json',
+          prompt: 'Transcribe literally. Preserve learner errors and repetitions. Do not correct or rewrite.'
+        })
       });
       return String(result.text || '').trim();
     },
 
-    async speech(botKey, text) {
+    async speech(botKey, text, trace = { botKey }) {
       const config = configFor(botKey);
       const voice = String(config.bot_voice || 'marin').trim().toLowerCase();
-      const result = await openai().audio.speech.create({
+      const result = await observeLlmCall({
+        trace,
+        operation: 'conversation.speech',
         model: ttsModel,
-        voice: voice as never,
-        input: text,
-        response_format: 'opus'
+        record: recordLlmCall,
+        call: () => openai().audio.speech.create({
+          model: ttsModel,
+          voice: voice as never,
+          input: text,
+          response_format: 'opus'
+        })
       });
       return Buffer.from(await result.arrayBuffer());
     }

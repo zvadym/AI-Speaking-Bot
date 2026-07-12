@@ -24,6 +24,7 @@ import {
   sendAdminTestWinbackReminder
 } from '../jobs.js';
 import { billingRouteErrorResponse } from '../core/errors.js';
+import { createLlmCallRecorder } from '../bot-runtime/llm-telemetry.js';
 
 const ACTION_EVENT_TYPES = [
   'start',
@@ -76,6 +77,7 @@ const BROADCAST_MEDIA_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
 export function createAdminRouter(ctx, helpers) {
   const router = Router();
   const requireAdmin = createRequireAdmin(ctx.env);
+  const recordLlmCall = createLlmCallRecorder(ctx.pool);
   const broadcastMediaUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: BROADCAST_MEDIA_UPLOAD_MAX_BYTES }
@@ -1944,7 +1946,9 @@ export function createAdminRouter(ctx, helpers) {
         targetLanguage: meta.learning_language || 'en',
         sortOrder: Number.isInteger(sortOrder) ? sortOrder : 0,
         accessTier,
-        baseTemplate
+        baseTemplate,
+        recordLlmCall,
+        trace: { botKey: meta.bot_key, route: 'admin.topic.generate' }
       });
       return res.json({
         bot_key: meta.bot_key,
@@ -1976,7 +1980,9 @@ export function createAdminRouter(ctx, helpers) {
         instruction,
         baseLanguage: meta.base_language || 'en',
         targetLanguage: meta.learning_language || 'en',
-        currentDraft
+        currentDraft,
+        recordLlmCall,
+        trace: { botKey: meta.bot_key, route: 'admin.topic.assist' }
       });
       return res.json({
         bot_key: meta.bot_key,
@@ -2016,7 +2022,9 @@ export function createAdminRouter(ctx, helpers) {
         targetBaseLanguage: targetMeta.base_language || 'en',
         targetTargetLanguage: targetMeta.learning_language || 'en',
         currentDraft,
-        instruction
+        instruction,
+        recordLlmCall,
+        trace: { botKey: targetMeta.bot_key, route: 'admin.topic.clone' }
       });
       const payload = helpers.normalizeTopicRequestBody(clonedDraft);
 

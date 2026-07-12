@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import OpenAI from 'openai';
 import { renderLlmPrompt } from './llm-prompts/index.js';
 import { normalizeLanguageCode } from './shared/normalization.js';
+import { observeLlmCall } from './bot-runtime/llm-telemetry.js';
 
 export const IDIOM_TARGET_LANGUAGES = new Set(['en', 'de']);
 export const IDIOM_LEVEL_FILE_TO_BUCKET = Object.freeze({
@@ -182,7 +183,9 @@ export async function translateIdiomPhraseEntry({
   model,
   targetLanguage,
   baseLanguage,
-  entry
+  entry,
+  recordLlmCall,
+  trace
 }) {
   const normalizedTarget = normalizeLanguageCode(targetLanguage);
   const normalizedBase = normalizeLanguageCode(baseLanguage);
@@ -203,33 +206,39 @@ export async function translateIdiomPhraseEntry({
   if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
 
   const client = getClient(apiKey);
-  const response = await client.responses.create({
+  const response = await observeLlmCall({
+    trace: trace || { botKey: 'idiom-catalog', route: 'catalog.idiom.translate' },
+    operation: 'idiom.translate',
     model,
-    input: [
-      {
-        role: 'system',
-        content: renderLlmPrompt('idiom-translation-system')
-      },
-      {
-        role: 'user',
-        content: JSON.stringify({
-          target_language_code: normalizedTarget,
-          base_language_code: normalizedBase,
-          phrase: entry.phraseText,
-          meaning: entry.meaningText,
-          tone: entry.toneText,
-          example: entry.exampleText
-        })
+    record: recordLlmCall,
+    call: () => client.responses.create({
+      model,
+      input: [
+        {
+          role: 'system',
+          content: renderLlmPrompt('idiom-translation-system')
+        },
+        {
+          role: 'user',
+          content: JSON.stringify({
+            target_language_code: normalizedTarget,
+            base_language_code: normalizedBase,
+            phrase: entry.phraseText,
+            meaning: entry.meaningText,
+            tone: entry.toneText,
+            example: entry.exampleText
+          })
+        }
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'idiom_phrase_translation',
+          schema: TRANSLATION_SCHEMA,
+          verbosity: 'low'
+        }
       }
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'idiom_phrase_translation',
-        schema: TRANSLATION_SCHEMA,
-        verbosity: 'low'
-      }
-    }
+    })
   });
 
   const rawText = parseResponseOutput(response);

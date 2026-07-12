@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { defaultEmojiForTopicId, normalizeTopicPayload, slugifyTopicId } from './topic-catalog.js';
 import { renderLlmPrompt } from './llm-prompts/index.js';
+import { observeLlmCall } from './bot-runtime/llm-telemetry.js';
 
 const SUBAREA_SCHEMA = {
   type: 'object',
@@ -231,6 +232,28 @@ function parseResponseOutput(response) {
   throw new Error('OpenAI topic generation returned no text output');
 }
 
+async function requestTopicResponse({ apiKey, model, input, recordLlmCall, trace, operation }) {
+  const client = getClient(apiKey);
+  return observeLlmCall({
+    trace: trace || { botKey: 'topic-catalog', route: 'admin.topic' },
+    operation,
+    model,
+    record: recordLlmCall,
+    call: () => client.responses.create({
+      model,
+      input,
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'topic_pack_schema',
+          schema: TOPIC_GENERATION_SCHEMA,
+          verbosity: 'low'
+        }
+      }
+    })
+  });
+}
+
 export async function generateTopicDraft({
   apiKey,
   model,
@@ -239,24 +262,21 @@ export async function generateTopicDraft({
   targetLanguage,
   baseTemplate = null,
   sortOrder = 0,
-  accessTier = 'all'
+  accessTier = 'all',
+  recordLlmCall,
+  trace
 }) {
   if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
-  const client = getClient(apiKey);
-  const response = await client.responses.create({
+  const response = await requestTopicResponse({
+    apiKey,
     model,
+    recordLlmCall,
+    trace,
+    operation: 'topic.generate',
     input: [
       { role: 'system', content: renderLlmPrompt('topic-generator-system') },
       { role: 'user', content: buildUserPrompt({ topicName, baseLanguage, targetLanguage, baseTemplate }) }
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'topic_pack_schema',
-        schema: TOPIC_GENERATION_SCHEMA,
-        verbosity: 'low'
-      }
-    }
+    ]
   });
 
   const rawText = parseResponseOutput(response);
@@ -275,25 +295,22 @@ export async function assistTopicDraft({
   instruction,
   baseLanguage,
   targetLanguage,
-  currentDraft = null
+  currentDraft = null,
+  recordLlmCall,
+  trace
 }) {
   if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
   if (!String(instruction || '').trim()) throw new Error('Missing topic assistant instruction');
-  const client = getClient(apiKey);
-  const response = await client.responses.create({
+  const response = await requestTopicResponse({
+    apiKey,
     model,
+    recordLlmCall,
+    trace,
+    operation: 'topic.assist',
     input: [
       { role: 'system', content: renderLlmPrompt('topic-generator-system') },
       { role: 'user', content: buildAssistPrompt({ instruction, baseLanguage, targetLanguage, currentDraft }) }
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'topic_pack_schema',
-        schema: TOPIC_GENERATION_SCHEMA,
-        verbosity: 'low'
-      }
-    }
+    ]
   });
 
   const rawText = parseResponseOutput(response);
@@ -313,15 +330,20 @@ export async function cloneTopicDraftToBot({
   targetBaseLanguage,
   targetTargetLanguage,
   currentDraft,
-  instruction = ''
+  instruction = '',
+  recordLlmCall,
+  trace
 }) {
   if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
   if (!currentDraft || typeof currentDraft !== 'object' || Array.isArray(currentDraft)) {
     throw new Error('Missing current draft for clone');
   }
-  const client = getClient(apiKey);
-  const response = await client.responses.create({
+  const response = await requestTopicResponse({
+    apiKey,
     model,
+    recordLlmCall,
+    trace,
+    operation: 'topic.clone',
     input: [
       { role: 'system', content: renderLlmPrompt('topic-generator-system') },
       { role: 'user', content: buildClonePrompt({
@@ -332,15 +354,7 @@ export async function cloneTopicDraftToBot({
         currentDraft,
         instruction
       }) }
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'topic_pack_schema',
-        schema: TOPIC_GENERATION_SCHEMA,
-        verbosity: 'low'
-      }
-    }
+    ]
   });
 
   const rawText = parseResponseOutput(response);

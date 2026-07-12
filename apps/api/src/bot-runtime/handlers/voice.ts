@@ -178,7 +178,14 @@ export function createVoiceConversationHandler({
             decisionId: update.decisionId,
             stepKey: 'message.voice:conversation:v1',
             execute: async (client) => {
-              const transcript = await ai.transcribe(update.botKey, audio);
+              const transcript = await ai.transcribe(update.botKey, audio, {
+                trace: {
+                  decisionId: update.decisionId,
+                  chatId,
+                  botKey: update.botKey,
+                  route: update.route
+                }
+              });
               if (!transcript) throw new Error('voice_transcript_empty');
               const conversation = await executeConversation(
                 client,
@@ -261,7 +268,12 @@ export function createVoiceConversationHandler({
 
         let speech: Buffer;
         try {
-          speech = await ai.speech(update.botKey, reply);
+          speech = await ai.speech(update.botKey, reply, {
+            decisionId: update.decisionId,
+            chatId,
+            botKey: update.botKey,
+            route: update.route
+          });
         } catch (error) {
           throw new BotRuntimeHandlerError('tts_failed', { retryable: true, cause: error });
         }
@@ -335,7 +347,15 @@ export function createVoiceFeedbackHandler({
           decisionId: update.decisionId,
           stepKey: 'pending_feedback.voice:state:v1',
           execute: async (client) => {
-            const transcript = await ai.transcribe(update.botKey, audio, { baseLanguage: true });
+            const transcript = await ai.transcribe(update.botKey, audio, {
+              baseLanguage: true,
+              trace: {
+                decisionId: update.decisionId,
+                chatId,
+                botKey: update.botKey,
+                route: update.route
+              }
+            });
             if (!transcript) throw new Error('feedback_transcript_empty');
             await client.query(
               `INSERT INTO feedback (

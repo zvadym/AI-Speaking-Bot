@@ -266,7 +266,8 @@ export function createSupportCallbackHandlers({
     version: BOT_RUNTIME_HANDLER_VERSIONS[route],
     async execute(update: PreparedUpdate & { route: typeof route }) {
       const callback = update.input.callbackQuery;
-      if (!callback || update.input.chatId === null) {
+      const chatId = update.input.chatId;
+      if (!callback || chatId === null) {
         throw new BotRuntimeHandlerError('invalid_support_callback', { retryable: false });
       }
       const locale = localeRecord(getBotLocale(update.botKey));
@@ -288,7 +289,14 @@ export function createSupportCallbackHandlers({
         const effect = await effectRunner(pool, {
           decisionId: update.decisionId,
           stepKey: 'callback.transcript_translate:ai:v1',
-          execute: async () => ({ translation: await ai.translate(update.botKey, transcript) })
+          execute: async () => ({
+            translation: await ai.translate(update.botKey, transcript, {
+              decisionId: update.decisionId,
+              chatId,
+              botKey: update.botKey,
+              route: update.route
+            })
+          })
         });
         await editMessage(
           telegramClient,
@@ -310,7 +318,12 @@ export function createSupportCallbackHandlers({
           execute: async (client) => {
             const row = await fetchAssistant(client, update, id);
             const cached = String(row.translation_base || '').trim();
-            const translation = cached || await ai.translate(update.botKey, row.content);
+            const translation = cached || await ai.translate(update.botKey, row.content, {
+              decisionId: update.decisionId,
+              chatId,
+              botKey: update.botKey,
+              route: update.route
+            });
             if (!cached) {
               await client.query(
                 `UPDATE messages SET translation_base = $1
@@ -342,7 +355,13 @@ export function createSupportCallbackHandlers({
               level: String(row.level || 'a1'),
               userMessage: String(row.user_content || ''),
               assistantReply: String(row.content || ''),
-              topic: topicValue(row.topic_pack_json, row.topic_enabled)
+              topic: topicValue(row.topic_pack_json, row.topic_enabled),
+              trace: {
+                decisionId: update.decisionId,
+                chatId,
+                botKey: update.botKey,
+                route: update.route
+              }
             });
             if (!cached) {
               await client.query(
@@ -376,7 +395,14 @@ export function createSupportCallbackHandlers({
         stepKey: 'callback.vocab:ai:v1',
         execute: async (client) => {
           const row = await fetchAssistant(client, update, id);
-          return { items: await ai.vocabulary(update.botKey, String(row.content || '')) };
+          return {
+            items: await ai.vocabulary(update.botKey, String(row.content || ''), {
+              decisionId: update.decisionId,
+              chatId,
+              botKey: update.botKey,
+              route: update.route
+            })
+          };
         }
       });
       const outcome = await textDeliverer({

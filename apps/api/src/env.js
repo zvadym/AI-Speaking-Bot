@@ -135,6 +135,8 @@ const botProgressEnabledBotKeys = parseProgressEnabledBotKeys(
   process.env.BOT_PROGRESS_ENABLED_BOT_KEYS,
   Object.keys(telegramBotTokensByBotKey)
 );
+const botRuntimeModel = (process.env.BOT_RUNTIME_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4';
+const botSupportModel = (process.env.BOT_SUPPORT_MODEL || botRuntimeModel).toString().trim() || botRuntimeModel;
 
 console.log(`Loaded Telegram bot tokens from bot config files for: ${Object.keys(telegramBotTokensByBotKey).join(', ')}`)
 
@@ -160,7 +162,8 @@ export const env = {
   adminDashboardPassword: process.env.ADMIN_DASHBOARD_PASSWORD || '',
   internalApiSecret: process.env.INTERNAL_API_SECRET || '',
   openaiApiKey: (process.env.OPENAI_API_KEY || '').toString().trim(),
-  botRuntimeModel: (process.env.BOT_RUNTIME_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4',
+  botRuntimeModel,
+  botSupportModel,
   botTranscriptionModel: (process.env.BOT_TRANSCRIPTION_MODEL || 'gpt-4o-transcribe').toString().trim() || 'gpt-4o-transcribe',
   botTtsModel: (process.env.BOT_TTS_MODEL || 'gpt-4o-mini-tts').toString().trim() || 'gpt-4o-mini-tts',
   sentryDsn: (process.env.SENTRY_DSN || '').toString().trim(),

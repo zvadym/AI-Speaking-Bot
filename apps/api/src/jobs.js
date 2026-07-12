@@ -59,8 +59,10 @@ import {
   defaultRetryOptions
 } from './queue.js';
 import { createProgressService } from './bot-runtime/progress-service.js';
+import { createLlmCallRecorder, observeLlmCall } from './bot-runtime/llm-telemetry.js';
 
 const botConfigs = loadBotConfigs();
+const recordLlmCall = createLlmCallRecorder(pool);
 const ONBOARDING_TASK_TYPE = 'onboarding_complete';
 const ONBOARDING_SCHEDULE_KEY = 'once';
 const DAY1_RETURN_TASK_TYPE = 'day1_return';
@@ -1433,6 +1435,44 @@ function parseResponseJsonSchemaPayload(payloadJson) {
   };
 }
 
+async function requestReminderResponse({ context, operation, body }) {
+  return observeLlmCall({
+    trace: {
+      chatId: context.chatId,
+      botKey: context.botKey,
+      route: operation
+    },
+    operation,
+    model: env.reminderLlmModel,
+    record: recordLlmCall,
+    call: async () => {
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.openaiApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      let payloadJson = null;
+      try {
+        payloadJson = await response.json();
+      } catch {
+        payloadJson = null;
+      }
+
+      if (!response.ok) {
+        const detail = sanitizeErrorText(payloadJson?.error?.message || `openai_http_${response.status}`)
+          || `openai_http_${response.status}`;
+        throw createAppError('openai_request_failed', 502, detail, { retryable: response.status >= 500 });
+      }
+
+      return payloadJson;
+    }
+  });
+}
+
 async function generateWeeklyDigestMessageWithLlm(context, taskType) {
   if (!env.openaiApiKey) {
     throw createAppError('missing_openai_api_key', 502, 'missing_openai_api_key', { retryable: false });
@@ -1477,13 +1517,10 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
     context_json: JSON.stringify(payload, null, 2)
   });
 
-  const response = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.openaiApiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
+  const payloadJson = await requestReminderResponse({
+    context,
+    operation: 'reminder.weekly_digest',
+    body: {
       model: env.reminderLlmModel,
       input: [
         { role: 'system', content: systemPrompt },
@@ -1508,20 +1545,8 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
           }
         }
       }
-    })
+    }
   });
-
-  let payloadJson = null;
-  try {
-    payloadJson = await response.json();
-  } catch {
-    payloadJson = null;
-  }
-
-  if (!response.ok) {
-    const detail = sanitizeErrorText(payloadJson?.error?.message || `openai_http_${response.status}`) || `openai_http_${response.status}`;
-    throw createAppError('openai_request_failed', 502, detail, { retryable: response.status >= 500 });
-  }
 
   const { parsed, outputSource } = parseResponseJsonSchemaPayload(payloadJson);
 
@@ -4017,13 +4042,10 @@ async function generateWinbackMessageWithLlm(context, taskType) {
     context_json: JSON.stringify(payload, null, 2)
   });
 
-  const response = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.openaiApiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
+  const payloadJson = await requestReminderResponse({
+    context,
+    operation: 'reminder.winback',
+    body: {
       model: env.reminderLlmModel,
       input: [
         { role: 'system', content: systemPrompt },
@@ -4048,20 +4070,8 @@ async function generateWinbackMessageWithLlm(context, taskType) {
           }
         }
       }
-    })
+    }
   });
-
-  let payloadJson = null;
-  try {
-    payloadJson = await response.json();
-  } catch {
-    payloadJson = null;
-  }
-
-  if (!response.ok) {
-    const detail = sanitizeErrorText(payloadJson?.error?.message || `openai_http_${response.status}`) || `openai_http_${response.status}`;
-    throw createAppError('openai_request_failed', 502, detail, { retryable: response.status >= 500 });
-  }
 
   const { parsed, outputSource } = parseResponseJsonSchemaPayload(payloadJson);
 

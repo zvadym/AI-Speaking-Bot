@@ -5,6 +5,7 @@ import { startWorkerBoss, stopWorkerBoss } from './queue.js';
 import { createRuntimeDeps } from './runtime.js';
 import { createApiHelpers } from './services/api-helpers.js';
 import { createBotAiClient } from './bot-runtime/bot-ai.js';
+import { createLlmCallRecorder } from './bot-runtime/llm-telemetry.js';
 import { captureException, flushSentry } from './sentry.js';
 
 let stopping = false;
@@ -47,11 +48,14 @@ try {
   await registerWorkerHandlers(boss);
   const runtime = createRuntimeDeps({ apiBoss: boss });
   const helpers = createApiHelpers(runtime);
+  const recordLlmCall = createLlmCallRecorder(runtime.pool);
   const botAi = createBotAiClient({
     apiKey: runtime.env.openaiApiKey,
     model: runtime.env.botRuntimeModel,
+    supportModel: runtime.env.botSupportModel,
     transcriptionModel: runtime.env.botTranscriptionModel,
     ttsModel: runtime.env.botTtsModel,
+    recordLlmCall,
     getBotConfig: (botKey) => runtime.botConfigs[botKey] || null
   });
   await registerBotRuntimeWorker(boss, {

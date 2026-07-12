@@ -11,6 +11,7 @@ import {
   loadIdiomPhraseFiles,
   translateIdiomPhraseEntry
 } from '../src/idiom-phrases.js';
+import { createLlmCallRecorder } from '../src/bot-runtime/llm-telemetry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '../../..');
@@ -31,6 +32,7 @@ const pool = new pg.Pool({
   connectionString: databaseUrl,
   ssl
 });
+const recordLlmCall = createLlmCallRecorder(pool);
 
 const args = new Set(process.argv.slice(2));
 const shouldTranslate = !args.has('--skip-translate');
@@ -205,7 +207,12 @@ async function main() {
           model: translationModel,
           targetLanguage: job.entry.targetLanguage,
           baseLanguage: job.baseLanguage,
-          entry: job.entry
+          entry: job.entry,
+          recordLlmCall,
+          trace: {
+            botKey: 'idiom-catalog',
+            route: `catalog.idiom.${job.entry.targetLanguage}.${job.baseLanguage}`
+          }
         });
         await upsertTranslation(pool, job.phraseId, job.baseLanguage, {
           ...translation,

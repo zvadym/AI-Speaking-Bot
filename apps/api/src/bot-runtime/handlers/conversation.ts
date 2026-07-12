@@ -111,7 +111,13 @@ export async function executeConversation(
     profileSummary: String(context.profile_summary || ''),
     shortSummary: String(context.short_summary || ''),
     history: historyResult.rows,
-    topic
+    topic,
+    trace: {
+      decisionId: update.decisionId,
+      chatId,
+      botKey: update.botKey,
+      route: update.route
+    }
   });
   await client.query(
     `INSERT INTO messages (chat_id, role, content, bot_key, topic_template_id)
