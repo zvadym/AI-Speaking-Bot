@@ -59,6 +59,10 @@ try {
     getBotLocale: runtime.getBotLocale,
     telegramClient: runtime.telegramClient,
     webappUrl: runtime.env.webappUrl,
+    progressEnabledBotKeys: runtime.env.botProgressEnabledBotKeys,
+    reportProgressError: (error, event, botKey) => captureException(error, {
+      tags: { subsystem: 'progress-indicator', event, bot_key: botKey }
+    }),
     topicMenuHelpers: helpers,
     getBotConfig: (botKey) => runtime.botConfigs[botKey] || null,
     sendIdiomMore: sendIdiomPracticeMorePhrase,

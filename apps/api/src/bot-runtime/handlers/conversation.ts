@@ -4,6 +4,7 @@ import type { BotAiClient, ConversationAiResult } from '../bot-ai.js';
 import type { PreparedUpdate } from '../contracts.js';
 import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
+import { runBotPipelineStage } from '../pipeline.js';
 import {
   enforcePracticeQuota,
   type PracticeQuotaGuard
@@ -186,7 +187,7 @@ export function createTextConversationHandler({
   return {
     route: 'message.text',
     version: BOT_RUNTIME_HANDLER_VERSIONS['message.text'],
-    async execute(update: PreparedUpdate & { route: 'message.text' }) {
+    async execute(update: PreparedUpdate & { route: 'message.text' }, pipeline) {
       const chatId = update.input.chatId;
       const text = String(update.input.message.text || '').trim();
       if (chatId === null || !Number.isSafeInteger(chatId) || chatId <= 0 || !text) {
@@ -201,28 +202,29 @@ export function createTextConversationHandler({
       });
       if (!quota.allowed) return quota.outcome;
 
-      await Promise.allSettled([
-        telegramClient.callTelegramApi(update.botKey, 'sendChatAction', {
-          chat_id: chatId,
-          action: 'typing'
-        })
-      ]);
-
       let result: ConversationEffectResult;
-      try {
-        const effect = await effectRunner(pool, {
-          decisionId: update.decisionId,
-          stepKey: 'message.text:conversation:v1',
-          execute: (client) => executeConversation(client, update, ai, text)
-        });
-        result = effect.result;
-      } catch (error) {
-        if (error instanceof BotRuntimeHandlerError) throw error;
-        throw new BotRuntimeHandlerError('conversation_failed', {
-          retryable: true,
-          cause: error
-        });
-      }
+      result = await runBotPipelineStage(pipeline, 'conversation.generate', async () => {
+        await Promise.allSettled([
+          telegramClient.callTelegramApi(update.botKey, 'sendChatAction', {
+            chat_id: chatId,
+            action: 'typing'
+          })
+        ]);
+        try {
+          const effect = await effectRunner(pool, {
+            decisionId: update.decisionId,
+            stepKey: 'message.text:conversation:v1',
+            execute: (client) => executeConversation(client, update, ai, text)
+          });
+          return effect.result;
+        } catch (error) {
+          if (error instanceof BotRuntimeHandlerError) throw error;
+          throw new BotRuntimeHandlerError('conversation_failed', {
+            retryable: true,
+            cause: error
+          });
+        }
+      });
 
       const locale = localeRecord(getBotLocale(update.botKey));
       const explanation = sanitizeTelegramHtml(result.response.explanation_html);

@@ -46,7 +46,8 @@ This file orients automated agents working in this repo. Keep it accurate as the
   `ADMIN_DASHBOARD_PASSWORD`,
   `BROADCAST_MAX_RECIPIENTS`, `BROADCAST_PROCESS_BATCH_SIZE`,
   `BROADCAST_PER_MESSAGE_DELAY_MS`, `BROADCAST_MEDIA_CHAT_ID`, `DEFAULT_BOT_KEY`,
-  `BOT_KEY_BY_TARGET_LANG_JSON`, `BOT_RUNTIME_ROUTE_FLAGS_JSON`, `OPENAI_API_KEY`,
+  `BOT_KEY_BY_TARGET_LANG_JSON`, `BOT_RUNTIME_ROUTE_FLAGS_JSON`,
+  `BOT_PROGRESS_ENABLED_BOT_KEYS`, `OPENAI_API_KEY`,
   `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`,
   `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_PROFILE_SESSION_SAMPLE_RATE`,
   `TOPIC_GENERATION_MODEL`, `IDIOM_PRACTICE_SEND_HOUR_UTC`,
@@ -79,6 +80,10 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Telegram sends each bot update to `/telegram/webhook/:botKey`.
 - The API validates the per-bot webhook secret, persists ingestion state, and enqueues a pg-boss job.
 - `apps/api/src/bot-runtime` owns route preparation, typed handlers, AI calls, durable effects, and Telegram delivery.
+- `apps/api/src/bot-runtime/pipeline.ts` is the universal middleware runner;
+  cross-cutting behavior wraps complete handlers or explicit named stages.
+- Progress messages are enabled per bot with `BOT_PROGRESS_ENABLED_BOT_KEYS`;
+  use `*` only after canary verification.
 - `apps/api/src/bot-runtime/entitlement-context.ts` is the single source of truth for effective plan and practice quota; usage is global by `chat_id` across all bots.
 - `deploy/prompts/*.md` and `shared/llm-prompts/*.md` are loaded directly by the API and worker.
 - `apps/api/scripts/telegram-webhooks.mjs set|inspect|delete` manages all configured Telegram webhooks.

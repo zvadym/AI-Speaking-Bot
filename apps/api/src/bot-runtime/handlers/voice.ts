@@ -4,6 +4,7 @@ import type { BotAiClient } from '../bot-ai.js';
 import type { PreparedUpdate } from '../contracts.js';
 import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
+import { runBotPipelineStage } from '../pipeline.js';
 import {
   enforcePracticeQuota,
   type PracticeQuotaGuard
@@ -119,7 +120,7 @@ export function createVoiceConversationHandler({
   return {
     route: 'message.voice',
     version: BOT_RUNTIME_HANDLER_VERSIONS['message.voice'],
-    async execute(update: PreparedUpdate & { route: 'message.voice' }) {
+    async execute(update: PreparedUpdate & { route: 'message.voice' }, pipeline) {
       const chatId = update.input.chatId;
       const fileId = String(update.input.message.voiceFileId || '').trim();
       const duration = Number(update.input.message.voiceDuration || 0);
@@ -154,48 +155,51 @@ export function createVoiceConversationHandler({
       });
       if (!entryQuota.allowed) return entryQuota.outcome;
 
-      await Promise.allSettled([
-        telegramClient.callTelegramApi(update.botKey, 'sendChatAction', {
-          chat_id: chatId,
-          action: 'typing'
-        })
-      ]);
-      let audio: Buffer;
-      try {
-        audio = await telegramClient.downloadTelegramFile(fileId, { botKey: update.botKey });
-      } catch (error) {
-        throw new BotRuntimeHandlerError('telegram_voice_download_failed', {
-          retryable: true,
-          cause: error
-        });
-      }
-
       let result: VoiceConversationResult;
-      try {
-        const effect = await effectRunner(pool, {
-          decisionId: update.decisionId,
-          stepKey: 'message.voice:conversation:v1',
-          execute: async (client) => {
-            const transcript = await ai.transcribe(update.botKey, audio);
-            if (!transcript) throw new Error('voice_transcript_empty');
-            const conversation = await executeConversation(
-              client,
-              update,
-              ai,
-              transcript,
-              'voice'
-            );
-            await recordVoiceUsage(client, update, 'in', duration);
-            return { ...conversation, transcript };
-          }
-        });
-        result = effect.result;
-      } catch (error) {
-        throw new BotRuntimeHandlerError('voice_conversation_failed', {
-          retryable: true,
-          cause: error
-        });
-      }
+      result = await runBotPipelineStage(pipeline, 'conversation.generate', async () => {
+        await Promise.allSettled([
+          telegramClient.callTelegramApi(update.botKey, 'sendChatAction', {
+            chat_id: chatId,
+            action: 'typing'
+          })
+        ]);
+        let audio: Buffer;
+        try {
+          audio = await telegramClient.downloadTelegramFile(fileId, { botKey: update.botKey });
+        } catch (error) {
+          throw new BotRuntimeHandlerError('telegram_voice_download_failed', {
+            retryable: true,
+            cause: error
+          });
+        }
+
+        try {
+          const effect = await effectRunner(pool, {
+            decisionId: update.decisionId,
+            stepKey: 'message.voice:conversation:v1',
+            execute: async (client) => {
+              const transcript = await ai.transcribe(update.botKey, audio);
+              if (!transcript) throw new Error('voice_transcript_empty');
+              const conversation = await executeConversation(
+                client,
+                update,
+                ai,
+                transcript,
+                'voice'
+              );
+              await recordVoiceUsage(client, update, 'in', duration);
+              return { ...conversation, transcript };
+            }
+          });
+          return effect.result;
+        } catch (error) {
+          if (error instanceof BotRuntimeHandlerError) throw error;
+          throw new BotRuntimeHandlerError('voice_conversation_failed', {
+            retryable: true,
+            cause: error
+          });
+        }
+      });
 
       await textDeliverer({
         pool,

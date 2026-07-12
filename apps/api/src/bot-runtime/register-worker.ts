@@ -30,9 +30,12 @@ import {
 } from './handlers/support-callbacks.js';
 import type { BotAiClient } from './bot-ai.js';
 import {
+  createBotPipelineRunner,
   defaultBotPipelineRunner,
   type BotPipelineRunner
 } from './pipeline.js';
+import { createProgressIndicatorMiddleware } from './progress-middleware.js';
+import { createProgressService } from './progress-service.js';
 import {
   createTopicActionHandler,
   createTopicMenuHandler,
@@ -58,6 +61,11 @@ interface WorkerJob {
 }
 
 interface BossWorker {
+  send(
+    name: string,
+    data: object,
+    options: Record<string, unknown>
+  ): Promise<string | null>;
   work(
     name: string,
     options: Record<string, unknown>,
@@ -223,6 +231,8 @@ export async function registerBotRuntimeWorker(
     getBotLocale,
     telegramClient,
     webappUrl,
+    progressEnabledBotKeys,
+    reportProgressError = () => {},
     topicMenuHelpers,
     getBotConfig,
     sendIdiomMore,
@@ -232,12 +242,23 @@ export async function registerBotRuntimeWorker(
     getBotLocale(botKey: string): unknown;
     telegramClient: PreferenceTelegramClient & TopicTelegramClient & SupportTelegramClient & ConversationTelegramClient & VoiceTelegramClient;
     webappUrl: string;
+    progressEnabledBotKeys: ReadonlySet<string>;
+    reportProgressError?: (error: unknown, event: string, botKey: string) => void;
     topicMenuHelpers: TopicMenuHelpers;
     getBotConfig(botKey: string): Record<string, unknown> | null;
     sendIdiomMore: IdiomMoreSender;
     ai: BotAiClient;
   }
 ): Promise<void> {
+  const progressService = createProgressService({ pool, boss, telegramClient });
+  const pipelineRunner = createBotPipelineRunner([
+    createProgressIndicatorMiddleware({
+      progressService,
+      getBotLocale,
+      enabledBotKeys: progressEnabledBotKeys,
+      reportError: reportProgressError
+    })
+  ]);
   const registry = createBotHandlerRegistry([
     ...createStaticRouteHandlers({ pool, getBotLocale, telegramClient }),
     ...createPreferenceHandlers({ pool, getBotLocale, telegramClient }),
@@ -296,7 +317,7 @@ export async function registerBotRuntimeWorker(
     { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
     async (jobs) => {
       for (const job of jobs) {
-        await processBotUpdateJob(job, { pool, registry });
+        await processBotUpdateJob(job, { pool, registry, pipelineRunner });
       }
     }
   );
