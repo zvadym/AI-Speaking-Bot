@@ -58,6 +58,7 @@ import {
   QUEUE_WINBACK_SEND,
   defaultRetryOptions
 } from './queue.js';
+import { createProgressService } from './bot-runtime/progress-service.js';
 
 const botConfigs = loadBotConfigs();
 const ONBOARDING_TASK_TYPE = 'onboarding_complete';
@@ -147,9 +148,6 @@ const LANGUAGE_LABELS = {
   tr: 'Turkish',
   uk: 'Ukrainian'
 };
-const LOADER_ROTATE_INTERVAL_MS = 5000;
-const LOADER_TIMEOUT_SECONDS = 60;
-const LOADER_TIMEOUT_MS = LOADER_TIMEOUT_SECONDS * 1000;
 const LOADER_ROTATE_CONCURRENCY = 10;
 const DISCORD_EVENT_TYPES = new Set(['new_paid_user', 'user_milestone', 'user_feedback']);
 const botCatalog = createPublicBotCatalogLookup(botConfigs, env.telegramBotTokensByBotKey || {});
@@ -170,9 +168,7 @@ const {
   callTelegramApi,
   sendTelegramTextMessage,
   sendTelegramPhotoMessage,
-  sendTelegramVideoMessage,
-  editTelegramMessageText,
-  deleteTelegramMessage
+  sendTelegramVideoMessage
 } = telegramClient;
 
 function normalizeReplyMode(raw) {
@@ -363,108 +359,6 @@ function languageLabelForCode(codeRaw) {
   const code = normalizeLanguageCode(codeRaw);
   if (!code) return 'Unknown';
   return LANGUAGE_LABELS[code] || code.toUpperCase();
-}
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function normalizeLoaderSessionId(raw) {
-  const value = (raw ?? '').toString().trim();
-  return value ? value.slice(0, 128) : null;
-}
-
-function normalizeLoaderMessageId(raw) {
-  const value = Number(raw);
-  if (!Number.isFinite(value) || value <= 0) return null;
-  return Math.trunc(value);
-}
-
-function isTruthyLoaderFlag(raw) {
-  return raw === true || raw === 1 || raw === '1' || raw === 'true' || raw === 't';
-}
-
-function isTelegramMessageGoneError(error) {
-  const message = (error?.telegramDescription || error?.message || '').toString().toLowerCase();
-  return (
-    message.includes('message to edit not found') ||
-    message.includes('message to delete not found') ||
-    message.includes('message identifier is not specified') ||
-    message.includes('message can\'t be deleted') ||
-    message.includes('message can not be edited')
-  );
-}
-
-function isTelegramNotModifiedError(error) {
-  const message = (error?.telegramDescription || error?.message || '').toString().toLowerCase();
-  return message.includes('message is not modified');
-}
-
-async function fetchLoaderState(chatId, botKey) {
-  const normalizedBotKey = normalizeBotKey(botKey);
-  const normalizedChatId = Number(chatId);
-  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey) return null;
-
-  const { rows } = await pool.query(
-    `SELECT chat_id, bot_key, stop_flag, updated_at, session_id, message_id, started_at
-       FROM loader_flags
-      WHERE chat_id = $1
-        AND bot_key = $2
-      LIMIT 1`,
-    [normalizedChatId, normalizedBotKey]
-  );
-  if (!rows[0]) return null;
-
-  return {
-    chat_id: Number(rows[0].chat_id),
-    bot_key: normalizeBotKey(rows[0].bot_key),
-    stop_flag: isTruthyLoaderFlag(rows[0].stop_flag),
-    updated_at: rows[0].updated_at ? new Date(rows[0].updated_at) : null,
-    session_id: normalizeLoaderSessionId(rows[0].session_id),
-    message_id: normalizeLoaderMessageId(rows[0].message_id),
-    started_at: rows[0].started_at ? new Date(rows[0].started_at) : null
-  };
-}
-
-async function markLoaderStopped(chatId, botKey, sessionId, { clearMessageId = false } = {}) {
-  await pool.query(
-    `UPDATE loader_flags
-        SET stop_flag = true,
-            updated_at = NOW(),
-            message_id = CASE WHEN $4::boolean THEN NULL ELSE message_id END
-      WHERE chat_id = $1
-        AND bot_key = $2
-        AND ($3::text IS NULL OR session_id = $3)`,
-    [Number(chatId), normalizeBotKey(botKey), normalizeLoaderSessionId(sessionId), clearMessageId]
-  );
-}
-
-function shuffleLoaderMessages(messages) {
-  const out = Array.isArray(messages) ? [...messages] : [];
-  for (let idx = out.length - 1; idx > 0; idx -= 1) {
-    const swapIdx = Math.floor(Math.random() * (idx + 1));
-    [out[idx], out[swapIdx]] = [out[swapIdx], out[idx]];
-  }
-  return out;
-}
-
-function pickNextLoaderText(messages, index, lastDisplayedText) {
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return { text: '', nextIndex: index };
-  }
-
-  let nextIndex = Number.isFinite(index) ? index : 0;
-  let text = messages[nextIndex % messages.length] || '';
-
-  if (messages.length > 1 && text && text === lastDisplayedText) {
-    nextIndex += 1;
-    text = messages[nextIndex % messages.length] || '';
-  }
-
-  return {
-    text,
-    nextIndex: nextIndex + 1
-  };
 }
 
 function getBotLocale(botKeyRaw) {
@@ -4742,53 +4636,6 @@ async function enqueueWinbackSend(boss, { chatId, botKey, reminderType, taskType
   );
 }
 
-export async function enqueueLoaderRotateJob(boss, { chatId, botKey, sessionId, waitingText, messages }) {
-  const normalizedChatId = Number(chatId);
-  const normalizedBotKey = normalizeBotKey(botKey);
-  const normalizedSessionId = normalizeLoaderSessionId(sessionId);
-  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey || !normalizedSessionId) {
-    return null;
-  }
-
-  return boss.send(
-    QUEUE_LOADER_ROTATE,
-    {
-      chatId: normalizedChatId,
-      botKey: normalizedBotKey,
-      sessionId: normalizedSessionId,
-      waitingText: (waitingText ?? '').toString(),
-      messages: Array.isArray(messages) ? messages : []
-    },
-    {
-      retryLimit: 0,
-      singletonKey: `loader_rotate:${normalizedBotKey}:${normalizedChatId}:${normalizedSessionId}`
-    }
-  );
-}
-
-export async function enqueueLoaderTimeoutCleanupJob(boss, { chatId, botKey, sessionId }) {
-  const normalizedChatId = Number(chatId);
-  const normalizedBotKey = normalizeBotKey(botKey);
-  const normalizedSessionId = normalizeLoaderSessionId(sessionId);
-  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey || !normalizedSessionId) {
-    return null;
-  }
-
-  return boss.send(
-    QUEUE_LOADER_TIMEOUT_CLEANUP,
-    {
-      chatId: normalizedChatId,
-      botKey: normalizedBotKey,
-      sessionId: normalizedSessionId
-    },
-    {
-      retryLimit: 0,
-      startAfter: LOADER_TIMEOUT_SECONDS,
-      singletonKey: `loader_timeout:${normalizedBotKey}:${normalizedChatId}:${normalizedSessionId}`
-    }
-  );
-}
-
 export async function enqueueBroadcastCampaign(boss, campaignId) {
   const id = Number(campaignId);
   if (!Number.isFinite(id) || id <= 0) return null;
@@ -4830,97 +4677,15 @@ export async function enqueueDiscordEventNotificationJob(boss, event, { singleto
   return boss.send(QUEUE_DISCORD_EVENT_SEND, { ...event, type }, sendOptions);
 }
 
-async function cleanupLoaderMessage({ chatId, botKey, sessionId, reason }) {
-  const state = await fetchLoaderState(chatId, botKey);
-  if (!state || state.session_id !== sessionId) return false;
-
-  const messageId = normalizeLoaderMessageId(state.message_id);
-  if (messageId) {
-    try {
-      await deleteTelegramMessage(chatId, messageId, { botKey });
-    } catch (error) {
-      if (!isTelegramMessageGoneError(error)) {
-        console.warn('loader-cleanup:delete-failed', {
-          chatId,
-          botKey,
-          sessionId,
-          reason,
-          error: error?.telegramDescription || error?.message || String(error)
-        });
-      }
-    }
-  }
-
-  await markLoaderStopped(chatId, botKey, sessionId, { clearMessageId: true });
-  return true;
-}
-
-async function handleLoaderRotate(jobs) {
+async function handleLoaderRotate(jobs, progressService) {
   for (const job of jobs) {
-    const chatId = Number(job.data?.chatId);
-    const botKey = normalizeBotKey(job.data?.botKey);
-    const sessionId = normalizeLoaderSessionId(job.data?.sessionId);
-    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || !sessionId) continue;
-
-    const waitingText = (job.data?.waitingText ?? '').toString();
-    const shuffledMessages = shuffleLoaderMessages(
-      Array.isArray(job.data?.messages)
-        ? job.data.messages.map((value) => (value ?? '').toString()).filter((value) => value.trim())
-        : []
-    );
-
-    let nextIndex = 0;
-    let lastDisplayedText = waitingText;
-
-    while (true) {
-      const state = await fetchLoaderState(chatId, botKey);
-      if (!state || state.session_id !== sessionId) break;
-
-      const startedAtMs = state.started_at instanceof Date ? state.started_at.getTime() : NaN;
-      const timedOut = Number.isFinite(startedAtMs) ? Date.now() - startedAtMs >= LOADER_TIMEOUT_MS : false;
-      if (state.stop_flag || timedOut) break;
-
-      if (shuffledMessages.length > 0 && state.message_id) {
-        const { text, nextIndex: computedNextIndex } = pickNextLoaderText(shuffledMessages, nextIndex, lastDisplayedText);
-        nextIndex = computedNextIndex;
-        if (text && text !== lastDisplayedText) {
-          try {
-            await editTelegramMessageText(chatId, state.message_id, text, { botKey });
-            lastDisplayedText = text;
-          } catch (error) {
-            if (isTelegramNotModifiedError(error)) {
-              lastDisplayedText = text;
-            } else if (isTelegramMessageGoneError(error)) {
-              await markLoaderStopped(chatId, botKey, sessionId, { clearMessageId: true });
-              break;
-            } else {
-              console.warn('loader-rotate:edit-failed', {
-                jobId: job.id,
-                chatId,
-                botKey,
-                sessionId,
-                error: error?.telegramDescription || error?.message || String(error)
-              });
-            }
-          }
-        }
-      }
-
-      await delay(LOADER_ROTATE_INTERVAL_MS);
-    }
-
-    await cleanupLoaderMessage({ chatId, botKey, sessionId, reason: 'rotate_exit' });
+    await progressService.rotate(job.data);
   }
 }
 
-async function handleLoaderTimeoutCleanup(jobs) {
+async function handleLoaderTimeoutCleanup(jobs, progressService) {
   for (const job of jobs) {
-    const chatId = Number(job.data?.chatId);
-    const botKey = normalizeBotKey(job.data?.botKey);
-    const sessionId = normalizeLoaderSessionId(job.data?.sessionId);
-    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey || !sessionId) continue;
-
-    await cleanupLoaderMessage({ chatId, botKey, sessionId, reason: 'timeout_cleanup' });
+    await progressService.timeout(job.data);
   }
 }
 
@@ -5586,6 +5351,8 @@ async function handleDiscordEventSend(jobs) {
 }
 
 export async function registerWorkerHandlers(boss) {
+  const progressService = createProgressService({ pool, boss, telegramClient });
+
   await boss.work(
     QUEUE_ONBOARDING_COMPLETE_SCAN,
     { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
@@ -5670,14 +5437,14 @@ export async function registerWorkerHandlers(boss) {
     await boss.work(
       QUEUE_LOADER_ROTATE,
       { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
-      handleLoaderRotate
+      (jobs) => handleLoaderRotate(jobs, progressService)
     );
   }
 
   await boss.work(
     QUEUE_LOADER_TIMEOUT_CLEANUP,
     { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
-    handleLoaderTimeoutCleanup
+    (jobs) => handleLoaderTimeoutCleanup(jobs, progressService)
   );
 
   for (let idx = 0; idx < env.broadcastSendConcurrency; idx += 1) {

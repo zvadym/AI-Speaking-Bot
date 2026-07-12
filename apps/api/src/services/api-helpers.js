@@ -34,7 +34,6 @@ import {
 import { enqueueDiscordEventNotificationJob } from '../jobs.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const LOADER_MESSAGE_MAX_LEN = 4096;
 const MINIAPP_FEEDBACK_MESSAGE_MAX_LEN = 1000;
 const ACTIVE_STRIPE_BILLING_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid']);
 const BROADCAST_ALLOWED_TIERS = new Set(['free', 'plus', 'pro']);
@@ -132,8 +131,7 @@ export function createApiHelpers(ctx) {
   const { recordActionEventSafe } = actionEvents;
   const {
     sendTelegramTextMessage,
-    uploadTelegramMediaToChat,
-    deleteTelegramMessage
+    uploadTelegramMediaToChat
   } = telegramClient;
   const { updateUserDeliveryState } = deliveryState;
 
@@ -290,49 +288,6 @@ export function createApiHelpers(ctx) {
       [chatId]
     );
     return normalizeEffectiveTopicAccessTier(rows[0]?.effective_tier || 'free');
-  }
-
-  async function fetchLoaderState(chatId, botKey) {
-    const normalizedChatId = Number(chatId);
-    const normalizedBotKey = normalizeBotKey(botKey);
-    if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey) return null;
-
-    const { rows } = await pool.query(
-      `SELECT chat_id, bot_key, stop_flag, updated_at, session_id, message_id, started_at
-         FROM loader_flags
-        WHERE chat_id = $1
-          AND bot_key = $2
-        LIMIT 1`,
-      [normalizedChatId, normalizedBotKey]
-    );
-    return rows[0] || null;
-  }
-
-  async function upsertLoaderState({ chatId, botKey, sessionId, messageId }) {
-    await pool.query(
-      `INSERT INTO loader_flags (chat_id, bot_key, session_id, message_id, stop_flag, started_at, updated_at)
-       VALUES ($1, $2, $3, $4, false, NOW(), NOW())
-       ON CONFLICT (chat_id, bot_key) DO UPDATE SET
-         session_id = EXCLUDED.session_id,
-         message_id = EXCLUDED.message_id,
-         stop_flag = false,
-         started_at = NOW(),
-         updated_at = NOW()`,
-      [Number(chatId), normalizeBotKey(botKey), normalizeLoaderSessionId(sessionId), normalizeLoaderMessageId(messageId)]
-    );
-  }
-
-  async function markLoaderStopped(chatId, botKey, sessionId, { clearMessageId = false } = {}) {
-    await pool.query(
-      `UPDATE loader_flags
-          SET stop_flag = true,
-              updated_at = NOW(),
-              message_id = CASE WHEN $4::boolean THEN NULL ELSE message_id END
-        WHERE chat_id = $1
-          AND bot_key = $2
-          AND ($3::text IS NULL OR session_id = $3)`,
-      [Number(chatId), normalizeBotKey(botKey), normalizeLoaderSessionId(sessionId), clearMessageId]
-    );
   }
 
   function normalizeTopicPackValue(raw) {
@@ -1867,76 +1822,6 @@ export function createApiHelpers(ctx) {
     return rows;
   }
 
-  function normalizeLoaderMessages(raw) {
-    if (!Array.isArray(raw)) return [];
-    return raw
-      .map((value) => (value ?? '').toString().trim())
-      .filter(Boolean)
-      .map((value) => value.slice(0, LOADER_MESSAGE_MAX_LEN))
-      .slice(0, 32);
-  }
-
-  function normalizeLoaderWaitingText(raw) {
-    const value = (raw ?? '').toString().trim();
-    return value ? value.slice(0, LOADER_MESSAGE_MAX_LEN) : '';
-  }
-
-  function normalizeLoaderSessionId(raw) {
-    const value = (raw ?? '').toString().trim();
-    return value ? value.slice(0, 128) : null;
-  }
-
-  function normalizeLoaderMessageId(raw) {
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value <= 0) return null;
-    return Math.trunc(value);
-  }
-
-  function isTelegramMessageGoneError(error) {
-    const message = (error?.telegramDescription || error?.message || '').toString().toLowerCase();
-    return (
-      message.includes('message to edit not found') ||
-      message.includes('message to delete not found') ||
-      message.includes('message identifier is not specified') ||
-      message.includes('message can\'t be deleted') ||
-      message.includes('message can not be edited')
-    );
-  }
-
-  async function stopAndDeleteLoader(chatId, botKey, sessionId = null) {
-    const state = await fetchLoaderState(chatId, botKey);
-    if (!state) return null;
-
-    const requestedSessionId = normalizeLoaderSessionId(sessionId);
-    if (requestedSessionId && state.session_id !== requestedSessionId) {
-      return null;
-    }
-    const effectiveSessionId = requestedSessionId || state.session_id;
-
-    await markLoaderStopped(chatId, botKey, effectiveSessionId);
-
-    if (state.message_id) {
-      try {
-        await deleteTelegramMessage(chatId, state.message_id, { botKey });
-      } catch (error) {
-        if (!isTelegramMessageGoneError(error)) {
-          console.warn('loader-stop:delete-failed', {
-            chatId,
-            botKey,
-            sessionId: effectiveSessionId,
-            error: error?.telegramDescription || error?.message || String(error)
-          });
-        }
-      }
-    }
-
-    await markLoaderStopped(chatId, botKey, effectiveSessionId, { clearMessageId: true });
-    return {
-      session_id: effectiveSessionId,
-      message_id: state.message_id
-    };
-  }
-
   function parseAdminFeedbackThreadTarget(body = {}) {
     const chatId = Number(body?.chatId ?? body?.chat_id);
     const botKey = normalizeBotKey(body?.botKey ?? body?.bot_key);
@@ -2568,10 +2453,6 @@ export function createApiHelpers(ctx) {
     normalizeBroadcastFilters,
     normalizeBroadcastMediaFileIds,
     normalizeBroadcastReplyMarkup,
-    normalizeLoaderMessageId,
-    normalizeLoaderMessages,
-    normalizeLoaderSessionId,
-    normalizeLoaderWaitingText,
     normalizeTopicAssistDraft,
     normalizeTopicBaseTemplate,
     normalizeTopicPackValue,
@@ -2593,12 +2474,10 @@ export function createApiHelpers(ctx) {
     sanitizeErrorText,
     sendTelegramTextMessage,
     serializeTopicRow,
-    stopAndDeleteLoader,
     summarizeBillingEntry,
     targetLangFromBotKey,
     updateUserDeliveryState,
     uploadTelegramMediaToChat,
-    upsertLoaderState,
     upsertUser,
     validateBroadcastBotSelection,
     withBroadcastStreakRange

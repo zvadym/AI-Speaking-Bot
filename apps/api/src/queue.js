@@ -2,6 +2,15 @@ import { PgBoss } from 'pg-boss';
 import { env } from './env.js';
 import { captureException } from './sentry.js';
 import { BOT_UPDATE_QUEUE_NAME } from './bot-runtime/contracts.js';
+import {
+  QUEUE_LOADER_ROTATE,
+  QUEUE_LOADER_TIMEOUT_CLEANUP
+} from './bot-runtime/progress-queue.js';
+
+export {
+  QUEUE_LOADER_ROTATE,
+  QUEUE_LOADER_TIMEOUT_CLEANUP
+} from './bot-runtime/progress-queue.js';
 
 export const QUEUE_ONBOARDING_COMPLETE_SCAN = 'onboarding-complete-scan';
 export const QUEUE_ONBOARDING_COMPLETE_SEND = 'onboarding-complete-send';
@@ -17,8 +26,6 @@ export const QUEUE_BROADCAST_CAMPAIGN_ENQUEUE = 'broadcast-campaign-enqueue';
 export const QUEUE_BROADCAST_RECIPIENT_SEND = 'broadcast-recipient-send';
 export const QUEUE_WINBACK_SCAN = 'winback-scan';
 export const QUEUE_WINBACK_SEND = 'winback-send';
-export const QUEUE_LOADER_ROTATE = 'loader-rotate';
-export const QUEUE_LOADER_TIMEOUT_CLEANUP = 'loader-timeout-cleanup';
 export const QUEUE_DISCORD_EVENT_SEND = 'discord-event-send';
 export const QUEUE_BOT_UPDATE_PROCESS = BOT_UPDATE_QUEUE_NAME;
 
