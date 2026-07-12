@@ -77,6 +77,7 @@ dbmate() {
   local database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_CONTAINER}:5432/${POSTGRES_DB}?sslmode=disable"
 
   docker run --rm \
+    --user "$(id -u):$(id -g)" \
     --network "$NETWORK_NAME" \
     -e DATABASE_URL="$database_url" \
     -v "$ROOT_DIR/db:/db" \
@@ -93,6 +94,7 @@ dbmate_dump_to_file() {
   output_name="$(basename "$output_file")"
 
   docker run --rm \
+    --user "$(id -u):$(id -g)" \
     --network "$NETWORK_NAME" \
     -e DATABASE_URL="$database_url" \
     -v "$ROOT_DIR/db:/db" \
@@ -109,8 +111,6 @@ generate_schema_to_file() {
 
 create_temp_schema_file() {
   TMP_SCHEMA="$(mktemp "${TMPDIR:-/tmp}/db-schema.XXXXXX")"
-  # The dbmate container runs under a different UID on Linux CI.
-  chmod 666 "$TMP_SCHEMA"
 }
 
 update_schema() {
