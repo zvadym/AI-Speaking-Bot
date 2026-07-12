@@ -10,6 +10,7 @@ test('bot AI renders configured prompts and parses structured Responses output',
     apiKey: 'test-key',
     model: 'test-model',
     supportModel: 'test-support-model',
+    supportReasoningEffort: 'none',
     recordLlmCall: async (event) => { telemetry.push(event); },
     getBotConfig: () => ({
       bot_key: 'uk-en',
@@ -50,6 +51,7 @@ test('bot AI renders configured prompts and parses structured Responses output',
   }), 'Привіт');
   assert.equal(calls.length, 1);
   assert.equal(calls[0].model, 'test-support-model');
+  assert.deepEqual(calls[0].reasoning, { effort: 'none' });
   const input = calls[0].input as Array<{ content: string }>;
   assert.match(input[0].content, /Teacher/);
   assert.match(input[0].content, /Ukrainian/);
@@ -58,6 +60,7 @@ test('bot AI renders configured prompts and parses structured Responses output',
   assert.deepEqual({
     operation: telemetry[0].operation,
     model: telemetry[0].model,
+    reasoningEffort: telemetry[0].reasoningEffort,
     decisionId: telemetry[0].trace.decisionId,
     inputTokens: telemetry[0].inputTokens,
     cachedInputTokens: telemetry[0].cachedInputTokens,
@@ -68,6 +71,7 @@ test('bot AI renders configured prompts and parses structured Responses output',
   }, {
     operation: 'support.translate',
     model: 'test-support-model',
+    reasoningEffort: 'none',
     decisionId: 'v1:uk-en:1',
     inputTokens: 100,
     cachedInputTokens: 20,

@@ -279,6 +279,8 @@ export function createBotAiClient({
   apiKey,
   model,
   supportModel = model,
+  conversationReasoningEffort,
+  supportReasoningEffort,
   transcriptionModel = 'gpt-4o-transcribe',
   ttsModel = 'gpt-4o-mini-tts',
   recordLlmCall,
@@ -288,6 +290,8 @@ export function createBotAiClient({
   apiKey: string;
   model: string;
   supportModel?: string;
+  conversationReasoningEffort?: string;
+  supportReasoningEffort?: string;
   transcriptionModel?: string;
   ttsModel?: string;
   recordLlmCall?: LlmCallRecorder;
@@ -303,6 +307,7 @@ export function createBotAiClient({
 
   async function structured(
     selectedModel: string,
+    reasoningEffort: string | undefined,
     operation: string,
     trace: LlmTraceContext,
     system: string,
@@ -314,10 +319,12 @@ export function createBotAiClient({
       trace,
       operation,
       model: selectedModel,
+      reasoningEffort,
       record: recordLlmCall,
       call: async () => {
         const response = await openai().responses.create({
           model: selectedModel,
+          ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}),
           input: [
             { role: 'system', content: system },
             { role: 'user', content: user }
@@ -353,6 +360,7 @@ export function createBotAiClient({
         .join('\n');
       return await structured(
         model,
+        conversationReasoningEffort,
         'conversation.respond',
         input.trace || { botKey: input.botKey },
         renderPrompt('model_system_prompt', input.botKey, config),
@@ -387,6 +395,7 @@ export function createBotAiClient({
       const context = promptContext(botKey, config);
       const result = await structured(
         supportModel,
+        supportReasoningEffort,
         'support.translate',
         trace,
         renderPrompt('model_support_prompt', botKey, config),
@@ -402,6 +411,7 @@ export function createBotAiClient({
       const context = promptContext(input.botKey, config);
       return await structured(
         supportModel,
+        supportReasoningEffort,
         'support.hints',
         input.trace || { botKey: input.botKey },
         renderPrompt('model_hints_prompt', input.botKey, config),
@@ -424,6 +434,7 @@ export function createBotAiClient({
       const context = promptContext(botKey, config);
       const result = await structured(
         supportModel,
+        supportReasoningEffort,
         'support.vocabulary',
         trace,
         renderPrompt('model_vocab_prompt', botKey, config),

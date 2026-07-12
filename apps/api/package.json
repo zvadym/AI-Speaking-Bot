@@ -12,7 +12,8 @@
     "worker:dev": "tsx src/worker.js",
     "start": "node --import ./dist/instrument-api.js dist/server.js",
     "worker": "node --import ./dist/instrument-worker.js dist/worker.js",
-    "test": "tsx --test test/*.test.js test/*.test.ts"
+    "test": "tsx --test test/*.test.js test/*.test.ts",
+    "eval:conversation": "tsx scripts/evaluate-conversation-models.ts"
   },
   "dependencies": {
     "@sentry/node": "^10.43.0",
