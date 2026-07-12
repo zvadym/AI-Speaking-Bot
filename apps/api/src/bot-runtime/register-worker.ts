@@ -30,6 +30,10 @@ import {
 } from './handlers/support-callbacks.js';
 import type { BotAiClient } from './bot-ai.js';
 import {
+  defaultBotPipelineRunner,
+  type BotPipelineRunner
+} from './pipeline.js';
+import {
   createTopicActionHandler,
   createTopicMenuHandler,
   type TopicTelegramClient,
@@ -76,6 +80,7 @@ export interface BotRuntimeWorkerDependencies {
   pool: Pool;
   registry: BotHandlerRegistry;
   executionRepository?: ExecutionRepository;
+  pipelineRunner?: BotPipelineRunner;
 }
 
 export type BotRuntimeJobOutcome =
@@ -105,7 +110,8 @@ export async function processBotUpdateJob(
   {
     pool,
     registry,
-    executionRepository = defaultExecutionRepository
+    executionRepository = defaultExecutionRepository,
+    pipelineRunner = defaultBotPipelineRunner()
   }: BotRuntimeWorkerDependencies
 ): Promise<BotRuntimeJobOutcome> {
   const data = asRecord(job.data);
@@ -162,7 +168,12 @@ export async function processBotUpdateJob(
   }
 
   try {
-    const result = await handler.execute(contract);
+    const result = await pipelineRunner.execute({
+      handler,
+      update: contract,
+      jobId: job.id,
+      attempt: claim.attempts
+    });
     await executionRepository.markSucceeded(pool, contract.decisionId, job.id);
     console.info('bot-update-process:succeeded', {
       jobId: job.id,
