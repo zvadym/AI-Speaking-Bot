@@ -81,3 +81,35 @@ test('bot AI renders configured prompts and parses structured Responses output',
     success: true
   });
 });
+
+test('bot AI applies model policy only to the selected bot key', async () => {
+  const calls: Array<Record<string, unknown>> = [];
+  const client = createBotAiClient({
+    apiKey: 'test-key',
+    model: 'default-conversation',
+    supportModel: 'default-support',
+    getModelPolicy: (botKey) => botKey === 'uk-de'
+      ? { supportModel: 'canary-support', supportReasoningEffort: 'low' }
+      : undefined,
+    getBotConfig: (botKey) => ({
+      bot_key: botKey,
+      base_language: botKey.split('-')[0],
+      learning_language: botKey.split('-')[1]
+    }),
+    createClient: () => ({
+      responses: {
+        async create(input: Record<string, unknown>) {
+          calls.push(input);
+          return { output_text: JSON.stringify({ translation_base: 'ok' }) };
+        }
+      }
+    } as never)
+  });
+
+  await client.translate('uk-en', 'Hello');
+  await client.translate('uk-de', 'Hallo');
+  assert.deepEqual(calls.map((call) => ({ model: call.model, reasoning: call.reasoning })), [
+    { model: 'default-support', reasoning: undefined },
+    { model: 'canary-support', reasoning: { effort: 'low' } }
+  ]);
+});

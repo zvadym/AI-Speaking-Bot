@@ -7,6 +7,7 @@ import {
   type LlmCallRecorder,
   type LlmTraceContext
 } from './llm-telemetry.js';
+import type { BotModelPolicyOverride } from './model-policy.js';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -284,6 +285,7 @@ export function createBotAiClient({
   transcriptionModel = 'gpt-4o-transcribe',
   ttsModel = 'gpt-4o-mini-tts',
   recordLlmCall,
+  getModelPolicy,
   getBotConfig,
   createClient = (key: string) => new OpenAI({ apiKey: key })
 }: {
@@ -295,6 +297,7 @@ export function createBotAiClient({
   transcriptionModel?: string;
   ttsModel?: string;
   recordLlmCall?: LlmCallRecorder;
+  getModelPolicy?(botKey: string): BotModelPolicyOverride | undefined;
   getBotConfig(botKey: string): UnknownRecord | null;
   createClient?: (apiKey: string) => Pick<OpenAI, 'responses' | 'audio'>;
 }): BotAiClient {
@@ -349,18 +352,26 @@ export function createBotAiClient({
   }
 
   const configFor = (botKey: string) => getBotConfig(botKey) || {};
+  const policyFor = (botKey: string) => ({
+    conversationModel: model,
+    conversationReasoningEffort,
+    supportModel,
+    supportReasoningEffort,
+    ...(getModelPolicy?.(botKey) || {})
+  });
 
   return {
     async respond(input) {
       const config = configFor(input.botKey);
+      const policy = policyFor(input.botKey);
       const context = promptContext(input.botKey, config);
       const history = input.history
         .slice(-20)
         .map((item) => `${item.role}: ${item.content}`)
         .join('\n');
       return await structured(
-        model,
-        conversationReasoningEffort,
+        policy.conversationModel,
+        policy.conversationReasoningEffort,
         'conversation.respond',
         input.trace || { botKey: input.botKey },
         renderPrompt('model_system_prompt', input.botKey, config),
@@ -392,10 +403,11 @@ export function createBotAiClient({
 
     async translate(botKey, text, trace = { botKey }) {
       const config = configFor(botKey);
+      const policy = policyFor(botKey);
       const context = promptContext(botKey, config);
       const result = await structured(
-        supportModel,
-        supportReasoningEffort,
+        policy.supportModel,
+        policy.supportReasoningEffort,
         'support.translate',
         trace,
         renderPrompt('model_support_prompt', botKey, config),
@@ -408,10 +420,11 @@ export function createBotAiClient({
 
     async hints(input) {
       const config = configFor(input.botKey);
+      const policy = policyFor(input.botKey);
       const context = promptContext(input.botKey, config);
       return await structured(
-        supportModel,
-        supportReasoningEffort,
+        policy.supportModel,
+        policy.supportReasoningEffort,
         'support.hints',
         input.trace || { botKey: input.botKey },
         renderPrompt('model_hints_prompt', input.botKey, config),
@@ -431,10 +444,11 @@ export function createBotAiClient({
 
     async vocabulary(botKey, assistantReply, trace = { botKey }) {
       const config = configFor(botKey);
+      const policy = policyFor(botKey);
       const context = promptContext(botKey, config);
       const result = await structured(
-        supportModel,
-        supportReasoningEffort,
+        policy.supportModel,
+        policy.supportReasoningEffort,
         'support.vocabulary',
         trace,
         renderPrompt('model_vocab_prompt', botKey, config),

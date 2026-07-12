@@ -52,10 +52,13 @@ try {
   const botAi = createBotAiClient({
     apiKey: runtime.env.openaiApiKey,
     model: runtime.env.botRuntimeModel,
+    conversationReasoningEffort: runtime.env.botRuntimeReasoningEffort,
     supportModel: runtime.env.botSupportModel,
+    supportReasoningEffort: runtime.env.botSupportReasoningEffort,
     transcriptionModel: runtime.env.botTranscriptionModel,
     ttsModel: runtime.env.botTtsModel,
     recordLlmCall,
+    getModelPolicy: (botKey) => runtime.env.botModelPolicyOverrides[botKey],
     getBotConfig: (botKey) => runtime.botConfigs[botKey] || null
   });
   await registerBotRuntimeWorker(boss, {

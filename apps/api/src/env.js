@@ -2,6 +2,10 @@ import 'dotenv/config';
 import { extractBotTokens } from './bot-configs.js';
 import { parseBotRuntimeRouteFlags } from './bot-runtime/route-flags.js';
 import { parseProgressEnabledBotKeys } from './bot-runtime/progress-config.js';
+import {
+  parseBotModelPolicyOverrides,
+  parseModelReasoningEffort
+} from './bot-runtime/model-policy.js';
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -137,6 +141,18 @@ const botProgressEnabledBotKeys = parseProgressEnabledBotKeys(
 );
 const botRuntimeModel = (process.env.BOT_RUNTIME_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4';
 const botSupportModel = (process.env.BOT_SUPPORT_MODEL || botRuntimeModel).toString().trim() || botRuntimeModel;
+const botRuntimeReasoningEffort = parseModelReasoningEffort(
+  process.env.BOT_RUNTIME_REASONING_EFFORT,
+  'BOT_RUNTIME_REASONING_EFFORT'
+);
+const botSupportReasoningEffort = parseModelReasoningEffort(
+  process.env.BOT_SUPPORT_REASONING_EFFORT,
+  'BOT_SUPPORT_REASONING_EFFORT'
+);
+const botModelPolicyOverrides = parseBotModelPolicyOverrides(
+  process.env.BOT_MODEL_POLICY_JSON,
+  Object.keys(telegramBotTokensByBotKey)
+);
 
 console.log(`Loaded Telegram bot tokens from bot config files for: ${Object.keys(telegramBotTokensByBotKey).join(', ')}`)
 
@@ -163,7 +179,10 @@ export const env = {
   internalApiSecret: process.env.INTERNAL_API_SECRET || '',
   openaiApiKey: (process.env.OPENAI_API_KEY || '').toString().trim(),
   botRuntimeModel,
+  botRuntimeReasoningEffort,
   botSupportModel,
+  botSupportReasoningEffort,
+  botModelPolicyOverrides,
   botTranscriptionModel: (process.env.BOT_TRANSCRIPTION_MODEL || 'gpt-4o-transcribe').toString().trim() || 'gpt-4o-transcribe',
   botTtsModel: (process.env.BOT_TTS_MODEL || 'gpt-4o-mini-tts').toString().trim() || 'gpt-4o-mini-tts',
   sentryDsn: (process.env.SENTRY_DSN || '').toString().trim(),
