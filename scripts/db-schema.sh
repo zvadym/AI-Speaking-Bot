@@ -107,8 +107,14 @@ generate_schema_to_file() {
   dbmate_dump_to_file "$output_file"
 }
 
-update_schema() {
+create_temp_schema_file() {
   TMP_SCHEMA="$(mktemp "${TMPDIR:-/tmp}/db-schema.XXXXXX")"
+  # The dbmate container runs under a different UID on Linux CI.
+  chmod 666 "$TMP_SCHEMA"
+}
+
+update_schema() {
+  create_temp_schema_file
   generate_schema_to_file "$TMP_SCHEMA"
 
   if [[ -f "$SCHEMA_PATH" ]] && cmp -s "$SCHEMA_PATH" "$TMP_SCHEMA"; then
@@ -128,7 +134,7 @@ check_schema() {
     exit 1
   fi
 
-  TMP_SCHEMA="$(mktemp "${TMPDIR:-/tmp}/db-schema.XXXXXX")"
+  create_temp_schema_file
   generate_schema_to_file "$TMP_SCHEMA"
 
   if ! diff -u "$SCHEMA_PATH" "$TMP_SCHEMA"; then
