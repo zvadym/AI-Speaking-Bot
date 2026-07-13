@@ -84,7 +84,8 @@ const LANGUAGE_LABELS: Record<string, string> = {
 };
 
 const EXPLANATION_TITLES: Record<string, string> = {
-  de: 'Erklärung', en: 'Explanation', it: 'Spiegazione', ru: 'Пояснение', uk: 'Пояснення'
+  ar: 'شرح', de: 'Erklärung', en: 'Explanation', hi: 'व्याख्या',
+  it: 'Spiegazione', ru: 'Пояснение', tr: 'Açıklama', uk: 'Пояснення'
 };
 
 const RESPONSE_SCHEMA = {
@@ -215,9 +216,13 @@ function promptContext(botKey: string, config: UnknownRecord): Record<string, st
   const targetCode = String(config.learning_language || botKey.split('-')[1] || '').toLowerCase();
   const botName = String(config.bot_name || 'AI tutor').trim();
   const hintByBase: Record<string, [string, string]> = {
+    ar: ['تلميح', 'يمكنك قولها هكذا:'],
     de: ['Tipp', 'Du kannst das so sagen:'],
+    en: ['Hint', 'You can say it like this:'],
+    hi: ['संकेत', 'आप इसे इस तरह कह सकते हैं:'],
     it: ['Suggerimento', 'Puoi dirlo così:'],
     ru: ['Подсказка', 'Ты можешь сказать это так:'],
+    tr: ['İpucu', 'Bunu şöyle söyleyebilirsin:'],
     uk: ['Підказка', 'Ти можеш сказати це наступним чином:']
   };
   const [hintTitle, hintLeadIn] = hintByBase[baseCode] || ['Hint', 'You can say it like this:'];

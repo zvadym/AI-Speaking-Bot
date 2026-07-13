@@ -168,3 +168,49 @@ test('bot AI normalizes HTML breaks and constrains pinned third-language example
   assert.match(input[1].content, /PINNED TOPIC \(base language\): Планування подорожі/);
   assert.match(input[1].content, /ALLOWED SUB-AREAS: транспорт; житло; маршрут/);
 });
+
+test('bot AI renders Hindi hint labels in the learner base language', async () => {
+  const calls: Array<Record<string, unknown>> = [];
+  const client = createBotAiClient({
+    apiKey: 'test-key',
+    model: 'test-model',
+    getBotConfig: () => ({
+      bot_key: 'hi-en',
+      bot_name: 'Teacher',
+      base_language: 'hi',
+      learning_language: 'en'
+    }),
+    createClient: () => ({
+      responses: {
+        async create(input: Record<string, unknown>) {
+          calls.push(input);
+          return {
+            output_text: JSON.stringify({
+              detected_language: 'hi',
+              is_target_language: true,
+              has_mistakes: true,
+              reply_text: 'What kind of work will you be doing?',
+              explanation_html: '<b>संकेत</b><blockquote>आप इसे इस तरह कह सकते हैं: <code>I am starting a new job next month.</code></blockquote>'
+            })
+          };
+        }
+      }
+    } as never)
+  });
+
+  await client.respond({
+    botKey: 'hi-en',
+    level: 'B1',
+    inputMode: 'text',
+    text: 'मैं अगले महीने नई नौकरी शुरू करने वाला हूँ।',
+    profileSummary: '',
+    shortSummary: '',
+    history: [],
+    topic: null
+  });
+
+  const input = calls[0].input as Array<{ content: string }>;
+  assert.match(input[0].content, /<b>संकेत<\/b>/);
+  assert.match(input[0].content, /आप इसे इस तरह कह सकते हैं:/);
+  assert.match(input[0].content, /explanation_html must be in Hindi/);
+});

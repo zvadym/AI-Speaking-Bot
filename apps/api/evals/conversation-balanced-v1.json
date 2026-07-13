@@ -161,7 +161,7 @@
       "botKey": "tr-en",
       "level": "A1",
       "inputMode": "voice",
-      "text": "I like play football on weekend",
+      "text": "I like playing football on weekends um with my friends",
       "expectedRoute": "target",
       "expectedMistakes": false,
       "profileSummary": "Kullanıcı spordan hoşlanıyor.",
