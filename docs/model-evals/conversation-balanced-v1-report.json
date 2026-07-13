@@ -1,6 +1,6 @@
 {
   "reportVersion": 1,
-  "runAt": "2026-07-13T08:36:33.011Z",
+  "runAt": "2026-07-13T09:12:34.263Z",
   "fixtureVersion": 1,
   "fixturePath": "apps/api/evals/conversation-balanced-v1.json",
   "caseCount": 15,
@@ -8,8 +8,8 @@
   "judge": {
     "model": "gpt-5.6-terra",
     "reasoningEffort": "low",
-    "durationMs": 65226,
-    "estimatedCostUsd": 0.120173
+    "durationMs": 87783,
+    "estimatedCostUsd": 0.11939
   },
   "aggregates": [
     {
@@ -17,17 +17,17 @@
       "model": "gpt-5.4",
       "reasoningEffort": null,
       "cases": 15,
-      "hardPassRate": 0.9333,
-      "hardFailures": 1,
+      "hardPassRate": 1,
+      "hardFailures": 0,
       "criticalFailures": 0,
-      "meanQuality": 4.64,
-      "p50LatencyMs": 2685,
-      "p95LatencyMs": 13257,
-      "inputTokens": 67605,
+      "meanQuality": 4.84,
+      "p50LatencyMs": 1757,
+      "p95LatencyMs": 3726,
+      "inputTokens": 71283,
       "cachedInputTokens": 0,
-      "outputTokens": 1654,
+      "outputTokens": 1569,
       "reasoningTokens": 0,
-      "estimatedCostUsd": 0.193823,
+      "estimatedCostUsd": 0.201742,
       "pairwiseWins": 0,
       "pairwiseTies": 0,
       "pairwiseLosses": 0
@@ -37,19 +37,19 @@
       "model": "gpt-5.6-luna",
       "reasoningEffort": "none",
       "cases": 15,
-      "hardPassRate": 0.8667,
-      "hardFailures": 2,
+      "hardPassRate": 1,
+      "hardFailures": 0,
       "criticalFailures": 1,
-      "meanQuality": 4.707,
-      "p50LatencyMs": 1404,
-      "p95LatencyMs": 1903,
-      "inputTokens": 67605,
+      "meanQuality": 4.813,
+      "p50LatencyMs": 1492,
+      "p95LatencyMs": 6346,
+      "inputTokens": 71283,
       "cachedInputTokens": 0,
-      "outputTokens": 1630,
+      "outputTokens": 1576,
       "reasoningTokens": 0,
-      "estimatedCostUsd": 0.077385,
-      "pairwiseWins": 10,
-      "pairwiseTies": 0,
+      "estimatedCostUsd": 0.080739,
+      "pairwiseWins": 9,
+      "pairwiseTies": 1,
       "pairwiseLosses": 5
     },
     {
@@ -57,41 +57,41 @@
       "model": "gpt-5.6-luna",
       "reasoningEffort": "low",
       "cases": 15,
-      "hardPassRate": 0.8667,
-      "hardFailures": 2,
-      "criticalFailures": 1,
-      "meanQuality": 4.68,
-      "p50LatencyMs": 2257,
-      "p95LatencyMs": 3103,
-      "inputTokens": 67605,
+      "hardPassRate": 1,
+      "hardFailures": 0,
+      "criticalFailures": 0,
+      "meanQuality": 4.88,
+      "p50LatencyMs": 1995,
+      "p95LatencyMs": 6648,
+      "inputTokens": 71283,
       "cachedInputTokens": 0,
-      "outputTokens": 2754,
-      "reasoningTokens": 1109,
-      "estimatedCostUsd": 0.084129,
+      "outputTokens": 2637,
+      "reasoningTokens": 1114,
+      "estimatedCostUsd": 0.087105,
       "pairwiseWins": 9,
-      "pairwiseTies": 0,
-      "pairwiseLosses": 6
+      "pairwiseTies": 2,
+      "pairwiseLosses": 4
     }
   ],
   "gates": {
     "luna_none": {
-      "hardConstraints": false,
+      "hardConstraints": true,
       "noCriticalRegressions": false,
       "qualityNotMateriallyBelow": true,
       "pairwiseNotMateriallyBelow": true,
-      "p95LatencyWithin20Percent": true,
+      "p95LatencyWithin20Percent": false,
       "costReductionAtLeast40Percent": true,
-      "costReduction": 0.6007,
+      "costReduction": 0.5998,
       "passed": false
     },
     "luna_low": {
-      "hardConstraints": false,
-      "noCriticalRegressions": false,
+      "hardConstraints": true,
+      "noCriticalRegressions": true,
       "qualityNotMateriallyBelow": true,
       "pairwiseNotMateriallyBelow": true,
-      "p95LatencyWithin20Percent": true,
+      "p95LatencyWithin20Percent": false,
       "costReductionAtLeast40Percent": true,
-      "costReduction": 0.5659,
+      "costReduction": 0.5682,
       "passed": false
     }
   },
@@ -125,15 +125,15 @@
             "detected_language": "en",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "What did you buy at the market?",
-            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I <b>go</b> market yesterday.\n✅ I <b>went to the</b> market yesterday.\n\n🧠 [Rule: tense + preposition + article] مع كلمة <i>yesterday</i> نستخدم الماضي، لذلك <b>go</b> تصبح <b>went</b>. ونقول <b>to the market</b> لأن الفعل يحتاج <i>to</i> مع المكان، وهنا نستخدم <i>the</i> بشكل طبيعي. 🙂\n</blockquote>"
+            "reply_text": "What did you buy there?",
+            "explanation_html": "<b>شرح</b>\n<blockquote>\n❌ I <b>go</b> market yesterday.\n✅ I <b>went to the</b> market yesterday.\n\n🧠 [Rule: tense + preposition + article] مع كلمة <b>yesterday</b> نستخدم الماضي، لذلك <b>go</b> تصبح <b>went</b>. ونقول <b>to the market</b> لأننا نحتاج حرف الجر <b>to</b> مع المكان، وهنا <b>market</b> اسم مفرد فنستخدم <b>the</b>. 🙂\n</blockquote>"
           },
-          "durationMs": 3614,
-          "inputTokens": 4480,
+          "durationMs": 2690,
+          "inputTokens": 4727,
           "cachedInputTokens": 0,
-          "outputTokens": 175,
+          "outputTokens": 182,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.013825,
+          "estimatedCostUsd": 0.0145475,
           "hardErrors": [],
           "callError": null
         },
@@ -145,15 +145,15 @@
             "detected_language": "en",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Did you buy anything at the market?",
-            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I <b>go</b> market yesterday.\n✅ I <b>went to the</b> market yesterday.\n\n🧠 [Rule: Tense and preposition] نستخدم الماضي <i>went</i> مع كلمة <i>yesterday</i>، ونستخدم <i>to</i> قبل المكان. نستخدم <i>the</i> مع السوق المحدد. 🌟\n</blockquote>"
+            "reply_text": "What did you buy there?",
+            "explanation_html": "<b>شرح</b>\n<blockquote>\n❌ I <b>go</b> market <b>yesterday</b>.\n✅ I <b>went to the</b> market yesterday.\n\n🧠 [Rule: tense and preposition] نستخدم الماضي <i>went</i> مع كلمة <i>yesterday</i>، ونستخدم حرف الجر <i>to</i> مع المكان. نحتاج أيضًا إلى أداة التعريف <i>the</i> قبل <i>market</i>. 🛒\n</blockquote>"
           },
-          "durationMs": 1903,
-          "inputTokens": 4480,
+          "durationMs": 1746,
+          "inputTokens": 4727,
           "cachedInputTokens": 0,
-          "outputTokens": 153,
+          "outputTokens": 169,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005398,
+          "estimatedCostUsd": 0.005741,
           "hardErrors": [],
           "callError": null
         },
@@ -165,15 +165,15 @@
             "detected_language": "en",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Yesterday can be a busy day. What did you buy?",
-            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I <b>go</b> <b>market</b> yesterday.\n✅ I <b>went to the market</b> yesterday.\n\n🧠 [Rule: Tense and preposition] نستخدم الماضي <i>went</i> مع كلمة <i>yesterday</i>، ونقول <i>go to the market</i> لأن الفعل يحتاج إلى حرف الجر <i>to</i> والاسم يحتاج إلى أداة التعريف <i>the</i>. 🙂\n</blockquote>"
+            "reply_text": "What did you buy at the market?",
+            "explanation_html": "<b>شرح</b>\n<blockquote>\n❌ I <b>go market</b> yesterday.\n✅ I <b>went to the market</b> yesterday.\n\n🧠 [Rule: Tense, article, preposition] نستخدم الماضي <i>went</i> مع كلمة yesterday. ونستخدم <i>to the market</i> لأننا نتحدث عن الذهاب إلى مكان محدد. 😊\n</blockquote>"
           },
-          "durationMs": 2714,
-          "inputTokens": 4480,
+          "durationMs": 1958,
+          "inputTokens": 4727,
           "cachedInputTokens": 0,
-          "outputTokens": 245,
-          "reasoningTokens": 66,
-          "estimatedCostUsd": 0.00595,
+          "outputTokens": 210,
+          "reasoningTokens": 64,
+          "estimatedCostUsd": 0.005987,
           "hardErrors": [],
           "callError": null
         }
@@ -196,7 +196,7 @@
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 4,
+            "conversational_usefulness": 5,
             "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
@@ -204,7 +204,7 @@
           {
             "label": "C",
             "target_language_fidelity": 5,
-            "correction_accuracy": 5,
+            "correction_accuracy": 4,
             "level_fit": 5,
             "conversational_usefulness": 5,
             "instruction_compliance": 5,
@@ -216,14 +216,14 @@
           {
             "left_label": "C",
             "right_label": "A",
-            "winner": "C",
-            "reason": "C gives a slightly clearer, more explicit A1-level explanation of all three changes while maintaining an equally natural follow-up question."
+            "winner": "A",
+            "reason": "Both provide the correct A1-level correction and a natural follow-up, but A's explanation more accurately frames “the” as needed in this intended phrase. C overstates that a singular “market” necessarily takes “the,” rather than requiring an appropriate determiner."
           },
           {
             "left_label": "C",
             "right_label": "B",
-            "winner": "C",
-            "reason": "C has a more direct and natural conversational reply; B's comment that yesterday can be busy is less connected to the learner's statement."
+            "winner": "B",
+            "reason": "Both are usable and correctly correct the sentence, but B gives a slightly more direct, context-linked follow-up and avoids C's overgeneralization that singular “market” specifically requires “the.”"
           }
         ]
       },
@@ -232,8 +232,8 @@
         "B": "luna_low",
         "C": "baseline"
       },
-      "judgeDurationMs": 3740,
-      "judgeEstimatedCostUsd": 0.00775
+      "judgeDurationMs": 5915,
+      "judgeEstimatedCostUsd": 0.010435
     },
     {
       "case": {
@@ -264,14 +264,14 @@
             "is_target_language": true,
             "has_mistakes": true,
             "reply_text": "Music is a great topic. What kind of music do you like?",
-            "explanation_html": "<b>Tipp</b><blockquote>Du kannst das so sagen: <code>I would like to talk about music today.</code></blockquote>"
+            "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>I would like to talk about music today.</code></blockquote>"
           },
-          "durationMs": 1404,
-          "inputTokens": 4483,
+          "durationMs": 1526,
+          "inputTokens": 4727,
           "cachedInputTokens": 0,
-          "outputTokens": 81,
+          "outputTokens": 83,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.004969,
+          "estimatedCostUsd": 0.005225,
           "hardErrors": [],
           "callError": null
         },
@@ -284,19 +284,15 @@
             "is_target_language": true,
             "has_mistakes": true,
             "reply_text": "Music is a great topic. What kind of music do you like?",
-            "explanation_html": "<b>Tipp</b><br><blockquote>Du kannst das so sagen: <code>I'd like to talk about music today.</code></blockquote>"
+            "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>I would like to talk about music today.</code></blockquote>"
           },
-          "durationMs": 2142,
-          "inputTokens": 4483,
+          "durationMs": 1793,
+          "inputTokens": 4727,
           "cachedInputTokens": 0,
-          "outputTokens": 150,
-          "reasoningTokens": 65,
-          "estimatedCostUsd": 0.005383,
-          "hardErrors": [
-            "base/mixed explanation must use the exact hint structure",
-            "explanation contains malformed or attributed HTML",
-            "explanation contains unsafe tag <br>"
-          ],
+          "outputTokens": 172,
+          "reasoningTokens": 87,
+          "estimatedCostUsd": 0.005759,
+          "hardErrors": [],
           "callError": null
         },
         {
@@ -307,15 +303,15 @@
             "detected_language": "de",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Great, music is a good topic. What kind of music do you like most?",
+            "reply_text": "Great, let's talk about music. What kind of music do you like most?",
             "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>I want to talk about music today.</code></blockquote>"
           },
-          "durationMs": 1442,
-          "inputTokens": 4483,
+          "durationMs": 1556,
+          "inputTokens": 4727,
           "cachedInputTokens": 0,
-          "outputTokens": 85,
+          "outputTokens": 84,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.0124825,
+          "estimatedCostUsd": 0.0130775,
           "hardErrors": [],
           "callError": null
         }
@@ -359,13 +355,13 @@
             "left_label": "B",
             "right_label": "C",
             "winner": "C",
-            "reason": "C preserves the polite intent of “möchte” more closely with “would like,” while B's “want” is grammatical but slightly less natural for the original phrasing."
+            "reason": "C's suggested phrasing, “I would like to talk about music today,” more precisely reflects the learner's “möchte” than B's “I want.”"
           },
           {
             "left_label": "B",
             "right_label": "A",
             "winner": "A",
-            "reason": "A gives the most natural conversational rendering, “I'd like,” and preserves the learner's intended polite meaning better than B's “I want.”"
+            "reason": "A's suggested phrasing, “I would like to talk about music today,” more precisely reflects the learner's “möchte” than B's “I want.”"
           }
         ]
       },
@@ -374,8 +370,8 @@
         "B": "baseline",
         "C": "luna_none"
       },
-      "judgeDurationMs": 4085,
-      "judgeEstimatedCostUsd": 0.007295
+      "judgeDurationMs": 12198,
+      "judgeEstimatedCostUsd": 0.007712
     },
     {
       "case": {
@@ -410,15 +406,15 @@
             "detected_language": "es",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "Qué buena idea. Una sopa casera es perfecta para un día tranquilo. ¿Qué verduras compraste?",
+            "reply_text": "Qué buena idea. Una sopa con verduras es perfecta para un día frío.",
             "explanation_html": ""
           },
-          "durationMs": 1903,
-          "inputTokens": 4486,
+          "durationMs": 1678,
+          "inputTokens": 4730,
           "cachedInputTokens": 0,
-          "outputTokens": 107,
-          "reasoningTokens": 46,
-          "estimatedCostUsd": 0.005128,
+          "outputTokens": 104,
+          "reasoningTokens": 50,
+          "estimatedCostUsd": 0.005354,
           "hardErrors": [],
           "callError": null
         },
@@ -430,15 +426,15 @@
             "detected_language": "es",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "Qué bien. Ir al mercado para una sopa siempre da opciones más frescas. ¿Qué verduras usaste al final?",
+            "reply_text": "Qué buena idea. Una sopa con verduras del mercado suele quedar muy rica. ¿Qué tipo de sopa preparaste?",
             "explanation_html": ""
           },
-          "durationMs": 13257,
-          "inputTokens": 4486,
+          "durationMs": 1552,
+          "inputTokens": 4730,
           "cachedInputTokens": 0,
-          "outputTokens": 62,
+          "outputTokens": 61,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.012145,
+          "estimatedCostUsd": 0.01274,
           "hardErrors": [],
           "callError": null
         },
@@ -450,15 +446,15 @@
             "detected_language": "es",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "Suena como un buen plan para una comida casera. ¿Qué verduras compraste y cómo preparaste la sopa?",
+            "reply_text": "Suena bien. Una sopa casera es perfecta para un día tranquilo. ¿Qué verduras compraste?",
             "explanation_html": ""
           },
-          "durationMs": 1132,
-          "inputTokens": 4486,
+          "durationMs": 1492,
+          "inputTokens": 4730,
           "cachedInputTokens": 0,
-          "outputTokens": 62,
+          "outputTokens": 59,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.004858,
+          "estimatedCostUsd": 0.005084,
           "hardErrors": [],
           "callError": null
         }
@@ -471,7 +467,7 @@
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 4,
+            "conversational_usefulness": 5,
             "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
@@ -491,7 +487,7 @@
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 5,
+            "conversational_usefulness": 3,
             "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
@@ -501,14 +497,14 @@
           {
             "left_label": "A",
             "right_label": "B",
-            "winner": "B",
-            "reason": "B is more natural and directly builds on the learner's statement; A's phrasing about going to the market for soup is slightly awkward."
+            "winner": "tie",
+            "reason": "Both are natural B1-level Spanish replies that correctly recognize the sentence as error-free and advance the conversation with a relevant question."
           },
           {
             "left_label": "A",
             "right_label": "C",
-            "winner": "C",
-            "reason": "C is more idiomatic and concise, while A contains slightly unnatural phrasing."
+            "winner": "A",
+            "reason": "A more effectively advances the conversation by asking a relevant follow-up question, while C only adds a generic comment."
           }
         ]
       },
@@ -517,8 +513,8 @@
         "B": "luna_none",
         "C": "luna_low"
       },
-      "judgeDurationMs": 3287,
-      "judgeEstimatedCostUsd": 0.006465
+      "judgeDurationMs": 2749,
+      "judgeEstimatedCostUsd": 0.006193
     },
     {
       "case": {
@@ -548,15 +544,15 @@
             "detected_language": "mixed",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Puoi controllare il sito del museo o chiamare prima. Così sei più sicuro e non fai il viaggio per niente.",
+            "reply_text": "Puoi controllare il sito del museo o chiamare prima di andare. Se vuoi, possiamo anche scrivere un messaggio semplice per chiedere gli orari.",
             "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>Domani voglio andare al museo, ma non so se è aperto.</code></blockquote>"
           },
-          "durationMs": 5110,
-          "inputTokens": 4486,
+          "durationMs": 1757,
+          "inputTokens": 4730,
           "cachedInputTokens": 0,
-          "outputTokens": 103,
+          "outputTokens": 109,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.01276,
+          "estimatedCostUsd": 0.01346,
           "hardErrors": [],
           "callError": null
         },
@@ -568,15 +564,15 @@
             "detected_language": "mixed",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Puoi controllare gli orari sul sito del museo o telefonare direttamente. Se è aperto, quale mostra vorresti vedere?",
-            "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>Domani voglio andare al museo, ma non so se è aperto.</code></blockquote>"
+            "reply_text": "Puoi controllare gli orari sul sito del museo oppure telefonare. Se è chiuso, potresti visitare una galleria d'arte o rimandare la visita.",
+            "explanation_html": "<b>Tipp</b><blockquote>Du kannst das so sagen: <code>Domani voglio andare al museo, ma non so se è aperto.</code></blockquote>"
           },
-          "durationMs": 1404,
-          "inputTokens": 4486,
+          "durationMs": 1347,
+          "inputTokens": 4730,
           "cachedInputTokens": 0,
-          "outputTokens": 105,
+          "outputTokens": 112,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005116,
+          "estimatedCostUsd": 0.005402,
           "hardErrors": [],
           "callError": null
         },
@@ -591,12 +587,12 @@
             "reply_text": "Puoi controllare gli orari sul sito del museo. Se è chiuso, puoi visitare una galleria d'arte.",
             "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>Domani voglio andare al museo, ma non so se è aperto.</code></blockquote>"
           },
-          "durationMs": 2448,
-          "inputTokens": 4486,
+          "durationMs": 2479,
+          "inputTokens": 4730,
           "cachedInputTokens": 0,
-          "outputTokens": 220,
-          "reasoningTokens": 114,
-          "estimatedCostUsd": 0.005806,
+          "outputTokens": 215,
+          "reasoningTokens": 109,
+          "estimatedCostUsd": 0.00602,
           "hardErrors": [],
           "callError": null
         }
@@ -609,14 +605,14 @@
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 5,
+            "conversational_usefulness": 4,
             "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
           },
           {
             "label": "B",
-            "target_language_fidelity": 4,
+            "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
             "conversational_usefulness": 4,
@@ -629,7 +625,7 @@
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 4,
+            "conversational_usefulness": 5,
             "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
@@ -639,14 +635,14 @@
           {
             "left_label": "C",
             "right_label": "A",
-            "winner": "A",
-            "reason": "Both correct the mixed-language sentence accurately and reply naturally in Italian, but A more directly advances the conversation with a relevant follow-up question."
+            "winner": "C",
+            "reason": "Both correctly normalize the Italian sentence and give appropriate advice, but C is more conversationally useful by offering a practical follow-up option to write a message asking about opening hours."
           },
           {
             "left_label": "C",
             "right_label": "B",
             "winner": "C",
-            "reason": "Both are accurate and useful, but C has more appropriate mixed-language detection and offers a more immediately practical alternative."
+            "reason": "Both provide an accurate correction and suitable museum-related advice, but C advances the interaction more naturally with an optional next step."
           }
         ]
       },
@@ -655,8 +651,8 @@
         "B": "luna_low",
         "C": "baseline"
       },
-      "judgeDurationMs": 4320,
-      "judgeEstimatedCostUsd": 0.008592
+      "judgeDurationMs": 6298,
+      "judgeEstimatedCostUsd": 0.00817
     },
     {
       "case": {
@@ -705,15 +701,15 @@
             "detected_language": "de",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "Das halte ich für einen ausgewogenen Ansatz. Besonders wichtig ist, dass Radwege sicher sind und Busse sowie Bahnen zuverlässig und häufig fahren. Welche Maßnahmen könnten Fußgängerbereiche zusätzlich attraktiver machen?",
+            "reply_text": "Das halte ich für einen ausgewogenen Ansatz. Besonders wichtig ist, dass Radwege sicher und durchgängig sind, während Busse und Bahnen zuverlässig und häufig fahren.",
             "explanation_html": ""
           },
-          "durationMs": 1175,
-          "inputTokens": 4563,
+          "durationMs": 1346,
+          "inputTokens": 4807,
           "cachedInputTokens": 0,
-          "outputTokens": 79,
+          "outputTokens": 71,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005037,
+          "estimatedCostUsd": 0.005233,
           "hardErrors": [],
           "callError": null
         },
@@ -725,15 +721,15 @@
             "detected_language": "de",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "Das ist ein ausgewogener Ansatz, weil beide Angebote unterschiedliche Bedürfnisse abdecken. Welche Rolle sollten autofreie Fußgängerzonen in dieser Verkehrspolitik spielen?",
+            "reply_text": "Das ist ein ausgewogener Ansatz: Beide Verkehrsmittel können sich ergänzen, statt miteinander zu konkurrieren. Welche Rolle sollten autofreie Fußgängerzonen in diesem Konzept spielen?",
             "explanation_html": ""
           },
-          "durationMs": 1816,
-          "inputTokens": 4563,
+          "durationMs": 1995,
+          "inputTokens": 4807,
           "cachedInputTokens": 0,
-          "outputTokens": 147,
+          "outputTokens": 152,
           "reasoningTokens": 73,
-          "estimatedCostUsd": 0.005445,
+          "estimatedCostUsd": 0.005719,
           "hardErrors": [],
           "callError": null
         },
@@ -745,159 +741,21 @@
             "detected_language": "de",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "Das ist ein sinnvoller Ansatz. So bleibt die Stadt flexibel, und verschiedene Menschen können sich gut fortbewegen. Fußgängerzonen passen oft auch gut dazu, besonders in dicht bebauten Zentren.",
+            "reply_text": "Das ist ein sinnvoller Ansatz. So bleibt das System ausgewogen, und verschiedene Wege durch die Stadt funktionieren besser. Bei welchen Maßnahmen für den Radverkehr siehst du den größten Effekt?",
             "explanation_html": ""
           },
-          "durationMs": 6460,
-          "inputTokens": 4563,
+          "durationMs": 1948,
+          "inputTokens": 4807,
           "cachedInputTokens": 0,
-          "outputTokens": 79,
+          "outputTokens": 75,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.0125925,
+          "estimatedCostUsd": 0.0131425,
           "hardErrors": [],
           "callError": null
         }
       ],
       "judgment": {
         "case_id": "en-de-c1-pinned-topic",
-        "assessments": [
-          {
-            "label": "A",
-            "target_language_fidelity": 5,
-            "correction_accuracy": 5,
-            "level_fit": 5,
-            "conversational_usefulness": 5,
-            "instruction_compliance": 5,
-            "critical_failure": false,
-            "critical_reason": ""
-          },
-          {
-            "label": "B",
-            "target_language_fidelity": 5,
-            "correction_accuracy": 5,
-            "level_fit": 4,
-            "conversational_usefulness": 3,
-            "instruction_compliance": 4,
-            "critical_failure": false,
-            "critical_reason": ""
-          },
-          {
-            "label": "C",
-            "target_language_fidelity": 5,
-            "correction_accuracy": 5,
-            "level_fit": 5,
-            "conversational_usefulness": 5,
-            "instruction_compliance": 5,
-            "critical_failure": false,
-            "critical_reason": ""
-          }
-        ],
-        "comparisons": [
-          {
-            "left_label": "B",
-            "right_label": "C",
-            "winner": "C",
-            "reason": "C gives more concrete, policy-relevant elaboration and ends with an open question that clearly advances the pinned transport discussion."
-          },
-          {
-            "left_label": "B",
-            "right_label": "A",
-            "winner": "A",
-            "reason": "A responds naturally and explicitly moves the conversation forward with a relevant question, whereas B only comments without inviting a continuation."
-          }
-        ]
-      },
-      "labelToVariant": {
-        "A": "luna_low",
-        "B": "baseline",
-        "C": "luna_none"
-      },
-      "judgeDurationMs": 3588,
-      "judgeEstimatedCostUsd": 0.006732
-    },
-    {
-      "case": {
-        "id": "en-es-a1-voice-clean",
-        "botKey": "en-es",
-        "level": "A1",
-        "inputMode": "voice",
-        "text": "Quiero agua, por favor.",
-        "expectedRoute": "target",
-        "expectedMistakes": false,
-        "profileSummary": "The learner practises travel phrases.",
-        "shortSummary": "The learner is ordering in a cafe.",
-        "history": [],
-        "topic": null,
-        "dimensions": [
-          "voice-like",
-          "correct-input",
-          "a1"
-        ]
-      },
-      "runs": [
-        {
-          "variantId": "luna_low",
-          "model": "gpt-5.6-luna",
-          "reasoningEffort": "low",
-          "output": {
-            "detected_language": "es",
-            "is_target_language": true,
-            "has_mistakes": false,
-            "reply_text": "Claro. Aquí tiene agua. ¿Quiere algo más?",
-            "explanation_html": ""
-          },
-          "durationMs": 1538,
-          "inputTokens": 4472,
-          "cachedInputTokens": 0,
-          "outputTokens": 91,
-          "reasoningTokens": 39,
-          "estimatedCostUsd": 0.005018,
-          "hardErrors": [],
-          "callError": null
-        },
-        {
-          "variantId": "baseline",
-          "model": "gpt-5.4",
-          "reasoningEffort": null,
-          "output": {
-            "detected_language": "es",
-            "is_target_language": true,
-            "has_mistakes": false,
-            "reply_text": "Claro. ¿Quieres agua fría o natural?",
-            "explanation_html": ""
-          },
-          "durationMs": 1420,
-          "inputTokens": 4472,
-          "cachedInputTokens": 0,
-          "outputTokens": 47,
-          "reasoningTokens": 0,
-          "estimatedCostUsd": 0.011885,
-          "hardErrors": [],
-          "callError": null
-        },
-        {
-          "variantId": "luna_none",
-          "model": "gpt-5.6-luna",
-          "reasoningEffort": "none",
-          "output": {
-            "detected_language": "es",
-            "is_target_language": true,
-            "has_mistakes": false,
-            "reply_text": "Claro. Aquí tienes agua. ¿Quieres algo para comer?",
-            "explanation_html": ""
-          },
-          "durationMs": 1237,
-          "inputTokens": 4472,
-          "cachedInputTokens": 0,
-          "outputTokens": 50,
-          "reasoningTokens": 0,
-          "estimatedCostUsd": 0.004772,
-          "hardErrors": [],
-          "callError": null
-        }
-      ],
-      "judgment": {
-        "case_id": "en-es-a1-voice-clean",
         "assessments": [
           {
             "label": "A",
@@ -932,16 +790,154 @@
         ],
         "comparisons": [
           {
+            "left_label": "B",
+            "right_label": "C",
+            "winner": "B",
+            "reason": "B responds naturally and advances the pinned transport discussion with a focused follow-up question; C adds relevant detail but does not invite the learner to continue."
+          },
+          {
+            "left_label": "B",
+            "right_label": "A",
+            "winner": "tie",
+            "reason": "Both accurately acknowledge the learner’s balanced position, stay within the allowed city-transport topic, and use a natural follow-up question."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_low",
+        "B": "baseline",
+        "C": "luna_none"
+      },
+      "judgeDurationMs": 17911,
+      "judgeEstimatedCostUsd": 0.00677
+    },
+    {
+      "case": {
+        "id": "en-es-a1-voice-clean",
+        "botKey": "en-es",
+        "level": "A1",
+        "inputMode": "voice",
+        "text": "Quiero agua, por favor.",
+        "expectedRoute": "target",
+        "expectedMistakes": false,
+        "profileSummary": "The learner practises travel phrases.",
+        "shortSummary": "The learner is ordering in a cafe.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "voice-like",
+          "correct-input",
+          "a1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "es",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Claro. ¿Quieres agua con gas o sin gas?",
+            "explanation_html": ""
+          },
+          "durationMs": 1792,
+          "inputTokens": 4716,
+          "cachedInputTokens": 0,
+          "outputTokens": 123,
+          "reasoningTokens": 72,
+          "estimatedCostUsd": 0.005454,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "es",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Claro. ¿Algo más?",
+            "explanation_html": ""
+          },
+          "durationMs": 1239,
+          "inputTokens": 4716,
+          "cachedInputTokens": 0,
+          "outputTokens": 44,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.01245,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "es",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Claro. Aquí tienes agua. ¿Quieres algo más?",
+            "explanation_html": ""
+          },
+          "durationMs": 1043,
+          "inputTokens": 4716,
+          "cachedInputTokens": 0,
+          "outputTokens": 49,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.00501,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "en-es-a1-voice-clean",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
             "left_label": "A",
             "right_label": "B",
-            "winner": "A",
-            "reason": "A’s follow-up stays more directly connected to the requested water, while B shifts to food."
+            "winner": "B",
+            "reason": "B more directly acknowledges and fulfills the request before naturally continuing the conversation."
           },
           {
             "left_label": "A",
             "right_label": "C",
-            "winner": "A",
-            "reason": "A uses the informal second-person register consistent with the learner’s “Quiero,” whereas C switches to formal address."
+            "winner": "C",
+            "reason": "C provides a more specific, useful follow-up question that advances the ordering interaction."
           }
         ]
       },
@@ -950,8 +946,8 @@
         "B": "luna_none",
         "C": "luna_low"
       },
-      "judgeDurationMs": 2403,
-      "judgeEstimatedCostUsd": 0.005293
+      "judgeDurationMs": 2648,
+      "judgeEstimatedCostUsd": 0.00613
     },
     {
       "case": {
@@ -982,14 +978,14 @@
             "is_target_language": true,
             "has_mistakes": true,
             "reply_text": "Bello. Che film avete visto?",
-            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ Ieri <b>ho andato</b> al cinema con mia sorella.\n✅ Ieri <b>sono andato</b> al cinema con mia sorella.\n\n🧠 [Rule: tense] With <i>andare</i> in the present perfect, Italian uses <i>essere</i>, not <i>avere</i>. So we say <i>sono andato</i>. 🙂\n</blockquote>"
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ Ieri <b>ho andato</b> al cinema con mia sorella.\n✅ Ieri <b>sono andato</b> al cinema con mia sorella.\n\n🧠 [Rule: tense] With <i>andare</i> in the past tense, Italian uses <i>essere</i>, not <i>avere</i>. So we say <i>sono andato</i>. 🙂\n</blockquote>"
           },
-          "durationMs": 1992,
-          "inputTokens": 4474,
+          "durationMs": 2048,
+          "inputTokens": 4718,
           "cachedInputTokens": 0,
           "outputTokens": 158,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.013555,
+          "estimatedCostUsd": 0.014165,
           "hardErrors": [],
           "callError": null
         },
@@ -1002,14 +998,14 @@
             "is_target_language": true,
             "has_mistakes": true,
             "reply_text": "Che bello! Quale film avete visto?",
-            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ Ieri <b>ho andato</b> al cinema con mia sorella.\n✅ Ieri <b>sono andato</b> al cinema con mia sorella.\n\n🧠 [Rule: Auxiliary verb] The verb <i>andare</i> uses <code>essere</code> in the past tense, not <code>avere</code>. With a female speaker, use <code>sono andata</code>. 🎬\n</blockquote>"
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ Ieri <b>ho andato</b> al cinema con mia sorella.\n✅ Ieri <b>sono andato</b> al cinema con mia sorella.\n\n🧠 [Rule: Auxiliary verb] The verb <i>andare</i> uses <i>essere</i> in the past tense, not <i>avere</i>. With a female speaker, use <i>sono andata</i>. 🎬\n</blockquote>"
           },
-          "durationMs": 1698,
-          "inputTokens": 4474,
+          "durationMs": 1590,
+          "inputTokens": 4718,
           "cachedInputTokens": 0,
           "outputTokens": 164,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005458,
+          "estimatedCostUsd": 0.005702,
           "hardErrors": [],
           "callError": null
         },
@@ -1021,15 +1017,15 @@
             "detected_language": "it",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Che bello! Spero che il film ti sia piaciuto.",
-            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ Ieri <b>ho andato</b> al cinema con mia sorella.\n✅ Ieri <b>sono andato</b> al cinema con mia sorella.\n\n🧠 [Rule: Auxiliary verb] The verb <i>andare</i> uses <i>essere</i> in the past tense, not <i>avere</i>. If the speaker is female, use <i>sono andata</i>. 🎬</blockquote>"
+            "reply_text": "Che bello! Quale film avete visto?",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ Ieri <b>ho andato</b> al cinema con mia sorella.\n✅ Ieri <b>sono andato</b> al cinema con mia sorella.\n\n🧠 [Rule: Auxiliary verb] The verb <i>andare</i> uses <i>essere</i> in the passato prossimo, so we say <i>sono andato</i>. If the speaker is female, use <i>sono andata</i>. 👍\n</blockquote>"
           },
-          "durationMs": 2269,
-          "inputTokens": 4474,
+          "durationMs": 3264,
+          "inputTokens": 4718,
           "cachedInputTokens": 0,
-          "outputTokens": 233,
-          "reasoningTokens": 64,
-          "estimatedCostUsd": 0.005872,
+          "outputTokens": 346,
+          "reasoningTokens": 177,
+          "estimatedCostUsd": 0.006794,
           "hardErrors": [],
           "callError": null
         }
@@ -1052,7 +1048,7 @@
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 4,
+            "conversational_usefulness": 5,
             "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
@@ -1073,13 +1069,13 @@
             "left_label": "C",
             "right_label": "A",
             "winner": "A",
-            "reason": "Both correct the auxiliary accurately, but A gives a warmer, more natural response and asks a clear follow-up question."
+            "reason": "A is slightly more conversationally warm and usefully notes the feminine form, while retaining an equally accurate, A2-appropriate correction."
           },
           {
             "left_label": "C",
             "right_label": "B",
             "winner": "B",
-            "reason": "Both are accurate and level-appropriate; B's response is more natural and personable than the somewhat abrupt “Bello.”"
+            "reason": "B gives the same accurate correction but more precisely identifies the passato prossimo and includes the relevant feminine-form note."
           }
         ]
       },
@@ -1088,8 +1084,8 @@
         "B": "luna_low",
         "C": "baseline"
       },
-      "judgeDurationMs": 3576,
-      "judgeEstimatedCostUsd": 0.007772
+      "judgeDurationMs": 3352,
+      "judgeEstimatedCostUsd": 0.007783
     },
     {
       "case": {
@@ -1120,15 +1116,15 @@
             "detected_language": "hi",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "That is exciting. Starting a new job can be a great chance to learn and grow. What kind of work will you do?",
-            "explanation_html": "<b>Hint</b>\n<blockquote>You can say it like this: <code>I'm going to start a new job next month.</code></blockquote>"
+            "reply_text": "That sounds like an important step. I hope your first month goes well. What kind of work will you be doing?",
+            "explanation_html": "<b>संकेत</b><blockquote>आप इसे इस तरह कह सकते हैं: <code>I am going to start a new job next month.</code></blockquote>"
           },
-          "durationMs": 1721,
-          "inputTokens": 4495,
+          "durationMs": 1370,
+          "inputTokens": 4744,
           "cachedInputTokens": 0,
-          "outputTokens": 97,
+          "outputTokens": 96,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005077,
+          "estimatedCostUsd": 0.00532,
           "hardErrors": [],
           "callError": null
         },
@@ -1140,15 +1136,15 @@
             "detected_language": "hi",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "That sounds like an exciting change. I hope your first month goes well.",
-            "explanation_html": "<b>Hint</b>\n<blockquote>You can say it like this: <code>I am starting a new job next month.</code></blockquote>"
+            "reply_text": "That sounds like an exciting step. I hope your first month goes well.",
+            "explanation_html": "<b>संकेत</b>\n<blockquote>आप इसे इस तरह कह सकते हैं: <code>I am starting a new job next month.</code></blockquote>"
           },
-          "durationMs": 2513,
-          "inputTokens": 4495,
+          "durationMs": 2109,
+          "inputTokens": 4744,
           "cachedInputTokens": 0,
-          "outputTokens": 205,
-          "reasoningTokens": 120,
-          "estimatedCostUsd": 0.005725,
+          "outputTokens": 150,
+          "reasoningTokens": 62,
+          "estimatedCostUsd": 0.005644,
           "hardErrors": [],
           "callError": null
         },
@@ -1160,15 +1156,15 @@
             "detected_language": "hi",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "That sounds like a big change. I hope the first weeks go well and the new job feels clear and manageable.",
-            "explanation_html": "<b>Hint</b>\n<blockquote>You can say it like this: <code>I'm going to start a new job next month.</code></blockquote>"
+            "reply_text": "That’s a big step. I hope the new job starts well and feels like a good fit for you.",
+            "explanation_html": "<b>संकेत</b>\n<blockquote>आप इसे इस तरह कह सकते हैं: <code>I’m going to start a new job next month.</code></blockquote>"
           },
-          "durationMs": 3930,
-          "inputTokens": 4495,
+          "durationMs": 3726,
+          "inputTokens": 4744,
           "cachedInputTokens": 0,
-          "outputTokens": 93,
+          "outputTokens": 95,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.0126325,
+          "estimatedCostUsd": 0.013285,
           "hardErrors": [],
           "callError": null
         }
@@ -1178,31 +1174,31 @@
         "assessments": [
           {
             "label": "A",
-            "target_language_fidelity": 3,
+            "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 3,
-            "instruction_compliance": 3,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
           },
           {
             "label": "B",
-            "target_language_fidelity": 3,
+            "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
             "conversational_usefulness": 4,
-            "instruction_compliance": 3,
+            "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
           },
           {
             "label": "C",
-            "target_language_fidelity": 3,
+            "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
             "conversational_usefulness": 5,
-            "instruction_compliance": 3,
+            "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
           }
@@ -1212,13 +1208,13 @@
             "left_label": "B",
             "right_label": "C",
             "winner": "C",
-            "reason": "Both provide an accurate, natural B1-level reformulation, but C more naturally advances the conversation with a relevant follow-up question. B's phrase “the new job feels clear and manageable” is somewhat less idiomatic."
+            "reason": "Both provide accurate, natural B1-level phrasing, but C more actively advances the conversation with a relevant follow-up question."
           },
           {
             "left_label": "B",
             "right_label": "A",
-            "winner": "B",
-            "reason": "B offers a more natural future-oriented reformulation and a slightly more supportive response. A is accurate but less conversationally engaging."
+            "winner": "tie",
+            "reason": "Both offer accurate, natural corrections and supportive replies. B's phrasing is slightly more explicitly future-oriented, while A's present-continuous phrasing is equally valid for a planned future job."
           }
         ]
       },
@@ -1227,8 +1223,8 @@
         "B": "baseline",
         "C": "luna_none"
       },
-      "judgeDurationMs": 5489,
-      "judgeEstimatedCostUsd": 0.009525
+      "judgeDurationMs": 4161,
+      "judgeEstimatedCostUsd": 0.008585
     },
     {
       "case": {
@@ -1258,15 +1254,15 @@
             "detected_language": "de",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Das war bestimmt ein langer Tag. Hat sich der Besuch trotzdem gelohnt?",
-            "explanation_html": "<b>Spiegazione</b>\n<blockquote>\n❌ Ich habe gestern <b>meine Freund</b> besucht, obwohl ich sehr müde war.\n✅ Ich habe gestern <b>meinen Freund</b> besucht, obwohl ich sehr müde war.\n\n🧠 [Rule: Case and gender] Con il verbo 'besuchen' serve l'accusativo. 'Freund' è maschile, quindi l'aggettivo possessivo cambia da 'meine' a 'meinen'. 🙂\n</blockquote>"
+            "reply_text": "Das klingt nach einem anstrengenden, aber schönen Wochenende. Hast du deinen Freund lange besucht?",
+            "explanation_html": "<b>Spiegazione</b>\n<blockquote>\n❌ Ich habe gestern <b>meine Freund</b> besucht, obwohl ich sehr müde war.\n✅ Ich habe gestern <b>meinen Freund</b> besucht, obwohl ich sehr müde war.\n\n🧠 [Rule: Case and gender] Dopo <i>besuchen</i> serve l'accusativo. <i>Freund</i> è maschile, quindi si usa <i>meinen</i>.\n</blockquote> 🙂"
           },
-          "durationMs": 2617,
-          "inputTokens": 4485,
+          "durationMs": 2116,
+          "inputTokens": 4729,
           "cachedInputTokens": 0,
-          "outputTokens": 254,
-          "reasoningTokens": 82,
-          "estimatedCostUsd": 0.006009,
+          "outputTokens": 214,
+          "reasoningTokens": 39,
+          "estimatedCostUsd": 0.006013,
           "hardErrors": [],
           "callError": null
         },
@@ -1278,15 +1274,15 @@
             "detected_language": "de",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Dann war es trotz Müdigkeit wohl ein guter Besuch. Was habt ihr zusammen gemacht?",
-            "explanation_html": "<b>Spiegazione</b>\n<blockquote>\n❌ Ich habe gestern meine <b>Freund</b> besucht, obwohl ich sehr müde war.\n✅ Ich habe gestern meine<b>n</b> <b>Freund</b> besucht, obwohl ich sehr müde war.\n\n🧠 [Rule: case] Dopo il verbo <i>besuchen</i> serve l'oggetto diretto, quindi qui usiamo l'accusativo. Con <i>mein Freund</i> al maschile, in accusativo diventa <i>meinen Freund</i>. 🙂\n</blockquote>"
+            "reply_text": "Das klingt nach einem langen Tag. Wenigstens hast du deinen Freund noch gesehen.",
+            "explanation_html": "<b>Spiegazione</b>\n<blockquote>\n❌ Ich habe gestern meine <b>Freund</b> besucht, obwohl ich sehr müde war.\n✅ Ich habe gestern meine<b>n</b> <b>Freund</b> besucht, obwohl ich sehr müde war.\n\n🧠 [Rule: case] Dopo il verbo <i>besuchen</i> serve l'accusativo. <i>Freund</i> è maschile, quindi con <i>mein-</i> in accusativo si usa <b>meinen</b> 🙂\n</blockquote>"
           },
-          "durationMs": 3102,
-          "inputTokens": 4485,
+          "durationMs": 2709,
+          "inputTokens": 4729,
           "cachedInputTokens": 0,
-          "outputTokens": 192,
+          "outputTokens": 188,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.0140925,
+          "estimatedCostUsd": 0.0146425,
           "hardErrors": [],
           "callError": null
         },
@@ -1298,15 +1294,15 @@
             "detected_language": "de",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Das klingt nach einem langen Tag. Hoffentlich konntest du dich danach gut ausruhen.",
-            "explanation_html": "<b>Spiegazione</b>\n<blockquote>\n❌ Ich habe gestern <b>meine Freund</b> besucht, obwohl ich sehr müde war.\n✅ Ich habe gestern <b>meinen Freund</b> besucht, obwohl ich sehr müde war.\n\n🧠 [Rule: Case and gender] Dopo il verbo <i>besuchen</i> serve l'accusativo. <i>Freund</i> è maschile, quindi l'aggettivo possessivo diventa <i>meinen</i>.\n</blockquote>"
+            "reply_text": "Das klingt nach einem langen Tag. Hoffentlich konntest du dich danach gut ausruhen. Was habt ihr zusammen gemacht?",
+            "explanation_html": "<b>Spiegazione</b>\n<blockquote>\n❌ Ich habe gestern meine <b>Freund</b> besucht, obwohl ich sehr müde war.\n✅ Ich habe gestern meine <b>Freundin</b> besucht, obwohl ich sehr müde war.\n\n🧠 [Rule: Gender and agreement] Con <i>meine</i> serve un nome femminile al caso accusativo: <i>die Freundin</i> diventa <i>meine Freundin</i>. Se intendi un amico maschio, invece, si dice <i>meinen Freund</i>. 🙂\n</blockquote>"
           },
-          "durationMs": 1753,
-          "inputTokens": 4485,
+          "durationMs": 1816,
+          "inputTokens": 4729,
           "cachedInputTokens": 0,
-          "outputTokens": 180,
+          "outputTokens": 203,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005565,
+          "estimatedCostUsd": 0.005947,
           "hardErrors": [],
           "callError": null
         }
@@ -1317,29 +1313,29 @@
           {
             "label": "A",
             "target_language_fidelity": 5,
-            "correction_accuracy": 4,
+            "correction_accuracy": 5,
             "level_fit": 5,
             "conversational_usefulness": 4,
-            "instruction_compliance": 4,
+            "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
           },
           {
             "label": "B",
             "target_language_fidelity": 5,
-            "correction_accuracy": 5,
-            "level_fit": 5,
+            "correction_accuracy": 2,
+            "level_fit": 4,
             "conversational_usefulness": 5,
-            "instruction_compliance": 5,
-            "critical_failure": false,
-            "critical_reason": ""
+            "instruction_compliance": 3,
+            "critical_failure": true,
+            "critical_reason": "The displayed correction changes the learner's intended masculine noun, Freund, to Freundin. Although the note mentions the masculine alternative, the primary correction is an unsupported and materially altered interpretation."
           },
           {
             "label": "C",
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 5,
+            "conversational_usefulness": 4,
             "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
@@ -1349,14 +1345,14 @@
           {
             "left_label": "A",
             "right_label": "B",
-            "winner": "B",
-            "reason": "B presents the correction more cleanly, with proper spacing and clearer highlighting of the possessive form. Its response is also slightly more natural and avoids A's unsupported inference that the visit was good."
+            "winner": "A",
+            "reason": "A gives the direct, intent-preserving accusative correction. B's displayed correction unnecessarily changes “Freund” to “Freundin,” despite later acknowledging the correct masculine form."
           },
           {
             "left_label": "A",
             "right_label": "C",
             "winner": "C",
-            "reason": "C gives the same accurate correction in cleaner formatting, with a clear explanation and a more directly engaging follow-up question. A has a spacing/highlighting issue in the corrected sentence."
+            "reason": "Both correct the grammar accurately and use an appropriate Italian explanation. C has cleaner correction formatting and advances the exchange with a direct follow-up question, though its unsupported “schönes Wochenende” slightly weakens the reply."
           }
         ]
       },
@@ -1365,8 +1361,8 @@
         "B": "luna_none",
         "C": "luna_low"
       },
-      "judgeDurationMs": 5478,
-      "judgeEstimatedCostUsd": 0.00929
+      "judgeDurationMs": 7930,
+      "judgeEstimatedCostUsd": 0.01216
     },
     {
       "case": {
@@ -1415,15 +1411,15 @@
             "detected_language": "en",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "That’s a strong point. More autonomy can help people work better, but weak boundaries can make the day feel endless. In your view, what helps most with keeping those boundaries clear?",
+            "reply_text": "That trade-off feels central to it. More autonomy can be great, but without clear boundaries the workday can easily spread into personal time.",
             "explanation_html": ""
           },
-          "durationMs": 2749,
-          "inputTokens": 4592,
+          "durationMs": 1554,
+          "inputTokens": 4836,
           "cachedInputTokens": 0,
-          "outputTokens": 75,
+          "outputTokens": 65,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.012605,
+          "estimatedCostUsd": 0.013065,
           "hardErrors": [],
           "callError": null
         },
@@ -1435,15 +1431,15 @@
             "detected_language": "en",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "That balance is crucial: autonomy can improve motivation, but without clear boundaries it may lead to longer hours and quiet burnout. How can organisations help employees protect those boundaries?",
+            "reply_text": "That balance is crucial. Autonomy can improve focus and motivation, while clear boundaries help prevent work from expanding into every part of the day. How does remote work affect collaboration in your team?",
             "explanation_html": ""
           },
-          "durationMs": 1382,
-          "inputTokens": 4592,
+          "durationMs": 1219,
+          "inputTokens": 4836,
           "cachedInputTokens": 0,
-          "outputTokens": 71,
+          "outputTokens": 76,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005018,
+          "estimatedCostUsd": 0.005292,
           "hardErrors": [],
           "callError": null
         },
@@ -1455,15 +1451,15 @@
             "detected_language": "en",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "That balance is crucial: autonomy can improve focus, while clear boundaries help prevent work from taking over personal time. How can distributed teams maintain strong collaboration without reducing that autonomy?",
+            "reply_text": "That balance is crucial: without clear boundaries, autonomy can easily turn into constant availability. How can remote teams protect collaboration without creating pressure to be online all the time?",
             "explanation_html": ""
           },
-          "durationMs": 3075,
-          "inputTokens": 4592,
+          "durationMs": 2435,
+          "inputTokens": 4836,
           "cachedInputTokens": 0,
-          "outputTokens": 179,
-          "reasoningTokens": 105,
-          "estimatedCostUsd": 0.005666,
+          "outputTokens": 157,
+          "reasoningTokens": 84,
+          "estimatedCostUsd": 0.005778,
           "hardErrors": [],
           "callError": null
         }
@@ -1476,7 +1472,7 @@
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 4,
+            "conversational_usefulness": 5,
             "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
@@ -1495,9 +1491,9 @@
             "label": "C",
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
-            "level_fit": 4,
-            "conversational_usefulness": 4,
-            "instruction_compliance": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 3,
+            "instruction_compliance": 4,
             "critical_failure": false,
             "critical_reason": ""
           }
@@ -1507,13 +1503,13 @@
             "left_label": "C",
             "right_label": "A",
             "winner": "A",
-            "reason": "A develops the learner’s point with a more C1-appropriate organisational perspective and advances the discussion naturally; C is clear but more generic and less challenging."
+            "reason": "A advances the pinned discussion with a relevant question about collaboration, whereas C only acknowledges the point."
           },
           {
             "left_label": "C",
             "right_label": "B",
             "winner": "B",
-            "reason": "B most directly reconnects to the outstanding question about team impact by asking about collaboration and autonomy in distributed teams."
+            "reason": "B develops both boundaries and collaboration and asks a focused follow-up question, while C does not move the conversation forward."
           }
         ]
       },
@@ -1522,8 +1518,8 @@
         "B": "luna_low",
         "C": "baseline"
       },
-      "judgeDurationMs": 4829,
-      "judgeEstimatedCostUsd": 0.007772
+      "judgeDurationMs": 3363,
+      "judgeEstimatedCostUsd": 0.007032
     },
     {
       "case": {
@@ -1531,7 +1527,7 @@
         "botKey": "tr-en",
         "level": "A1",
         "inputMode": "voice",
-        "text": "I like play football on weekend",
+        "text": "I like playing football on weekends um with my friends",
         "expectedRoute": "target",
         "expectedMistakes": false,
         "profileSummary": "Kullanıcı spordan hoşlanıyor.",
@@ -1553,20 +1549,17 @@
           "output": {
             "detected_language": "en",
             "is_target_language": true,
-            "has_mistakes": true,
-            "reply_text": "That sounds fun. Football is a great weekend activity.",
-            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I like <b>play</b> football on weekend\n✅ I like <b>playing</b> football on weekends\n\n🧠 [Rule: Verb pattern and plural] “Like” is followed by a verb ending in -ing. We usually say “at/on weekends” with the plural form for a general habit. ⚽</blockquote>"
+            "has_mistakes": false,
+            "reply_text": "That sounds fun, especially with friends. Do you usually play on Saturday or Sunday?",
+            "explanation_html": ""
           },
-          "durationMs": 1325,
-          "inputTokens": 4488,
+          "durationMs": 1182,
+          "inputTokens": 4742,
           "cachedInputTokens": 0,
-          "outputTokens": 135,
+          "outputTokens": 55,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005298,
-          "hardErrors": [
-            "has_mistakes expected false",
-            "correct target-language input must have an empty explanation"
-          ],
+          "estimatedCostUsd": 0.005072,
+          "hardErrors": [],
           "callError": null
         },
         {
@@ -1576,20 +1569,17 @@
           "output": {
             "detected_language": "en",
             "is_target_language": true,
-            "has_mistakes": true,
-            "reply_text": "Football is a great weekend activity. Do you usually play with friends?",
-            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I like <b>play</b> football on weekend\n✅ I like <b>playing</b> football on weekends\n\n🧠 [Rule: Verb pattern] “Like” fiilinden sonra genellikle fiilin -ing hâli kullanılır. Ayrıca genel alışkanlıklarda “on weekends” daha uygundur. ⚽\n</blockquote>"
+            "has_mistakes": false,
+            "reply_text": "That sounds fun. Do you play football every weekend?",
+            "explanation_html": ""
           },
-          "durationMs": 2257,
-          "inputTokens": 4488,
+          "durationMs": 1806,
+          "inputTokens": 4742,
           "cachedInputTokens": 0,
-          "outputTokens": 226,
-          "reasoningTokens": 83,
-          "estimatedCostUsd": 0.005844,
-          "hardErrors": [
-            "has_mistakes expected false",
-            "correct target-language input must have an empty explanation"
-          ],
+          "outputTokens": 101,
+          "reasoningTokens": 50,
+          "estimatedCostUsd": 0.005348,
+          "hardErrors": [],
           "callError": null
         },
         {
@@ -1599,20 +1589,17 @@
           "output": {
             "detected_language": "en",
             "is_target_language": true,
-            "has_mistakes": true,
-            "reply_text": "Football is great exercise. Do you play with friends or family?",
-            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I like <b>play</b> football on weekend\n✅ I like <b>playing</b> football on weekends\n\n🧠 [Rule: verb form] 'like' fiilinden sonra genelde fiilin -ing hali gelir. Bu yüzden 'play' yerine 'playing' kullanılır. 🙂\n</blockquote>"
+            "has_mistakes": false,
+            "reply_text": "That sounds fun. Football with friends is a good way to spend the weekend.",
+            "explanation_html": ""
           },
-          "durationMs": 2394,
-          "inputTokens": 4488,
+          "durationMs": 1405,
+          "inputTokens": 4742,
           "cachedInputTokens": 0,
-          "outputTokens": 135,
+          "outputTokens": 53,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.013245,
-          "hardErrors": [
-            "has_mistakes expected false",
-            "correct target-language input must have an empty explanation"
-          ],
+          "estimatedCostUsd": 0.01265,
+          "hardErrors": [],
           "callError": null
         }
       ],
@@ -1622,30 +1609,30 @@
           {
             "label": "A",
             "target_language_fidelity": 5,
-            "correction_accuracy": 2,
-            "level_fit": 4,
+            "correction_accuracy": 5,
+            "level_fit": 5,
             "conversational_usefulness": 5,
-            "instruction_compliance": 2,
+            "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
           },
           {
             "label": "B",
             "target_language_fidelity": 5,
-            "correction_accuracy": 2,
-            "level_fit": 4,
-            "conversational_usefulness": 5,
-            "instruction_compliance": 2,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
           },
           {
             "label": "C",
             "target_language_fidelity": 5,
-            "correction_accuracy": 2,
-            "level_fit": 4,
-            "conversational_usefulness": 3,
-            "instruction_compliance": 1,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
           }
@@ -1654,14 +1641,14 @@
           {
             "left_label": "B",
             "right_label": "C",
-            "winner": "B",
-            "reason": "Both unnecessarily mark a voice input as erroneous, but B provides the required Turkish explanation and follows up with a natural question. C uses English for the explanation and does not meaningfully advance the conversation."
+            "winner": "C",
+            "reason": "C responds naturally and asks a simple, specific follow-up question that advances the conversation; B only comments."
           },
           {
             "left_label": "B",
             "right_label": "A",
             "winner": "A",
-            "reason": "Both make the same unnecessary correction, but A's explanation addresses both edited elements, including “on weekends,” whereas B changes that phrase without explaining it."
+            "reason": "A advances the conversation with an appropriate A1 follow-up question, while B does not ask a question."
           }
         ]
       },
@@ -1670,8 +1657,8 @@
         "B": "baseline",
         "C": "luna_none"
       },
-      "judgeDurationMs": 6598,
-      "judgeEstimatedCostUsd": 0.010385
+      "judgeDurationMs": 2778,
+      "judgeEstimatedCostUsd": 0.00615
     },
     {
       "case": {
@@ -1699,18 +1686,18 @@
           "model": "gpt-5.6-luna",
           "reasoningEffort": "low",
           "output": {
-            "detected_language": "mixed",
+            "detected_language": "uk-de",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Gern. Möchten Sie Milch dazu?",
+            "reply_text": "Gern. Möchten Sie auch etwas zu essen?",
             "explanation_html": "<b>Підказка</b><blockquote>Ти можеш сказати це наступним чином: <code>Ich möchte einen Kaffee, aber ohne Zucker.</code></blockquote>"
           },
-          "durationMs": 1777,
-          "inputTokens": 4491,
+          "durationMs": 2560,
+          "inputTokens": 4735,
           "cachedInputTokens": 0,
-          "outputTokens": 148,
-          "reasoningTokens": 60,
-          "estimatedCostUsd": 0.005379,
+          "outputTokens": 166,
+          "reasoningTokens": 75,
+          "estimatedCostUsd": 0.005731,
           "hardErrors": [],
           "callError": null
         },
@@ -1722,15 +1709,15 @@
             "detected_language": "mixed",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "Kein Problem, ich bringe dir einen Kaffee ohne Zucker. Möchtest du noch etwas dazu?",
+            "reply_text": "Klar, einen Kaffee ohne Zucker. Möchtest du noch etwas dazu?",
             "explanation_html": "<b>Підказка</b>\n<blockquote>Ти можеш сказати це наступним чином: <code>Ich möchte einen Kaffee ohne Zucker.</code></blockquote>"
           },
-          "durationMs": 2190,
-          "inputTokens": 4491,
+          "durationMs": 1624,
+          "inputTokens": 4735,
           "cachedInputTokens": 0,
-          "outputTokens": 97,
+          "outputTokens": 92,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.0126825,
+          "estimatedCostUsd": 0.0132175,
           "hardErrors": [],
           "callError": null
         },
@@ -1739,23 +1726,19 @@
           "model": "gpt-5.6-luna",
           "reasoningEffort": "none",
           "output": {
-            "detected_language": "mixed",
+            "detected_language": "uk-de",
             "is_target_language": true,
             "has_mistakes": true,
             "reply_text": "Gern. Möchten Sie auch etwas essen?",
-            "explanation_html": "<b>Підказка</b><br><blockquote>Ти можеш сказати це наступним чином: <code>Ich möchte einen Kaffee, aber ohne Zucker.</code></blockquote>"
+            "explanation_html": "<b>Підказка</b>\n<blockquote>Ти можеш сказати це німецькою так: <code>Ich möchte einen Kaffee, aber ohne Zucker.</code></blockquote>"
           },
-          "durationMs": 1250,
-          "inputTokens": 4491,
+          "durationMs": 3169,
+          "inputTokens": 4735,
           "cachedInputTokens": 0,
-          "outputTokens": 89,
+          "outputTokens": 92,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005025,
-          "hardErrors": [
-            "base/mixed explanation must use the exact hint structure",
-            "explanation contains malformed or attributed HTML",
-            "explanation contains unsafe tag <br>"
-          ],
+          "estimatedCostUsd": 0.005287,
+          "hardErrors": [],
           "callError": null
         }
       ],
@@ -1778,7 +1761,7 @@
             "correction_accuracy": 5,
             "level_fit": 5,
             "conversational_usefulness": 4,
-            "instruction_compliance": 5,
+            "instruction_compliance": 4,
             "critical_failure": false,
             "critical_reason": ""
           },
@@ -1788,7 +1771,7 @@
             "correction_accuracy": 5,
             "level_fit": 5,
             "conversational_usefulness": 4,
-            "instruction_compliance": 5,
+            "instruction_compliance": 4,
             "critical_failure": false,
             "critical_reason": ""
           }
@@ -1798,13 +1781,13 @@
             "left_label": "A",
             "right_label": "B",
             "winner": "A",
-            "reason": "A gives an equally accurate, natural correction and responds more directly to the coffee order in a friendly, context-appropriate way."
+            "reason": "A provides the most concise, natural correction and keeps an informal register consistent with the Ukrainian explanation. B unnecessarily shifts to formal address."
           },
           {
             "left_label": "A",
             "right_label": "C",
             "winner": "A",
-            "reason": "A gives an equally accurate correction while its follow-up is more broadly useful and directly tied to completing the order."
+            "reason": "A’s correction is slightly more natural and concise for the intended meaning, and its informal follow-up matches the explanation’s register; C shifts to formal address."
           }
         ]
       },
@@ -1813,8 +1796,8 @@
         "B": "luna_none",
         "C": "luna_low"
       },
-      "judgeDurationMs": 6647,
-      "judgeEstimatedCostUsd": 0.010245
+      "judgeDurationMs": 7531,
+      "judgeEstimatedCostUsd": 0.011367
     },
     {
       "case": {
@@ -1844,15 +1827,15 @@
             "detected_language": "en",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "That was helpful, then. It’s much easier to finish a task when someone explains the problem clearly.",
-            "explanation_html": "<b>Пояснення</b>\n<blockquote>\n❌ She <b>explained me</b> the problem, so I could finish the task.\n✅ She <b>explained the problem to me</b>, so I could finish the task.\n\n🧠 [Rule: verb pattern] Після <i>explain</i> ми не ставимо додаток-особу одразу без прийменника. Правильна модель: <i>explain something to someone</i>. 👍\n</blockquote>"
+            "reply_text": "That was helpful, then. It’s much easier to finish a task when someone explains the issue clearly.",
+            "explanation_html": "<b>Пояснення</b>\n<blockquote>\n❌ She <b>explained me</b> the problem, so I could finish the task.\n✅ She <b>explained the problem to me</b>, so I could finish the task.\n\n🧠 [Rule: verb pattern] Після <i>explain</i> ми не ставимо людину одразу після дієслова. Треба сказати <i>explain something to someone</i>: <i>the problem to me</i>. 👍\n</blockquote>"
           },
-          "durationMs": 2321,
-          "inputTokens": 4510,
+          "durationMs": 2426,
+          "inputTokens": 4754,
           "cachedInputTokens": 0,
-          "outputTokens": 176,
+          "outputTokens": 183,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.013915,
+          "estimatedCostUsd": 0.01463,
           "hardErrors": [],
           "callError": null
         },
@@ -1864,15 +1847,15 @@
             "detected_language": "en",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "That was helpful of her. It is good that you could finish the task after that explanation.",
-            "explanation_html": "<b>Пояснення</b>\n<blockquote>\n❌ She <b>explained me</b> the problem, so I could finish the task.\n✅ She <b>explained the problem to me</b>, so I could finish the task.\n\n🧠 [Rule: Verb pattern] Дієслово <i>explain</i> не вживається безпосередньо з особою: не <code>explain me</code>, а <code>explain something to someone</code>. 🙂\n</blockquote>"
+            "reply_text": "That was helpful of her. Did you finish the task on time?",
+            "explanation_html": "<b>Пояснення</b>\n<blockquote>\n❌ She <b>explained me</b> the problem, so I could finish the task.\n✅ She <b>explained the problem to me</b>, so I could finish the task.\n\n🧠 [Rule: Preposition] Дієслово <i>explain</i> вживаємо з предметом пояснення безпосередньо після нього, а людину позначаємо через <i>to</i>: <i>explain something to someone</i>. 👍\n</blockquote>"
           },
-          "durationMs": 1833,
-          "inputTokens": 4510,
+          "durationMs": 2169,
+          "inputTokens": 4754,
           "cachedInputTokens": 0,
-          "outputTokens": 180,
+          "outputTokens": 185,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.00559,
+          "estimatedCostUsd": 0.005864,
           "hardErrors": [],
           "callError": null
         },
@@ -1884,15 +1867,15 @@
             "detected_language": "en",
             "is_target_language": true,
             "has_mistakes": true,
-            "reply_text": "That was helpful. Clear explanations can save a lot of time at work.",
-            "explanation_html": "<b>Пояснення</b>\n<blockquote>\n❌ She <b>explained me</b> the problem, so I could finish the task.\n✅ She <b>explained the problem to me</b>, so I could finish the task.\n\n🧠 [Rule: Preposition] Після дієслова <i>explain</i> ми не ставимо особу безпосередньо після дієслова. Використовуємо конструкцію <i>explain something to someone</i>. 😊\n</blockquote>"
+            "reply_text": "That made the task much easier. Did you finish it on time?",
+            "explanation_html": "<b>Пояснення</b>\n<blockquote>\n❌ She <b>explained me</b> the problem, so I could finish the task.\n✅ She <b>explained the problem to me</b>, so I could finish the task.\n\n🧠 [Rule: Preposition] Після дієслова <i>explain</i> спочатку називаємо те, що пояснюємо, а людину вводимо через <i>to</i>: <i>explain something to someone</i>. 🙂\n</blockquote>"
           },
-          "durationMs": 3103,
-          "inputTokens": 4510,
+          "durationMs": 6648,
+          "inputTokens": 4754,
           "cachedInputTokens": 0,
-          "outputTokens": 296,
-          "reasoningTokens": 118,
-          "estimatedCostUsd": 0.006286,
+          "outputTokens": 271,
+          "reasoningTokens": 90,
+          "estimatedCostUsd": 0.00638,
           "hardErrors": [],
           "callError": null
         }
@@ -1905,7 +1888,7 @@
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
             "level_fit": 5,
-            "conversational_usefulness": 4,
+            "conversational_usefulness": 5,
             "instruction_compliance": 5,
             "critical_failure": false,
             "critical_reason": ""
@@ -1936,13 +1919,13 @@
             "left_label": "C",
             "right_label": "A",
             "winner": "A",
-            "reason": "Both give the same accurate, level-appropriate correction, but A's conversational reply is slightly more directly connected to the learner's successful completion of the task. C's “then” is somewhat awkward in context."
+            "reason": "Both provide the same accurate, level-appropriate correction, but A follows up with a more direct and natural question that better advances the conversation."
           },
           {
             "left_label": "C",
             "right_label": "B",
             "winner": "B",
-            "reason": "Both corrections are accurate and clear, but B's response is more natural and concise while still extending the workplace context appropriately."
+            "reason": "Both corrections are accurate and clear, but B's response is more naturally connected to the learner's statement and invites a direct follow-up."
           }
         ]
       },
@@ -1951,8 +1934,8 @@
         "B": "luna_low",
         "C": "baseline"
       },
-      "judgeDurationMs": 3699,
-      "judgeEstimatedCostUsd": 0.008438
+      "judgeDurationMs": 3259,
+      "judgeEstimatedCostUsd": 0.007615
     },
     {
       "case": {
@@ -1996,14 +1979,14 @@
             "is_target_language": false,
             "has_mistakes": false,
             "reply_text": "",
-            "explanation_html": "<b>Наразі ми практикуємо іспанську.</b> Будь ласка, надішли повідомлення іспанською мовою. Наприклад: <code>Quiero hablar de otro tema.</code> 🙂"
+            "explanation_html": "<b>Працюємо іспанською</b> 🙂 Надішли повідомлення іспанською. <code>Prefiero viajar en tren.</code>"
           },
-          "durationMs": 1296,
-          "inputTokens": 4582,
+          "durationMs": 1106,
+          "inputTokens": 4826,
           "cachedInputTokens": 0,
-          "outputTokens": 90,
+          "outputTokens": 74,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005122,
+          "estimatedCostUsd": 0.00527,
           "hardErrors": [],
           "callError": null
         },
@@ -2016,14 +1999,14 @@
             "is_target_language": false,
             "has_mistakes": false,
             "reply_text": "",
-            "explanation_html": "Ми практикуємо іспанську. Будь ласка, напиши повідомлення іспанською 😊<blockquote><code>Quiero hablar de otro tema hoy.</code></blockquote>"
+            "explanation_html": "Ми зараз практикуємо іспанську в темі планування подорожі. Напиши іспанською, наприклад: <code>Prefiero viajar en tren.</code> 🧳"
           },
-          "durationMs": 2102,
-          "inputTokens": 4582,
+          "durationMs": 1843,
+          "inputTokens": 4826,
           "cachedInputTokens": 0,
-          "outputTokens": 121,
-          "reasoningTokens": 40,
-          "estimatedCostUsd": 0.005308,
+          "outputTokens": 128,
+          "reasoningTokens": 44,
+          "estimatedCostUsd": 0.005594,
           "hardErrors": [],
           "callError": null
         },
@@ -2036,14 +2019,14 @@
             "is_target_language": false,
             "has_mistakes": false,
             "reply_text": "",
-            "explanation_html": "<b>Спробуй іспанською 🙂</b>\n<blockquote>Зараз ми практикуємо іспанську. Будь ласка, надішли повідомлення іспанською. Наприклад: <code>Prefiero hablar de viajes hoy.</code></blockquote>"
+            "explanation_html": "<b>Спробуй іспанською 🙂</b>\n<blockquote>Ми зараз практикуємо іспанську в темі подорожі. Напиши, будь ласка, наступне повідомлення іспанською. Наприклад: <code>Prefiero viajar en tren porque es más cómodo.</code></blockquote>"
           },
-          "durationMs": 2223,
-          "inputTokens": 4582,
+          "durationMs": 2253,
+          "inputTokens": 4826,
           "cachedInputTokens": 0,
-          "outputTokens": 103,
+          "outputTokens": 112,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.013,
+          "estimatedCostUsd": 0.013745,
           "hardErrors": [],
           "callError": null
         }
@@ -2055,11 +2038,11 @@
             "label": "A",
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
-            "level_fit": 5,
-            "conversational_usefulness": 3,
-            "instruction_compliance": 2,
-            "critical_failure": true,
-            "critical_reason": "The suggested Spanish sentence shifts to an unspecified different topic, violating the pinned travel-planning topic."
+            "level_fit": 4,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
           },
           {
             "label": "B",
@@ -2075,11 +2058,11 @@
             "label": "C",
             "target_language_fidelity": 5,
             "correction_accuracy": 5,
-            "level_fit": 5,
+            "level_fit": 4,
             "conversational_usefulness": 3,
-            "instruction_compliance": 2,
-            "critical_failure": true,
-            "critical_reason": "The suggested Spanish sentence shifts to an unspecified different topic, violating the pinned travel-planning topic."
+            "instruction_compliance": 4,
+            "critical_failure": false,
+            "critical_reason": ""
           }
         ],
         "comparisons": [
@@ -2087,13 +2070,13 @@
             "left_label": "B",
             "right_label": "C",
             "winner": "B",
-            "reason": "B correctly redirects the learner to Spanish while keeping the example within the pinned travel topic; C suggests changing to an unrelated topic."
+            "reason": "B more clearly explains the Spanish-practice and travel-topic routing, while providing a B2-appropriate model sentence."
           },
           {
             "left_label": "B",
             "right_label": "A",
             "winner": "B",
-            "reason": "B preserves the pinned travel-planning topic in its example, whereas A encourages an unspecified topic change."
+            "reason": "Both route correctly with an empty reply, but B gives a slightly more natural, fuller B2-level prompt and example."
           }
         ]
       },
@@ -2102,8 +2085,8 @@
         "B": "baseline",
         "C": "luna_none"
       },
-      "judgeDurationMs": 4321,
-      "judgeEstimatedCostUsd": 0.00833
+      "judgeDurationMs": 3190,
+      "judgeEstimatedCostUsd": 0.006875
     },
     {
       "case": {
@@ -2133,15 +2116,15 @@
             "detected_language": "pl",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "To trafne zastrzeżenie — nawet dobrze zaprojektowane rozwiązanie może nie przynieść oczekiwanych efektów, jeśli wdrożenie będzie niespójne. Warto więc od początku określić mierniki skuteczności i sposób ich monitorowania.",
+            "reply_text": "To trafna ocena — nawet dobrze zaprojektowane rozwiązanie może zawieść, jeśli wdrożenie będzie niespójne. Warto więc od początku określić mierniki skuteczności i sposób monitorowania postępów.",
             "explanation_html": ""
           },
-          "durationMs": 1576,
-          "inputTokens": 4518,
+          "durationMs": 1707,
+          "inputTokens": 4762,
           "cachedInputTokens": 0,
-          "outputTokens": 132,
-          "reasoningTokens": 34,
-          "estimatedCostUsd": 0.00531,
+          "outputTokens": 128,
+          "reasoningTokens": 38,
+          "estimatedCostUsd": 0.00553,
           "hardErrors": [],
           "callError": null
         },
@@ -2153,15 +2136,15 @@
             "detected_language": "pl",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "To trafna uwaga. Sam pomysł może być dobry, ale bez dyscypliny we wdrożeniu efekt często jest słabszy niż oczekiwano.",
+            "reply_text": "To trafna uwaga. Nawet dobre rozwiązanie może zawieść, jeśli wdrożenie będzie nierówne albo zbyt wolne.",
             "explanation_html": ""
           },
-          "durationMs": 2685,
-          "inputTokens": 4518,
+          "durationMs": 1521,
+          "inputTokens": 4762,
           "cachedInputTokens": 0,
-          "outputTokens": 74,
+          "outputTokens": 68,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.012405,
+          "estimatedCostUsd": 0.012925,
           "hardErrors": [],
           "callError": null
         },
@@ -2173,15 +2156,15 @@
             "detected_language": "pl",
             "is_target_language": true,
             "has_mistakes": false,
-            "reply_text": "Zgadzam się — sama trafność rozwiązania nie wystarczy, jeśli zabraknie konsekwencji w realizacji. Warto też wcześniej ustalić, po czym poznamy, że wdrożenie rzeczywiście przynosi oczekiwane rezultaty.",
+            "reply_text": "To trafna uwaga: nawet dobrze zaprojektowane rozwiązanie może zawieść, jeśli wdrożenie będzie nierówne. Warto więc od początku ustalić jasne kryteria oceny i sposób monitorowania rezultatów.",
             "explanation_html": ""
           },
-          "durationMs": 1690,
-          "inputTokens": 4518,
+          "durationMs": 6346,
+          "inputTokens": 4762,
           "cachedInputTokens": 0,
-          "outputTokens": 94,
+          "outputTokens": 88,
           "reasoningTokens": 0,
-          "estimatedCostUsd": 0.005082,
+          "estimatedCostUsd": 0.00529,
           "hardErrors": [],
           "callError": null
         }
@@ -2225,13 +2208,13 @@
             "left_label": "A",
             "right_label": "B",
             "winner": "B",
-            "reason": "B responds naturally and advances the discussion with a concrete, relevant next step: defining evidence of successful implementation."
+            "reason": "B is more useful because it builds naturally on the learner’s point with concrete next steps while remaining concise."
           },
           {
             "left_label": "A",
             "right_label": "C",
             "winner": "C",
-            "reason": "C is more substantive and C1-appropriate, adding a useful suggestion about effectiveness metrics and monitoring while preserving the learner's point."
+            "reason": "C more clearly advances the discussion by proposing relevant effectiveness metrics and progress monitoring."
           }
         ]
       },
@@ -2240,8 +2223,8 @@
         "B": "luna_none",
         "C": "luna_low"
       },
-      "judgeDurationMs": 3166,
-      "judgeEstimatedCostUsd": 0.006287
+      "judgeDurationMs": 4500,
+      "judgeEstimatedCostUsd": 0.006412
     }
   ]
 }

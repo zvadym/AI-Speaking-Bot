@@ -1,30 +1,30 @@
 # Balanced Conversation Model Evaluation
 
-Run: 2026-07-13T08:36:33.011Z
+Run: 2026-07-13T09:12:34.263Z
 Fixture: conversation-balanced-v1 (15 cases)
 Judge: gpt-5.6-terra with low reasoning
 
 | Variant | Hard pass | Critical | Quality | p50 ms | p95 ms | Cost USD | Pairwise W/T/L |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| baseline (gpt-5.4) | 93% | 0 | 4.640 | 2685 | 13257 | 0.193823 | 0/0/0 |
-| luna_none (gpt-5.6-luna, none) | 87% | 1 | 4.707 | 1404 | 1903 | 0.077385 | 10/0/5 |
-| luna_low (gpt-5.6-luna, low) | 87% | 1 | 4.680 | 2257 | 3103 | 0.084129 | 9/0/6 |
+| baseline (gpt-5.4) | 100% | 0 | 4.840 | 1757 | 3726 | 0.201742 | 0/0/0 |
+| luna_none (gpt-5.6-luna, none) | 100% | 1 | 4.813 | 1492 | 6346 | 0.080739 | 9/1/5 |
+| luna_low (gpt-5.6-luna, low) | 100% | 0 | 4.880 | 1995 | 6648 | 0.087105 | 9/2/4 |
 
 ## Gates
 
-- luna_none: **FAIL**, cost reduction 60.1%
-  - hardConstraints: fail
+- luna_none: **FAIL**, cost reduction 60.0%
+  - hardConstraints: pass
   - noCriticalRegressions: fail
   - qualityNotMateriallyBelow: pass
   - pairwiseNotMateriallyBelow: pass
-  - p95LatencyWithin20Percent: pass
+  - p95LatencyWithin20Percent: fail
   - costReductionAtLeast40Percent: pass
-- luna_low: **FAIL**, cost reduction 56.6%
-  - hardConstraints: fail
-  - noCriticalRegressions: fail
+- luna_low: **FAIL**, cost reduction 56.8%
+  - hardConstraints: pass
+  - noCriticalRegressions: pass
   - qualityNotMateriallyBelow: pass
   - pairwiseNotMateriallyBelow: pass
-  - p95LatencyWithin20Percent: pass
+  - p95LatencyWithin20Percent: fail
   - costReductionAtLeast40Percent: pass
 
 ## Decision
