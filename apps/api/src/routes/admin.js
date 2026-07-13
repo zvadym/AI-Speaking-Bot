@@ -73,6 +73,41 @@ const NOTIFICATION_SERIES_TYPES = [
 ];
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BROADCAST_MEDIA_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
+const MAX_POSTGRES_BIGINT = 9223372036854775807n;
+
+function parsePositiveBigintParam(raw) {
+  const value = String(raw ?? '').trim();
+  if (!/^\d+$/.test(value)) return null;
+  try {
+    const parsed = BigInt(value);
+    if (parsed <= 0n || parsed > MAX_POSTGRES_BIGINT) return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function parseInclusiveUtcExpiry(raw, nowMs = Date.now()) {
+  const expiresOn = String(raw ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(expiresOn)) {
+    return { ok: false, error: 'bad_expires_on' };
+  }
+
+  const start = new Date(`${expiresOn}T00:00:00.000Z`);
+  if (!Number.isFinite(start.getTime()) || start.toISOString().slice(0, 10) !== expiresOn) {
+    return { ok: false, error: 'bad_expires_on' };
+  }
+
+  const expiresAt = new Date(start.getTime() + DAY_MS);
+  if (!Number.isFinite(expiresAt.getTime())) {
+    return { ok: false, error: 'bad_expires_on' };
+  }
+  if (expiresAt.getTime() <= nowMs) {
+    return { ok: false, error: 'expires_on_elapsed' };
+  }
+
+  return { ok: true, expiresOn, expiresAt };
+}
 
 export function createAdminRouter(ctx, helpers) {
   const router = Router();
@@ -3412,6 +3447,104 @@ export function createAdminRouter(ctx, helpers) {
     }
   });
 
+  router.put('/admin/users/:chatId/plan-override', requireAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+
+    const chatId = parsePositiveBigintParam(req.params.chatId);
+    if (!chatId) return res.status(400).json({ error: 'bad_chat_id' });
+
+    const tier = String(req.body?.tier ?? '').trim().toLowerCase();
+    if (tier !== 'pro') return res.status(400).json({ error: 'bad_tier' });
+
+    const expiry = parseInclusiveUtcExpiry(req.body?.expires_on ?? req.body?.expiresOn);
+    if (!expiry.ok) return res.status(400).json({ error: expiry.error });
+
+    const { rows } = await ctx.pool.query(
+      `WITH updated AS (
+         UPDATE users
+         SET override_plan_tier = 'pro',
+             override_expires_at = $2::timestamptz,
+             updated_at = NOW()
+         WHERE chat_id = $1::bigint
+         RETURNING
+           chat_id,
+           plan_tier,
+           plan_expires_at,
+           override_plan_tier,
+           override_expires_at
+       )
+       SELECT
+         chat_id,
+         override_plan_tier,
+         override_expires_at,
+         (($2::timestamptz AT TIME ZONE 'UTC') - interval '1 day')::date::text AS override_expires_on,
+         CASE
+           WHEN override_plan_tier IS NOT NULL
+             AND override_expires_at IS NOT NULL
+             AND NOW() < override_expires_at
+             THEN override_plan_tier
+           WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
+             THEN plan_tier
+           ELSE 'free'
+         END AS effective_tier,
+         CASE
+           WHEN override_plan_tier IS NOT NULL
+             AND override_expires_at IS NOT NULL
+             AND NOW() < override_expires_at
+             THEN 'manual'
+           WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
+             THEN 'subscription'
+           ELSE 'free'
+         END AS tier_source
+       FROM updated`,
+      [chatId, expiry.expiresAt.toISOString()]
+    );
+
+    if (!rows[0]) return res.status(404).json({ error: 'user_not_found' });
+    return res.json({ ok: true, ...rows[0] });
+  });
+
+  router.delete('/admin/users/:chatId/plan-override', requireAdmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+
+    const chatId = parsePositiveBigintParam(req.params.chatId);
+    if (!chatId) return res.status(400).json({ error: 'bad_chat_id' });
+
+    const { rows } = await ctx.pool.query(
+      `WITH updated AS (
+         UPDATE users
+         SET override_plan_tier = NULL,
+             override_expires_at = NULL,
+             updated_at = NOW()
+         WHERE chat_id = $1::bigint
+         RETURNING
+           chat_id,
+           plan_tier,
+           plan_expires_at
+       )
+       SELECT
+         chat_id,
+         NULL::text AS override_plan_tier,
+         NULL::timestamptz AS override_expires_at,
+         NULL::text AS override_expires_on,
+         CASE
+           WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
+             THEN plan_tier
+           ELSE 'free'
+         END AS effective_tier,
+         CASE
+           WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
+             THEN 'subscription'
+           ELSE 'free'
+         END AS tier_source
+       FROM updated`,
+      [chatId]
+    );
+
+    if (!rows[0]) return res.status(404).json({ error: 'user_not_found' });
+    return res.json({ ok: true, ...rows[0] });
+  });
+
   router.post('/admin/users/delete', requireAdmin, async (req, res) => {
     res.set('Cache-Control', 'no-store');
     const target = helpers.parseAdminChatIdTarget(req.body || {});
@@ -3619,6 +3752,30 @@ export function createAdminRouter(ctx, helpers) {
                THEN u.plan_tier
              ELSE 'free'
            END AS effective_tier,
+           CASE
+             WHEN u.override_plan_tier IS NOT NULL
+               AND u.override_expires_at IS NOT NULL
+               AND NOW() < u.override_expires_at
+               THEN 'manual'
+             WHEN u.plan_expires_at IS NOT NULL
+               AND NOW() < u.plan_expires_at
+               THEN 'subscription'
+             ELSE 'free'
+           END AS tier_source,
+           CASE
+             WHEN u.override_plan_tier IS NOT NULL
+               AND u.override_expires_at IS NOT NULL
+               AND NOW() < u.override_expires_at
+               THEN u.override_expires_at
+             ELSE NULL
+           END AS override_expires_at,
+           CASE
+             WHEN u.override_plan_tier IS NOT NULL
+               AND u.override_expires_at IS NOT NULL
+               AND NOW() < u.override_expires_at
+               THEN ((u.override_expires_at AT TIME ZONE 'UTC') - interval '1 day')::date::text
+             ELSE NULL
+           END AS override_expires_on,
            COALESCE(ms.streak_days, 0) AS streak_days,
            COALESCE(xp.xp_total, 0) AS xp_total,
            FLOOR(COALESCE(xp.xp_total, 0) / 200.0)::int + 1 AS level

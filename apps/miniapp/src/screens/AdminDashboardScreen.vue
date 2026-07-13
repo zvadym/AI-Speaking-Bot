@@ -750,8 +750,8 @@
         </div>
 
         <p class="hint" v-if="usersLoading && !usersRows.length">Loading users…</p>
-        <p class="error" v-if="userDeleteError">{{ userDeleteError }}</p>
-        <p class="hint" v-else-if="userDeleteInfo">{{ userDeleteInfo }}</p>
+        <p class="error" v-if="userPlanOverrideError || userDeleteError">{{ userPlanOverrideError || userDeleteError }}</p>
+        <p class="hint" v-else-if="userPlanOverrideInfo || userDeleteInfo">{{ userPlanOverrideInfo || userDeleteInfo }}</p>
 
         <div class="users-table-wrap" v-if="usersRows.length">
           <table class="users-table">
@@ -833,16 +833,48 @@
                 <td>{{ row.username ? `@${row.username}` : '—' }}</td>
                 <td>{{ row.first_name || '—' }}</td>
                 <td>{{ row.bot_key || '—' }}</td>
-                <td>{{ displayTier(row.effective_tier) }}</td>
+                <td>
+                  <div class="user-tier-cell">
+                    <span class="user-tier-value">{{ displayTier(row.effective_tier) }}</span>
+                    <span class="user-tier-source" :class="userTierSourceClass(row.tier_source)">
+                      {{ userTierSourceLabel(row.tier_source) }}
+                    </span>
+                    <small v-if="hasActiveManualPro(row)">until {{ row.override_expires_on }}</small>
+                  </div>
+                </td>
                 <td>{{ row.is_active ? 'yes' : 'no' }}</td>
                 <td>{{ row.last_seen_at ? formatFeedbackTime(row.last_seen_at) : '—' }}</td>
                 <td class="num">{{ fmt(row.streak_days || 0) }}</td>
                 <td class="num">{{ fmt(row.level || 1) }}</td>
                 <td class="num">{{ fmt(row.xp_total || 0) }}</td>
                 <td class="actions">
-                  <button class="btn danger users-delete-btn" type="button" :disabled="!password || usersLoading || Boolean(userDeleteBusyId)" @click="deleteUserCompletely(row)">
-                    {{ userDeleteBusyId === String(row.chat_id) ? 'Deleting…' : 'Delete' }}
-                  </button>
+                  <div class="user-action-group">
+                    <button
+                      class="btn users-pro-btn"
+                      type="button"
+                      :disabled="!password || usersLoading || Boolean(userDeleteBusyId) || Boolean(userPlanOverrideBusyId)"
+                      @click="openPlanOverrideDialog(row)"
+                    >
+                      {{ hasActiveManualPro(row) ? 'Change expiry' : 'Grant PRO' }}
+                    </button>
+                    <button
+                      v-if="hasActiveManualPro(row)"
+                      class="btn user-revoke-btn"
+                      type="button"
+                      :disabled="!password || usersLoading || Boolean(userDeleteBusyId) || Boolean(userPlanOverrideBusyId)"
+                      @click="revokePlanOverride(row)"
+                    >
+                      {{ userPlanOverrideBusyId === String(row.chat_id) ? 'Revoking…' : 'Revoke' }}
+                    </button>
+                    <button
+                      class="btn danger users-delete-btn"
+                      type="button"
+                      :disabled="!password || usersLoading || Boolean(userDeleteBusyId) || Boolean(userPlanOverrideBusyId)"
+                      @click="deleteUserCompletely(row)"
+                    >
+                      {{ userDeleteBusyId === String(row.chat_id) ? 'Deleting…' : 'Delete' }}
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -1938,6 +1970,50 @@
       <p class="hint">Select a tab.</p>
     </section>
 
+    <div v-if="showPlanOverrideDialog" class="user-pro-modal-backdrop" @click.self="closePlanOverrideDialog">
+      <form
+        class="card user-pro-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-pro-modal-title"
+        @submit.prevent="savePlanOverride"
+        @keydown.esc.prevent="closePlanOverrideDialog"
+      >
+        <header class="user-pro-modal-head">
+          <div>
+            <div class="panel-kicker">Manual entitlement</div>
+            <h2 id="user-pro-modal-title">{{ planOverrideDraft.mode === 'change' ? 'Change PRO expiry' : 'Grant PRO' }}</h2>
+            <p>For {{ planOverrideDraft.label }} · <code>{{ planOverrideDraft.chatId }}</code></p>
+          </div>
+          <button class="user-pro-modal-close" type="button" aria-label="Close" :disabled="Boolean(userPlanOverrideBusyId)" @click="closePlanOverrideDialog">×</button>
+        </header>
+
+        <label class="field">
+          <span>Access through (UTC)</span>
+          <input
+            v-model="planOverrideDraft.expiresOn"
+            type="date"
+            :min="todayUtcYmd"
+            required
+            autofocus
+          />
+        </label>
+
+        <div class="user-pro-date-note">
+          PRO remains active through 23:59:59 UTC on the selected date. This does not create or modify a Stripe subscription.
+        </div>
+
+        <p v-if="userPlanOverrideError" class="error">{{ userPlanOverrideError }}</p>
+
+        <footer class="user-pro-modal-actions">
+          <button class="btn" type="button" :disabled="Boolean(userPlanOverrideBusyId)" @click="closePlanOverrideDialog">Cancel</button>
+          <button class="btn primary" type="submit" :disabled="!canSavePlanOverride">
+            {{ userPlanOverrideBusyId ? 'Saving…' : planOverrideDraft.mode === 'change' ? 'Save expiry' : 'Grant PRO' }}
+          </button>
+        </footer>
+      </form>
+    </div>
+
     <footer class="foot">
       <button class="link" type="button" @click="emit('navigate', '/', { replace: true })">← Back to app</button>
       <span v-if="activeTab === 'analytics' && lastUpdated" class="stamp">Updated: {{ lastUpdated }}</span>
@@ -2353,6 +2429,17 @@ const usersUpdatedAt = ref('');
 const userDeleteBusyId = ref('');
 const userDeleteError = ref('');
 const userDeleteInfo = ref('');
+const userPlanOverrideBusyId = ref('');
+const userPlanOverrideError = ref('');
+const userPlanOverrideInfo = ref('');
+const showPlanOverrideDialog = ref(false);
+const todayUtcYmd = dateToYmdUtc(new Date());
+const planOverrideDraft = reactive({
+  chatId: '',
+  label: '',
+  expiresOn: '',
+  mode: 'grant'
+});
 const billingCurrencyCatalog = ref(null);
 const billingCurrencyLoading = ref(false);
 const billingCurrencyError = ref('');
@@ -2377,6 +2464,12 @@ const usersSort = reactive({
 
 const usersPageStart = computed(() => (usersTotal.value ? usersOffset.value + 1 : 0));
 const usersPageEnd = computed(() => Math.min(usersOffset.value + usersRows.value.length, usersTotal.value));
+const canSavePlanOverride = computed(() => {
+  if (!password.value || userPlanOverrideBusyId.value || !planOverrideDraft.chatId) return false;
+  const parsed = parseYmdAsUtc(planOverrideDraft.expiresOn);
+  if (!parsed || dateToYmdUtc(parsed) !== planOverrideDraft.expiresOn) return false;
+  return planOverrideDraft.expiresOn >= todayUtcYmd;
+});
 
 const activeStamp = computed(() => {
   if (activeTab.value === 'analytics') return lastUpdated.value || '';
@@ -3902,6 +3995,25 @@ function displayTier(rawTier) {
   return 'pro';
 }
 
+function hasActiveManualPro(row) {
+  return String(row?.tier_source || '').trim().toLowerCase() === 'manual'
+    && Boolean(String(row?.override_expires_on || '').trim());
+}
+
+function userTierSourceLabel(rawSource) {
+  const source = String(rawSource || '').trim().toLowerCase();
+  if (source === 'manual') return 'Manual';
+  if (source === 'subscription') return 'Stripe';
+  return 'Free';
+}
+
+function userTierSourceClass(rawSource) {
+  const source = String(rawSource || '').trim().toLowerCase();
+  if (source === 'manual') return 'manual';
+  if (source === 'subscription') return 'subscription';
+  return 'free';
+}
+
 function billingIntervalLabel(rawInterval) {
   const value = String(rawInterval || '').trim().toLowerCase();
   if (value === 'month') return 'monthly';
@@ -4104,6 +4216,107 @@ function userDirectoryLabel(row) {
   const firstName = (row?.first_name ?? '').toString().trim();
   if (firstName) return firstName;
   return 'user';
+}
+
+function resetPlanOverrideDraft() {
+  planOverrideDraft.chatId = '';
+  planOverrideDraft.label = '';
+  planOverrideDraft.expiresOn = '';
+  planOverrideDraft.mode = 'grant';
+}
+
+function openPlanOverrideDialog(row) {
+  if (userPlanOverrideBusyId.value) return;
+  const chatId = String(row?.chat_id ?? '').trim();
+  if (!chatId) return;
+
+  planOverrideDraft.chatId = chatId;
+  planOverrideDraft.label = userDirectoryLabel(row);
+  planOverrideDraft.expiresOn = hasActiveManualPro(row)
+    ? String(row.override_expires_on || '').trim()
+    : '';
+  planOverrideDraft.mode = hasActiveManualPro(row) ? 'change' : 'grant';
+  userPlanOverrideError.value = '';
+  userPlanOverrideInfo.value = '';
+  userDeleteError.value = '';
+  userDeleteInfo.value = '';
+  showPlanOverrideDialog.value = true;
+}
+
+function closePlanOverrideDialog() {
+  if (userPlanOverrideBusyId.value) return;
+  showPlanOverrideDialog.value = false;
+  userPlanOverrideError.value = '';
+  resetPlanOverrideDraft();
+}
+
+async function savePlanOverride() {
+  if (!canSavePlanOverride.value) return;
+
+  const chatId = planOverrideDraft.chatId;
+  const expiresOn = planOverrideDraft.expiresOn;
+  const label = planOverrideDraft.label;
+  userPlanOverrideBusyId.value = chatId;
+  userPlanOverrideError.value = '';
+  userPlanOverrideInfo.value = '';
+  userDeleteError.value = '';
+  userDeleteInfo.value = '';
+
+  try {
+    const data = await apiJson(props.apiBase, `/admin/users/${encodeURIComponent(chatId)}/plan-override`, {
+      method: 'PUT',
+      headers: adminHeaders(),
+      body: {
+        tier: 'pro',
+        expires_on: expiresOn
+      }
+    });
+
+    showPlanOverrideDialog.value = false;
+    resetPlanOverrideDraft();
+    await refreshUsersPage();
+    userPlanOverrideInfo.value = `Manual PRO granted to ${label} through ${data?.override_expires_on || expiresOn} UTC.`;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    userPlanOverrideError.value = `PRO update failed: ${msg}`;
+  } finally {
+    userPlanOverrideBusyId.value = '';
+  }
+}
+
+async function revokePlanOverride(row) {
+  const chatId = String(row?.chat_id ?? '').trim();
+  if (!chatId || userPlanOverrideBusyId.value) return;
+
+  const label = userDirectoryLabel(row);
+  const confirmed = window.confirm(
+    `Revoke manual PRO for ${label} (${chatId})?\n\nOnly the manual override will be removed. Any active Stripe subscription will remain effective.`
+  );
+  if (!confirmed) return;
+
+  userPlanOverrideBusyId.value = chatId;
+  userPlanOverrideError.value = '';
+  userPlanOverrideInfo.value = '';
+  userDeleteError.value = '';
+  userDeleteInfo.value = '';
+
+  try {
+    const data = await apiJson(props.apiBase, `/admin/users/${encodeURIComponent(chatId)}/plan-override`, {
+      method: 'DELETE',
+      headers: adminHeaders()
+    });
+    await refreshUsersPage();
+    const nextTier = displayTier(data?.effective_tier);
+    const nextSource = userTierSourceLabel(data?.tier_source);
+    userPlanOverrideInfo.value = `Manual PRO revoked for ${label}. Effective tier: ${nextTier} (${nextSource}).`;
+  } catch (err) {
+    console.error(err);
+    const msg = err?.payload?.error || err?.message || 'request_failed';
+    userPlanOverrideError.value = `PRO revoke failed: ${msg}`;
+  } finally {
+    userPlanOverrideBusyId.value = '';
+  }
 }
 
 function actionLabel(rawAction) {
@@ -5008,7 +5221,7 @@ async function deleteUserCompletely(row) {
     userDeleteError.value = 'Enter admin password first.';
     return;
   }
-  if (userDeleteBusyId.value) return;
+  if (userDeleteBusyId.value || userPlanOverrideBusyId.value) return;
 
   const label = userDirectoryLabel(row);
   const confirmDelete = window.confirm(
@@ -5019,6 +5232,8 @@ async function deleteUserCompletely(row) {
   userDeleteBusyId.value = chatId;
   userDeleteError.value = '';
   userDeleteInfo.value = '';
+  userPlanOverrideError.value = '';
+  userPlanOverrideInfo.value = '';
   try {
     const headers = adminHeaders();
     const data = await apiJson(props.apiBase, '/admin/users/delete', {
@@ -5270,6 +5485,11 @@ function clearPassword() {
   userDeleteBusyId.value = '';
   userDeleteError.value = '';
   userDeleteInfo.value = '';
+  userPlanOverrideBusyId.value = '';
+  userPlanOverrideError.value = '';
+  userPlanOverrideInfo.value = '';
+  showPlanOverrideDialog.value = false;
+  resetPlanOverrideDraft();
   billingProductId.value = '';
   billingPrices.value = [];
   billingLoading.value = false;
@@ -6942,8 +7162,158 @@ h1 {
   border-bottom: none;
 }
 
+.user-tier-cell {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: start;
+  align-items: center;
+  gap: 4px 7px;
+}
+
+.user-tier-value {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.user-tier-source {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 7px;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  background: rgba(246, 241, 232, 0.72);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+
+.user-tier-source.manual {
+  border-color: rgba(199, 90, 36, 0.28);
+  background: rgba(199, 90, 36, 0.12);
+  color: rgba(145, 63, 21, 0.94);
+}
+
+.user-tier-source.subscription {
+  border-color: rgba(31, 107, 99, 0.28);
+  background: rgba(31, 107, 99, 0.10);
+  color: rgba(31, 107, 99, 0.94);
+}
+
+.user-tier-cell small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.user-action-group {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-action-group .btn {
+  min-inline-size: 0;
+  padding: 7px 10px;
+  box-shadow: none;
+  font-size: 11px;
+}
+
+.users-pro-btn {
+  border-color: rgba(199, 90, 36, 0.30);
+  background: rgba(199, 90, 36, 0.12);
+  color: rgba(126, 52, 17, 0.96);
+}
+
+.user-revoke-btn {
+  border-color: rgba(30, 26, 22, 0.18);
+  background: rgba(246, 241, 232, 0.88);
+}
+
 .users-delete-btn {
   min-inline-size: 86px;
+}
+
+.user-pro-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(22, 19, 16, 0.46);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.user-pro-modal.card {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  gap: 18px;
+  padding: 22px;
+  border-color: rgba(199, 90, 36, 0.24);
+  background: rgba(255, 253, 249, 0.98);
+  box-shadow: 0 32px 90px rgba(22, 19, 16, 0.28);
+}
+
+.user-pro-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.user-pro-modal-head h2 {
+  margin: 3px 0 0;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.user-pro-modal-head p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.user-pro-modal-close {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(30, 26, 22, 0.12);
+  border-radius: 50%;
+  background: rgba(246, 241, 232, 0.76);
+  color: var(--ink);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.user-pro-modal-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.user-pro-date-note {
+  padding: 11px 12px;
+  border-radius: 13px;
+  border: 1px solid rgba(31, 107, 99, 0.16);
+  background: rgba(31, 107, 99, 0.07);
+  color: rgba(30, 26, 22, 0.76);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.user-pro-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 @media (max-width: 820px) {
@@ -6969,6 +7339,17 @@ h1 {
 
   .btn {
     min-inline-size: 0;
+  }
+
+  .user-pro-modal-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .user-pro-modal.card {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    padding: 18px;
   }
 
   .broadcast-builder-topbar,

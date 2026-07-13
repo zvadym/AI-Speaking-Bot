@@ -359,6 +359,197 @@ test('createApp returns fresh app instances when apiBoss is injected', async () 
   assert.equal(appB.locals.apiBoss, bossB);
 });
 
+test('admin manual PRO override grants and updates an inclusive UTC expiry date', async () => {
+  let updateCount = 0;
+  await withMockedQuery(async (source, params = []) => {
+    assert.match(source, /SET override_plan_tier = 'pro'/);
+    assert.match(source, /override_expires_at = \$2::timestamptz/);
+    assert.match(source, /THEN 'manual'/);
+    assert.equal(params[0], '42');
+    updateCount += 1;
+
+    const expected = updateCount === 1
+      ? ['2099-07-31', '2099-08-01T00:00:00.000Z']
+      : ['2099-08-15', '2099-08-16T00:00:00.000Z'];
+    assert.equal(params[1], expected[1]);
+    return {
+      rows: [{
+        chat_id: '42',
+        override_plan_tier: 'pro',
+        override_expires_at: expected[1],
+        override_expires_on: expected[0],
+        effective_tier: 'pro',
+        tier_source: 'manual'
+      }]
+    };
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const headers = { 'X-Admin-Password': 'secret-admin' };
+
+    const granted = await request(app, {
+      method: 'PUT',
+      path: '/admin/users/42/plan-override',
+      headers,
+      body: { tier: 'pro', expires_on: '2099-07-31' }
+    });
+    assert.equal(granted.status, 200);
+    assert.equal(granted.json.ok, true);
+    assert.equal(granted.json.effective_tier, 'pro');
+    assert.equal(granted.json.tier_source, 'manual');
+    assert.equal(granted.json.override_expires_on, '2099-07-31');
+    assert.equal(granted.json.override_expires_at, '2099-08-01T00:00:00.000Z');
+
+    const extended = await request(app, {
+      method: 'PUT',
+      path: '/admin/users/42/plan-override',
+      headers,
+      body: { tier: 'pro', expires_on: '2099-08-15' }
+    });
+    assert.equal(extended.status, 200);
+    assert.equal(extended.json.override_expires_on, '2099-08-15');
+  });
+
+  assert.equal(updateCount, 2);
+});
+
+test('admin manual PRO override rejects invalid requests before querying the database', async () => {
+  await withMockedQuery(async (source) => {
+    throw new Error(`Unexpected query for invalid manual PRO request: ${source.slice(0, 120)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const headers = { 'X-Admin-Password': 'secret-admin' };
+    const cases = [
+      { path: '/admin/users/0/plan-override', body: { tier: 'pro', expires_on: '2099-07-31' }, error: 'bad_chat_id' },
+      { path: '/admin/users/42/plan-override', body: { tier: 'plus', expires_on: '2099-07-31' }, error: 'bad_tier' },
+      { path: '/admin/users/42/plan-override', body: { tier: 'pro', expires_on: '31-07-2099' }, error: 'bad_expires_on' },
+      { path: '/admin/users/42/plan-override', body: { tier: 'pro', expires_on: '2099-02-30' }, error: 'bad_expires_on' },
+      { path: '/admin/users/42/plan-override', body: { tier: 'pro', expires_on: '2000-01-01' }, error: 'expires_on_elapsed' }
+    ];
+
+    for (const item of cases) {
+      const response = await request(app, {
+        method: 'PUT',
+        path: item.path,
+        headers,
+        body: item.body
+      });
+      assert.equal(response.status, 400);
+      assert.equal(response.json.error, item.error);
+    }
+  });
+});
+
+test('admin manual PRO override returns 404 when the target user is missing', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    assert.match(source, /SET override_plan_tier = 'pro'/);
+    assert.deepEqual(params, ['999', '2099-08-01T00:00:00.000Z']);
+    return { rows: [] };
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      method: 'PUT',
+      path: '/admin/users/999/plan-override',
+      headers: { 'X-Admin-Password': 'secret-admin' },
+      body: { tier: 'pro', expires_on: '2099-07-31' }
+    });
+
+    assert.equal(response.status, 404);
+    assert.equal(response.json.error, 'user_not_found');
+  });
+});
+
+test('admin manual PRO override revocation is idempotent and exposes the underlying subscription', async () => {
+  let revokeCount = 0;
+  await withMockedQuery(async (source, params = []) => {
+    assert.match(source, /SET override_plan_tier = NULL/);
+    assert.match(source, /override_expires_at = NULL/);
+    assert.match(source, /THEN 'subscription'/);
+    assert.deepEqual(params, ['42']);
+    revokeCount += 1;
+    return {
+      rows: [{
+        chat_id: '42',
+        override_plan_tier: null,
+        override_expires_at: null,
+        override_expires_on: null,
+        effective_tier: 'pro',
+        tier_source: 'subscription'
+      }]
+    };
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const headers = { 'X-Admin-Password': 'secret-admin' };
+
+    for (let index = 0; index < 2; index += 1) {
+      const response = await request(app, {
+        method: 'DELETE',
+        path: '/admin/users/42/plan-override',
+        headers
+      });
+      assert.equal(response.status, 200);
+      assert.equal(response.json.effective_tier, 'pro');
+      assert.equal(response.json.tier_source, 'subscription');
+      assert.equal(response.json.override_expires_at, null);
+    }
+  });
+
+  assert.equal(revokeCount, 2);
+});
+
+test('admin user directory returns effective tier source and active manual expiry', async () => {
+  await withMockedQuery(async (source, params = []) => {
+    if (source.includes('SELECT COUNT(*)::int AS total') && source.includes('FROM users u')) {
+      assert.deepEqual(params, ['2026-07-01T00:00:00.000Z', '2026-08-01T00:00:00.000Z', null]);
+      return { rows: [{ total: 1 }] };
+    }
+
+    if (source.includes('WITH filtered_users AS')) {
+      assert.match(source, /END AS tier_source/);
+      assert.match(source, /END AS override_expires_at/);
+      assert.match(source, /END AS override_expires_on/);
+      assert.deepEqual(params, [
+        '2026-07-01T00:00:00.000Z',
+        '2026-08-01T00:00:00.000Z',
+        null,
+        50,
+        0
+      ]);
+      return {
+        rows: [{
+          chat_id: '42',
+          username: 'alice',
+          first_name: 'Alice',
+          bot_key: 'uk-de',
+          created_at: '2026-07-10T12:00:00.000Z',
+          last_seen_at: '2026-07-12T12:00:00.000Z',
+          is_active: true,
+          effective_tier: 'pro',
+          tier_source: 'manual',
+          override_expires_at: '2026-08-01T00:00:00.000Z',
+          override_expires_on: '2026-07-31',
+          streak_days: 3,
+          xp_total: 220,
+          level: 2
+        }]
+      };
+    }
+
+    throw new Error(`Unexpected query in admin user directory test: ${source.slice(0, 160)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/users?from=2026-07-01&to=2026-08-01',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.total, 1);
+    assert.equal(response.json.items[0].effective_tier, 'pro');
+    assert.equal(response.json.items[0].tier_source, 'manual');
+    assert.equal(response.json.items[0].override_expires_on, '2026-07-31');
+  });
+});
+
 test('admin notifications metrics returns sent counts by bot and type', async () => {
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('FROM scheduled_task_dispatches std') && source.includes('FROM broadcast_recipients r')) {
