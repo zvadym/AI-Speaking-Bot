@@ -113,3 +113,58 @@ test('bot AI applies model policy only to the selected bot key', async () => {
     { model: 'canary-support', reasoning: { effort: 'low' } }
   ]);
 });
+
+test('bot AI normalizes HTML breaks and constrains pinned third-language examples', async () => {
+  const calls: Array<Record<string, unknown>> = [];
+  const client = createBotAiClient({
+    apiKey: 'test-key',
+    model: 'test-model',
+    getBotConfig: () => ({
+      bot_key: 'uk-es',
+      bot_name: 'Teacher',
+      base_language: 'uk',
+      learning_language: 'es'
+    }),
+    createClient: () => ({
+      responses: {
+        async create(input: Record<string, unknown>) {
+          calls.push(input);
+          return {
+            output_text: JSON.stringify({
+              detected_language: 'en',
+              is_target_language: false,
+              has_mistakes: false,
+              reply_text: '',
+              explanation_html: '<b>Спробуй іспанською</b><BR /><blockquote><code>Quiero planear la ruta.</code></blockquote>'
+            })
+          };
+        }
+      }
+    } as never)
+  });
+
+  const result = await client.respond({
+    botKey: 'uk-es',
+    level: 'B2',
+    inputMode: 'text',
+    text: 'I would rather discuss a different subject today.',
+    profileSummary: '',
+    shortSummary: '',
+    history: [],
+    topic: {
+      topic_id: 'travel-planning',
+      title_base: 'Планування подорожі',
+      goal_base: 'Підготувати практичний план подорожі',
+      allowed_base: ['транспорт', 'житло', 'маршрут']
+    }
+  });
+
+  assert.equal(
+    result.explanation_html,
+    '<b>Спробуй іспанською</b>\n<blockquote><code>Quiero planear la ruta.</code></blockquote>'
+  );
+  const input = calls[0].input as Array<{ content: string }>;
+  assert.match(input[0].content, /NEVER translate or paraphrase a request to change, leave, or replace the topic/);
+  assert.match(input[1].content, /PINNED TOPIC \(base language\): Планування подорожі/);
+  assert.match(input[1].content, /ALLOWED SUB-AREAS: транспорт; житло; маршрут/);
+});

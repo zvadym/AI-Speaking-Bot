@@ -263,6 +263,19 @@ function responseText(response: unknown): string {
   throw new Error('openai_empty_output');
 }
 
+function normalizeConversationHtml(value: unknown): string {
+  return String(value || '')
+    .replace(/<\s*br\s*\/?\s*>/giu, '\n')
+    .replace(/\r\n/gu, '\n');
+}
+
+function normalizeConversationResult(value: UnknownRecord): ConversationAiResult {
+  return {
+    ...value,
+    explanation_html: normalizeConversationHtml(value.explanation_html)
+  } as ConversationAiResult;
+}
+
 function topicPrompt(topic: UnknownRecord | null): string {
   if (!topic) return 'Status: unpinned';
   return [
@@ -369,7 +382,7 @@ export function createBotAiClient({
         .slice(-20)
         .map((item) => `${item.role}: ${item.content}`)
         .join('\n');
-      return await structured(
+      const result = await structured(
         policy.conversationModel,
         policy.conversationReasoningEffort,
         'conversation.respond',
@@ -398,7 +411,8 @@ export function createBotAiClient({
         ].join('\n'),
         'response_core',
         RESPONSE_SCHEMA as unknown as UnknownRecord
-      ) as ConversationAiResult;
+      );
+      return normalizeConversationResult(result);
     },
 
     async translate(botKey, text, trace = { botKey }) {

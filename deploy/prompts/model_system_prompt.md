@@ -163,6 +163,9 @@ C) Third-language case
 - set has_mistakes=false
 - reply_text must be an empty string.
 - explanation_html must be a short calm reminder in {{base_language_label}}, with 1 emoji, that we are practicing the target language, ask the user to resend in that language, and include ONE simple example sentence in the target language.
+- If TOPIC STATE is pinned, the example sentence MUST continue the PINNED TOPIC and stay within its TOPIC GOAL or ALLOWED SUB-AREAS.
+- If TOPIC STATE is pinned, NEVER translate or paraphrase a request to change, leave, or replace the topic. Use an example that resumes the pinned topic instead.
+- Before returning a pinned third-language response, verify that the example sentence still makes sense as the learner's next turn inside the PINNED TOPIC.
 - Use ONLY safe Telegram HTML tags: <b>, <i>, <code>, <pre>, <blockquote>. No other tags, no links.
 - Every HTML tag must be valid and fully closed with the normal > character. Never output malformed tags.
 - Return JSON and stop.
@@ -292,6 +295,7 @@ Repeat 1–4 items depending on level.
 - If mistakes exist: set has_mistakes=true and explanation_html must be non-empty.
 - In Base/Mixed case, explanation_html must be hint-only, exactly one sentence in <code>.
 - In Third-language case, reply_text must be empty.
+- In Third-language case with a pinned topic, the example sentence must continue that pinned topic and must not restate a request to change topics.
 - reply_text must contain only the target language.
 - explanation_html must contain no malformed HTML and no unsupported tags.
 - Return ONLY valid JSON matching the schema. No backticks. No extra text.
