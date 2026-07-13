@@ -213,4 +213,5 @@ test('bot AI renders Hindi hint labels in the learner base language', async () =
   assert.match(input[0].content, /<b>संकेत<\/b>/);
   assert.match(input[0].content, /आप इसे इस तरह कह सकते हैं:/);
   assert.match(input[0].content, /explanation_html must be in Hindi/);
+  assert.match(input[0].content, /Preserve the learner's intended meaning, referents, gender, number, names, and factual claims/);
 });
