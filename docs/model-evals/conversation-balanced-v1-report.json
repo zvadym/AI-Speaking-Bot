@@ -1,0 +1,2247 @@
+{
+  "reportVersion": 1,
+  "runAt": "2026-07-13T08:36:33.011Z",
+  "fixtureVersion": 1,
+  "fixturePath": "apps/api/evals/conversation-balanced-v1.json",
+  "caseCount": 15,
+  "pricesVerifiedAt": "2026-07-12",
+  "judge": {
+    "model": "gpt-5.6-terra",
+    "reasoningEffort": "low",
+    "durationMs": 65226,
+    "estimatedCostUsd": 0.120173
+  },
+  "aggregates": [
+    {
+      "variantId": "baseline",
+      "model": "gpt-5.4",
+      "reasoningEffort": null,
+      "cases": 15,
+      "hardPassRate": 0.9333,
+      "hardFailures": 1,
+      "criticalFailures": 0,
+      "meanQuality": 4.64,
+      "p50LatencyMs": 2685,
+      "p95LatencyMs": 13257,
+      "inputTokens": 67605,
+      "cachedInputTokens": 0,
+      "outputTokens": 1654,
+      "reasoningTokens": 0,
+      "estimatedCostUsd": 0.193823,
+      "pairwiseWins": 0,
+      "pairwiseTies": 0,
+      "pairwiseLosses": 0
+    },
+    {
+      "variantId": "luna_none",
+      "model": "gpt-5.6-luna",
+      "reasoningEffort": "none",
+      "cases": 15,
+      "hardPassRate": 0.8667,
+      "hardFailures": 2,
+      "criticalFailures": 1,
+      "meanQuality": 4.707,
+      "p50LatencyMs": 1404,
+      "p95LatencyMs": 1903,
+      "inputTokens": 67605,
+      "cachedInputTokens": 0,
+      "outputTokens": 1630,
+      "reasoningTokens": 0,
+      "estimatedCostUsd": 0.077385,
+      "pairwiseWins": 10,
+      "pairwiseTies": 0,
+      "pairwiseLosses": 5
+    },
+    {
+      "variantId": "luna_low",
+      "model": "gpt-5.6-luna",
+      "reasoningEffort": "low",
+      "cases": 15,
+      "hardPassRate": 0.8667,
+      "hardFailures": 2,
+      "criticalFailures": 1,
+      "meanQuality": 4.68,
+      "p50LatencyMs": 2257,
+      "p95LatencyMs": 3103,
+      "inputTokens": 67605,
+      "cachedInputTokens": 0,
+      "outputTokens": 2754,
+      "reasoningTokens": 1109,
+      "estimatedCostUsd": 0.084129,
+      "pairwiseWins": 9,
+      "pairwiseTies": 0,
+      "pairwiseLosses": 6
+    }
+  ],
+  "gates": {
+    "luna_none": {
+      "hardConstraints": false,
+      "noCriticalRegressions": false,
+      "qualityNotMateriallyBelow": true,
+      "pairwiseNotMateriallyBelow": true,
+      "p95LatencyWithin20Percent": true,
+      "costReductionAtLeast40Percent": true,
+      "costReduction": 0.6007,
+      "passed": false
+    },
+    "luna_low": {
+      "hardConstraints": false,
+      "noCriticalRegressions": false,
+      "qualityNotMateriallyBelow": true,
+      "pairwiseNotMateriallyBelow": true,
+      "p95LatencyWithin20Percent": true,
+      "costReductionAtLeast40Percent": true,
+      "costReduction": 0.5659,
+      "passed": false
+    }
+  },
+  "selectedVariant": "none",
+  "cases": [
+    {
+      "case": {
+        "id": "ar-en-a1-target-mistake",
+        "botKey": "ar-en",
+        "level": "A1",
+        "inputMode": "text",
+        "text": "I go market yesterday.",
+        "expectedRoute": "target",
+        "expectedMistakes": true,
+        "profileSummary": "The learner likes everyday practical topics.",
+        "shortSummary": "No active local thread.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "target-language",
+          "grammar",
+          "a1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "What did you buy at the market?",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I <b>go</b> market yesterday.\n✅ I <b>went to the</b> market yesterday.\n\n🧠 [Rule: tense + preposition + article] مع كلمة <i>yesterday</i> نستخدم الماضي، لذلك <b>go</b> تصبح <b>went</b>. ونقول <b>to the market</b> لأن الفعل يحتاج <i>to</i> مع المكان، وهنا نستخدم <i>the</i> بشكل طبيعي. 🙂\n</blockquote>"
+          },
+          "durationMs": 3614,
+          "inputTokens": 4480,
+          "cachedInputTokens": 0,
+          "outputTokens": 175,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.013825,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Did you buy anything at the market?",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I <b>go</b> market yesterday.\n✅ I <b>went to the</b> market yesterday.\n\n🧠 [Rule: Tense and preposition] نستخدم الماضي <i>went</i> مع كلمة <i>yesterday</i>، ونستخدم <i>to</i> قبل المكان. نستخدم <i>the</i> مع السوق المحدد. 🌟\n</blockquote>"
+          },
+          "durationMs": 1903,
+          "inputTokens": 4480,
+          "cachedInputTokens": 0,
+          "outputTokens": 153,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005398,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Yesterday can be a busy day. What did you buy?",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I <b>go</b> <b>market</b> yesterday.\n✅ I <b>went to the market</b> yesterday.\n\n🧠 [Rule: Tense and preposition] نستخدم الماضي <i>went</i> مع كلمة <i>yesterday</i>، ونقول <i>go to the market</i> لأن الفعل يحتاج إلى حرف الجر <i>to</i> والاسم يحتاج إلى أداة التعريف <i>the</i>. 🙂\n</blockquote>"
+          },
+          "durationMs": 2714,
+          "inputTokens": 4480,
+          "cachedInputTokens": 0,
+          "outputTokens": 245,
+          "reasoningTokens": 66,
+          "estimatedCostUsd": 0.00595,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "ar-en-a1-target-mistake",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "C",
+            "right_label": "A",
+            "winner": "C",
+            "reason": "C gives a slightly clearer, more explicit A1-level explanation of all three changes while maintaining an equally natural follow-up question."
+          },
+          {
+            "left_label": "C",
+            "right_label": "B",
+            "winner": "C",
+            "reason": "C has a more direct and natural conversational reply; B's comment that yesterday can be busy is less connected to the learner's statement."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_none",
+        "B": "luna_low",
+        "C": "baseline"
+      },
+      "judgeDurationMs": 3740,
+      "judgeEstimatedCostUsd": 0.00775
+    },
+    {
+      "case": {
+        "id": "de-en-a2-base-language",
+        "botKey": "de-en",
+        "level": "A2",
+        "inputMode": "text",
+        "text": "Ich möchte heute über Musik sprechen.",
+        "expectedRoute": "base_mixed",
+        "expectedMistakes": true,
+        "profileSummary": "Die lernende Person mag Musik.",
+        "shortSummary": "Die Unterhaltung beginnt gerade.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "base-language",
+          "hint-mode",
+          "a2"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "de",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Music is a great topic. What kind of music do you like?",
+            "explanation_html": "<b>Tipp</b><blockquote>Du kannst das so sagen: <code>I would like to talk about music today.</code></blockquote>"
+          },
+          "durationMs": 1404,
+          "inputTokens": 4483,
+          "cachedInputTokens": 0,
+          "outputTokens": 81,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.004969,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "de",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Music is a great topic. What kind of music do you like?",
+            "explanation_html": "<b>Tipp</b><br><blockquote>Du kannst das so sagen: <code>I'd like to talk about music today.</code></blockquote>"
+          },
+          "durationMs": 2142,
+          "inputTokens": 4483,
+          "cachedInputTokens": 0,
+          "outputTokens": 150,
+          "reasoningTokens": 65,
+          "estimatedCostUsd": 0.005383,
+          "hardErrors": [
+            "base/mixed explanation must use the exact hint structure",
+            "explanation contains malformed or attributed HTML",
+            "explanation contains unsafe tag <br>"
+          ],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "de",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Great, music is a good topic. What kind of music do you like most?",
+            "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>I want to talk about music today.</code></blockquote>"
+          },
+          "durationMs": 1442,
+          "inputTokens": 4483,
+          "cachedInputTokens": 0,
+          "outputTokens": 85,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.0124825,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "de-en-a2-base-language",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 4,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "B",
+            "right_label": "C",
+            "winner": "C",
+            "reason": "C preserves the polite intent of “möchte” more closely with “would like,” while B's “want” is grammatical but slightly less natural for the original phrasing."
+          },
+          {
+            "left_label": "B",
+            "right_label": "A",
+            "winner": "A",
+            "reason": "A gives the most natural conversational rendering, “I'd like,” and preserves the learner's intended polite meaning better than B's “I want.”"
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_low",
+        "B": "baseline",
+        "C": "luna_none"
+      },
+      "judgeDurationMs": 4085,
+      "judgeEstimatedCostUsd": 0.007295
+    },
+    {
+      "case": {
+        "id": "de-es-b1-correct-target",
+        "botKey": "de-es",
+        "level": "B1",
+        "inputMode": "text",
+        "text": "Ayer fui al mercado y compré verduras para preparar una sopa.",
+        "expectedRoute": "target",
+        "expectedMistakes": false,
+        "profileSummary": "Die lernende Person kocht gern.",
+        "shortSummary": "Das Gespräch handelt von Alltagsplänen.",
+        "history": [
+          {
+            "role": "assistant",
+            "content": "¿Qué hiciste ayer?"
+          }
+        ],
+        "topic": null,
+        "dimensions": [
+          "target-language",
+          "correct-input",
+          "b1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "es",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Qué buena idea. Una sopa casera es perfecta para un día tranquilo. ¿Qué verduras compraste?",
+            "explanation_html": ""
+          },
+          "durationMs": 1903,
+          "inputTokens": 4486,
+          "cachedInputTokens": 0,
+          "outputTokens": 107,
+          "reasoningTokens": 46,
+          "estimatedCostUsd": 0.005128,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "es",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Qué bien. Ir al mercado para una sopa siempre da opciones más frescas. ¿Qué verduras usaste al final?",
+            "explanation_html": ""
+          },
+          "durationMs": 13257,
+          "inputTokens": 4486,
+          "cachedInputTokens": 0,
+          "outputTokens": 62,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.012145,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "es",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Suena como un buen plan para una comida casera. ¿Qué verduras compraste y cómo preparaste la sopa?",
+            "explanation_html": ""
+          },
+          "durationMs": 1132,
+          "inputTokens": 4486,
+          "cachedInputTokens": 0,
+          "outputTokens": 62,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.004858,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "de-es-b1-correct-target",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "A",
+            "right_label": "B",
+            "winner": "B",
+            "reason": "B is more natural and directly builds on the learner's statement; A's phrasing about going to the market for soup is slightly awkward."
+          },
+          {
+            "left_label": "A",
+            "right_label": "C",
+            "winner": "C",
+            "reason": "C is more idiomatic and concise, while A contains slightly unnatural phrasing."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "baseline",
+        "B": "luna_none",
+        "C": "luna_low"
+      },
+      "judgeDurationMs": 3287,
+      "judgeEstimatedCostUsd": 0.006465
+    },
+    {
+      "case": {
+        "id": "de-it-b2-mixed-language",
+        "botKey": "de-it",
+        "level": "B2",
+        "inputMode": "text",
+        "text": "Domani voglio andare al museo, aber ich weiß nicht, ob es geöffnet ist.",
+        "expectedRoute": "base_mixed",
+        "expectedMistakes": true,
+        "profileSummary": "Die lernende Person interessiert sich für Kunst.",
+        "shortSummary": "Es geht um Pläne für morgen.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "mixed-language",
+          "hint-mode",
+          "b2"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "mixed",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Puoi controllare il sito del museo o chiamare prima. Così sei più sicuro e non fai il viaggio per niente.",
+            "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>Domani voglio andare al museo, ma non so se è aperto.</code></blockquote>"
+          },
+          "durationMs": 5110,
+          "inputTokens": 4486,
+          "cachedInputTokens": 0,
+          "outputTokens": 103,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.01276,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "mixed",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Puoi controllare gli orari sul sito del museo o telefonare direttamente. Se è aperto, quale mostra vorresti vedere?",
+            "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>Domani voglio andare al museo, ma non so se è aperto.</code></blockquote>"
+          },
+          "durationMs": 1404,
+          "inputTokens": 4486,
+          "cachedInputTokens": 0,
+          "outputTokens": 105,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005116,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "de-it",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Puoi controllare gli orari sul sito del museo. Se è chiuso, puoi visitare una galleria d'arte.",
+            "explanation_html": "<b>Tipp</b>\n<blockquote>Du kannst das so sagen: <code>Domani voglio andare al museo, ma non so se è aperto.</code></blockquote>"
+          },
+          "durationMs": 2448,
+          "inputTokens": 4486,
+          "cachedInputTokens": 0,
+          "outputTokens": 220,
+          "reasoningTokens": 114,
+          "estimatedCostUsd": 0.005806,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "de-it-b2-mixed-language",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 4,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "C",
+            "right_label": "A",
+            "winner": "A",
+            "reason": "Both correct the mixed-language sentence accurately and reply naturally in Italian, but A more directly advances the conversation with a relevant follow-up question."
+          },
+          {
+            "left_label": "C",
+            "right_label": "B",
+            "winner": "C",
+            "reason": "Both are accurate and useful, but C has more appropriate mixed-language detection and offers a more immediately practical alternative."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_none",
+        "B": "luna_low",
+        "C": "baseline"
+      },
+      "judgeDurationMs": 4320,
+      "judgeEstimatedCostUsd": 0.008592
+    },
+    {
+      "case": {
+        "id": "en-de-c1-pinned-topic",
+        "botKey": "en-de",
+        "level": "C1",
+        "inputMode": "text",
+        "text": "Meiner Meinung nach sollte eine Stadt den Radverkehr fördern, ohne den öffentlichen Nahverkehr zu vernachlässigen.",
+        "expectedRoute": "target",
+        "expectedMistakes": false,
+        "profileSummary": "The learner enjoys discussing urban policy.",
+        "shortSummary": "The current thread compares transport policies.",
+        "history": [
+          {
+            "role": "assistant",
+            "content": "Welche Verkehrsmittel sollten Vorrang haben?"
+          }
+        ],
+        "topic": {
+          "topic_id": "city-transport",
+          "title_base": "City transport",
+          "goal_base": "Compare practical transport policies",
+          "allowed_base": [
+            "cycling",
+            "public transport",
+            "pedestrian areas"
+          ],
+          "avoid_base": [
+            "unrelated personal finance"
+          ],
+          "last_assistant_question": "Welche Verkehrsmittel sollten Vorrang haben?"
+        },
+        "dimensions": [
+          "target-language",
+          "correct-input",
+          "pinned-topic",
+          "c1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "de",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Das halte ich für einen ausgewogenen Ansatz. Besonders wichtig ist, dass Radwege sicher sind und Busse sowie Bahnen zuverlässig und häufig fahren. Welche Maßnahmen könnten Fußgängerbereiche zusätzlich attraktiver machen?",
+            "explanation_html": ""
+          },
+          "durationMs": 1175,
+          "inputTokens": 4563,
+          "cachedInputTokens": 0,
+          "outputTokens": 79,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005037,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "de",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Das ist ein ausgewogener Ansatz, weil beide Angebote unterschiedliche Bedürfnisse abdecken. Welche Rolle sollten autofreie Fußgängerzonen in dieser Verkehrspolitik spielen?",
+            "explanation_html": ""
+          },
+          "durationMs": 1816,
+          "inputTokens": 4563,
+          "cachedInputTokens": 0,
+          "outputTokens": 147,
+          "reasoningTokens": 73,
+          "estimatedCostUsd": 0.005445,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "de",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Das ist ein sinnvoller Ansatz. So bleibt die Stadt flexibel, und verschiedene Menschen können sich gut fortbewegen. Fußgängerzonen passen oft auch gut dazu, besonders in dicht bebauten Zentren.",
+            "explanation_html": ""
+          },
+          "durationMs": 6460,
+          "inputTokens": 4563,
+          "cachedInputTokens": 0,
+          "outputTokens": 79,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.0125925,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "en-de-c1-pinned-topic",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 4,
+            "conversational_usefulness": 3,
+            "instruction_compliance": 4,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "B",
+            "right_label": "C",
+            "winner": "C",
+            "reason": "C gives more concrete, policy-relevant elaboration and ends with an open question that clearly advances the pinned transport discussion."
+          },
+          {
+            "left_label": "B",
+            "right_label": "A",
+            "winner": "A",
+            "reason": "A responds naturally and explicitly moves the conversation forward with a relevant question, whereas B only comments without inviting a continuation."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_low",
+        "B": "baseline",
+        "C": "luna_none"
+      },
+      "judgeDurationMs": 3588,
+      "judgeEstimatedCostUsd": 0.006732
+    },
+    {
+      "case": {
+        "id": "en-es-a1-voice-clean",
+        "botKey": "en-es",
+        "level": "A1",
+        "inputMode": "voice",
+        "text": "Quiero agua, por favor.",
+        "expectedRoute": "target",
+        "expectedMistakes": false,
+        "profileSummary": "The learner practises travel phrases.",
+        "shortSummary": "The learner is ordering in a cafe.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "voice-like",
+          "correct-input",
+          "a1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "es",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Claro. Aquí tiene agua. ¿Quiere algo más?",
+            "explanation_html": ""
+          },
+          "durationMs": 1538,
+          "inputTokens": 4472,
+          "cachedInputTokens": 0,
+          "outputTokens": 91,
+          "reasoningTokens": 39,
+          "estimatedCostUsd": 0.005018,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "es",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Claro. ¿Quieres agua fría o natural?",
+            "explanation_html": ""
+          },
+          "durationMs": 1420,
+          "inputTokens": 4472,
+          "cachedInputTokens": 0,
+          "outputTokens": 47,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.011885,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "es",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Claro. Aquí tienes agua. ¿Quieres algo para comer?",
+            "explanation_html": ""
+          },
+          "durationMs": 1237,
+          "inputTokens": 4472,
+          "cachedInputTokens": 0,
+          "outputTokens": 50,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.004772,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "en-es-a1-voice-clean",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "A",
+            "right_label": "B",
+            "winner": "A",
+            "reason": "A’s follow-up stays more directly connected to the requested water, while B shifts to food."
+          },
+          {
+            "left_label": "A",
+            "right_label": "C",
+            "winner": "A",
+            "reason": "A uses the informal second-person register consistent with the learner’s “Quiero,” whereas C switches to formal address."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "baseline",
+        "B": "luna_none",
+        "C": "luna_low"
+      },
+      "judgeDurationMs": 2403,
+      "judgeEstimatedCostUsd": 0.005293
+    },
+    {
+      "case": {
+        "id": "en-it-a2-target-mistake",
+        "botKey": "en-it",
+        "level": "A2",
+        "inputMode": "text",
+        "text": "Ieri ho andato al cinema con mia sorella.",
+        "expectedRoute": "target",
+        "expectedMistakes": true,
+        "profileSummary": "The learner likes films.",
+        "shortSummary": "The learner is talking about yesterday.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "target-language",
+          "grammar",
+          "a2"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "it",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Bello. Che film avete visto?",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ Ieri <b>ho andato</b> al cinema con mia sorella.\n✅ Ieri <b>sono andato</b> al cinema con mia sorella.\n\n🧠 [Rule: tense] With <i>andare</i> in the present perfect, Italian uses <i>essere</i>, not <i>avere</i>. So we say <i>sono andato</i>. 🙂\n</blockquote>"
+          },
+          "durationMs": 1992,
+          "inputTokens": 4474,
+          "cachedInputTokens": 0,
+          "outputTokens": 158,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.013555,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "it",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Che bello! Quale film avete visto?",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ Ieri <b>ho andato</b> al cinema con mia sorella.\n✅ Ieri <b>sono andato</b> al cinema con mia sorella.\n\n🧠 [Rule: Auxiliary verb] The verb <i>andare</i> uses <code>essere</code> in the past tense, not <code>avere</code>. With a female speaker, use <code>sono andata</code>. 🎬\n</blockquote>"
+          },
+          "durationMs": 1698,
+          "inputTokens": 4474,
+          "cachedInputTokens": 0,
+          "outputTokens": 164,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005458,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "it",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Che bello! Spero che il film ti sia piaciuto.",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ Ieri <b>ho andato</b> al cinema con mia sorella.\n✅ Ieri <b>sono andato</b> al cinema con mia sorella.\n\n🧠 [Rule: Auxiliary verb] The verb <i>andare</i> uses <i>essere</i> in the past tense, not <i>avere</i>. If the speaker is female, use <i>sono andata</i>. 🎬</blockquote>"
+          },
+          "durationMs": 2269,
+          "inputTokens": 4474,
+          "cachedInputTokens": 0,
+          "outputTokens": 233,
+          "reasoningTokens": 64,
+          "estimatedCostUsd": 0.005872,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "en-it-a2-target-mistake",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "C",
+            "right_label": "A",
+            "winner": "A",
+            "reason": "Both correct the auxiliary accurately, but A gives a warmer, more natural response and asks a clear follow-up question."
+          },
+          {
+            "left_label": "C",
+            "right_label": "B",
+            "winner": "B",
+            "reason": "Both are accurate and level-appropriate; B's response is more natural and personable than the somewhat abrupt “Bello.”"
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_none",
+        "B": "luna_low",
+        "C": "baseline"
+      },
+      "judgeDurationMs": 3576,
+      "judgeEstimatedCostUsd": 0.007772
+    },
+    {
+      "case": {
+        "id": "hi-en-b1-base-language",
+        "botKey": "hi-en",
+        "level": "B1",
+        "inputMode": "text",
+        "text": "मैं अगले महीने नई नौकरी शुरू करने वाला हूँ।",
+        "expectedRoute": "base_mixed",
+        "expectedMistakes": true,
+        "profileSummary": "उपयोगकर्ता काम के विषयों पर अभ्यास करना चाहता है।",
+        "shortSummary": "नई नौकरी की चर्चा शुरू हुई है।",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "base-language",
+          "non-latin-script",
+          "hint-mode",
+          "b1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "hi",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "That is exciting. Starting a new job can be a great chance to learn and grow. What kind of work will you do?",
+            "explanation_html": "<b>Hint</b>\n<blockquote>You can say it like this: <code>I'm going to start a new job next month.</code></blockquote>"
+          },
+          "durationMs": 1721,
+          "inputTokens": 4495,
+          "cachedInputTokens": 0,
+          "outputTokens": 97,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005077,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "hi",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "That sounds like an exciting change. I hope your first month goes well.",
+            "explanation_html": "<b>Hint</b>\n<blockquote>You can say it like this: <code>I am starting a new job next month.</code></blockquote>"
+          },
+          "durationMs": 2513,
+          "inputTokens": 4495,
+          "cachedInputTokens": 0,
+          "outputTokens": 205,
+          "reasoningTokens": 120,
+          "estimatedCostUsd": 0.005725,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "hi",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "That sounds like a big change. I hope the first weeks go well and the new job feels clear and manageable.",
+            "explanation_html": "<b>Hint</b>\n<blockquote>You can say it like this: <code>I'm going to start a new job next month.</code></blockquote>"
+          },
+          "durationMs": 3930,
+          "inputTokens": 4495,
+          "cachedInputTokens": 0,
+          "outputTokens": 93,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.0126325,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "hi-en-b1-base-language",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 3,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 3,
+            "instruction_compliance": 3,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 3,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 3,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 3,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 3,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "B",
+            "right_label": "C",
+            "winner": "C",
+            "reason": "Both provide an accurate, natural B1-level reformulation, but C more naturally advances the conversation with a relevant follow-up question. B's phrase “the new job feels clear and manageable” is somewhat less idiomatic."
+          },
+          {
+            "left_label": "B",
+            "right_label": "A",
+            "winner": "B",
+            "reason": "B offers a more natural future-oriented reformulation and a slightly more supportive response. A is accurate but less conversationally engaging."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_low",
+        "B": "baseline",
+        "C": "luna_none"
+      },
+      "judgeDurationMs": 5489,
+      "judgeEstimatedCostUsd": 0.009525
+    },
+    {
+      "case": {
+        "id": "it-de-b2-target-mistake",
+        "botKey": "it-de",
+        "level": "B2",
+        "inputMode": "text",
+        "text": "Ich habe gestern meine Freund besucht, obwohl ich sehr müde war.",
+        "expectedRoute": "target",
+        "expectedMistakes": true,
+        "profileSummary": "La persona vuole migliorare i casi tedeschi.",
+        "shortSummary": "Si parla del fine settimana.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "target-language",
+          "case-agreement",
+          "b2"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "de",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Das war bestimmt ein langer Tag. Hat sich der Besuch trotzdem gelohnt?",
+            "explanation_html": "<b>Spiegazione</b>\n<blockquote>\n❌ Ich habe gestern <b>meine Freund</b> besucht, obwohl ich sehr müde war.\n✅ Ich habe gestern <b>meinen Freund</b> besucht, obwohl ich sehr müde war.\n\n🧠 [Rule: Case and gender] Con il verbo 'besuchen' serve l'accusativo. 'Freund' è maschile, quindi l'aggettivo possessivo cambia da 'meine' a 'meinen'. 🙂\n</blockquote>"
+          },
+          "durationMs": 2617,
+          "inputTokens": 4485,
+          "cachedInputTokens": 0,
+          "outputTokens": 254,
+          "reasoningTokens": 82,
+          "estimatedCostUsd": 0.006009,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "de",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Dann war es trotz Müdigkeit wohl ein guter Besuch. Was habt ihr zusammen gemacht?",
+            "explanation_html": "<b>Spiegazione</b>\n<blockquote>\n❌ Ich habe gestern meine <b>Freund</b> besucht, obwohl ich sehr müde war.\n✅ Ich habe gestern meine<b>n</b> <b>Freund</b> besucht, obwohl ich sehr müde war.\n\n🧠 [Rule: case] Dopo il verbo <i>besuchen</i> serve l'oggetto diretto, quindi qui usiamo l'accusativo. Con <i>mein Freund</i> al maschile, in accusativo diventa <i>meinen Freund</i>. 🙂\n</blockquote>"
+          },
+          "durationMs": 3102,
+          "inputTokens": 4485,
+          "cachedInputTokens": 0,
+          "outputTokens": 192,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.0140925,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "de",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Das klingt nach einem langen Tag. Hoffentlich konntest du dich danach gut ausruhen.",
+            "explanation_html": "<b>Spiegazione</b>\n<blockquote>\n❌ Ich habe gestern <b>meine Freund</b> besucht, obwohl ich sehr müde war.\n✅ Ich habe gestern <b>meinen Freund</b> besucht, obwohl ich sehr müde war.\n\n🧠 [Rule: Case and gender] Dopo il verbo <i>besuchen</i> serve l'accusativo. <i>Freund</i> è maschile, quindi l'aggettivo possessivo diventa <i>meinen</i>.\n</blockquote>"
+          },
+          "durationMs": 1753,
+          "inputTokens": 4485,
+          "cachedInputTokens": 0,
+          "outputTokens": 180,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005565,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "it-de-b2-target-mistake",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 4,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 4,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "A",
+            "right_label": "B",
+            "winner": "B",
+            "reason": "B presents the correction more cleanly, with proper spacing and clearer highlighting of the possessive form. Its response is also slightly more natural and avoids A's unsupported inference that the visit was good."
+          },
+          {
+            "left_label": "A",
+            "right_label": "C",
+            "winner": "C",
+            "reason": "C gives the same accurate correction in cleaner formatting, with a clear explanation and a more directly engaging follow-up question. A has a spacing/highlighting issue in the corrected sentence."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "baseline",
+        "B": "luna_none",
+        "C": "luna_low"
+      },
+      "judgeDurationMs": 5478,
+      "judgeEstimatedCostUsd": 0.00929
+    },
+    {
+      "case": {
+        "id": "it-en-c1-pinned-topic",
+        "botKey": "it-en",
+        "level": "C1",
+        "inputMode": "text",
+        "text": "Remote work can increase autonomy, but it also requires deliberate boundaries between professional and private life.",
+        "expectedRoute": "target",
+        "expectedMistakes": false,
+        "profileSummary": "La persona lavora in un team distribuito.",
+        "shortSummary": "La conversazione confronta modelli di lavoro.",
+        "history": [
+          {
+            "role": "assistant",
+            "content": "Which part of remote work affects teams most?"
+          }
+        ],
+        "topic": {
+          "topic_id": "future-of-work",
+          "title_base": "Il futuro del lavoro",
+          "goal_base": "Valutare vantaggi e svantaggi del lavoro remoto",
+          "allowed_base": [
+            "autonomia",
+            "collaborazione",
+            "confini personali"
+          ],
+          "avoid_base": [
+            "politica non collegata"
+          ],
+          "last_assistant_question": "Which part of remote work affects teams most?"
+        },
+        "dimensions": [
+          "target-language",
+          "correct-input",
+          "pinned-topic",
+          "c1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "That’s a strong point. More autonomy can help people work better, but weak boundaries can make the day feel endless. In your view, what helps most with keeping those boundaries clear?",
+            "explanation_html": ""
+          },
+          "durationMs": 2749,
+          "inputTokens": 4592,
+          "cachedInputTokens": 0,
+          "outputTokens": 75,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.012605,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "That balance is crucial: autonomy can improve motivation, but without clear boundaries it may lead to longer hours and quiet burnout. How can organisations help employees protect those boundaries?",
+            "explanation_html": ""
+          },
+          "durationMs": 1382,
+          "inputTokens": 4592,
+          "cachedInputTokens": 0,
+          "outputTokens": 71,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005018,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "That balance is crucial: autonomy can improve focus, while clear boundaries help prevent work from taking over personal time. How can distributed teams maintain strong collaboration without reducing that autonomy?",
+            "explanation_html": ""
+          },
+          "durationMs": 3075,
+          "inputTokens": 4592,
+          "cachedInputTokens": 0,
+          "outputTokens": 179,
+          "reasoningTokens": 105,
+          "estimatedCostUsd": 0.005666,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "it-en-c1-pinned-topic",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 4,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "C",
+            "right_label": "A",
+            "winner": "A",
+            "reason": "A develops the learner’s point with a more C1-appropriate organisational perspective and advances the discussion naturally; C is clear but more generic and less challenging."
+          },
+          {
+            "left_label": "C",
+            "right_label": "B",
+            "winner": "B",
+            "reason": "B most directly reconnects to the outstanding question about team impact by asking about collaboration and autonomy in distributed teams."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_none",
+        "B": "luna_low",
+        "C": "baseline"
+      },
+      "judgeDurationMs": 4829,
+      "judgeEstimatedCostUsd": 0.007772
+    },
+    {
+      "case": {
+        "id": "tr-en-a1-voice-imperfect",
+        "botKey": "tr-en",
+        "level": "A1",
+        "inputMode": "voice",
+        "text": "I like play football on weekend",
+        "expectedRoute": "target",
+        "expectedMistakes": false,
+        "profileSummary": "Kullanıcı spordan hoşlanıyor.",
+        "shortSummary": "Kullanıcı hafta sonundan bahsediyor.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "voice-like",
+          "imperfect-transcript",
+          "false-positive-guard",
+          "a1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "That sounds fun. Football is a great weekend activity.",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I like <b>play</b> football on weekend\n✅ I like <b>playing</b> football on weekends\n\n🧠 [Rule: Verb pattern and plural] “Like” is followed by a verb ending in -ing. We usually say “at/on weekends” with the plural form for a general habit. ⚽</blockquote>"
+          },
+          "durationMs": 1325,
+          "inputTokens": 4488,
+          "cachedInputTokens": 0,
+          "outputTokens": 135,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005298,
+          "hardErrors": [
+            "has_mistakes expected false",
+            "correct target-language input must have an empty explanation"
+          ],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Football is a great weekend activity. Do you usually play with friends?",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I like <b>play</b> football on weekend\n✅ I like <b>playing</b> football on weekends\n\n🧠 [Rule: Verb pattern] “Like” fiilinden sonra genellikle fiilin -ing hâli kullanılır. Ayrıca genel alışkanlıklarda “on weekends” daha uygundur. ⚽\n</blockquote>"
+          },
+          "durationMs": 2257,
+          "inputTokens": 4488,
+          "cachedInputTokens": 0,
+          "outputTokens": 226,
+          "reasoningTokens": 83,
+          "estimatedCostUsd": 0.005844,
+          "hardErrors": [
+            "has_mistakes expected false",
+            "correct target-language input must have an empty explanation"
+          ],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Football is great exercise. Do you play with friends or family?",
+            "explanation_html": "<b>Explanation</b>\n<blockquote>\n❌ I like <b>play</b> football on weekend\n✅ I like <b>playing</b> football on weekends\n\n🧠 [Rule: verb form] 'like' fiilinden sonra genelde fiilin -ing hali gelir. Bu yüzden 'play' yerine 'playing' kullanılır. 🙂\n</blockquote>"
+          },
+          "durationMs": 2394,
+          "inputTokens": 4488,
+          "cachedInputTokens": 0,
+          "outputTokens": 135,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.013245,
+          "hardErrors": [
+            "has_mistakes expected false",
+            "correct target-language input must have an empty explanation"
+          ],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "tr-en-a1-voice-imperfect",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 2,
+            "level_fit": 4,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 2,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 2,
+            "level_fit": 4,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 2,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 2,
+            "level_fit": 4,
+            "conversational_usefulness": 3,
+            "instruction_compliance": 1,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "B",
+            "right_label": "C",
+            "winner": "B",
+            "reason": "Both unnecessarily mark a voice input as erroneous, but B provides the required Turkish explanation and follows up with a natural question. C uses English for the explanation and does not meaningfully advance the conversation."
+          },
+          {
+            "left_label": "B",
+            "right_label": "A",
+            "winner": "A",
+            "reason": "Both make the same unnecessary correction, but A's explanation addresses both edited elements, including “on weekends,” whereas B changes that phrase without explaining it."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_low",
+        "B": "baseline",
+        "C": "luna_none"
+      },
+      "judgeDurationMs": 6598,
+      "judgeEstimatedCostUsd": 0.010385
+    },
+    {
+      "case": {
+        "id": "uk-de-a2-mixed-language",
+        "botKey": "uk-de",
+        "level": "A2",
+        "inputMode": "text",
+        "text": "Ich möchte einen Kaffee, але без цукру.",
+        "expectedRoute": "base_mixed",
+        "expectedMistakes": true,
+        "profileSummary": "Користувач практикує ситуації в кафе.",
+        "shortSummary": "Замовлення напою.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "mixed-language",
+          "non-latin-script",
+          "hint-mode",
+          "a2"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "mixed",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Gern. Möchten Sie Milch dazu?",
+            "explanation_html": "<b>Підказка</b><blockquote>Ти можеш сказати це наступним чином: <code>Ich möchte einen Kaffee, aber ohne Zucker.</code></blockquote>"
+          },
+          "durationMs": 1777,
+          "inputTokens": 4491,
+          "cachedInputTokens": 0,
+          "outputTokens": 148,
+          "reasoningTokens": 60,
+          "estimatedCostUsd": 0.005379,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "mixed",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Kein Problem, ich bringe dir einen Kaffee ohne Zucker. Möchtest du noch etwas dazu?",
+            "explanation_html": "<b>Підказка</b>\n<blockquote>Ти можеш сказати це наступним чином: <code>Ich möchte einen Kaffee ohne Zucker.</code></blockquote>"
+          },
+          "durationMs": 2190,
+          "inputTokens": 4491,
+          "cachedInputTokens": 0,
+          "outputTokens": 97,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.0126825,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "mixed",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "Gern. Möchten Sie auch etwas essen?",
+            "explanation_html": "<b>Підказка</b><br><blockquote>Ти можеш сказати це наступним чином: <code>Ich möchte einen Kaffee, aber ohne Zucker.</code></blockquote>"
+          },
+          "durationMs": 1250,
+          "inputTokens": 4491,
+          "cachedInputTokens": 0,
+          "outputTokens": 89,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005025,
+          "hardErrors": [
+            "base/mixed explanation must use the exact hint structure",
+            "explanation contains malformed or attributed HTML",
+            "explanation contains unsafe tag <br>"
+          ],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "uk-de-a2-mixed-language",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "A",
+            "right_label": "B",
+            "winner": "A",
+            "reason": "A gives an equally accurate, natural correction and responds more directly to the coffee order in a friendly, context-appropriate way."
+          },
+          {
+            "left_label": "A",
+            "right_label": "C",
+            "winner": "A",
+            "reason": "A gives an equally accurate correction while its follow-up is more broadly useful and directly tied to completing the order."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "baseline",
+        "B": "luna_none",
+        "C": "luna_low"
+      },
+      "judgeDurationMs": 6647,
+      "judgeEstimatedCostUsd": 0.010245
+    },
+    {
+      "case": {
+        "id": "uk-en-b1-target-mistake",
+        "botKey": "uk-en",
+        "level": "B1",
+        "inputMode": "text",
+        "text": "She explained me the problem, so I could finish the task.",
+        "expectedRoute": "target",
+        "expectedMistakes": true,
+        "profileSummary": "Користувач працює у сфері технологій.",
+        "shortSummary": "Обговорюється робоче завдання.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "target-language",
+          "verb-pattern",
+          "b1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "That was helpful, then. It’s much easier to finish a task when someone explains the problem clearly.",
+            "explanation_html": "<b>Пояснення</b>\n<blockquote>\n❌ She <b>explained me</b> the problem, so I could finish the task.\n✅ She <b>explained the problem to me</b>, so I could finish the task.\n\n🧠 [Rule: verb pattern] Після <i>explain</i> ми не ставимо додаток-особу одразу без прийменника. Правильна модель: <i>explain something to someone</i>. 👍\n</blockquote>"
+          },
+          "durationMs": 2321,
+          "inputTokens": 4510,
+          "cachedInputTokens": 0,
+          "outputTokens": 176,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.013915,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "That was helpful of her. It is good that you could finish the task after that explanation.",
+            "explanation_html": "<b>Пояснення</b>\n<blockquote>\n❌ She <b>explained me</b> the problem, so I could finish the task.\n✅ She <b>explained the problem to me</b>, so I could finish the task.\n\n🧠 [Rule: Verb pattern] Дієслово <i>explain</i> не вживається безпосередньо з особою: не <code>explain me</code>, а <code>explain something to someone</code>. 🙂\n</blockquote>"
+          },
+          "durationMs": 1833,
+          "inputTokens": 4510,
+          "cachedInputTokens": 0,
+          "outputTokens": 180,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.00559,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": true,
+            "has_mistakes": true,
+            "reply_text": "That was helpful. Clear explanations can save a lot of time at work.",
+            "explanation_html": "<b>Пояснення</b>\n<blockquote>\n❌ She <b>explained me</b> the problem, so I could finish the task.\n✅ She <b>explained the problem to me</b>, so I could finish the task.\n\n🧠 [Rule: Preposition] Після дієслова <i>explain</i> ми не ставимо особу безпосередньо після дієслова. Використовуємо конструкцію <i>explain something to someone</i>. 😊\n</blockquote>"
+          },
+          "durationMs": 3103,
+          "inputTokens": 4510,
+          "cachedInputTokens": 0,
+          "outputTokens": 296,
+          "reasoningTokens": 118,
+          "estimatedCostUsd": 0.006286,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "uk-en-b1-target-mistake",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "C",
+            "right_label": "A",
+            "winner": "A",
+            "reason": "Both give the same accurate, level-appropriate correction, but A's conversational reply is slightly more directly connected to the learner's successful completion of the task. C's “then” is somewhat awkward in context."
+          },
+          {
+            "left_label": "C",
+            "right_label": "B",
+            "winner": "B",
+            "reason": "Both corrections are accurate and clear, but B's response is more natural and concise while still extending the workplace context appropriately."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_none",
+        "B": "luna_low",
+        "C": "baseline"
+      },
+      "judgeDurationMs": 3699,
+      "judgeEstimatedCostUsd": 0.008438
+    },
+    {
+      "case": {
+        "id": "uk-es-b2-third-language",
+        "botKey": "uk-es",
+        "level": "B2",
+        "inputMode": "text",
+        "text": "I would rather discuss a different subject today.",
+        "expectedRoute": "third",
+        "expectedMistakes": false,
+        "profileSummary": "Користувач вивчає іспанську для подорожей.",
+        "shortSummary": "Активна тема стосується подорожей.",
+        "history": [],
+        "topic": {
+          "topic_id": "travel-planning",
+          "title_base": "Планування подорожі",
+          "goal_base": "Підготувати практичний план подорожі",
+          "allowed_base": [
+            "транспорт",
+            "житло",
+            "маршрут"
+          ],
+          "avoid_base": [
+            "непов'язані робочі теми"
+          ],
+          "last_assistant_question": "¿Cómo prefieres viajar?"
+        },
+        "dimensions": [
+          "third-language",
+          "pinned-topic",
+          "b2"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": false,
+            "has_mistakes": false,
+            "reply_text": "",
+            "explanation_html": "<b>Наразі ми практикуємо іспанську.</b> Будь ласка, надішли повідомлення іспанською мовою. Наприклад: <code>Quiero hablar de otro tema.</code> 🙂"
+          },
+          "durationMs": 1296,
+          "inputTokens": 4582,
+          "cachedInputTokens": 0,
+          "outputTokens": 90,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005122,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "en",
+            "is_target_language": false,
+            "has_mistakes": false,
+            "reply_text": "",
+            "explanation_html": "Ми практикуємо іспанську. Будь ласка, напиши повідомлення іспанською 😊<blockquote><code>Quiero hablar de otro tema hoy.</code></blockquote>"
+          },
+          "durationMs": 2102,
+          "inputTokens": 4582,
+          "cachedInputTokens": 0,
+          "outputTokens": 121,
+          "reasoningTokens": 40,
+          "estimatedCostUsd": 0.005308,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "en",
+            "is_target_language": false,
+            "has_mistakes": false,
+            "reply_text": "",
+            "explanation_html": "<b>Спробуй іспанською 🙂</b>\n<blockquote>Зараз ми практикуємо іспанську. Будь ласка, надішли повідомлення іспанською. Наприклад: <code>Prefiero hablar de viajes hoy.</code></blockquote>"
+          },
+          "durationMs": 2223,
+          "inputTokens": 4582,
+          "cachedInputTokens": 0,
+          "outputTokens": 103,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.013,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "uk-es-b2-third-language",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 3,
+            "instruction_compliance": 2,
+            "critical_failure": true,
+            "critical_reason": "The suggested Spanish sentence shifts to an unspecified different topic, violating the pinned travel-planning topic."
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 3,
+            "instruction_compliance": 2,
+            "critical_failure": true,
+            "critical_reason": "The suggested Spanish sentence shifts to an unspecified different topic, violating the pinned travel-planning topic."
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "B",
+            "right_label": "C",
+            "winner": "B",
+            "reason": "B correctly redirects the learner to Spanish while keeping the example within the pinned travel topic; C suggests changing to an unrelated topic."
+          },
+          {
+            "left_label": "B",
+            "right_label": "A",
+            "winner": "B",
+            "reason": "B preserves the pinned travel-planning topic in its example, whereas A encourages an unspecified topic change."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "luna_low",
+        "B": "baseline",
+        "C": "luna_none"
+      },
+      "judgeDurationMs": 4321,
+      "judgeEstimatedCostUsd": 0.00833
+    },
+    {
+      "case": {
+        "id": "uk-pl-c1-correct-target",
+        "botKey": "uk-pl",
+        "level": "C1",
+        "inputMode": "text",
+        "text": "Chociaż rozwiązanie wydaje się rozsądne, jego skuteczność będzie zależała od konsekwentnego wdrożenia.",
+        "expectedRoute": "target",
+        "expectedMistakes": false,
+        "profileSummary": "Користувач любить обговорювати складні рішення.",
+        "shortSummary": "Розмова про оцінювання пропозицій.",
+        "history": [],
+        "topic": null,
+        "dimensions": [
+          "target-language",
+          "correct-input",
+          "c1"
+        ]
+      },
+      "runs": [
+        {
+          "variantId": "luna_low",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "low",
+          "output": {
+            "detected_language": "pl",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "To trafne zastrzeżenie — nawet dobrze zaprojektowane rozwiązanie może nie przynieść oczekiwanych efektów, jeśli wdrożenie będzie niespójne. Warto więc od początku określić mierniki skuteczności i sposób ich monitorowania.",
+            "explanation_html": ""
+          },
+          "durationMs": 1576,
+          "inputTokens": 4518,
+          "cachedInputTokens": 0,
+          "outputTokens": 132,
+          "reasoningTokens": 34,
+          "estimatedCostUsd": 0.00531,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "baseline",
+          "model": "gpt-5.4",
+          "reasoningEffort": null,
+          "output": {
+            "detected_language": "pl",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "To trafna uwaga. Sam pomysł może być dobry, ale bez dyscypliny we wdrożeniu efekt często jest słabszy niż oczekiwano.",
+            "explanation_html": ""
+          },
+          "durationMs": 2685,
+          "inputTokens": 4518,
+          "cachedInputTokens": 0,
+          "outputTokens": 74,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.012405,
+          "hardErrors": [],
+          "callError": null
+        },
+        {
+          "variantId": "luna_none",
+          "model": "gpt-5.6-luna",
+          "reasoningEffort": "none",
+          "output": {
+            "detected_language": "pl",
+            "is_target_language": true,
+            "has_mistakes": false,
+            "reply_text": "Zgadzam się — sama trafność rozwiązania nie wystarczy, jeśli zabraknie konsekwencji w realizacji. Warto też wcześniej ustalić, po czym poznamy, że wdrożenie rzeczywiście przynosi oczekiwane rezultaty.",
+            "explanation_html": ""
+          },
+          "durationMs": 1690,
+          "inputTokens": 4518,
+          "cachedInputTokens": 0,
+          "outputTokens": 94,
+          "reasoningTokens": 0,
+          "estimatedCostUsd": 0.005082,
+          "hardErrors": [],
+          "callError": null
+        }
+      ],
+      "judgment": {
+        "case_id": "uk-pl-c1-correct-target",
+        "assessments": [
+          {
+            "label": "A",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 4,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "B",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          },
+          {
+            "label": "C",
+            "target_language_fidelity": 5,
+            "correction_accuracy": 5,
+            "level_fit": 5,
+            "conversational_usefulness": 5,
+            "instruction_compliance": 5,
+            "critical_failure": false,
+            "critical_reason": ""
+          }
+        ],
+        "comparisons": [
+          {
+            "left_label": "A",
+            "right_label": "B",
+            "winner": "B",
+            "reason": "B responds naturally and advances the discussion with a concrete, relevant next step: defining evidence of successful implementation."
+          },
+          {
+            "left_label": "A",
+            "right_label": "C",
+            "winner": "C",
+            "reason": "C is more substantive and C1-appropriate, adding a useful suggestion about effectiveness metrics and monitoring while preserving the learner's point."
+          }
+        ]
+      },
+      "labelToVariant": {
+        "A": "baseline",
+        "B": "luna_none",
+        "C": "luna_low"
+      },
+      "judgeDurationMs": 3166,
+      "judgeEstimatedCostUsd": 0.006287
+    }
+  ]
+}
