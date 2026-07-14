@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { extractBotTokens } from './bot-configs.js';
 import { parseBotRuntimeRouteFlags } from './bot-runtime/route-flags.js';
 import { parseProgressEnabledBotKeys } from './bot-runtime/progress-config.js';
+import { parseImmediateAckEnabledBotKeys } from './bot-runtime/immediate-ack-config.js';
 import {
   parseBotModelPolicyOverrides,
   parseModelReasoningEffort
@@ -139,6 +140,10 @@ const botProgressEnabledBotKeys = parseProgressEnabledBotKeys(
   process.env.BOT_PROGRESS_ENABLED_BOT_KEYS,
   Object.keys(telegramBotTokensByBotKey)
 );
+const botImmediateAckEnabledBotKeys = parseImmediateAckEnabledBotKeys(
+  process.env.BOT_IMMEDIATE_ACK_ENABLED_BOT_KEYS,
+  Object.keys(telegramBotTokensByBotKey)
+);
 const botRuntimeModel = (process.env.BOT_RUNTIME_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4';
 const botSupportModel = (process.env.BOT_SUPPORT_MODEL || botRuntimeModel).toString().trim() || botRuntimeModel;
 const botRuntimeReasoningEffort = parseModelReasoningEffort(
@@ -168,6 +173,7 @@ export const env = {
   telegramBotTokensByBotKey,
   botRuntimeRouteFlags,
   botProgressEnabledBotKeys,
+  botImmediateAckEnabledBotKeys,
   telegramInitDataMaxAgeSec,
   stripeSecretKey: requireEnv('STRIPE_SECRET_KEY'),
   stripeWebhookSecret: requireEnv('STRIPE_WEBHOOK_SECRET'),

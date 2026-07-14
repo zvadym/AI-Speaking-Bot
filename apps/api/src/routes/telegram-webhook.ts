@@ -1,4 +1,5 @@
 import express from 'express';
+import { performance } from 'node:perf_hooks';
 import type { Pool } from 'pg';
 import { normalizeBotKey } from '../shared/normalization.js';
 import { captureException } from '../sentry.js';
@@ -11,6 +12,7 @@ import {
   verifyTelegramWebhookSecret
 } from '../bot-runtime/webhook-secret.js';
 import type { BotRuntimeRouteFlags } from '../bot-runtime/route-flags.js';
+import { startImmediateTelegramAck } from '../bot-runtime/immediate-telegram-ack.js';
 
 interface TelegramWebhookContext {
   pool: Pool;
@@ -19,9 +21,18 @@ interface TelegramWebhookContext {
   } | null;
   env: {
     botRuntimeRouteFlags: BotRuntimeRouteFlags;
+    botImmediateAckEnabledBotKeys: ReadonlySet<string>;
     internalApiSecret: string;
     jwtSecret: string;
     telegramBotTokensByBotKey: Record<string, string>;
+  };
+  telegramClient: {
+    callTelegramApi(
+      botKey: string,
+      method: string,
+      body: Record<string, unknown>,
+      options?: { signal?: AbortSignal }
+    ): Promise<unknown>;
   };
   publicBotMetaForKey(botKey: unknown): { bot_key?: unknown } | null;
   getBotLocale(botKey: string): unknown;
@@ -31,6 +42,7 @@ export function createTelegramWebhookRouter(ctx: TelegramWebhookContext) {
   const router = express.Router();
 
   router.post('/telegram/webhook/:botKey', async (req, res) => {
+    const receivedAtMs = performance.now();
     const botKey = normalizeBotKey(req.params.botKey);
     const botToken = botKey ? String(ctx.env.telegramBotTokensByBotKey[botKey] || '') : '';
     const signingSecret = String(ctx.env.internalApiSecret || ctx.env.jwtSecret || '');
@@ -54,6 +66,13 @@ export function createTelegramWebhookRouter(ctx: TelegramWebhookContext) {
     try {
       const input = normalizeTelegramUpdate(req.body);
       updateId = input.updateId;
+      startImmediateTelegramAck({
+        telegramClient: ctx.telegramClient,
+        enabledBotKeys: ctx.env.botImmediateAckEnabledBotKeys,
+        botKey,
+        input,
+        receivedAtMs
+      });
       await bootstrapTelegramUser(ctx.pool, { botKey, input });
       const contract = await prepareBotUpdate(ctx, {
         botKey,

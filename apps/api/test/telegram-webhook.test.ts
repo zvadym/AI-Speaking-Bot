@@ -17,7 +17,11 @@ process.env.SENTRY_TEST_MODE ??= '1';
 
 const { createTelegramWebhookRouter } = await import('../src/routes/telegram-webhook.js');
 
-async function post(app: express.Express, secret: string | null) {
+async function post(
+  app: express.Express,
+  secret: string | null,
+  update: Record<string, unknown> = messageUpdate({ updateId: 7001, text: '/stats' })
+) {
   const server = http.createServer(app);
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -31,7 +35,7 @@ async function post(app: express.Express, secret: string | null) {
           'Content-Type': 'application/json',
           ...(secret ? { 'X-Telegram-Bot-Api-Secret-Token': secret } : {})
         },
-        body: JSON.stringify(messageUpdate({ updateId: 7001, text: '/stats' }))
+        body: JSON.stringify(update)
       }
     );
     return { status: response.status, body: await response.json() };
@@ -73,9 +77,13 @@ test('direct Telegram webhook validates its secret and durably enqueues prepared
         '{"uk-de":["command.stats"]}',
         ['uk-de']
       ),
+      botImmediateAckEnabledBotKeys: new Set<string>(),
       internalApiSecret: signingSecret,
       jwtSecret: 'jwt-secret',
       telegramBotTokensByBotKey: { 'uk-de': botToken }
+    },
+    telegramClient: {
+      async callTelegramApi() { return { ok: true }; }
     },
     publicBotMetaForKey(botKey: unknown) {
       return botKey === 'uk-de' ? { bot_key: 'uk-de' } : null;
@@ -106,4 +114,97 @@ test('direct Telegram webhook validates its secret and durably enqueues prepared
   assert.match(JSON.stringify(jobs[0].options), /bot-update:uk-de:7001/);
   assert.ok(transactionQueries.some((source) => source.includes('INSERT INTO users')));
   assert.ok(transactionQueries.some((source) => source.includes('INSERT INTO user_bots')));
+});
+
+test('immediate acknowledgement starts before bootstrap and never blocks durable ingestion', async () => {
+  const events: string[] = [];
+  const jobs: Array<Record<string, unknown>> = [];
+  let resolveAcknowledgement: () => void = () => {};
+  let acknowledgementResolved = false;
+  const acknowledgement = new Promise<void>((resolve) => {
+    resolveAcknowledgement = () => {
+      acknowledgementResolved = true;
+      resolve();
+    };
+  });
+  const pool = {
+    async connect() {
+      events.push('db:connect');
+      return {
+        async query(source: string) {
+          events.push(`db:transaction:${source.trim().split(/\s+/u)[0]}`);
+          return { rows: [], rowCount: 1 };
+        },
+        release() {}
+      };
+    },
+    async query() {
+      events.push('db:prepare');
+      return { rows: [] };
+    }
+  } as unknown as Pool;
+  const botToken = '7000000000:test-token';
+  const signingSecret = 'internal-test-secret';
+  const ctx = {
+    pool,
+    apiBoss: {
+      async send(name: string, data: object, options: Record<string, unknown>) {
+        events.push('queue:send');
+        jobs.push({ name, data, options });
+        return '00000000-0000-4000-8000-000000000002';
+      }
+    },
+    env: {
+      botRuntimeRouteFlags: parseBotRuntimeRouteFlags(
+        '{"uk-de":["command.stats"]}',
+        ['uk-de']
+      ),
+      botImmediateAckEnabledBotKeys: new Set(['uk-de']),
+      internalApiSecret: signingSecret,
+      jwtSecret: 'jwt-secret',
+      telegramBotTokensByBotKey: { 'uk-de': botToken }
+    },
+    telegramClient: {
+      callTelegramApi(
+        botKey: string,
+        method: string,
+        body: Record<string, unknown>,
+        options?: { signal?: AbortSignal }
+      ) {
+        events.push('ack:start');
+        assert.equal(botKey, 'uk-de');
+        assert.equal(method, 'sendChatAction');
+        assert.deepEqual(body, { chat_id: 42, action: 'typing' });
+        assert.ok(options?.signal instanceof AbortSignal);
+        return acknowledgement;
+      }
+    },
+    publicBotMetaForKey(botKey: unknown) {
+      return botKey === 'uk-de' ? { bot_key: 'uk-de' } : null;
+    },
+    getBotLocale() { return {}; }
+  };
+  const app = express();
+  app.use(express.json());
+  app.use(createTelegramWebhookRouter(ctx));
+  const secret = deriveTelegramWebhookSecret({ botKey: 'uk-de', botToken, signingSecret });
+
+  assert.deepEqual(await post(app, null), {
+    status: 401,
+    body: { error: 'invalid_webhook_secret' }
+  });
+  assert.equal(events.length, 0);
+
+  assert.deepEqual(await post(app, secret), {
+    status: 200,
+    body: { ok: true }
+  });
+  assert.equal(acknowledgementResolved, false);
+  assert.equal(jobs.length, 1);
+  assert.equal(events[0], 'ack:start');
+  assert.ok(events.indexOf('ack:start') < events.indexOf('db:connect'));
+  assert.ok(events.indexOf('db:connect') < events.indexOf('queue:send'));
+
+  resolveAcknowledgement();
+  await new Promise((resolve) => setImmediate(resolve));
 });

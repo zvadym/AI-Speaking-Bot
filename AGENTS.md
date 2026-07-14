@@ -47,7 +47,8 @@ This file orients automated agents working in this repo. Keep it accurate as the
   `BROADCAST_MAX_RECIPIENTS`, `BROADCAST_PROCESS_BATCH_SIZE`,
   `BROADCAST_PER_MESSAGE_DELAY_MS`, `BROADCAST_MEDIA_CHAT_ID`, `DEFAULT_BOT_KEY`,
   `BOT_KEY_BY_TARGET_LANG_JSON`, `BOT_RUNTIME_ROUTE_FLAGS_JSON`,
-  `BOT_PROGRESS_ENABLED_BOT_KEYS`, `BOT_RUNTIME_MODEL`, `BOT_RUNTIME_REASONING_EFFORT`,
+  `BOT_PROGRESS_ENABLED_BOT_KEYS`, `BOT_IMMEDIATE_ACK_ENABLED_BOT_KEYS`,
+  `BOT_RUNTIME_MODEL`, `BOT_RUNTIME_REASONING_EFFORT`,
   `BOT_SUPPORT_MODEL`, `BOT_SUPPORT_REASONING_EFFORT`, `BOT_MODEL_POLICY_JSON`,
   `BOT_TRANSCRIPTION_MODEL`, `BOT_TTS_MODEL`, `OPENAI_API_KEY`,
   `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`,
@@ -86,6 +87,9 @@ This file orients automated agents working in this repo. Keep it accurate as the
   cross-cutting behavior wraps complete handlers or explicit named stages.
 - Progress messages are enabled per bot with `BOT_PROGRESS_ENABLED_BOT_KEYS`;
   use `*` only after canary verification.
+- Immediate Telegram typing acknowledgements are enabled per bot with
+  `BOT_IMMEDIATE_ACK_ENABLED_BOT_KEYS`; they remain best-effort and never own
+  durable ingestion state.
 - `apps/api/src/bot-runtime/entitlement-context.ts` is the single source of truth for effective plan and practice quota; usage is global by `chat_id` across all bots.
 - `deploy/prompts/*.md` and `shared/llm-prompts/*.md` are loaded directly by the API and worker.
 - `apps/api/scripts/telegram-webhooks.mjs set|inspect|delete` manages all configured Telegram webhooks.

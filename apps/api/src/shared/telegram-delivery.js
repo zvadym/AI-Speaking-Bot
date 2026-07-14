@@ -119,7 +119,7 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     return typeof first === 'string' && first.trim() ? first.trim() : null;
   }
 
-  async function callTelegramApi(botKey, method, body) {
+  async function callTelegramApi(botKey, method, body, { signal } = {}) {
     const token = resolveTelegramBotToken(botKey);
     if (!token) {
       const err = new Error('missing_telegram_bot_token');
@@ -130,7 +130,8 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     const response = await fetchImpl(`https://api.telegram.org/bot${token}/${method}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal
     });
 
     let payload = null;
