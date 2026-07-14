@@ -326,12 +326,20 @@ test('automated idiom practice still sends without onboarding and after same-day
       return { rows: [{ id: 9022 }] };
     }
 
+    if (source.includes('SELECT COUNT(*)::int AS delivery_count') && source.includes('FROM idiom_phrase_deliveries')) {
+      assert.equal(params[2], '2026-03-28T00:00:00.000Z');
+      assert.equal(params[3], '2026-03-29T00:00:00.000Z');
+      return { rows: [{ delivery_count: 0 }] };
+    }
+
     if (source.includes('WITH candidates AS (')) {
       assert.equal(params[2], 'en');
       assert.equal(params[3], 'de');
       assert.equal(params[4], 'b1_b2');
-      assert.equal(params[5], '2026-03-28');
-      assert.equal(params[6], 1);
+      assert.equal(params[5], '2026-03-28T00:00:00.000Z');
+      assert.equal(params[6], '2026-03-29T00:00:00.000Z');
+      assert.equal(params[7], 1);
+      assert.match(source, /ORDER BY\s+delivery_count ASC,\s+RANDOM\(\)/);
       return {
         rows: [{
           id: 201,
@@ -375,26 +383,27 @@ test('automated idiom practice still sends without onboarding and after same-day
       const result = await sendIdiomPracticeReminderCore({
         chatId: 88,
         botKey: 'en-de',
+        scheduleKey: '2026-03-28:h07',
         now
       });
 
       assert.equal(result.ok, true);
       assert.equal(result.telegramMessageId, 944);
       assert.deepEqual(result.phraseIds, [201]);
-      assert.equal(result.scheduleKey, '2026-03-28');
+      assert.equal(result.scheduleKey, '2026-03-28:h07');
       assert.match(result.messageText, /Cut to the chase/);
       assert.match(result.messageText, /Komm zur Sache/);
     });
   });
 
   assert.equal(telegramBodies.length, 1);
-  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data, 'idiom_more:2026-03-28');
+  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data, 'idiom_more:2026-03-28:h07');
   assert.deepEqual(deliveredPhraseIds, [201]);
 });
 
-test('idiom practice more sends one extra phrase at a time up to the daily cap', async () => {
-  const now = new Date('2026-03-28T10:00:00.000Z');
-  const scheduleKey = '2026-03-28';
+test('idiom practice more reserves capacity for the evening automatic phrase', async () => {
+  const now = new Date('2026-03-28T17:01:00.000Z');
+  const scheduleKey = '2026-03-28:h07';
   const telegramBodies = [];
   const actionEvents = [];
   const dispatch = {
@@ -445,6 +454,7 @@ test('idiom practice more sends one extra phrase at a time up to the daily cap',
         return { rowCount: 1, rows: [] };
       }
       if (source.includes('SELECT id, telegram_message_id, payload_json') && source.includes('FOR UPDATE')) {
+        assert.equal(params[3], scheduleKey);
         return { rows: [dispatch] };
       }
       if (source.includes('SELECT COUNT(*)::int AS delivery_count') && source.includes('AND sent_at >=')) {
@@ -554,35 +564,21 @@ test('idiom practice more sends one extra phrase at a time up to the daily cap',
         sourceMessageId: 934,
         now
       });
-      assert.equal(second.status, 'delivered');
-      assert.equal(second.deliveryIndex, 3);
-      assert.equal(second.callbackText, 'Надсилаю ще одну фразу.');
+      assert.equal(second.status, 'limit_reached');
+      assert.equal(second.deliveryIndex, null);
+      assert.equal(second.callbackText, '');
       assert.equal(second.telegramMessageId, 935);
-
-      const third = await sendIdiomPracticeMorePhrase({
-        chatId: 55,
-        botKey: 'uk-en',
-        scheduleKey,
-        callbackQueryId: 'cb-3',
-        sourceMessageId: 935,
-        now
-      });
-      assert.equal(third.status, 'limit_reached');
-      assert.equal(third.callbackText, '');
-      assert.equal(third.telegramMessageId, 936);
     });
   });
 
-  assert.equal(telegramBodies.length, 3);
+  assert.equal(telegramBodies.length, 2);
   assert.match(telegramBodies[0].text, /That figures/);
-  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data, `idiom_more:${scheduleKey}`);
-  assert.match(telegramBodies[1].text, /Cut to the chase/);
-  assert.equal(telegramBodies[1].reply_markup.inline_keyboard[0][0].callback_data, `idiom_more:${scheduleKey}`);
-  assert.match(telegramBodies[2].text, /Ти вже використав сьогоднішній ліміт ідіом\./);
-  assert.equal(telegramBodies[2].reply_markup, undefined);
-  assert.deepEqual(deliveredPhraseIds, [101, 102, 103]);
-  assert.deepEqual(dispatch.payload_json.phrase_ids, [101, 102, 103]);
-  assert.deepEqual(dispatch.payload_json.idiom_message_ids, [933, 934, 935]);
+  assert.equal(telegramBodies[0].reply_markup, undefined);
+  assert.match(telegramBodies[1].text, /Ти вже використав сьогоднішній ліміт ідіом\./);
+  assert.equal(telegramBodies[1].reply_markup, undefined);
+  assert.deepEqual(deliveredPhraseIds, [101, 102]);
+  assert.deepEqual(dispatch.payload_json.phrase_ids, [101, 102]);
+  assert.deepEqual(dispatch.payload_json.idiom_message_ids, [933, 934]);
 });
 
 test('idiom practice more accepts dashboard test schedules', async () => {
@@ -861,7 +857,7 @@ test('idiom practice more accepts old buttons and uses today quota', async () =>
 
   assert.equal(telegramBodies.length, 1);
   assert.match(telegramBodies[0].text, /That figures/);
-  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data, 'idiom_more:2026-03-28');
+  assert.equal(telegramBodies[0].reply_markup, undefined);
   assert.deepEqual(dispatch.payload_json.phrase_ids, [101, 102]);
   assert.deepEqual(dispatch.payload_json.idiom_message_ids, [933, 934]);
 });

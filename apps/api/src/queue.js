@@ -38,6 +38,7 @@ const retryOptions = {
   retryDelay: 30,
   retryBackoff: true
 };
+const IDIOM_PRACTICE_SCHEDULE_KEY = 'daily-hours-v2';
 
 let apiBossPromise = null;
 let workerBossPromise = null;
@@ -138,11 +139,12 @@ export async function startWorkerBoss() {
         {},
         { key: 'default' }
       );
+      await boss.unschedule(QUEUE_IDIOM_PRACTICE_SCAN, 'default');
       await boss.schedule(
         QUEUE_IDIOM_PRACTICE_SCAN,
-        `15 ${env.idiomPracticeSendHourUtc} * * *`,
+        `${env.idiomPracticeSendMinuteUtc} ${env.idiomPracticeSendHoursUtc.join(',')} * * *`,
         {},
-        { key: 'default' }
+        { key: IDIOM_PRACTICE_SCHEDULE_KEY }
       );
       await boss.schedule(
         QUEUE_FREE_LIMIT_HALF_SCAN,

@@ -893,7 +893,7 @@ test('internal idiom practice more returns delivered result', async () => {
   }
 
   assert.equal(telegramBodies.length, 1);
-  assert.equal(telegramBodies[0].reply_markup.inline_keyboard[0][0].callback_data, 'idiom_more:2026-03-28');
+  assert.equal(telegramBodies[0].reply_markup, undefined);
 });
 
 test('admin xp button click metrics return daily click counts', async () => {

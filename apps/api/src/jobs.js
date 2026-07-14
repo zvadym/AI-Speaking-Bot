@@ -34,8 +34,10 @@ import {
   parseChatIdList
 } from './shared/normalization.js';
 import {
+  buildHourlyIdiomPracticeScheduleKey,
   buildIdiomPracticeScheduleKey,
   buildUtcDayRange,
+  isCurrentIdiomPracticeScheduleKey,
   resolveIdiomPracticeLevelBucket
 } from './idiom-phrases.js';
 import {
@@ -1849,9 +1851,10 @@ async function loadIdiomPracticeContext(chatId, botKeyRaw, {
   const botMeta = publicBotMetaForKey(botKey) || {};
   const baseLanguage = botMeta.base_language || normalizeBotKey(botKey)?.split('-')?.[0] || '';
   const targetLanguage = botMeta.learning_language || botMeta.target_lang || normalizeBotKey(botKey)?.split('-')?.[1] || '';
+  const requestedScheduleKey = String(scheduleKey || '').trim();
   const effectiveScheduleKey = origin === WINBACK_ADMIN_TEST_ORIGIN
-    ? (String(scheduleKey || '').trim() || buildManualTestScheduleKey())
-    : dayRange.scheduleKey;
+    ? (requestedScheduleKey || buildManualTestScheduleKey())
+    : (isCurrentIdiomPracticeScheduleKey(requestedScheduleKey, now) ? requestedScheduleKey : dayRange.scheduleKey);
 
   return {
     chatId: normalizedChatId,
@@ -1963,8 +1966,12 @@ function normalizeIdiomPracticeIdList(raw) {
 }
 
 function buildIdiomPracticeReplyMarkup(context, scheduleKey, remainingCount) {
-  clampInteger(remainingCount, { min: 0, max: IDIOM_PRACTICE_DAILY_CAP, fallback: 0 });
-  if (!scheduleKey) return null;
+  const normalizedRemainingCount = clampInteger(remainingCount, {
+    min: 0,
+    max: IDIOM_PRACTICE_DAILY_CAP,
+    fallback: 0
+  });
+  if (!scheduleKey || normalizedRemainingCount <= 0) return null;
   const locale = context.locale || resolveIdiomPracticeLocale(context.botKey);
   return {
     inline_keyboard: [[{
@@ -1997,12 +2004,35 @@ function isManualIdiomPracticeSchedule(scheduleKey) {
 }
 
 function isIdiomPracticeScheduleCurrent(scheduleKey, now = new Date()) {
-  const normalized = String(scheduleKey || '').trim();
-  return Boolean(normalized) && normalized === buildIdiomPracticeScheduleKey(now);
+  return isCurrentIdiomPracticeScheduleKey(scheduleKey, now);
 }
 
 function isInteractiveIdiomPracticeSchedule(scheduleKey, now = new Date()) {
   return isIdiomPracticeScheduleCurrent(scheduleKey, now) || isManualIdiomPracticeSchedule(scheduleKey);
+}
+
+function resolveIdiomPracticeInteractiveCap(scheduleKey, now = new Date()) {
+  if (isManualIdiomPracticeSchedule(scheduleKey)) return IDIOM_PRACTICE_DAILY_CAP;
+  const currentMinuteOfDay = now instanceof Date && Number.isFinite(now.getTime())
+    ? (now.getUTCHours() * 60) + now.getUTCMinutes()
+    : (24 * 60);
+  const remainingAutomaticSlots = env.idiomPracticeSendHoursUtc.filter(
+    (hour) => (hour * 60) + env.idiomPracticeSendMinuteUtc > currentMinuteOfDay
+  ).length;
+  return Math.max(IDIOM_PRACTICE_INITIAL_SEND_COUNT, IDIOM_PRACTICE_DAILY_CAP - remainingAutomaticSlots);
+}
+
+async function countIdiomPracticeDeliveriesInDay({ chatId, botKey, dayStart, dayEnd, db = pool }) {
+  const { rows } = await db.query(
+    `SELECT COUNT(*)::int AS delivery_count
+       FROM idiom_phrase_deliveries
+      WHERE chat_id = $1::bigint
+        AND bot_key = $2::text
+        AND sent_at >= $3::timestamptz
+        AND sent_at < $4::timestamptz`,
+    [chatId, botKey, dayStart.toISOString(), dayEnd.toISOString()]
+  );
+  return clampInteger(rows[0]?.delivery_count, { min: 0, max: IDIOM_PRACTICE_DAILY_CAP, fallback: 0 });
 }
 
 async function selectIdiomPracticeBundle({
@@ -2070,8 +2100,8 @@ async function selectIdiomPracticeBundle({
        SELECT *
          FROM candidates
         ORDER BY
-          CASE WHEN delivery_count = 0 THEN 0 ELSE 1 END ASC,
-          last_sent_at ASC NULLS FIRST,
+          delivery_count ASC,
+          RANDOM(),
           id ASC
         LIMIT $8::int`
     : `WITH candidates AS (
@@ -2120,8 +2150,8 @@ async function selectIdiomPracticeBundle({
        SELECT *
          FROM candidates
         ORDER BY
-          CASE WHEN delivery_count = 0 THEN 0 ELSE 1 END ASC,
-          last_sent_at ASC NULLS FIRST,
+          delivery_count ASC,
+          RANDOM(),
           id ASC
         LIMIT $7::int`;
   const params = useDayWindow
@@ -2249,7 +2279,8 @@ async function evaluateIdiomPracticeEligibility({
 async function scanEligibleIdiomPracticeUsers(now = new Date()) {
   const testChatIds = automatedMessageTestChatIdsSqlParam();
   const dayRange = buildUtcDayRange(now);
-  if (!dayRange) return [];
+  const scheduleKey = buildHourlyIdiomPracticeScheduleKey(now);
+  if (!dayRange || !scheduleKey) return [];
 
   const { rows } = await pool.query(
     `SELECT
@@ -2279,7 +2310,7 @@ async function scanEligibleIdiomPracticeUsers(now = new Date()) {
       idiomPracticeSupportedBotKeys,
       testChatIds,
       IDIOM_PRACTICE_TASK_TYPE,
-      dayRange.scheduleKey,
+      scheduleKey,
       env.idiomPracticeScanLimit
     ]
   );
@@ -2289,7 +2320,7 @@ async function scanEligibleIdiomPracticeUsers(now = new Date()) {
     botKey: normalizeBotKey(row.bot_key),
     level: normalizeOptionalText(row.level, 16) || 'a1',
     taskType: IDIOM_PRACTICE_TASK_TYPE,
-    scheduleKey: dayRange.scheduleKey
+    scheduleKey
   })).filter((row) => Number.isFinite(row.chatId) && row.chatId > 0 && row.botKey);
 }
 
@@ -2307,9 +2338,11 @@ export async function sendIdiomPracticeReminderCore({
     throw createAppError('bad_request', 400, 'bad_request', { retryable: false });
   }
 
+  const requestedScheduleKey = String(scheduleKey || '').trim();
+  const dayScheduleKey = buildIdiomPracticeScheduleKey(now);
   const effectiveScheduleKey = origin === WINBACK_ADMIN_TEST_ORIGIN
-    ? (String(scheduleKey || '').trim() || buildManualTestScheduleKey())
-    : (buildIdiomPracticeScheduleKey(now) || String(scheduleKey || '').trim());
+    ? (requestedScheduleKey || buildManualTestScheduleKey())
+    : (isCurrentIdiomPracticeScheduleKey(requestedScheduleKey, now) ? requestedScheduleKey : dayScheduleKey);
 
   const eligibility = await evaluateIdiomPracticeEligibility({
     chatId: normalizedChatId,
@@ -2344,6 +2377,14 @@ export async function sendIdiomPracticeReminderCore({
   });
 
   const taskDispatchId = await fetchScheduledDispatchId(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey);
+  const deliveredToday = origin === WINBACK_ADMIN_TEST_ORIGIN
+    ? 0
+    : await countIdiomPracticeDeliveriesInDay({
+        chatId: normalizedChatId,
+        botKey: normalizedBotKey,
+        dayStart: context.dayStart,
+        dayEnd: context.dayEnd
+      });
   const phrases = await selectIdiomPracticeBundle({
     chatId: normalizedChatId,
     botKey: normalizedBotKey,
@@ -2351,6 +2392,8 @@ export async function sendIdiomPracticeReminderCore({
     targetLanguage: context.targetLanguage,
     levelBucket: context.levelBucket,
     scheduleKey: effectiveScheduleKey,
+    dayStart: origin === WINBACK_ADMIN_TEST_ORIGIN ? null : context.dayStart,
+    dayEnd: origin === WINBACK_ADMIN_TEST_ORIGIN ? null : context.dayEnd,
     limit: IDIOM_PRACTICE_INITIAL_SEND_COUNT
   });
 
@@ -2388,8 +2431,10 @@ export async function sendIdiomPracticeReminderCore({
   }
 
   try {
+    const interactiveCap = resolveIdiomPracticeInteractiveCap(effectiveScheduleKey, now);
+    const remainingInteractiveCount = interactiveCap - (deliveredToday + IDIOM_PRACTICE_INITIAL_SEND_COUNT);
     const replyMarkup = isInteractiveIdiomPracticeSchedule(effectiveScheduleKey, now)
-      ? buildIdiomPracticeReplyMarkup(context, effectiveScheduleKey, IDIOM_PRACTICE_DAILY_CAP - IDIOM_PRACTICE_INITIAL_SEND_COUNT)
+      ? buildIdiomPracticeReplyMarkup(context, effectiveScheduleKey, remainingInteractiveCount)
       : null;
     const telegramResult = await sendTelegramTextMessage(normalizedChatId, sanitizeTelegramHtml(messageText), {
       botKey: normalizedBotKey,
@@ -2650,7 +2695,9 @@ export async function sendIdiomPracticeMorePhrase({
 
   const context = await loadIdiomPracticeContext(normalizedChatId, normalizedBotKey, {
     origin: isManualRequest ? WINBACK_ADMIN_TEST_ORIGIN : WINBACK_AUTOMATED_ORIGIN,
-    scheduleKey: isManualRequest ? normalizedScheduleKey : null,
+    scheduleKey: isManualRequest || isIdiomPracticeScheduleCurrent(normalizedScheduleKey, now)
+      ? normalizedScheduleKey
+      : null,
     now
   });
   if (!context) {
@@ -2756,8 +2803,9 @@ export async function sendIdiomPracticeMorePhrase({
       max: IDIOM_PRACTICE_DAILY_CAP,
       fallback: 0
     });
+    const interactiveCap = resolveIdiomPracticeInteractiveCap(effectiveScheduleKey, now);
 
-    if (deliveredCount >= IDIOM_PRACTICE_DAILY_CAP) {
+    if (deliveredCount >= interactiveCap) {
       const telegramResult = await sendTelegramTextMessage(
         normalizedChatId,
         sanitizeTelegramHtml(String(context.locale.more_limit_reached || locale.more_limit_reached || '')),
@@ -2825,7 +2873,7 @@ export async function sendIdiomPracticeMorePhrase({
       throw createAppError('idiom_phrase_build_failed', 502, 'idiom_phrase_build_failed', { retryable: false });
     }
 
-    const remainingAfterSend = IDIOM_PRACTICE_DAILY_CAP - (deliveredCount + 1);
+    const remainingAfterSend = interactiveCap - (deliveredCount + 1);
     const replyMarkup = buildIdiomPracticeReplyMarkup(context, effectiveScheduleKey, remainingAfterSend);
     const telegramResult = await sendTelegramTextMessage(normalizedChatId, sanitizeTelegramHtml(messageText), {
       botKey: normalizedBotKey,

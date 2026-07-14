@@ -94,6 +94,21 @@ export function buildIdiomPracticeScheduleKey(dateLike = new Date()) {
   return date.toISOString().slice(0, 10);
 }
 
+export function buildHourlyIdiomPracticeScheduleKey(dateLike = new Date()) {
+  const date = dateLike instanceof Date ? new Date(dateLike) : new Date(dateLike);
+  const dayKey = buildIdiomPracticeScheduleKey(date);
+  if (!dayKey) return null;
+  return `${dayKey}:h${String(date.getUTCHours()).padStart(2, '0')}`;
+}
+
+export function isCurrentIdiomPracticeScheduleKey(scheduleKey, dateLike = new Date()) {
+  const dayKey = buildIdiomPracticeScheduleKey(dateLike);
+  const normalized = String(scheduleKey || '').trim();
+  if (!dayKey || !normalized) return false;
+  return normalized === dayKey
+    || new RegExp(`^${dayKey}:h(?:[01]\\d|2[0-3])$`).test(normalized);
+}
+
 export function buildUtcDayRange(dateLike = new Date()) {
   const date = dateLike instanceof Date ? new Date(dateLike) : new Date(dateLike);
   if (!Number.isFinite(date.getTime())) return null;

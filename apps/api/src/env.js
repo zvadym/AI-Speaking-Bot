@@ -59,6 +59,33 @@ function optionalInteger(name, fallback, { min = Number.MIN_SAFE_INTEGER, max = 
   return value;
 }
 
+function optionalIntegerList(name, fallback, {
+  min = Number.MIN_SAFE_INTEGER,
+  max = Number.MAX_SAFE_INTEGER,
+  maxItems = 24
+} = {}) {
+  const raw = String(process.env[name] ?? '').trim();
+  if (!raw) return [...fallback];
+
+  const values = [];
+  const seen = new Set();
+  for (const part of raw.split(/[\s,]+/g)) {
+    if (!part) continue;
+    const value = Number(part);
+    if (!Number.isInteger(value) || value < min || value > max) {
+      throw new Error(`Invalid integer list in env var: ${name}`);
+    }
+    if (seen.has(value)) continue;
+    seen.add(value);
+    values.push(value);
+    if (values.length > maxItems) {
+      throw new Error(`Too many values in env var: ${name}`);
+    }
+  }
+  if (!values.length) throw new Error(`Empty integer list in env var: ${name}`);
+  return values.sort((a, b) => a - b);
+}
+
 function optionalNumber(name, fallback, { min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY } = {}) {
   const raw = process.env[name];
   if (raw === undefined || raw === null || raw === '') return fallback;
@@ -158,6 +185,14 @@ const botModelPolicyOverrides = parseBotModelPolicyOverrides(
   process.env.BOT_MODEL_POLICY_JSON,
   Object.keys(telegramBotTokensByBotKey)
 );
+const legacyIdiomPracticeSendHourUtc = String(process.env.IDIOM_PRACTICE_SEND_HOUR_UTC ?? '').trim()
+  ? optionalInteger('IDIOM_PRACTICE_SEND_HOUR_UTC', 15, { min: 0, max: 23 })
+  : null;
+const idiomPracticeSendHoursUtc = optionalIntegerList(
+  'IDIOM_PRACTICE_SEND_HOURS_UTC',
+  legacyIdiomPracticeSendHourUtc === null ? [7, 17] : [legacyIdiomPracticeSendHourUtc],
+  { min: 0, max: 23, maxItems: 2 }
+);
 
 console.log(`Loaded Telegram bot tokens from bot config files for: ${Object.keys(telegramBotTokensByBotKey).join(', ')}`)
 
@@ -201,7 +236,8 @@ export const env = {
   topicGenerationModel: (process.env.TOPIC_GENERATION_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4',
   reminderLlmModel: (process.env.REMINDER_LLM_MODEL || 'gpt-5-mini').toString().trim() || 'gpt-5-mini',
   idiomPracticeOpenaiModel: (process.env.IDIOM_PRACTICE_OPENAI_MODEL || process.env.TOPIC_GENERATION_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4',
-  idiomPracticeSendHourUtc: optionalInteger('IDIOM_PRACTICE_SEND_HOUR_UTC', 15, { min: 0, max: 23 }),
+  idiomPracticeSendHoursUtc,
+  idiomPracticeSendMinuteUtc: optionalInteger('IDIOM_PRACTICE_SEND_MINUTE_UTC', 15, { min: 0, max: 59 }),
   idiomPracticeScanLimit: optionalInteger('IDIOM_PRACTICE_SCAN_LIMIT', 500, { min: 1, max: 5000 }),
   broadcastMaxRecipients: optionalInteger('BROADCAST_MAX_RECIPIENTS', 2000, { min: 1, max: 100000 }),
   broadcastProcessBatchSize: optionalInteger('BROADCAST_PROCESS_BATCH_SIZE', 100, { min: 1, max: 1000 }),
