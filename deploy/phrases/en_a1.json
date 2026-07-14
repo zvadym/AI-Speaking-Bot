@@ -598,5 +598,41 @@
     "meaning": "Sleep well.",
     "tone": "warm",
     "example": "Good night. Sweet dreams."
+  },
+  {
+    "phrase": "That is wild",
+    "meaning": "That is surprising, extreme, or unbelievable.",
+    "tone": "casual",
+    "example": "They finished the whole project in one day? That is wild."
+  },
+  {
+    "phrase": "Take it easy",
+    "meaning": "Relax, do not worry, or say goodbye in a friendly way.",
+    "tone": "friendly",
+    "example": "You have done enough for today. Take it easy."
+  },
+  {
+    "phrase": "Break a leg",
+    "meaning": "Good luck, especially before a performance or important event.",
+    "tone": "encouraging",
+    "example": "You have your interview today? Break a leg!"
+  },
+  {
+    "phrase": "Hang on",
+    "meaning": "Wait for a short time.",
+    "tone": "casual",
+    "example": "Hang on, I need to find my keys."
+  },
+  {
+    "phrase": "Fingers crossed",
+    "meaning": "I hope things go well.",
+    "tone": "hopeful",
+    "example": "Fingers crossed, we will get the results today."
+  },
+  {
+    "phrase": "I doubt it",
+    "meaning": "I do not think that is likely or true.",
+    "tone": "casual",
+    "example": "Will the shop still be open? I doubt it."
   }
 ]

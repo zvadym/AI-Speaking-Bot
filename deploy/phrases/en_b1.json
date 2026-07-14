@@ -658,5 +658,203 @@
     "meaning": "We have to accept the situation as it is.",
     "tone": "resigned",
     "example": "We cannot change the result now. It is what it is."
+  },
+  {
+    "phrase": "As if",
+    "meaning": "Used to reject an idea as impossible or ridiculous.",
+    "tone": "sarcastic",
+    "example": "He thinks I will apologize first. As if."
+  },
+  {
+    "phrase": "By the book",
+    "meaning": "Exactly according to the rules or official procedure.",
+    "tone": "neutral",
+    "example": "The inspector handled everything by the book."
+  },
+  {
+    "phrase": "No strings attached",
+    "meaning": "With no hidden conditions or obligations.",
+    "tone": "neutral",
+    "example": "They offered us a free trial with no strings attached."
+  },
+  {
+    "phrase": "Water under the bridge",
+    "meaning": "A past problem that is no longer important.",
+    "tone": "reflective",
+    "example": "We argued years ago, but it is water under the bridge now."
+  },
+  {
+    "phrase": "What's your take?",
+    "meaning": "What is your opinion or interpretation?",
+    "tone": "casual",
+    "example": "What's your take on the new proposal?"
+  },
+  {
+    "phrase": "Do you feel me?",
+    "meaning": "Do you understand or agree with what I am saying?",
+    "tone": "slang",
+    "example": "We need to keep this simple, do you feel me?"
+  },
+  {
+    "phrase": "Hit me up",
+    "meaning": "Contact me, usually by calling or messaging.",
+    "tone": "slang",
+    "example": "Hit me up when you are back in town."
+  },
+  {
+    "phrase": "Better safe than sorry",
+    "meaning": "It is wiser to be cautious than risk a bad result.",
+    "tone": "practical",
+    "example": "Take an umbrella; better safe than sorry."
+  },
+  {
+    "phrase": "Bite me",
+    "meaning": "A rude way to reject or show contempt for someone.",
+    "tone": "rude",
+    "example": "He told me to stop complaining, so I said, 'Bite me.'"
+  },
+  {
+    "phrase": "Don't jinx it",
+    "meaning": "Do not say something that might bring bad luck.",
+    "tone": "playful",
+    "example": "We have not lost yet, but don't jinx it."
+  },
+  {
+    "phrase": "Knock on wood",
+    "meaning": "Said after a hopeful statement to avoid bad luck.",
+    "tone": "superstitious",
+    "example": "I have never missed a flight, knock on wood."
+  },
+  {
+    "phrase": "Oh snap",
+    "meaning": "An exclamation of surprise, trouble, or a clever comeback.",
+    "tone": "slang",
+    "example": "Oh snap, I left my wallet at home."
+  },
+  {
+    "phrase": "Let it slide",
+    "meaning": "Choose to ignore a mistake or offense.",
+    "tone": "casual",
+    "example": "He was late once, so I decided to let it slide."
+  },
+  {
+    "phrase": "Right off the bat",
+    "meaning": "Immediately, from the very beginning.",
+    "tone": "casual",
+    "example": "Right off the bat, she asked the hardest question."
+  },
+  {
+    "phrase": "Ease into",
+    "meaning": "Begin something gradually so it feels more comfortable.",
+    "tone": "neutral",
+    "example": "After the break, ease into your routine slowly."
+  },
+  {
+    "phrase": "Take it in stride",
+    "meaning": "Deal with a problem calmly without becoming upset.",
+    "tone": "positive",
+    "example": "The schedule changed, but she took it in stride."
+  },
+  {
+    "phrase": "Wake up and smell the coffee",
+    "meaning": "Accept the unpleasant reality of a situation.",
+    "tone": "direct",
+    "example": "Wake up and smell the coffee: the project is over budget."
+  },
+  {
+    "phrase": "What's the move?",
+    "meaning": "What is the plan or what should we do next?",
+    "tone": "slang",
+    "example": "The restaurant is closed, so what's the move?"
+  },
+  {
+    "phrase": "What's good for the goose is good for the gander",
+    "meaning": "The same rules or treatment should apply to everyone.",
+    "tone": "proverbial",
+    "example": "If I have to follow the rule, so do you; what's good for the goose is good for the gander."
+  },
+  {
+    "phrase": "Holier-than-thou",
+    "meaning": "Acting as if you are morally better than other people.",
+    "tone": "critical",
+    "example": "His holier-than-thou attitude annoyed everyone."
+  },
+  {
+    "phrase": "The die is cast",
+    "meaning": "A decision has been made and cannot be changed.",
+    "tone": "dramatic",
+    "example": "We signed the contract, so the die is cast."
+  },
+  {
+    "phrase": "Draw a blank",
+    "meaning": "Fail to remember or find an answer.",
+    "tone": "casual",
+    "example": "I knew her name, but I drew a blank."
+  },
+  {
+    "phrase": "Leave someone high and dry",
+    "meaning": "Abandon someone in a difficult situation without help.",
+    "tone": "critical",
+    "example": "The contractor left us high and dry halfway through the job."
+  },
+  {
+    "phrase": "What's your 20?",
+    "meaning": "What is your current location?",
+    "tone": "slang",
+    "example": "We are ready to pick you up. What's your 20?"
+  },
+  {
+    "phrase": "Skin in the game",
+    "meaning": "A personal investment or risk in the outcome.",
+    "tone": "business",
+    "example": "Investors trust founders who have skin in the game."
+  },
+  {
+    "phrase": "Keep it on the DL",
+    "meaning": "Keep something secret or discreet.",
+    "tone": "slang",
+    "example": "The deal is not public yet, so keep it on the DL."
+  },
+  {
+    "phrase": "A day late and a dollar short",
+    "meaning": "Too late and insufficient to solve the problem.",
+    "tone": "critical",
+    "example": "His apology was a day late and a dollar short."
+  },
+  {
+    "phrase": "Off the top of my head",
+    "meaning": "Based on immediate memory, without checking details.",
+    "tone": "casual",
+    "example": "Off the top of my head, I can name three good options."
+  },
+  {
+    "phrase": "Waste not, want not",
+    "meaning": "If you avoid wasting resources, you are less likely to lack them later.",
+    "tone": "proverbial",
+    "example": "We save every useful piece of material: waste not, want not."
+  },
+  {
+    "phrase": "Call a spade a spade",
+    "meaning": "Speak plainly and describe something exactly as it is.",
+    "tone": "direct",
+    "example": "Let's call a spade a spade: the campaign failed."
+  },
+  {
+    "phrase": "Sorry doesn't cut it",
+    "meaning": "An apology is not enough to fix the situation.",
+    "tone": "firm",
+    "example": "You missed the deadline again; sorry doesn't cut it."
+  },
+  {
+    "phrase": "I saw red",
+    "meaning": "I suddenly became extremely angry.",
+    "tone": "strong",
+    "example": "When I saw the damage, I saw red."
+  },
+  {
+    "phrase": "Teamwork makes the dream work",
+    "meaning": "Working together helps a group achieve its goal.",
+    "tone": "encouraging",
+    "example": "We finished ahead of schedule because teamwork makes the dream work."
   }
 ]

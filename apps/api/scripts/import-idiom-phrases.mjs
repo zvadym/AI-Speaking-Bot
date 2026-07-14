@@ -4,14 +4,14 @@ import fs from 'fs';
 import path from 'path';
 import pg from 'pg';
 import { fileURLToPath } from 'url';
-import { loadBotConfigs } from '../src/bot-configs.js';
+import { loadBotConfigs } from '../dist/bot-configs.js';
 import {
   buildIdiomPhraseSourceSignature,
   collectIdiomPracticeBaseLanguages,
   loadIdiomPhraseFiles,
   translateIdiomPhraseEntry
-} from '../src/idiom-phrases.js';
-import { createLlmCallRecorder } from '../src/bot-runtime/llm-telemetry.js';
+} from '../dist/idiom-phrases.js';
+import { createLlmCallRecorder } from '../dist/bot-runtime/llm-telemetry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '../../..');
