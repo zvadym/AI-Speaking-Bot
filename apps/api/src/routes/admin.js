@@ -3664,6 +3664,12 @@ export function createAdminRouter(ctx, helpers) {
     if (!range.ok) return res.status(400).json({ error: range.error });
     res.set('Cache-Control', 'no-store');
 
+    const hasCreatedRange = Boolean(
+      String(req.query.from ?? '').trim() || String(req.query.to ?? '').trim()
+    );
+    const createdFrom = hasCreatedRange ? range.from : null;
+    const createdTo = hasCreatedRange ? range.to : null;
+
     const limit = helpers.clampInteger(req.query.limit, { min: 1, max: 500, fallback: 50 });
     const offset = helpers.clampInteger(req.query.offset, { min: 0, max: 100000, fallback: 0 });
 
@@ -3732,8 +3738,8 @@ export function createAdminRouter(ctx, helpers) {
     const orderExpr = orderByMap[sortKey] || orderByMap.created_at;
 
     const params = [
-      range.from.toISOString(),
-      range.to.toISOString(),
+      createdFrom?.toISOString() || null,
+      createdTo?.toISOString() || null,
       range.payload,
       search,
       botKey,
@@ -3796,8 +3802,8 @@ export function createAdminRouter(ctx, helpers) {
          FROM user_bots b
          WHERE b.chat_id = u.chat_id
        ) all_bot_activity ON true
-       WHERE u.created_at >= $1::timestamptz
-         AND u.created_at < $2::timestamptz
+       WHERE ($1::timestamptz IS NULL OR u.created_at >= $1::timestamptz)
+         AND ($2::timestamptz IS NULL OR u.created_at < $2::timestamptz)
          AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)
          AND (
            $4::text IS NULL
@@ -3831,8 +3837,8 @@ export function createAdminRouter(ctx, helpers) {
                v.chat_id,
                date_trunc('day', v.occurred_at AT TIME ZONE 'UTC')::date AS day_utc
              FROM voice_usage_events v
-             WHERE v.occurred_at >= $1::timestamptz
-               AND v.occurred_at < $2::timestamptz
+             WHERE ($1::timestamptz IS NULL OR v.occurred_at >= $1::timestamptz)
+               AND ($2::timestamptz IS NULL OR v.occurred_at < $2::timestamptz)
 
              UNION
 
@@ -3841,8 +3847,8 @@ export function createAdminRouter(ctx, helpers) {
                date_trunc('day', m.created_at AT TIME ZONE 'UTC')::date AS day_utc
              FROM messages m
              WHERE m.role = 'user'
-               AND m.created_at >= $1::timestamptz
-               AND m.created_at < $2::timestamptz
+               AND ($1::timestamptz IS NULL OR m.created_at >= $1::timestamptz)
+               AND ($2::timestamptz IS NULL OR m.created_at < $2::timestamptz)
            ) activity
            JOIN directory_filtered d ON d.chat_id = activity.chat_id
          ),
@@ -3909,8 +3915,8 @@ export function createAdminRouter(ctx, helpers) {
 
     return res.json({
       tz: 'UTC',
-      from: range.from.toISOString(),
-      to: range.to.toISOString(),
+      from: createdFrom?.toISOString() || null,
+      to: createdTo?.toISOString() || null,
       payload: range.payload,
       q: search,
       bot_key: botKey,

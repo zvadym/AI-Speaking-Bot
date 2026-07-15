@@ -618,6 +618,57 @@ test('admin user directory returns effective tier source and active manual expir
   });
 });
 
+test('admin user directory defaults to all created dates when from and to are omitted', async () => {
+  let queryCount = 0;
+  await withMockedQuery(async (source, params = []) => {
+    queryCount += 1;
+    assert.match(source, /\$1::timestamptz IS NULL OR u\.created_at >= \$1::timestamptz/);
+    assert.match(source, /\$2::timestamptz IS NULL OR u\.created_at < \$2::timestamptz/);
+    assert.equal(params[0], null);
+    assert.equal(params[1], null);
+
+    if (source.includes('SELECT COUNT(*)::int AS total')) {
+      assert.deepEqual(params, [null, null, null, null, null, null, null, null, null]);
+      return { rows: [{ total: 1 }] };
+    }
+
+    assert.match(source, /\$1::timestamptz IS NULL OR v\.occurred_at >= \$1::timestamptz/);
+    assert.match(source, /\$2::timestamptz IS NULL OR m\.created_at < \$2::timestamptz/);
+    assert.deepEqual(params, [null, null, null, null, null, null, null, null, null, 50, 0]);
+    return {
+      rows: [{
+        chat_id: '42',
+        username: 'alice',
+        first_name: 'Alice',
+        bot_key: 'uk-de',
+        created_at: '2024-01-10T12:00:00.000Z',
+        last_seen_at: '2026-07-12T12:00:00.000Z',
+        is_active: true,
+        effective_tier: 'free',
+        tier_source: 'free',
+        override_expires_at: null,
+        override_expires_on: null,
+        streak_days: 3,
+        xp_total: 220,
+        level: 2
+      }]
+    };
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/users',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.from, null);
+    assert.equal(response.json.to, null);
+    assert.equal(response.json.total, 1);
+    assert.equal(response.json.items[0].created_at, '2024-01-10T12:00:00.000Z');
+  });
+  assert.equal(queryCount, 2);
+});
+
 test('admin user directory applies combined search and bot-context filters to count and page queries', async () => {
   let queryCount = 0;
   await withMockedQuery(async (source, params = []) => {

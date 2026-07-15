@@ -686,22 +686,22 @@
                 <span>Created date</span>
                 <div class="range-toolbar">
                   <button
-                    v-for="option in rangePresetOptions"
+                    v-for="option in usersCreatedPresetOptions"
                     :key="option.value"
                     class="preset-chip"
                     type="button"
-                    :class="{ active: rangePreset === option.value }"
+                    :class="{ active: usersCreatedPreset === option.value }"
                     :disabled="usersLoading"
-                    @click="selectRangePreset(option.value)"
+                    @click="selectUsersCreatedPreset(option.value)"
                   >
                     {{ option.label }}
                   </button>
                   <button
                     class="preset-chip"
                     type="button"
-                    :class="{ active: isCustomRange }"
+                    :class="{ active: usersCreatedIsCustom }"
                     :disabled="usersLoading"
-                    @click="selectCustomRange"
+                    @click="selectUsersCreatedCustomRange"
                   >
                     Custom
                   </button>
@@ -709,27 +709,27 @@
               </div>
             </div>
 
-            <div class="range-summary-card" :class="{ custom: isCustomRange }">
+            <div class="range-summary-card" :class="{ custom: usersCreatedIsCustom }">
               <div class="range-summary-copy">
-                <span class="range-summary-kicker">{{ isCustomRange ? 'Custom range' : 'Live preset' }}</span>
-                <strong class="range-summary-title">{{ activeRangeLabel }}</strong>
-                <span class="range-summary-text">{{ activeRangeText }}</span>
+                <span class="range-summary-kicker">{{ usersCreatedIsCustom ? 'Custom range' : 'Created date' }}</span>
+                <strong class="range-summary-title">{{ usersCreatedRangeLabel }}</strong>
+                <span class="range-summary-text">{{ usersCreatedRangeText }}</span>
               </div>
               <div class="range-summary-window">
                 <span class="range-summary-window-label">Resolved UTC window</span>
-                <strong>{{ activeRangeWindow }}</strong>
+                <strong>{{ usersCreatedRangeWindow }}</strong>
               </div>
             </div>
 
-            <div v-if="isCustomRange" class="row range-custom-row">
+            <div v-if="usersCreatedIsCustom" class="row range-custom-row">
               <label class="field">
                 <span>From (UTC)</span>
-                <input v-model="fromDate" type="date" />
+                <input v-model="usersCreatedFromDate" type="date" />
               </label>
 
               <label class="field">
                 <span>To (UTC, inclusive)</span>
-                <input v-model="toDate" type="date" />
+                <input v-model="usersCreatedToDate" type="date" />
               </label>
             </div>
 
@@ -762,12 +762,17 @@
               </label>
             </div>
 
-            <p v-if="usersFilterError || usersLastSeenRangeError" class="error">
-              {{ usersFilterError || usersLastSeenRangeError }}
+            <p v-if="usersFilterError || usersCreatedRangeError || usersLastSeenRangeError" class="error">
+              {{ usersFilterError || usersCreatedRangeError || usersLastSeenRangeError }}
             </p>
 
             <div class="users-filter-actions">
-              <button class="btn primary" type="button" :disabled="usersLoading || Boolean(usersLastSeenRangeError)" @click="applyUsersFilters">
+              <button
+                class="btn primary"
+                type="button"
+                :disabled="usersLoading || Boolean(usersCreatedRangeError) || Boolean(usersLastSeenRangeError)"
+                @click="applyUsersFilters"
+              >
                 Apply filters
               </button>
               <button class="btn" type="button" :disabled="usersLoading" @click="clearUsersFilters">
@@ -2182,6 +2187,10 @@ const rangePresetOptions = [
   { value: 'last_week', label: 'Last week', hint: 'Previous Monday through Sunday in UTC.' },
   { value: 'last_month', label: 'Last month', hint: 'Previous calendar month in UTC.' }
 ];
+const usersCreatedPresetOptions = [
+  { value: 'all', label: 'ALL', hint: 'No Created date restriction.' },
+  ...rangePresetOptions
+];
 
 const password = ref('');
 const activeTab = ref('analytics');
@@ -2189,6 +2198,9 @@ const { from: defaultFrom, to: defaultTo } = defaultRange();
 const fromDate = ref(defaultFrom);
 const toDate = ref(defaultTo);
 const rangePreset = ref('last_30_days');
+const usersCreatedFromDate = ref(defaultFrom);
+const usersCreatedToDate = ref(defaultTo);
+const usersCreatedPreset = ref('all');
 const payload = ref('');
 const payloadOptions = ref([]);
 const EXCLUDED_USERS_LS_KEY = 'admin_dashboard_excluded_users_v1';
@@ -2251,6 +2263,28 @@ const activeRangeText = computed(() => {
 });
 
 const activeRangeWindow = computed(() => `${formatShortUtcDate(effectiveFromDate.value)} - ${formatShortUtcDate(effectiveToDate.value)}`);
+const usersCreatedIsAll = computed(() => usersCreatedPreset.value === 'all');
+const usersCreatedIsCustom = computed(() => usersCreatedPreset.value === 'custom');
+const usersCreatedEffectiveRange = computed(() => {
+  if (usersCreatedIsAll.value) return null;
+  if (usersCreatedIsCustom.value) {
+    return { from: usersCreatedFromDate.value, to: usersCreatedToDate.value };
+  }
+  return rangeForPreset(usersCreatedPreset.value);
+});
+const usersCreatedRangeLabel = computed(() => {
+  if (usersCreatedIsCustom.value) return 'Custom UTC range';
+  return usersCreatedPresetOptions.find((option) => option.value === usersCreatedPreset.value)?.label || 'ALL';
+});
+const usersCreatedRangeText = computed(() => {
+  if (usersCreatedIsCustom.value) return 'Manual range. Dates stay fixed until you change them.';
+  return usersCreatedPresetOptions.find((option) => option.value === usersCreatedPreset.value)?.hint || 'No Created date restriction.';
+});
+const usersCreatedRangeWindow = computed(() => {
+  const range = usersCreatedEffectiveRange.value;
+  if (!range) return 'All dates';
+  return `${formatShortUtcDate(range.from)} - ${formatShortUtcDate(range.to)}`;
+});
 
 const loading = ref(false);
 const errorText = ref('');
@@ -2534,8 +2568,8 @@ const usersAppliedFilters = reactive({
   active: '',
   lastSeenFrom: '',
   lastSeenTo: '',
-  createdFrom: defaultFrom,
-  createdTo: toExclusiveBoundaryYmd(defaultTo),
+  createdFrom: '',
+  createdTo: '',
   payload: ''
 });
 let usersSearchTimer = null;
@@ -2579,6 +2613,15 @@ const usersSort = reactive({
 
 const usersPageStart = computed(() => (usersTotal.value ? usersOffset.value + 1 : 0));
 const usersPageEnd = computed(() => Math.min(usersOffset.value + usersRows.value.length, usersTotal.value));
+const usersCreatedRangeError = computed(() => {
+  if (usersCreatedIsAll.value) return '';
+  const range = usersCreatedEffectiveRange.value;
+  const from = parseYmdAsUtc(range?.from || '');
+  const to = parseYmdAsUtc(range?.to || '');
+  if (!from || !to) return 'Enter valid Created dates.';
+  if (from > to) return 'Created From cannot be later than To.';
+  return '';
+});
 const usersLastSeenRangeError = computed(() => {
   const fromRaw = usersFilterDraft.lastSeenFrom.trim();
   const toRaw = usersFilterDraft.lastSeenTo.trim();
@@ -2592,7 +2635,9 @@ const usersAppliedFilterChips = computed(() => {
   const chips = [
     {
       key: 'created',
-      label: `Created: ${formatShortUtcDate(usersAppliedFilters.createdFrom)} – ${formatShortUtcDate(previousUtcYmd(usersAppliedFilters.createdTo))}`
+      label: usersAppliedFilters.createdFrom && usersAppliedFilters.createdTo
+        ? `Created: ${formatShortUtcDate(usersAppliedFilters.createdFrom)} – ${formatShortUtcDate(previousUtcYmd(usersAppliedFilters.createdTo))}`
+        : 'Created: ALL'
     }
   ];
   if (usersAppliedFilters.q) chips.push({ key: 'q', label: `Search: ${usersAppliedFilters.q}` });
@@ -2746,8 +2791,8 @@ function setUsersSearchSilently(value) {
 
 function usersDirectoryQuery() {
   return {
-    from: usersAppliedFilters.createdFrom,
-    to: usersAppliedFilters.createdTo,
+    from: usersAppliedFilters.createdFrom || undefined,
+    to: usersAppliedFilters.createdTo || undefined,
     payload: usersAppliedFilters.payload || undefined,
     q: usersAppliedFilters.q || undefined,
     bot_key: usersAppliedFilters.botKey || undefined,
@@ -2766,6 +2811,10 @@ function applyUsersSearchNow() {
 }
 
 function applyUsersFilters() {
+  if (usersCreatedRangeError.value) {
+    usersFilterError.value = usersCreatedRangeError.value;
+    return;
+  }
   if (usersLastSeenRangeError.value) {
     usersFilterError.value = usersLastSeenRangeError.value;
     return;
@@ -2773,6 +2822,7 @@ function applyUsersFilters() {
 
   clearUsersSearchTimer();
   usersFilterError.value = '';
+  const createdRange = usersCreatedEffectiveRange.value;
   Object.assign(usersAppliedFilters, {
     q: normalizeUsersSearch(usersSearch.value),
     botKey: normalizeBotKeyValue(usersFilterDraft.botKey),
@@ -2780,8 +2830,8 @@ function applyUsersFilters() {
     active: usersFilterDraft.active,
     lastSeenFrom: usersFilterDraft.lastSeenFrom.trim(),
     lastSeenTo: usersFilterDraft.lastSeenTo.trim(),
-    createdFrom: effectiveFromDate.value,
-    createdTo: toExclusiveBoundaryYmd(effectiveToDate.value),
+    createdFrom: createdRange?.from || '',
+    createdTo: createdRange?.to ? toExclusiveBoundaryYmd(createdRange.to) : '',
     payload: payload.value.trim()
   });
   refreshUsersPage({ resetOffset: true });
@@ -2798,9 +2848,9 @@ function clearUsersFilters() {
     lastSeenFrom: '',
     lastSeenTo: ''
   });
-  rangePreset.value = 'last_30_days';
-  fromDate.value = nextRange.from;
-  toDate.value = nextRange.to;
+  usersCreatedPreset.value = 'all';
+  usersCreatedFromDate.value = nextRange.from;
+  usersCreatedToDate.value = nextRange.to;
   payload.value = '';
   Object.assign(usersAppliedFilters, {
     q: '',
@@ -2809,8 +2859,8 @@ function clearUsersFilters() {
     active: '',
     lastSeenFrom: '',
     lastSeenTo: '',
-    createdFrom: nextRange.from,
-    createdTo: toExclusiveBoundaryYmd(nextRange.to),
+    createdFrom: '',
+    createdTo: '',
     payload: ''
   });
   usersFilterError.value = '';
@@ -2841,11 +2891,11 @@ function removeUsersFilterChip(key) {
     usersAppliedFilters.payload = '';
   } else if (key === 'created') {
     const nextRange = defaultRange();
-    rangePreset.value = 'last_30_days';
-    fromDate.value = nextRange.from;
-    toDate.value = nextRange.to;
-    usersAppliedFilters.createdFrom = nextRange.from;
-    usersAppliedFilters.createdTo = toExclusiveBoundaryYmd(nextRange.to);
+    usersCreatedPreset.value = 'all';
+    usersCreatedFromDate.value = nextRange.from;
+    usersCreatedToDate.value = nextRange.to;
+    usersAppliedFilters.createdFrom = '';
+    usersAppliedFilters.createdTo = '';
   } else {
     return;
   }
@@ -5725,6 +5775,21 @@ function selectCustomRange() {
     toDate.value = effectiveToDate.value;
   }
   rangePreset.value = 'custom';
+}
+
+function selectUsersCreatedPreset(preset) {
+  usersCreatedPreset.value = preset;
+  usersFilterError.value = '';
+}
+
+function selectUsersCreatedCustomRange() {
+  if (!usersCreatedIsCustom.value) {
+    const range = usersCreatedEffectiveRange.value || defaultRange();
+    usersCreatedFromDate.value = range.from;
+    usersCreatedToDate.value = range.to;
+  }
+  usersCreatedPreset.value = 'custom';
+  usersFilterError.value = '';
 }
 
 function resetFeedbackRange() {
