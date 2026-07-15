@@ -3587,12 +3587,12 @@ export function createAdminRouter(ctx, helpers) {
       await deleteTableByChatId('feedback_replies');
       await deleteTableByChatId('feedback');
       await deleteTableByChatId('feedback_threads');
+      await deleteTableByChatId('llm_call_events');
       await deleteTableByChatId('loader_flags');
       await deleteTableByChatId('messages');
       await deleteTableByChatId('payments');
       await deleteTableByChatId('pending_feedback');
       await deleteTableByChatId('usage_hourly');
-      await deleteTableByChatId('usage_week');
       await deleteTableByChatId('voice_usage_events');
       await deleteTableByChatId('xp_events');
       await deleteTableByChatId('user_progress');

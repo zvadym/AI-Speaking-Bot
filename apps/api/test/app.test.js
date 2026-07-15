@@ -496,6 +496,57 @@ test('admin manual PRO override revocation is idempotent and exposes the underly
   assert.equal(revokeCount, 2);
 });
 
+test('admin user deletion matches the current schema and includes LLM telemetry', async () => {
+  const statements = [];
+  let released = false;
+  const client = {
+    async query(source, params = []) {
+      const normalized = source.replace(/\s+/g, ' ').trim();
+      statements.push(normalized);
+
+      if (normalized === 'BEGIN' || normalized === 'COMMIT') return { rowCount: 0, rows: [] };
+
+      const tableMatch = normalized.match(/^DELETE FROM ([a-z_]+) WHERE chat_id = \$1::bigint$/);
+      assert.ok(tableMatch, `Unexpected query in admin user deletion test: ${normalized}`);
+      assert.deepEqual(params, [8719088547]);
+
+      const tableName = tableMatch[1];
+      if (tableName === 'llm_call_events') return { rowCount: 2, rows: [] };
+      if (tableName === 'users') return { rowCount: 1, rows: [] };
+      return { rowCount: 0, rows: [] };
+    },
+    release() {
+      released = true;
+    }
+  };
+
+  await withMockedPool({ connectHandler: async () => client }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      method: 'POST',
+      path: '/admin/users/delete',
+      headers: { 'X-Admin-Password': 'secret-admin' },
+      body: { chatId: '8719088547' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.ok, true);
+    assert.equal(response.json.chat_id, 8719088547);
+    assert.equal(response.json.deleted_total, 3);
+    assert.equal(response.json.deleted.llm_call_events, 2);
+    assert.equal(response.json.deleted.users, 1);
+  });
+
+  const executedTables = statements
+    .map((source) => source.match(/^DELETE FROM ([a-z_]+)/)?.[1])
+    .filter(Boolean);
+  assert.ok(executedTables.includes('llm_call_events'));
+  assert.ok(!executedTables.includes('usage_week'));
+  assert.equal(statements[0], 'BEGIN');
+  assert.equal(statements.at(-1), 'COMMIT');
+  assert.equal(released, true);
+});
+
 test('admin user directory returns effective tier source and active manual expiry', async () => {
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('SELECT COUNT(*)::int AS total') && source.includes('FROM users u')) {
