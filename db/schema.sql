@@ -588,6 +588,7 @@ CREATE TABLE public.bot_onboarding_sessions (
     started_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     completed_at timestamp with time zone,
+    last_start_update_id bigint,
     CONSTRAINT bot_onboarding_sessions_completion_check CHECK ((((state = 'completed'::text) AND (completed_at IS NOT NULL)) OR ((state <> 'completed'::text) AND (completed_at IS NULL)))),
     CONSTRAINT bot_onboarding_sessions_decision_check CHECK (((completion_decision_id IS NULL) OR (length(completion_decision_id) <= 200))),
     CONSTRAINT bot_onboarding_sessions_input_mode_check CHECK (((first_input_mode IS NULL) OR (first_input_mode = ANY (ARRAY['voice'::text, 'text'::text])))),
@@ -629,17 +630,24 @@ CREATE TABLE public.scheduled_task_dispatches (
 CREATE VIEW public.bot_onboarding_completion AS
  SELECT ub.chat_id,
     ub.bot_key,
-    COALESCE(session.completed_at, legacy.sent_at) AS completed_at,
         CASE
-            WHEN (session.completed_at IS NOT NULL) THEN 'interactive_v2'::text
+            WHEN (session.chat_id IS NOT NULL) THEN session.completed_at
+            ELSE legacy.sent_at
+        END AS completed_at,
+        CASE
+            WHEN (session.chat_id IS NOT NULL) THEN 'interactive_v2'::text
             ELSE 'legacy_message'::text
         END AS source
    FROM ((public.user_bots ub
-     LEFT JOIN public.bot_onboarding_sessions session ON (((session.chat_id = ub.chat_id) AND (session.bot_key = ub.bot_key) AND (session.state = 'completed'::text))))
+     LEFT JOIN public.bot_onboarding_sessions session ON (((session.chat_id = ub.chat_id) AND (session.bot_key = ub.bot_key))))
      LEFT JOIN LATERAL ( SELECT min(std.sent_at) AS sent_at
            FROM public.scheduled_task_dispatches std
           WHERE ((std.chat_id = ub.chat_id) AND (std.bot_key = ub.bot_key) AND (std.task_type = 'onboarding_complete'::text) AND (std.schedule_key = 'once'::text) AND (std.status = 'sent'::text) AND (std.sent_at IS NOT NULL))) legacy ON (true))
-  WHERE (COALESCE(session.completed_at, legacy.sent_at) IS NOT NULL);
+  WHERE (
+        CASE
+            WHEN (session.chat_id IS NOT NULL) THEN session.completed_at
+            ELSE legacy.sent_at
+        END IS NOT NULL);
 
 
 --
@@ -2433,4 +2441,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260710120000'),
     ('20260711100000'),
     ('20260712100000'),
-    ('20260715100000');
+    ('20260715100000'),
+    ('20260715113000');

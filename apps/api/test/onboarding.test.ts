@@ -16,10 +16,53 @@ import {
   suggestedOnboardingLevel
 } from '../src/bot-runtime/handlers/conversation.js';
 import { createOnboardingStartHandler } from '../src/bot-runtime/handlers/onboarding.js';
+import { bootstrapTelegramUser } from '../src/bot-runtime/user-bootstrap.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 
 const configs = loadBotConfigs() as Record<string, { locale: unknown }>;
+
+async function runBootstrap({
+  text,
+  updateId,
+  existingUserBot,
+  enabled
+}: {
+  text: string;
+  updateId: number;
+  existingUserBot: boolean;
+  enabled: boolean;
+}) {
+  const calls: Array<{ source: string; params: unknown[] }> = [];
+  const client = {
+    async query(source: string, params: unknown[] = []) {
+      calls.push({ source, params });
+      if (source.includes('INSERT INTO user_bots')) {
+        return { rows: existingUserBot ? [] : [{ chat_id: 42 }] };
+      }
+      return { rows: [] };
+    },
+    release() {}
+  };
+  const pool = {
+    async connect() { return client; }
+  } as unknown as Pool;
+  const input = normalizeTelegramUpdate({
+    update_id: updateId,
+    message: {
+      message_id: 1,
+      text,
+      chat: { id: 42, type: 'private' },
+      from: { id: 42, is_bot: false, first_name: 'Оля' }
+    }
+  });
+  await bootstrapTelegramUser(pool, {
+    botKey: 'uk-en',
+    input,
+    onboardingEnabledBotKeys: enabled ? new Set(['uk-en']) : new Set()
+  });
+  return calls;
+}
 
 function preparedStart() {
   return buildPreparedUpdate({
@@ -45,6 +88,51 @@ test('onboarding rollout config supports dark, canary, and all-bot activation', 
     () => parseOnboardingEnabledBotKeys('missing', known),
     /unknown_onboarding_bot_key/
   );
+});
+
+test('enabled /start creates or atomically restarts onboarding for an existing user', async () => {
+  const calls = await runBootstrap({
+    text: '/start',
+    updateId: 9801,
+    existingUserBot: true,
+    enabled: true
+  });
+  const reset = calls.find((call) => call.source.includes('INSERT INTO bot_onboarding_sessions'));
+  assert.ok(reset);
+  assert.deepEqual(reset.params, [42, 'uk-en', 9801]);
+  assert.match(reset.source, /ON CONFLICT \(chat_id, bot_key\) DO UPDATE/);
+  assert.match(reset.source, /state = 'choose_scenario'/);
+  assert.match(reset.source, /scenario = NULL/);
+  assert.match(reset.source, /completed_at = NULL/);
+  assert.match(reset.source, /last_start_update_id < EXCLUDED\.last_start_update_id/);
+});
+
+test('onboarding bootstrap keeps non-start and disabled-bot behavior scoped', async () => {
+  const newUserCalls = await runBootstrap({
+    text: 'Hello',
+    updateId: 9802,
+    existingUserBot: false,
+    enabled: true
+  });
+  const created = newUserCalls.find((call) => call.source.includes('INSERT INTO bot_onboarding_sessions'));
+  assert.ok(created);
+  assert.deepEqual(created.params, [42, 'uk-en', null]);
+
+  const existingMessageCalls = await runBootstrap({
+    text: 'Hello',
+    updateId: 9803,
+    existingUserBot: true,
+    enabled: true
+  });
+  assert.equal(existingMessageCalls.some((call) => call.source.includes('bot_onboarding_sessions')), false);
+
+  const disabledStartCalls = await runBootstrap({
+    text: '/start',
+    updateId: 9804,
+    existingUserBot: true,
+    enabled: false
+  });
+  assert.equal(disabledStartCalls.some((call) => call.source.includes('bot_onboarding_sessions')), false);
 });
 
 test('every production bot has a complete onboarding locale contract', () => {
@@ -132,6 +220,7 @@ test('new-user start handler renders the persisted onboarding state', async () =
           first_input_mode: null,
           suggested_level: null,
           completion_decision_id: null,
+          last_start_update_id: 9701,
           started_at: new Date(),
           updated_at: new Date(),
           completed_at: null

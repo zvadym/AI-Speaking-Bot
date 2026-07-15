@@ -62,7 +62,8 @@ export async function bootstrapTelegramUser(
        RETURNING chat_id`,
       [chatId, botKey]
     );
-    if (!insertedUserBot.rows[0]) {
+    const createdUserBot = Boolean(insertedUserBot.rows[0]);
+    if (!createdUserBot) {
       await client.query(
         `UPDATE user_bots
             SET last_seen_at = NOW(),
@@ -72,13 +73,29 @@ export async function bootstrapTelegramUser(
             AND bot_key = $2`,
         [chatId, botKey]
       );
-    } else if (onboardingEnabledBotKeys.has(botKey)) {
+    }
+    if (onboardingEnabledBotKeys.has(botKey) && (createdUserBot || isStart)) {
       await client.query(
         `INSERT INTO bot_onboarding_sessions (
-           chat_id, bot_key, version, state, started_at, updated_at
-         ) VALUES ($1, $2, 2, 'choose_scenario', NOW(), NOW())
-         ON CONFLICT (chat_id, bot_key) DO NOTHING`,
-        [chatId, botKey]
+           chat_id, bot_key, version, state, last_start_update_id, started_at, updated_at
+         ) VALUES ($1, $2, 2, 'choose_scenario', $3, NOW(), NOW())
+         ON CONFLICT (chat_id, bot_key) DO UPDATE SET
+           version = 2,
+           state = 'choose_scenario',
+           scenario = NULL,
+           first_input_mode = NULL,
+           suggested_level = NULL,
+           completion_decision_id = NULL,
+           last_start_update_id = EXCLUDED.last_start_update_id,
+           started_at = NOW(),
+           updated_at = NOW(),
+           completed_at = NULL
+         WHERE EXCLUDED.last_start_update_id IS NOT NULL
+           AND (
+             bot_onboarding_sessions.last_start_update_id IS NULL
+             OR bot_onboarding_sessions.last_start_update_id < EXCLUDED.last_start_update_id
+           )`,
+        [chatId, botKey, isStart ? input.updateId : null]
       );
     }
     if (isStart) {

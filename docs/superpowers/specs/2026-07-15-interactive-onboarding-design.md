@@ -223,7 +223,10 @@ private `/start` on an enabled bot atomically inserts or resets that bot's
 session to `choose_scenario`, including for an existing user. The reset clears
 `scenario`, `first_input_mode`, `suggested_level`, `completion_decision_id`, and
 `completed_at`, and refreshes `started_at` and `updated_at`. Other updates never
-reset a session. An absent session still means legacy or normal behavior.
+reset a session. The session stores `last_start_update_id`; only a newer
+Telegram update ID may perform another reset, so delayed duplicate webhook
+delivery cannot move a session backward after the user has already selected a
+scenario. An absent session still means legacy or normal behavior.
 
 Allowed transitions are:
 

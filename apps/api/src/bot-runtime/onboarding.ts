@@ -16,6 +16,7 @@ export interface OnboardingSession extends UnknownRecord {
   first_input_mode: OnboardingInputMode | null;
   suggested_level: SuggestedLevel | null;
   completion_decision_id: string | null;
+  last_start_update_id: string | number | null;
   started_at: unknown;
   updated_at: unknown;
   completed_at: unknown;

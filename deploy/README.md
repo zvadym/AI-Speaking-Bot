@@ -40,6 +40,10 @@ configured bot; an empty value keeps the legacy onboarding flow. The API
 validates both the bot keys and each enabled bot's `locale.onboarding_v2`
 contract during startup.
 
+For an enabled bot, a private `/start` creates or restarts interactive
+onboarding even for an existing user. The reset affects only onboarding state;
+level, XP, messages, subscription, and other preferences are preserved.
+
 ## Deploy
 
 From the repository root on the server:
