@@ -47,7 +47,8 @@ first personalized correction within ten minutes of `/start`.
 - Requiring a Mini App visit during onboarding.
 - Teaching XP, streaks, subscriptions, and all settings before the first
   practice.
-- Re-onboarding existing users when the feature is deployed.
+- Automatically re-onboarding existing users when the feature is deployed;
+  an existing user opts in by explicitly sending `/start` to an enabled bot.
 - Adding generated file-based topic catalogs; the DB-backed topic catalog
   remains unrelated to these fixed onboarding scenarios.
 
@@ -72,9 +73,13 @@ Inline buttons use stable scenario identifiers:
 - `☀️ Мій день` -> `daily_life`
 - `✈️ Подорожі` -> `travel`
 
-The layout may use two rows to keep localized labels readable. Repeating
-`/start` resumes the current onboarding state instead of creating a second
-session.
+The layout may use two rows to keep localized labels readable. For a bot with
+interactive onboarding enabled, every private `/start` explicitly restarts the
+flow at the scenario picker. This also lets an existing user opt into or retest
+the onboarding without deleting their account. The restart clears only
+onboarding-session fields; it preserves level, XP, messages, topic, reply mode,
+subscription state, and other user preferences. Disabled bots retain the
+legacy `/start` behavior.
 
 ### 2. Practice card
 
@@ -212,15 +217,19 @@ A forward-only migration adds `bot_onboarding_sessions` with:
 - nullable `suggested_level`, restricted to A1-C1 values;
 - `started_at`, `updated_at`, and nullable `completed_at`.
 
-The bootstrap transaction creates a version-2 session only when it inserts a
-new `user_bots` row for a bot with interactive onboarding enabled. An absent
-session therefore means legacy or normal behavior; existing users are not
-silently enrolled.
+The bootstrap transaction creates a version-2 session when it inserts a new
+`user_bots` row for a bot with interactive onboarding enabled. In addition, a
+private `/start` on an enabled bot atomically inserts or resets that bot's
+session to `choose_scenario`, including for an existing user. The reset clears
+`scenario`, `first_input_mode`, `suggested_level`, `completion_decision_id`, and
+`completed_at`, and refreshes `started_at` and `updated_at`. Other updates never
+reset a session. An absent session still means legacy or normal behavior.
 
 Allowed transitions are:
 
 ```text
 new -> choose_scenario
+any state -> choose_scenario          (explicit /start on an enabled bot)
 choose_scenario -> choose_scenario    (change or repeat selection)
 choose_scenario -> await_practice     (scenario selected or text fallback)
 await_practice -> choose_scenario     (choose another scenario)
@@ -228,9 +237,11 @@ await_practice -> completed           (first correction delivered)
 completed -> completed                (level and bonus callbacks)
 ```
 
-All writes include the expected current state. Duplicate updates, Telegram
-retries, and repeated callbacks therefore become no-ops or render the current
-state instead of moving it backward accidentally.
+Normal transition writes include the expected current state. The explicit
+`/start` reset is the sole unconditional backward transition. Duplicate
+delivery of the same Telegram `/start` update repeats the same reset and
+renders the same picker, while durable message delivery prevents a duplicate
+outbound picker message.
 
 ### Effective completion compatibility
 
@@ -240,8 +251,12 @@ The new flow must not write a fake message dispatch.
 
 The migration introduces one canonical `bot_onboarding_completion` database
 view. It exposes `chat_id`, `bot_key`, `completed_at`, and a source of
-`interactive_v2` or `legacy_message`, preferring the interactive session when
-one exists and otherwise using the legacy sent timestamp.
+`interactive_v2` or `legacy_message`. Once any interactive session exists, its
+state is authoritative: an active reset session is incomplete even if the user
+previously has a legacy completion dispatch. The legacy timestamp is used only
+when no interactive session exists. Because the original view has already
+shipped, restart support uses a new forward-only `CREATE OR REPLACE VIEW`
+migration to enforce this precedence.
 
 The runtime keyboard context, admin funnel, day-1 return eligibility, winback
 eligibility, and other completion consumers read this view. The legacy idle
@@ -379,7 +394,8 @@ Existing `first_voice_sent` and `first_answer_delivered` events remain intact.
 
 ## Failure Semantics
 
-- A repeated `/start` renders the current active state.
+- On an enabled bot, a repeated `/start` atomically resets the session and
+  renders the scenario picker. On a disabled bot it preserves legacy behavior.
 - A stale callback reloads the session. Completed sessions receive a localized
   already-completed acknowledgement and normal continuation actions.
 - A malformed or unsupported callback is answered and does not mutate state.
@@ -398,10 +414,10 @@ Existing `first_voice_sent` and `first_answer_delivered` events remain intact.
 
 Focused tests cover:
 
-1. Session creation only for a newly inserted `user_bots` row on an enabled
-   bot.
+1. Session creation for a newly inserted `user_bots` row on an enabled bot.
 2. Every allowed and rejected state transition, including duplicate updates.
-3. `/start` creation, resume, completion, and legacy behavior.
+3. `/start` creation and reset for new, active, completed, and legacy users,
+   plus unchanged behavior for disabled bots.
 4. All scenario callbacks, scenario changes, and text fallback.
 5. Voice or text sent before scenario selection becoming `freeform`.
 6. Compact first-response rendering for voice and text.
@@ -409,12 +425,14 @@ Focused tests cover:
 8. Retry behavior without duplicate XP, events, or completion.
 9. Level validation, confidence suppression, confirmation, and manual picker.
 10. Bonus retry and continue actions after completion.
-11. Legacy completion fallback for keyboard, day-1, winback, and admin queries.
+11. Legacy completion fallback only when no interactive session exists, and
+    incomplete effective state while a restarted session is active.
 12. Exclusion of version-2 sessions from the legacy idle completion sender.
 13. Structural localization validation for every bot config.
 14. Representative localization fixtures in both base/learning directions,
     including a non-English target language.
-15. Existing users remaining outside interactive onboarding after deployment.
+15. Existing users remaining outside interactive onboarding until they send
+    `/start` to an enabled bot.
 16. Admin funnel counts, time-window calculations, and bot-pair segmentation.
 
 The API test suite, TypeScript checks, bot-config validation, schema snapshot
@@ -425,9 +443,10 @@ check, and affected Mini App/admin build must pass before deployment.
 `BOT_ONBOARDING_V2_ENABLED_BOT_KEYS` follows existing bot-key rollout
 semantics:
 
-- empty: do not create new interactive sessions;
-- comma-separated keys: enroll only new users on those bots;
-- `*`: enroll new users on every configured bot;
+- empty: do not create or reset interactive sessions;
+- comma-separated keys: enroll new users and honor explicit `/start` restarts
+  on those bots;
+- `*`: apply the same behavior to every configured bot;
 - unknown keys: fail startup validation.
 
 Deployment proceeds in stages:
@@ -446,9 +465,10 @@ Deployment proceeds in stages:
    global cohort no longer depends on it.
 
 Immediate rollback clears the feature flag. It does not delete sessions,
-change user levels, or roll back the migration. New users receive the legacy
-start path; active interactive users can still send normal practice messages
-and resume their saved onboarding if the flag is restored.
+change user levels, or roll back the migration. New users and existing users
+who send `/start` receive the legacy start path; active interactive users can
+still send normal practice messages and resume their saved onboarding if the
+flag is restored.
 
 ## Success Criteria
 
@@ -458,7 +478,8 @@ and resume their saved onboarding if the flag is restored.
   hard block without becoming the dominant choice.
 - No enabled bot displays onboarding instructions in the wrong base language
   or examples in the wrong learning language.
-- Existing users are not enrolled again.
+- Existing users are not enrolled automatically; only an explicit `/start` on
+  an enabled bot restarts onboarding.
 - Retries and repeated callbacks do not duplicate XP, completion, or analytics.
 - Day-1 reminders, persistent keyboards, and admin funnel reporting work for
   both interactive and legacy completion sources.
