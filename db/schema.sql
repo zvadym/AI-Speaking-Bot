@@ -488,7 +488,7 @@ CREATE TABLE public.action_events (
     idempotency_key text,
     properties jsonb DEFAULT '{}'::jsonb NOT NULL,
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT action_events_action_type_check CHECK ((action_type = ANY (ARRAY['start'::text, 'profile_set_level'::text, 'first_voice_sent'::text, 'first_answer_delivered'::text, 'day1_return'::text, 'topic_set'::text, 'topic_message_sent'::text, 'topic_clear'::text, 'free_limit_half'::text, 'paywall_shown'::text, 'purchase_success'::text, 'reply_kbd_topic_click'::text, 'reply_kbd_level_click'::text, 'reply_kbd_voice_click'::text, 'reply_kbd_xp_click'::text, 'idiom_phrase_more_click'::text])))
+    CONSTRAINT action_events_action_type_check CHECK ((action_type = ANY (ARRAY['start'::text, 'profile_set_level'::text, 'first_voice_sent'::text, 'first_answer_delivered'::text, 'day1_return'::text, 'topic_set'::text, 'topic_message_sent'::text, 'topic_clear'::text, 'free_limit_half'::text, 'paywall_shown'::text, 'purchase_success'::text, 'reply_kbd_topic_click'::text, 'reply_kbd_level_click'::text, 'reply_kbd_voice_click'::text, 'reply_kbd_xp_click'::text, 'idiom_phrase_more_click'::text, 'onboarding_scenario_selected'::text, 'onboarding_practice_sent'::text, 'onboarding_completed'::text, 'onboarding_level_confirmed'::text, 'onboarding_bonus_selected'::text])))
 );
 
 
@@ -570,6 +570,76 @@ CREATE VIEW public.bot_dau AS
 --
 
 COMMENT ON VIEW public.bot_dau IS 'Daily Active Users per bot (last 90 days)';
+
+
+--
+-- Name: bot_onboarding_sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.bot_onboarding_sessions (
+    chat_id bigint NOT NULL,
+    bot_key text NOT NULL,
+    version integer DEFAULT 2 NOT NULL,
+    state text DEFAULT 'choose_scenario'::text NOT NULL,
+    scenario text,
+    first_input_mode text,
+    suggested_level text,
+    completion_decision_id text,
+    started_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    completed_at timestamp with time zone,
+    CONSTRAINT bot_onboarding_sessions_completion_check CHECK ((((state = 'completed'::text) AND (completed_at IS NOT NULL)) OR ((state <> 'completed'::text) AND (completed_at IS NULL)))),
+    CONSTRAINT bot_onboarding_sessions_decision_check CHECK (((completion_decision_id IS NULL) OR (length(completion_decision_id) <= 200))),
+    CONSTRAINT bot_onboarding_sessions_input_mode_check CHECK (((first_input_mode IS NULL) OR (first_input_mode = ANY (ARRAY['voice'::text, 'text'::text])))),
+    CONSTRAINT bot_onboarding_sessions_level_check CHECK (((suggested_level IS NULL) OR (suggested_level = ANY (ARRAY['a1'::text, 'a2'::text, 'b1'::text, 'b2'::text, 'c1'::text])))),
+    CONSTRAINT bot_onboarding_sessions_scenario_check CHECK (((scenario IS NULL) OR (scenario = ANY (ARRAY['about_self'::text, 'daily_life'::text, 'travel'::text, 'freeform'::text])))),
+    CONSTRAINT bot_onboarding_sessions_state_check CHECK ((state = ANY (ARRAY['choose_scenario'::text, 'await_practice'::text, 'completed'::text]))),
+    CONSTRAINT bot_onboarding_sessions_version_check CHECK ((version > 0))
+);
+
+
+--
+-- Name: scheduled_task_dispatches; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.scheduled_task_dispatches (
+    id bigint NOT NULL,
+    task_type text NOT NULL,
+    bot_key text NOT NULL,
+    chat_id bigint NOT NULL,
+    schedule_key text NOT NULL,
+    status text DEFAULT 'claimed'::text NOT NULL,
+    claimed_at timestamp with time zone DEFAULT now() NOT NULL,
+    claim_expires_at timestamp with time zone,
+    attempts integer DEFAULT 0 NOT NULL,
+    last_error text,
+    payload_json jsonb DEFAULT '{}'::jsonb NOT NULL,
+    telegram_message_id bigint,
+    sent_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT scheduled_task_dispatches_status_check CHECK ((status = ANY (ARRAY['claimed'::text, 'sent'::text, 'failed'::text])))
+);
+
+
+--
+-- Name: bot_onboarding_completion; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.bot_onboarding_completion AS
+ SELECT ub.chat_id,
+    ub.bot_key,
+    COALESCE(session.completed_at, legacy.sent_at) AS completed_at,
+        CASE
+            WHEN (session.completed_at IS NOT NULL) THEN 'interactive_v2'::text
+            ELSE 'legacy_message'::text
+        END AS source
+   FROM ((public.user_bots ub
+     LEFT JOIN public.bot_onboarding_sessions session ON (((session.chat_id = ub.chat_id) AND (session.bot_key = ub.bot_key) AND (session.state = 'completed'::text))))
+     LEFT JOIN LATERAL ( SELECT min(std.sent_at) AS sent_at
+           FROM public.scheduled_task_dispatches std
+          WHERE ((std.chat_id = ub.chat_id) AND (std.bot_key = ub.bot_key) AND (std.task_type = 'onboarding_complete'::text) AND (std.schedule_key = 'once'::text) AND (std.status = 'sent'::text) AND (std.sent_at IS NOT NULL))) legacy ON (true))
+  WHERE (COALESCE(session.completed_at, legacy.sent_at) IS NOT NULL);
 
 
 --
@@ -1261,30 +1331,6 @@ CREATE TABLE public.plans (
 
 
 --
--- Name: scheduled_task_dispatches; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.scheduled_task_dispatches (
-    id bigint NOT NULL,
-    task_type text NOT NULL,
-    bot_key text NOT NULL,
-    chat_id bigint NOT NULL,
-    schedule_key text NOT NULL,
-    status text DEFAULT 'claimed'::text NOT NULL,
-    claimed_at timestamp with time zone DEFAULT now() NOT NULL,
-    claim_expires_at timestamp with time zone,
-    attempts integer DEFAULT 0 NOT NULL,
-    last_error text,
-    payload_json jsonb DEFAULT '{}'::jsonb NOT NULL,
-    telegram_message_id bigint,
-    sent_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT scheduled_task_dispatches_status_check CHECK ((status = ANY (ARRAY['claimed'::text, 'sent'::text, 'failed'::text])))
-);
-
-
---
 -- Name: scheduled_task_dispatches_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1434,6 +1480,14 @@ ALTER TABLE ONLY public.action_events
 
 ALTER TABLE ONLY public.action_events
     ADD CONSTRAINT action_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: bot_onboarding_sessions bot_onboarding_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bot_onboarding_sessions
+    ADD CONSTRAINT bot_onboarding_sessions_pkey PRIMARY KEY (chat_id, bot_key);
 
 
 --
@@ -1771,6 +1825,13 @@ CREATE INDEX idx_action_events_chat_action_occurred ON public.action_events USIN
 --
 
 CREATE INDEX idx_action_events_occurred ON public.action_events USING btree (occurred_at DESC);
+
+
+--
+-- Name: idx_bot_onboarding_sessions_state_updated; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_bot_onboarding_sessions_state_updated ON public.bot_onboarding_sessions USING btree (state, updated_at);
 
 
 --
@@ -2201,6 +2262,14 @@ CREATE TRIGGER trg_action_profile_set_level AFTER UPDATE OF level ON public.user
 
 
 --
+-- Name: bot_onboarding_sessions bot_onboarding_sessions_user_bot_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bot_onboarding_sessions
+    ADD CONSTRAINT bot_onboarding_sessions_user_bot_fkey FOREIGN KEY (chat_id, bot_key) REFERENCES public.user_bots(chat_id, bot_key) ON DELETE CASCADE;
+
+
+--
 -- Name: bot_update_deliveries bot_update_deliveries_execution_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2363,4 +2432,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260328193000'),
     ('20260710120000'),
     ('20260711100000'),
-    ('20260712100000');
+    ('20260712100000'),
+    ('20260715100000');

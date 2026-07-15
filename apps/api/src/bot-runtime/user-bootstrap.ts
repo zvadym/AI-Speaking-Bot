@@ -10,10 +10,12 @@ export async function bootstrapTelegramUser(
   pool: Pool,
   {
     botKey,
-    input
+    input,
+    onboardingEnabledBotKeys = new Set<string>()
   }: {
     botKey: string;
     input: NormalizedTelegramUpdate;
+    onboardingEnabledBotKeys?: ReadonlySet<string>;
   }
 ): Promise<void> {
   const chatId = input.chatId;
@@ -51,17 +53,34 @@ export async function bootstrapTelegramUser(
         startPayload || null
       ]
     );
-    await client.query(
+    const insertedUserBot = await client.query(
       `INSERT INTO user_bots (
          chat_id, bot_key, level, reply_mode, tts_voice, first_seen_at,
          last_seen_at, is_active, updated_at
        ) VALUES ($1, $2, 'a1', 'voice', 'marin', NOW(), NOW(), true, NOW())
-       ON CONFLICT (chat_id, bot_key) DO UPDATE SET
-         last_seen_at = NOW(),
-         is_active = true,
-         updated_at = NOW()`,
+       ON CONFLICT (chat_id, bot_key) DO NOTHING
+       RETURNING chat_id`,
       [chatId, botKey]
     );
+    if (!insertedUserBot.rows[0]) {
+      await client.query(
+        `UPDATE user_bots
+            SET last_seen_at = NOW(),
+                is_active = true,
+                updated_at = NOW()
+          WHERE chat_id = $1
+            AND bot_key = $2`,
+        [chatId, botKey]
+      );
+    } else if (onboardingEnabledBotKeys.has(botKey)) {
+      await client.query(
+        `INSERT INTO bot_onboarding_sessions (
+           chat_id, bot_key, version, state, started_at, updated_at
+         ) VALUES ($1, $2, 2, 'choose_scenario', NOW(), NOW())
+         ON CONFLICT (chat_id, bot_key) DO NOTHING`,
+        [chatId, botKey]
+      );
+    }
     if (isStart) {
       await client.query(
         `INSERT INTO action_events (

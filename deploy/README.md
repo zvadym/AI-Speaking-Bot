@@ -33,6 +33,13 @@ API secrets. Telegram bot tokens are read from `deploy/bots/*.json`.
 `deploy/.env.miniapp` must define `VITE_API_BASE` and the Mini App build values.
 Never commit populated env files or new bot tokens.
 
+Interactive onboarding v2 is opt-in per bot through
+`BOT_ONBOARDING_V2_ENABLED_BOT_KEYS`. Use a comma-separated list of bot keys
+for a canary rollout, for example `uk-en,en-de`. The value `*` enables every
+configured bot; an empty value keeps the legacy onboarding flow. The API
+validates both the bot keys and each enabled bot's `locale.onboarding_v2`
+contract during startup.
+
 ## Deploy
 
 From the repository root on the server:
@@ -105,6 +112,9 @@ docker compose -p languagebot -f deploy/docker-compose.yml logs --tail=100 api w
 Then verify one bot with `/stats`, one short text message, and one short voice
 message. The webhook inspection should show the API URL, zero pending updates,
 and no recent Telegram delivery error for every bot.
+
+For an onboarding canary, also verify `/start`, each scenario callback, the
+voice and text first-response paths, level confirmation, and both bonus actions.
 
 ## Rollback
 

@@ -2334,6 +2334,11 @@ const actionSeriesConfig = [
   { key: 'profile_set_level', label: 'profile_set_level', color: 'rgba(199, 90, 36, 0.88)' },
   { key: 'first_voice_sent', label: 'first_voice_or_text_sent', color: 'rgba(46, 88, 142, 0.88)' },
   { key: 'first_answer_delivered', label: 'first_answer_delivered', color: 'rgba(103, 78, 167, 0.88)' },
+  { key: 'onboarding_scenario_selected', label: 'onboarding_scenario_selected', color: 'rgba(52, 118, 128, 0.88)' },
+  { key: 'onboarding_practice_sent', label: 'onboarding_practice_sent', color: 'rgba(76, 128, 92, 0.88)' },
+  { key: 'onboarding_completed', label: 'onboarding_completed', color: 'rgba(92, 140, 86, 0.9)' },
+  { key: 'onboarding_level_confirmed', label: 'onboarding_level_confirmed', color: 'rgba(124, 96, 163, 0.88)' },
+  { key: 'onboarding_bonus_selected', label: 'onboarding_bonus_selected', color: 'rgba(176, 116, 41, 0.9)' },
   { key: 'topic_set', label: 'topic_set', color: 'rgba(33, 124, 146, 0.88)' },
   { key: 'topic_message_sent', label: 'topic_message_sent', color: 'rgba(117, 156, 56, 0.88)' },
   { key: 'topic_clear', label: 'topic_clear', color: 'rgba(140, 87, 45, 0.88)' },
@@ -2369,7 +2374,8 @@ const xpButtonSeriesConfig = Object.entries(xpButtonEventMeta)
   }));
 const actionFunnelStageMeta = {
   start: { label: 'Started', color: 'rgba(38, 84, 124, 0.88)' },
-  first_message: { label: 'First message', color: 'rgba(52, 118, 128, 0.88)' },
+  scenario_selected: { label: 'Scenario selected', color: 'rgba(52, 118, 128, 0.88)' },
+  practice_sent: { label: 'First practice', color: 'rgba(76, 128, 92, 0.88)' },
   onboarding_complete: { label: 'Onboarding complete', color: 'rgba(92, 140, 86, 0.9)' },
   free_limit_half: { label: '50% free limit', color: 'rgba(207, 150, 56, 0.9)' },
   paywall_shown: { label: 'Paywall shown', color: 'rgba(174, 43, 40, 0.86)' }

@@ -182,6 +182,49 @@
       "free_limit_50": {
         "message_html": "<b>لقد وصلت بالفعل إلى نصف الحد المجاني ✨</b>\nإذا أردت المتابعة، فإن PRO يكلف أقل من كوبين من القهوة شهريًا.\n\nويمنحك مزايا إضافية مثل مواضيع جديدة وإعدادات للنبرة والمزيد من التحديثات مستقبلًا."
       }
+    },
+    "onboarding_v2": {
+      "welcome": "مرحبًا، {first_name}! 👋",
+      "choose_scenario": "خلال 30 ثانية ستقول جملتك الأولى وتحصل على تصحيح شخصي. عن ماذا سنتحدث؟",
+      "voice_instruction": "اضغط 🎙 وأرسل رسالة صوتية.",
+      "text_instruction": "اكتب جملة قصيرة واحدة.",
+      "success": "اكتملت ممارستك الأولى 🔥",
+      "voice_input_header": "سمعت:",
+      "text_input_header": "إجابتك:",
+      "level_suggestion": "بناءً على إجابتك الأولى، قد يناسبك مستوى {suggested_level}. هل نعتمده؟",
+      "already_completed": "اكتملت ممارستك الأولى بالفعل. هل نتابع؟",
+      "retry_corrected": "حاول مرة أخرى مستخدمًا التصحيح أعلاه.",
+      "continue_prompt": "رائع. أرسل رسالتك الصوتية أو النصية التالية.",
+      "errors": {
+        "expired": "هذا الزر لم يعد صالحًا.",
+        "retry_voice": "لم أتمكن من فهم الرسالة الصوتية. حاول مرة أخرى بصوت أعلى قليلًا.",
+        "retry_delivery": "تعذر إرسال الرد. حاول مرة أخرى."
+      },
+      "buttons": {
+        "use_text": "✍️ أجيب كتابةً",
+        "change_scenario": "🔄 موضوع آخر",
+        "confirm_level": "✅ نعم، {suggested_level}",
+        "choose_level": "🎚 اختيار مستوى آخر",
+        "retry": "🔁 قلها مرة أخرى",
+        "continue": "💬 تابع الحديث"
+      },
+      "scenarios": {
+        "about_self": {
+          "button": "👋 عن نفسي",
+          "prompt": "قل من أين أنت وماذا تعمل.",
+          "example": "Hi, I’m Alex. I’m from Ukraine and I work in design."
+        },
+        "daily_life": {
+          "button": "☀️ يومي",
+          "prompt": "قل في جملة واحدة ماذا فعلت هذا الصباح.",
+          "example": "This morning, I had coffee and went to work."
+        },
+        "travel": {
+          "button": "✈️ السفر",
+          "prompt": "قل إلى أين ترغب في السفر.",
+          "example": "I’d like to visit Italy because I love the food and history."
+        }
+      }
     }
   },
   "telegram_presentation": {

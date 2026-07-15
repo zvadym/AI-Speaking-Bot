@@ -20,6 +20,11 @@ export interface ConversationAiInput {
   shortSummary: string;
   history: Array<{ role: string; content: string }>;
   topic: UnknownRecord | null;
+  onboarding?: {
+    scenario: string;
+    prompt: string;
+    example: string;
+  } | null;
   trace?: LlmTraceContext;
 }
 
@@ -29,6 +34,8 @@ export interface ConversationAiResult extends UnknownRecord {
   has_mistakes: boolean;
   reply_text: string;
   explanation_html: string;
+  suggested_level?: 'a1' | 'a2' | 'b1' | 'b2' | 'c1' | null;
+  suggested_level_confidence?: 'low' | 'medium' | 'high' | null;
 }
 
 export interface FollowUpHints extends UnknownRecord {
@@ -104,6 +111,31 @@ const RESPONSE_SCHEMA = {
     has_mistakes: { type: 'boolean' },
     reply_text: { type: 'string' },
     explanation_html: { type: 'string' }
+  }
+} as const;
+
+const ONBOARDING_RESPONSE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    ...RESPONSE_SCHEMA.required,
+    'suggested_level',
+    'suggested_level_confidence'
+  ],
+  properties: {
+    ...RESPONSE_SCHEMA.properties,
+    suggested_level: {
+      anyOf: [
+        { type: 'string', enum: ['a1', 'a2', 'b1', 'b2', 'c1'] },
+        { type: 'null' }
+      ]
+    },
+    suggested_level_confidence: {
+      anyOf: [
+        { type: 'string', enum: ['low', 'medium', 'high'] },
+        { type: 'null' }
+      ]
+    }
   }
 } as const;
 
@@ -387,6 +419,19 @@ export function createBotAiClient({
         .slice(-20)
         .map((item) => `${item.role}: ${item.content}`)
         .join('\n');
+      const onboarding = input.onboarding
+        ? [
+            'ONBOARDING FIRST RESPONSE:',
+            `Scenario: ${input.onboarding.scenario}`,
+            `Scenario prompt: ${input.onboarding.prompt}`,
+            `Example the learner could repeat: ${input.onboarding.example}`,
+            '- Keep explanation_html compact and correct no more than two important issues.',
+            '- Estimate CEFR only from demonstrated language. Use null when evidence is insufficient.',
+            '- Use low confidence for a very short or copied response.',
+            '- Keep reply_text encouraging and ask one simple next question in the target language.',
+            ''
+          ]
+        : [];
       const result = await structured(
         policy.conversationModel,
         policy.conversationReasoningEffort,
@@ -394,6 +439,7 @@ export function createBotAiClient({
         input.trace || { botKey: input.botKey },
         renderPrompt('model_system_prompt', input.botKey, config),
         [
+          ...onboarding,
           `Target language: ${context.target_language_label}`,
           `Base language: ${context.base_language_code}`,
           `User level: ${input.level || 'A1'}`,
@@ -414,8 +460,8 @@ export function createBotAiClient({
           'NEW USER MESSAGE (transcript):',
           input.text
         ].join('\n'),
-        'response_core',
-        RESPONSE_SCHEMA as unknown as UnknownRecord
+        input.onboarding ? 'response_onboarding' : 'response_core',
+        (input.onboarding ? ONBOARDING_RESPONSE_SCHEMA : RESPONSE_SCHEMA) as unknown as UnknownRecord
       );
       return normalizeConversationResult(result);
     },

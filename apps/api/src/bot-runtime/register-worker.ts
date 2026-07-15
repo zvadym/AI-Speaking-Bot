@@ -23,6 +23,10 @@ import {
   type IdiomMoreSender
 } from './handlers/callback-actions.js';
 import { createStaticRouteHandlers } from './handlers/static-routes.js';
+import {
+  createOnboardingCallbackHandler,
+  createOnboardingStartHandler
+} from './handlers/onboarding.js';
 import { createStatsHandler } from './handlers/stats.js';
 import {
   createSupportCallbackHandlers,
@@ -261,6 +265,8 @@ export async function registerBotRuntimeWorker(
   ]);
   const registry = createBotHandlerRegistry([
     ...createStaticRouteHandlers({ pool, getBotLocale, telegramClient }),
+    createOnboardingStartHandler({ pool, getBotLocale, telegramClient }),
+    createOnboardingCallbackHandler({ pool, getBotLocale, telegramClient }),
     ...createPreferenceHandlers({ pool, getBotLocale, telegramClient }),
     ...createFeedbackHandlers({ pool, getBotLocale, telegramClient }),
     ...createCallbackActionHandlers({

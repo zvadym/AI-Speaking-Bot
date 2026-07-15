@@ -31,6 +31,11 @@ const ACTION_EVENT_TYPES = [
   'profile_set_level',
   'first_voice_sent',
   'first_answer_delivered',
+  'onboarding_scenario_selected',
+  'onboarding_practice_sent',
+  'onboarding_completed',
+  'onboarding_level_confirmed',
+  'onboarding_bonus_selected',
   'topic_set',
   'topic_message_sent',
   'topic_clear',
@@ -1542,6 +1547,11 @@ export function createAdminRouter(ctx, helpers) {
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'profile_set_level'), 0)::int AS profile_set_level,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_voice_sent'), 0)::int AS first_voice_sent,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'first_answer_delivered'), 0)::int AS first_answer_delivered,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'onboarding_scenario_selected'), 0)::int AS onboarding_scenario_selected,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'onboarding_practice_sent'), 0)::int AS onboarding_practice_sent,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'onboarding_completed'), 0)::int AS onboarding_completed,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'onboarding_level_confirmed'), 0)::int AS onboarding_level_confirmed,
+         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'onboarding_bonus_selected'), 0)::int AS onboarding_bonus_selected,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'topic_set'), 0)::int AS topic_set,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'topic_message_sent'), 0)::int AS topic_message_sent,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'topic_clear'), 0)::int AS topic_clear,
@@ -1826,7 +1836,8 @@ export function createAdminRouter(ctx, helpers) {
 
     const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
     const funnelActionTypes = [
-      'first_voice_sent',
+      'onboarding_scenario_selected',
+      'onboarding_practice_sent',
       'free_limit_half',
       'paywall_shown'
     ];
@@ -1846,7 +1857,8 @@ export function createAdminRouter(ctx, helpers) {
          SELECT
            c.chat_id,
            c.start_at,
-           MIN(e.occurred_at) FILTER (WHERE e.action_type = 'first_voice_sent') AS first_message_at,
+           MIN(e.occurred_at) FILTER (WHERE e.action_type = 'onboarding_scenario_selected') AS scenario_selected_at,
+           MIN(e.occurred_at) FILTER (WHERE e.action_type = 'onboarding_practice_sent') AS practice_sent_at,
            onboarding.onboarding_complete_at,
            MIN(e.occurred_at) FILTER (WHERE e.action_type = 'free_limit_half') AS free_limit_half_at,
            MIN(e.occurred_at) FILTER (WHERE e.action_type = 'paywall_shown') AS paywall_shown_at
@@ -1857,14 +1869,11 @@ export function createAdminRouter(ctx, helpers) {
           AND e.occurred_at >= c.start_at
           AND e.occurred_at < $2::timestamptz
          LEFT JOIN LATERAL (
-           SELECT MIN(std.sent_at) AS onboarding_complete_at
-           FROM scheduled_task_dispatches std
-           WHERE std.chat_id = c.chat_id
-             AND std.task_type = 'onboarding_complete'
-             AND std.status = 'sent'
-             AND std.sent_at IS NOT NULL
-             AND std.sent_at >= c.start_at
-             AND std.sent_at < $2::timestamptz
+           SELECT MIN(completion.completed_at) AS onboarding_complete_at
+           FROM bot_onboarding_completion completion
+           WHERE completion.chat_id = c.chat_id
+             AND completion.completed_at >= c.start_at
+             AND completion.completed_at < $2::timestamptz
          ) onboarding ON true
          GROUP BY c.chat_id, c.start_at, onboarding.onboarding_complete_at
        ),
@@ -1873,25 +1882,32 @@ export function createAdminRouter(ctx, helpers) {
            COUNT(*)::int AS start_count,
            SUM(
              CASE
-               WHEN first_message_at IS NOT NULL
+               WHEN scenario_selected_at IS NOT NULL
                  THEN 1
                ELSE 0
              END
-           )::int AS first_message_count,
+           )::int AS scenario_selected_count,
            SUM(
              CASE
-               WHEN first_message_at IS NOT NULL
+               WHEN practice_sent_at IS NOT NULL
+                 THEN 1
+               ELSE 0
+             END
+           )::int AS practice_sent_count,
+           SUM(
+             CASE
+               WHEN practice_sent_at IS NOT NULL
                 AND onboarding_complete_at IS NOT NULL
-                AND onboarding_complete_at >= first_message_at
+                AND onboarding_complete_at >= practice_sent_at
                  THEN 1
                ELSE 0
              END
            )::int AS onboarding_complete_count,
            SUM(
              CASE
-               WHEN first_message_at IS NOT NULL
+               WHEN practice_sent_at IS NOT NULL
                 AND onboarding_complete_at IS NOT NULL
-                AND onboarding_complete_at >= first_message_at
+                AND onboarding_complete_at >= practice_sent_at
                 AND free_limit_half_at IS NOT NULL
                 AND free_limit_half_at >= onboarding_complete_at
                  THEN 1
@@ -1900,9 +1916,9 @@ export function createAdminRouter(ctx, helpers) {
            )::int AS free_limit_half_count,
            SUM(
              CASE
-               WHEN first_message_at IS NOT NULL
+               WHEN practice_sent_at IS NOT NULL
                 AND onboarding_complete_at IS NOT NULL
-                AND onboarding_complete_at >= first_message_at
+                AND onboarding_complete_at >= practice_sent_at
                 AND free_limit_half_at IS NOT NULL
                 AND free_limit_half_at >= onboarding_complete_at
                 AND paywall_shown_at IS NOT NULL
@@ -1919,7 +1935,8 @@ export function createAdminRouter(ctx, helpers) {
 
     const row = rows[0] || {};
     const startCount = Number(row.start_count || 0);
-    const firstMessageCount = Number(row.first_message_count || 0);
+    const scenarioSelectedCount = Number(row.scenario_selected_count || 0);
+    const practiceSentCount = Number(row.practice_sent_count || 0);
     const onboardingCompleteCount = Number(row.onboarding_complete_count || 0);
     const freeLimitHalfCount = Number(row.free_limit_half_count || 0);
     const paywallShownCount = Number(row.paywall_shown_count || 0);
@@ -1937,7 +1954,8 @@ export function createAdminRouter(ctx, helpers) {
       payload: range.payload,
       series: [
         { action: 'start', count: startCount, pct: startCount ? 100 : 0 },
-        { action: 'first_message', count: firstMessageCount, pct: pct(firstMessageCount) },
+        { action: 'scenario_selected', count: scenarioSelectedCount, pct: pct(scenarioSelectedCount) },
+        { action: 'practice_sent', count: practiceSentCount, pct: pct(practiceSentCount) },
         { action: 'onboarding_complete', count: onboardingCompleteCount, pct: pct(onboardingCompleteCount) },
         { action: 'free_limit_half', count: freeLimitHalfCount, pct: pct(freeLimitHalfCount) },
         { action: 'paywall_shown', count: paywallShownCount, pct: pct(paywallShownCount) }

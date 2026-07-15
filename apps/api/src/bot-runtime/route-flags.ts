@@ -15,9 +15,9 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'callback.level': 1,
   'callback.reply': 1,
   'callback.topic': 1,
-  'callback.onboarding': 1,
+  'callback.onboarding': 2,
   'callback.unknown': 1,
-  'command.start': 1,
+  'command.start': 2,
   'command.voice': 1,
   'command.lang': 1,
   'command.level': 1,
@@ -30,8 +30,8 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'pending_feedback.text': 1,
   'pending_feedback.voice': 1,
   'pending_feedback.unsupported': 1,
-  'message.text': 1,
-  'message.voice': 1,
+  'message.text': 2,
+  'message.voice': 2,
   'message.unsupported': 1
 } as const satisfies Partial<Record<Route, number>>;
 

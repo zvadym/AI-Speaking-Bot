@@ -768,6 +768,12 @@ async function scanEligibleOnboardingUsers() {
      WHERE COALESCE(ub.is_active, true) = true
        AND NOT EXISTS (
          SELECT 1
+         FROM bot_onboarding_sessions session
+         WHERE session.chat_id = ub.chat_id
+           AND session.bot_key = ub.bot_key
+       )
+       AND NOT EXISTS (
+         SELECT 1
          FROM scheduled_task_dispatches std
          WHERE std.task_type = $1
            AND std.schedule_key = $2
@@ -927,33 +933,27 @@ async function scanEligibleDay1ReturnUsers() {
      FROM user_bots ub
      JOIN users u
        ON u.chat_id = ub.chat_id
-     JOIN scheduled_task_dispatches onboarding
+     JOIN bot_onboarding_completion onboarding
        ON onboarding.chat_id = ub.chat_id
       AND onboarding.bot_key = ub.bot_key
-      AND onboarding.task_type = $1
-      AND onboarding.schedule_key = $2
-      AND onboarding.status = 'sent'
-      AND onboarding.sent_at IS NOT NULL
      WHERE COALESCE(ub.is_active, true) = true
        AND u.inactive_reason IS NULL
-       AND onboarding.sent_at <= NOW() - ($3::int * interval '1 hour')
-       AND COALESCE(ub.last_seen_at, onboarding.sent_at) <= onboarding.sent_at
-       AND ($5::bigint[] IS NULL OR ub.chat_id = ANY($5::bigint[]))
+       AND onboarding.completed_at <= NOW() - ($1::int * interval '1 hour')
+       AND COALESCE(ub.last_seen_at, onboarding.completed_at) <= onboarding.completed_at
+       AND ($3::bigint[] IS NULL OR ub.chat_id = ANY($3::bigint[]))
        AND NOT EXISTS (
          SELECT 1
          FROM scheduled_task_dispatches std
-         WHERE std.task_type = $4
-           AND std.schedule_key = $2
+         WHERE std.task_type = $2
+           AND std.schedule_key = 'once'
            AND std.bot_key = ub.bot_key
            AND std.chat_id = ub.chat_id
            AND std.status = 'sent'
            AND std.sent_at IS NOT NULL
        )
-     ORDER BY onboarding.sent_at ASC, ub.chat_id ASC, ub.bot_key ASC
-     LIMIT $6::int`,
+     ORDER BY onboarding.completed_at ASC, ub.chat_id ASC, ub.bot_key ASC
+     LIMIT $4::int`,
     [
-      ONBOARDING_TASK_TYPE,
-      DAY1_RETURN_SCHEDULE_KEY,
       DAY1_RETURN_IDLE_HOURS,
       DAY1_RETURN_TASK_TYPE,
       testChatIds,
@@ -985,25 +985,19 @@ async function loadDay1ReturnContext(chatId, botKeyRaw, { origin = WINBACK_AUTOM
        COALESCE(ub.topic_enabled, false) AS topic_enabled,
        ub.topic_pack_json,
        ub.last_seen_at,
-       onboarding.sent_at AS onboarding_sent_at
+       onboarding.completed_at AS onboarding_sent_at
      FROM users u
      JOIN user_bots ub
        ON ub.chat_id = u.chat_id
-     LEFT JOIN scheduled_task_dispatches onboarding
+     LEFT JOIN bot_onboarding_completion onboarding
        ON onboarding.chat_id = ub.chat_id
       AND onboarding.bot_key = ub.bot_key
-      AND onboarding.task_type = $3
-      AND onboarding.schedule_key = $4
-      AND onboarding.status = 'sent'
-      AND onboarding.sent_at IS NOT NULL
      WHERE u.chat_id = $1::bigint
        AND ub.bot_key = $2::text
      LIMIT 1`,
     [
       normalizedChatId,
-      botKey,
-      ONBOARDING_TASK_TYPE,
-      ONBOARDING_SCHEDULE_KEY
+      botKey
     ]
   );
 
@@ -1119,26 +1113,22 @@ async function scanEligibleWeeklyDigestUsers(now = new Date()) {
        AND ($6::bigint[] IS NULL OR ub.chat_id = ANY($6::bigint[]))
        AND EXISTS (
          SELECT 1
-         FROM scheduled_task_dispatches onboarding
-         WHERE onboarding.task_type = $7::text
-           AND onboarding.schedule_key = $8::text
-           AND onboarding.bot_key = ub.bot_key
+         FROM bot_onboarding_completion onboarding
+         WHERE onboarding.bot_key = ub.bot_key
            AND onboarding.chat_id = ub.chat_id
-           AND onboarding.status = 'sent'
-           AND onboarding.sent_at IS NOT NULL
        )
        AND NOT EXISTS (
          SELECT 1
          FROM scheduled_task_dispatches std
          WHERE std.task_type = $5::text
-           AND std.schedule_key = $9::text
+           AND std.schedule_key = $7::text
            AND std.bot_key = ub.bot_key
            AND std.chat_id = ub.chat_id
            AND std.status = 'sent'
            AND std.sent_at IS NOT NULL
        )
      ORDER BY ub.last_seen_at DESC, ub.chat_id ASC, ub.bot_key ASC
-     LIMIT $10::int`,
+     LIMIT $8::int`,
     [
       window.weekStart.toISOString(),
       window.weekEnd.toISOString(),
@@ -1146,8 +1136,6 @@ async function scanEligibleWeeklyDigestUsers(now = new Date()) {
       WEEKLY_DIGEST_RECENT_ACTIVITY_HOURS,
       WEEKLY_DIGEST_TASK_TYPE,
       testChatIds,
-      ONBOARDING_TASK_TYPE,
-      ONBOARDING_SCHEDULE_KEY,
       window.scheduleKey,
       WEEKLY_DIGEST_SCAN_LIMIT
     ]
@@ -1189,7 +1177,7 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
        COALESCE(up.streak_best, 0)::int AS streak_best,
        COALESCE(us.profile_summary, '') AS profile_summary,
        COALESCE(us.short_summary, '') AS short_summary,
-       onboarding.sent_at AS onboarding_sent_at,
+       onboarding.completed_at AS onboarding_sent_at,
        COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp,
        COALESCE(week_stats.practice_days, 0)::int AS practice_days
      FROM users u
@@ -1201,18 +1189,9 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
      LEFT JOIN user_summaries us
        ON us.chat_id = ub.chat_id
       AND us.bot_key = ub.bot_key
-     LEFT JOIN LATERAL (
-       SELECT sent_at
-       FROM scheduled_task_dispatches
-       WHERE chat_id = ub.chat_id
-         AND bot_key = ub.bot_key
-         AND task_type = $3::text
-         AND schedule_key = $4::text
-         AND status = 'sent'
-         AND sent_at IS NOT NULL
-       ORDER BY sent_at ASC
-       LIMIT 1
-     ) onboarding ON true
+     LEFT JOIN bot_onboarding_completion onboarding
+       ON onboarding.chat_id = ub.chat_id
+      AND onboarding.bot_key = ub.bot_key
      LEFT JOIN LATERAL (
        SELECT
          COALESCE(SUM(e.xp_delta), 0)::int AS weekly_xp,
@@ -1221,8 +1200,8 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
        FROM xp_events e
        WHERE e.chat_id = ub.chat_id
          AND e.bot_key = ub.bot_key
-         AND e.occurred_at >= $5::timestamptz
-         AND e.occurred_at < $6::timestamptz
+         AND e.occurred_at >= $3::timestamptz
+         AND e.occurred_at < $4::timestamptz
      ) week_stats ON true
      WHERE u.chat_id = $1::bigint
        AND ub.bot_key = $2::text
@@ -1230,8 +1209,6 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
     [
       normalizedChatId,
       botKey,
-      ONBOARDING_TASK_TYPE,
-      ONBOARDING_SCHEDULE_KEY,
       window.weekStart.toISOString(),
       window.weekEnd.toISOString()
     ]
@@ -1807,7 +1784,7 @@ async function loadIdiomPracticeContext(chatId, botKeyRaw, {
        ub.bot_key,
        COALESCE(ub.is_active, true) AS is_active,
        ub.level,
-       onboarding.sent_at AS onboarding_sent_at,
+       onboarding.completed_at AS onboarding_sent_at,
        EXISTS (
          SELECT 1
          FROM xp_events e
@@ -1820,18 +1797,9 @@ async function loadIdiomPracticeContext(chatId, botKeyRaw, {
      FROM users u
      JOIN user_bots ub
        ON ub.chat_id = u.chat_id
-     LEFT JOIN LATERAL (
-       SELECT sent_at
-       FROM scheduled_task_dispatches
-       WHERE chat_id = ub.chat_id
-         AND bot_key = ub.bot_key
-         AND task_type = $5::text
-         AND schedule_key = $6::text
-         AND status = 'sent'
-         AND sent_at IS NOT NULL
-       ORDER BY sent_at ASC
-       LIMIT 1
-     ) onboarding ON true
+     LEFT JOIN bot_onboarding_completion onboarding
+       ON onboarding.chat_id = ub.chat_id
+      AND onboarding.bot_key = ub.bot_key
      WHERE u.chat_id = $1::bigint
        AND ub.bot_key = $2::text
      LIMIT 1`,
@@ -1839,9 +1807,7 @@ async function loadIdiomPracticeContext(chatId, botKeyRaw, {
       normalizedChatId,
       botKey,
       dayRange.start.toISOString(),
-      dayRange.end.toISOString(),
-      ONBOARDING_TASK_TYPE,
-      ONBOARDING_SCHEDULE_KEY
+      dayRange.end.toISOString()
     ]
   );
 
@@ -2965,6 +2931,18 @@ async function hasSentScheduledDispatch(taskType, chatId, botKey, scheduleKey) {
   return Boolean(rows[0]);
 }
 
+async function hasCompletedOnboarding(chatId, botKey) {
+  const { rows } = await pool.query(
+    `SELECT 1
+       FROM bot_onboarding_completion
+      WHERE chat_id = $1
+        AND bot_key = $2
+      LIMIT 1`,
+    [chatId, botKey]
+  );
+  return Boolean(rows[0]);
+}
+
 async function markScheduledDispatchAttemptStarted(taskType, chatId, botKey, scheduleKey, payloadJson = {}) {
   await pool.query(
     `INSERT INTO scheduled_task_dispatches (
@@ -3401,7 +3379,7 @@ async function evaluateFreeLimitHalfEligibility({
     return { ok: false, code: 'missing_threshold_event', context };
   }
 
-  if (!await hasSentScheduledDispatch(ONBOARDING_TASK_TYPE, context.chatId, context.botKey, ONBOARDING_SCHEDULE_KEY)) {
+  if (!await hasCompletedOnboarding(context.chatId, context.botKey)) {
     return { ok: false, code: 'onboarding_not_sent', context };
   }
   if (await hasSentScheduledDispatch(FREE_LIMIT_HALF_TASK_TYPE, context.chatId, context.botKey, normalizedScheduleKey)) {
@@ -3567,18 +3545,14 @@ async function scanEligibleFreeLimitHalfUsers() {
        AND ($1::bigint[] IS NULL OR e.chat_id = ANY($1::bigint[]))
        AND EXISTS (
          SELECT 1
-         FROM scheduled_task_dispatches std
-         WHERE std.task_type = $2::text
-           AND std.bot_key = e.bot_key
-           AND std.chat_id = e.chat_id
-           AND std.schedule_key = $3::text
-           AND std.status = 'sent'
-           AND std.sent_at IS NOT NULL
+         FROM bot_onboarding_completion onboarding
+         WHERE onboarding.bot_key = e.bot_key
+           AND onboarding.chat_id = e.chat_id
        )
        AND NOT EXISTS (
          SELECT 1
          FROM scheduled_task_dispatches std
-         WHERE std.task_type = $4::text
+         WHERE std.task_type = $2::text
            AND std.bot_key = e.bot_key
            AND std.chat_id = e.chat_id
            AND std.schedule_key = COALESCE(e.properties->>'period_key', '')
@@ -3600,11 +3574,9 @@ async function scanEligibleFreeLimitHalfUsers() {
            AND a.occurred_at >= e.occurred_at
        )
      ORDER BY e.occurred_at ASC, e.chat_id ASC, e.bot_key ASC
-     LIMIT $5::int`,
+     LIMIT $3::int`,
     [
       testChatIds,
-      ONBOARDING_TASK_TYPE,
-      ONBOARDING_SCHEDULE_KEY,
       FREE_LIMIT_HALF_TASK_TYPE,
       FREE_LIMIT_HALF_SCAN_LIMIT
     ]

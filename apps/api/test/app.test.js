@@ -1000,15 +1000,21 @@ test('admin action funnel uses in-window stage timestamps for sequential counts'
       assert.equal(params[1], '2026-03-08T00:00:00.000Z');
       assert.equal(params[2], null);
       assert.equal(params[3], null);
-      assert.deepEqual(params[4], ['first_voice_sent', 'free_limit_half', 'paywall_shown']);
+      assert.deepEqual(params[4], [
+        'onboarding_scenario_selected',
+        'onboarding_practice_sent',
+        'free_limit_half',
+        'paywall_shown'
+      ]);
       assert.match(source, /e\.occurred_at < \$2::timestamptz/);
-      assert.match(source, /std\.sent_at < \$2::timestamptz/);
+      assert.match(source, /completion\.completed_at < \$2::timestamptz/);
       assert.match(source, /paywall_shown_at >= free_limit_half_at/);
       assert.ok(!source.includes('FROM usage_hourly'));
       return {
         rows: [{
           start_count: 20,
-          first_message_count: 11,
+          scenario_selected_count: 12,
+          practice_sent_count: 11,
           onboarding_complete_count: 8,
           free_limit_half_count: 5,
           paywall_shown_count: 3
@@ -1030,7 +1036,8 @@ test('admin action funnel uses in-window stage timestamps for sequential counts'
     assert.equal(response.json.to, '2026-03-08T00:00:00.000Z');
     assert.deepEqual(response.json.series, [
       { action: 'start', count: 20, pct: 100 },
-      { action: 'first_message', count: 11, pct: 55 },
+      { action: 'scenario_selected', count: 12, pct: 60 },
+      { action: 'practice_sent', count: 11, pct: 55 },
       { action: 'onboarding_complete', count: 8, pct: 40 },
       { action: 'free_limit_half', count: 5, pct: 25 },
       { action: 'paywall_shown', count: 3, pct: 15 }
@@ -1602,7 +1609,7 @@ test('internal topic menu marks pro topics with an open lock for pro users', asy
 
 test('internal prepare update returns route and keyboard state without side effects', async () => {
   await withMockedQuery(async (source, params = []) => {
-    if (source.includes('FROM user_bots ub') && source.includes('scheduled_task_dispatches')) {
+    if (source.includes('FROM user_bots ub') && source.includes('bot_onboarding_completion')) {
       assert.deepEqual(params, [42, 'uk-de']);
       return {
         rows: [{

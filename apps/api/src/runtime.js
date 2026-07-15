@@ -5,12 +5,19 @@ import { loadBotConfigs } from './bot-configs.js';
 import { createPublicBotCatalogLookup } from './shared/bot-catalog.js';
 import { createTelegramClient, createTelegramDeliveryState } from './shared/telegram-delivery.js';
 import { createActionEventService } from './shared/action-events.js';
+import { validateOnboardingLocale } from './bot-runtime/onboarding.js';
 
 export function createRuntimeDeps(overrides = {}) {
   const nextEnv = overrides.env || env;
   const nextPool = overrides.pool || pool;
   const nextStripe = overrides.stripe || stripe;
   const botConfigs = overrides.botConfigs || loadBotConfigs();
+  for (const botKey of nextEnv.botOnboardingV2EnabledBotKeys || []) {
+    const errors = validateOnboardingLocale(botConfigs[botKey]?.locale);
+    if (errors.length) {
+      throw new Error(`invalid_onboarding_locale:${botKey}:${errors.join('|')}`);
+    }
+  }
   const botCatalog = overrides.botCatalog || createPublicBotCatalogLookup(botConfigs, nextEnv.telegramBotTokensByBotKey || {});
   const getBotLocale = (botKeyRaw) => {
     const botKey = botCatalog.metaForKey(botKeyRaw)?.bot_key || null;

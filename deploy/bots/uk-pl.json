@@ -182,6 +182,49 @@
       "free_limit_50": {
         "message_html": "<b>Ти вже використав(ла) половину безкоштовного ліміту.</b>\nЯкщо хочеш продовжити без пауз, у міні-апці є PRO.\n\nВін відкриває більше практики, нові теми й додаткові налаштування."
       }
+    },
+    "onboarding_v2": {
+      "welcome": "Привіт, {first_name}! 👋",
+      "choose_scenario": "За 30 секунд ти скажеш першу фразу та отримаєш персональне виправлення. Про що поговоримо?",
+      "voice_instruction": "Натисни 🎙 і надішли голосове.",
+      "text_instruction": "Напиши одне коротке речення.",
+      "success": "Перша практика готова 🔥",
+      "voice_input_header": "Я почув:",
+      "text_input_header": "Твоя відповідь:",
+      "level_suggestion": "За першою відповіддю тобі приблизно підійде рівень {suggested_level}. Залишити?",
+      "already_completed": "Перша практика вже готова. Продовжимо?",
+      "retry_corrected": "Спробуй ще раз, використовуючи виправлення вище.",
+      "continue_prompt": "Чудово. Надішли наступне голосове або текстове повідомлення.",
+      "errors": {
+        "expired": "Ця кнопка вже неактуальна.",
+        "retry_voice": "Не вдалося розібрати голосове. Спробуй ще раз трохи голосніше.",
+        "retry_delivery": "Не вдалося надіслати відповідь. Спробуй ще раз."
+      },
+      "buttons": {
+        "use_text": "✍️ Відповім текстом",
+        "change_scenario": "🔄 Інша тема",
+        "confirm_level": "✅ Так, {suggested_level}",
+        "choose_level": "🎚 Обрати інший",
+        "retry": "🔁 Сказати ще раз",
+        "continue": "💬 Продовжити розмову"
+      },
+      "scenarios": {
+        "about_self": {
+          "button": "👋 Про себе",
+          "prompt": "Розкажи, звідки ти й чим займаєшся.",
+          "example": "Cześć, jestem Alex. Pochodzę z Ukrainy i pracuję w branży projektowej."
+        },
+        "daily_life": {
+          "button": "☀️ Мій день",
+          "prompt": "Розкажи одним реченням, що ти робив сьогодні вранці.",
+          "example": "Dziś rano piję kawę przed rozpoczęciem pracy."
+        },
+        "travel": {
+          "button": "✈️ Подорожі",
+          "prompt": "Розкажи, куди ти хочеш поїхати.",
+          "example": "Chcę odwiedzić Włochy, ponieważ uwielbiam tamtejszą kuchnię i historię."
+        }
+      }
     }
   },
   "telegram_presentation": {

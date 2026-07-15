@@ -12,7 +12,6 @@ type CallbackRoute =
   | 'callback.busy'
   | 'callback.idiom_more'
   | 'callback.lang'
-  | 'callback.onboarding'
   | 'callback.unknown';
 
 interface CallbackTelegramClient extends TelegramTextClient {
@@ -83,7 +82,6 @@ export function createCallbackActionHandlers({
     'callback.busy',
     'callback.idiom_more',
     'callback.lang',
-    'callback.onboarding',
     'callback.unknown'
   ];
 
@@ -159,37 +157,7 @@ export function createCallbackActionHandlers({
           )
         });
       }
-
-      const value = String(update.routingFacts.callback?.value || '').trim().toLowerCase();
-      const text = value === 'example'
-        ? localeText(locale, 'onboarding_example_text', 'Here is an example of how practice works.')
-        : value === 'level'
-          ? localeText(locale, 'choose_level_text', 'Choose your level:')
-          : localeText(locale, 'onboarding_start_practice_text', 'Send a message to start practicing.');
-      const replyMarkup = value === 'level'
-        ? {
-            inline_keyboard: [
-              [
-                { text: 'A1', callback_data: 'level:a1' },
-                { text: 'A2', callback_data: 'level:a2' },
-                { text: 'B1', callback_data: 'level:b1' }
-              ],
-              [
-                { text: 'B2', callback_data: 'level:b2' },
-                { text: 'C1', callback_data: 'level:c1' }
-              ]
-            ]
-          }
-        : null;
-      return textDeliverer({
-        pool,
-        update,
-        telegramClient,
-        stepKey: `callback.onboarding:${value || 'start'}:v1`,
-        text,
-        parseMode: 'HTML',
-        replyMarkup
-      });
+      return { status: 'noop' };
     }
   }));
 }

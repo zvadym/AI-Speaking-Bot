@@ -182,6 +182,49 @@
       "free_limit_50": {
         "message_html": "<b>आप अपने फ्री लिमिट का आधा पहले ही इस्तेमाल कर चुके हैं ✨</b>\nअगर आप जारी रखना चाहते हैं, तो PRO की कीमत महीने में 2 कप कॉफी से भी कम है।\n\nइससे नए विषय, टोन सेटिंग्स और आगे आने वाले अपडेट जैसी अतिरिक्त सुविधाएँ मिलती हैं।"
       }
+    },
+    "onboarding_v2": {
+      "welcome": "नमस्ते, {first_name}! 👋",
+      "choose_scenario": "30 सेकंड में आप अपना पहला वाक्य बोलेंगे और व्यक्तिगत सुधार पाएँगे। हम किस बारे में बात करें?",
+      "voice_instruction": "🎙 दबाएँ और वॉइस मैसेज भेजें।",
+      "text_instruction": "एक छोटा वाक्य लिखें।",
+      "success": "आपकी पहली प्रैक्टिस पूरी हुई 🔥",
+      "voice_input_header": "मैंने सुना:",
+      "text_input_header": "आपका जवाब:",
+      "level_suggestion": "आपके पहले जवाब के आधार पर {suggested_level} स्तर आपके लिए सही हो सकता है। इसे रखें?",
+      "already_completed": "आपकी पहली प्रैक्टिस पहले ही पूरी हो चुकी है। आगे बढ़ें?",
+      "retry_corrected": "ऊपर दिए सुधार का उपयोग करके एक बार फिर कोशिश करें।",
+      "continue_prompt": "बहुत बढ़िया। अगला वॉइस या टेक्स्ट मैसेज भेजें।",
+      "errors": {
+        "expired": "यह बटन अब सक्रिय नहीं है।",
+        "retry_voice": "वॉइस मैसेज समझ नहीं आया। थोड़ा तेज़ बोलकर फिर कोशिश करें।",
+        "retry_delivery": "जवाब भेजा नहीं जा सका। फिर कोशिश करें।"
+      },
+      "buttons": {
+        "use_text": "✍️ टेक्स्ट में जवाब",
+        "change_scenario": "🔄 दूसरा विषय",
+        "confirm_level": "✅ हाँ, {suggested_level}",
+        "choose_level": "🎚 दूसरा स्तर",
+        "retry": "🔁 फिर से बोलें",
+        "continue": "💬 बातचीत जारी रखें"
+      },
+      "scenarios": {
+        "about_self": {
+          "button": "👋 मेरे बारे में",
+          "prompt": "बताएँ कि आप कहाँ से हैं और क्या करते हैं।",
+          "example": "Hi, I’m Alex. I’m from Ukraine and I work in design."
+        },
+        "daily_life": {
+          "button": "☀️ मेरा दिन",
+          "prompt": "एक वाक्य में बताएँ कि आपने आज सुबह क्या किया।",
+          "example": "This morning, I had coffee and went to work."
+        },
+        "travel": {
+          "button": "✈️ यात्रा",
+          "prompt": "बताएँ कि आप कहाँ यात्रा करना चाहते हैं।",
+          "example": "I’d like to visit Italy because I love the food and history."
+        }
+      }
     }
   },
   "telegram_presentation": {

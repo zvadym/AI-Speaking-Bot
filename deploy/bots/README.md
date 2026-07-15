@@ -102,6 +102,16 @@ The main chat runtime also expects:
 
 - `locale.msg_needs_text_or_voice` for unsupported media in the regular practice flow, for example a photo sent without text
 
+## Interactive Onboarding Locale
+
+Bots enabled through `BOT_ONBOARDING_V2_ENABLED_BOT_KEYS` must provide a
+complete `locale.onboarding_v2` object. It contains the welcome and scenario
+copy, voice/text instructions, first-response labels, level suggestion,
+completion and bonus-action messages, button labels, and expired-state errors.
+Instructions use the bot's base language; scenario examples use its learning
+language. Startup fails for an enabled bot when a required localized value or
+placeholder is missing.
+
 ## Two-Step Workflow
 
 ### 1) Validate / normalize bot files

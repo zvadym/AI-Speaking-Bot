@@ -182,6 +182,49 @@
       "free_limit_50": {
         "message_html": "<b>Ücretsiz limitinin yarısına ulaştın ✨</b>\nDevam etmek istersen, PRO aylık 2 fincan kahveden daha ucuza geliyor.\n\nYeni konular, ton ayarları ve gelecekte gelecek daha fazla güncelleme gibi ekstra avantajların kilidini açar."
       }
+    },
+    "onboarding_v2": {
+      "welcome": "Merhaba, {first_name}! 👋",
+      "choose_scenario": "30 saniye içinde ilk cümleni söyleyecek ve sana özel bir düzeltme alacaksın. Ne hakkında konuşalım?",
+      "voice_instruction": "🎙 simgesine dokun ve sesli mesaj gönder.",
+      "text_instruction": "Kısa bir cümle yaz.",
+      "success": "İlk pratiğin tamamlandı 🔥",
+      "voice_input_header": "Duyduğum:",
+      "text_input_header": "Cevabın:",
+      "level_suggestion": "İlk cevabına göre {suggested_level} seviyesi sana uygun olabilir. Kalsın mı?",
+      "already_completed": "İlk pratiğin zaten tamamlandı. Devam edelim mi?",
+      "retry_corrected": "Yukarıdaki düzeltmeyi kullanarak bir kez daha dene.",
+      "continue_prompt": "Harika. Sıradaki sesli ya da yazılı mesajını gönder.",
+      "errors": {
+        "expired": "Bu buton artık geçerli değil.",
+        "retry_voice": "Sesli mesajı anlayamadım. Biraz daha yüksek sesle tekrar dene.",
+        "retry_delivery": "Cevap gönderilemedi. Lütfen tekrar dene."
+      },
+      "buttons": {
+        "use_text": "✍️ Metinle cevapla",
+        "change_scenario": "🔄 Başka konu",
+        "confirm_level": "✅ Evet, {suggested_level}",
+        "choose_level": "🎚 Başka seviye",
+        "retry": "🔁 Tekrar söyle",
+        "continue": "💬 Konuşmaya devam et"
+      },
+      "scenarios": {
+        "about_self": {
+          "button": "👋 Kendim hakkında",
+          "prompt": "Nereli olduğunu ve ne yaptığını söyle.",
+          "example": "Hi, I’m Alex. I’m from Ukraine and I work in design."
+        },
+        "daily_life": {
+          "button": "☀️ Günüm",
+          "prompt": "Bu sabah ne yaptığını bir cümleyle söyle.",
+          "example": "This morning, I had coffee and went to work."
+        },
+        "travel": {
+          "button": "✈️ Seyahat",
+          "prompt": "Nereye seyahat etmek istediğini söyle.",
+          "example": "I’d like to visit Italy because I love the food and history."
+        }
+      }
     }
   },
   "telegram_presentation": {

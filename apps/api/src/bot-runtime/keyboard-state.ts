@@ -110,3 +110,20 @@ export function buildPersistentKeyboardState(
     xpButtonText
   };
 }
+
+export function buildPersistentReplyMarkup(keyboard: PersistentKeyboardState) {
+  return {
+    keyboard: [
+      [
+        { text: keyboard.topicButtonText },
+        { text: keyboard.levelButtonText }
+      ],
+      [
+        { text: keyboard.voiceButtonText },
+        { text: keyboard.xpButtonText }
+      ]
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false
+  };
+}

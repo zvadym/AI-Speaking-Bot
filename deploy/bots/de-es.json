@@ -182,6 +182,49 @@
       "free_limit_50": {
         "message_html": "<b>Du hast schon die Hälfte deines freien Limits geschafft ✨</b>\nWenn du weitermachen willst, kostet PRO weniger als 2 Tassen Kaffee pro Monat.\n\nDamit bekommst du Extras wie neue Themen, Toneinstellungen und weitere Updates in Zukunft."
       }
+    },
+    "onboarding_v2": {
+      "welcome": "Hallo, {first_name}! 👋",
+      "choose_scenario": "In 30 Sekunden sagst du deinen ersten Satz und bekommst eine persönliche Korrektur. Worüber möchtest du sprechen?",
+      "voice_instruction": "Tippe auf 🎙 und sende eine Sprachnachricht.",
+      "text_instruction": "Schreibe einen kurzen Satz.",
+      "success": "Deine erste Übung ist geschafft 🔥",
+      "voice_input_header": "Ich habe gehört:",
+      "text_input_header": "Deine Antwort:",
+      "level_suggestion": "Nach deiner ersten Antwort könnte {suggested_level} gut zu dir passen. Beibehalten?",
+      "already_completed": "Deine erste Übung ist bereits geschafft. Machen wir weiter?",
+      "retry_corrected": "Versuche es noch einmal mit der Korrektur oben.",
+      "continue_prompt": "Super. Sende deine nächste Sprach- oder Textnachricht.",
+      "errors": {
+        "expired": "Dieser Button ist nicht mehr aktuell.",
+        "retry_voice": "Ich konnte die Sprachnachricht nicht verstehen. Versuche es noch einmal etwas lauter.",
+        "retry_delivery": "Die Antwort konnte nicht gesendet werden. Versuche es erneut."
+      },
+      "buttons": {
+        "use_text": "✍️ Mit Text antworten",
+        "change_scenario": "🔄 Anderes Thema",
+        "confirm_level": "✅ Ja, {suggested_level}",
+        "choose_level": "🎚 Anderes wählen",
+        "retry": "🔁 Noch einmal sagen",
+        "continue": "💬 Weiterreden"
+      },
+      "scenarios": {
+        "about_self": {
+          "button": "👋 Über mich",
+          "prompt": "Sage, woher du kommst und was du machst.",
+          "example": "Hola, soy Alex. Soy de Ucrania y trabajo en diseño."
+        },
+        "daily_life": {
+          "button": "☀️ Mein Tag",
+          "prompt": "Sage in einem Satz, was du heute Morgen gemacht hast.",
+          "example": "Esta mañana tomé café y fui al trabajo."
+        },
+        "travel": {
+          "button": "✈️ Reisen",
+          "prompt": "Sage, wohin du gerne reisen möchtest.",
+          "example": "Me gustaría visitar Italia porque me encantan la comida y la historia."
+        }
+      }
     }
   },
   "telegram_presentation": {

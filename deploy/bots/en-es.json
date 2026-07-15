@@ -182,6 +182,49 @@
       "free_limit_50": {
         "message_html": "<b>You’re already halfway through your free limit.</b>\nIf you want to keep going without pauses, PRO is available in the mini-app.\n\nIt unlocks more practice, new topics, and extra settings."
       }
+    },
+    "onboarding_v2": {
+      "welcome": "Hi, {first_name}! 👋",
+      "choose_scenario": "In 30 seconds, you’ll say your first sentence and get a personal correction. What shall we talk about?",
+      "voice_instruction": "Tap 🎙 and send a voice message.",
+      "text_instruction": "Write one short sentence.",
+      "success": "Your first practice is complete 🔥",
+      "voice_input_header": "I heard:",
+      "text_input_header": "Your answer:",
+      "level_suggestion": "Based on this first answer, {suggested_level} may suit you. Keep it?",
+      "already_completed": "Your first practice is already complete. Shall we continue?",
+      "retry_corrected": "Try once more using the correction above.",
+      "continue_prompt": "Great. Send your next voice or text message.",
+      "errors": {
+        "expired": "This button is no longer active.",
+        "retry_voice": "I could not understand that voice message. Please try again a little louder.",
+        "retry_delivery": "I could not send the reply. Please try again."
+      },
+      "buttons": {
+        "use_text": "✍️ Answer with text",
+        "change_scenario": "🔄 Change topic",
+        "confirm_level": "✅ Yes, {suggested_level}",
+        "choose_level": "🎚 Choose another",
+        "retry": "🔁 Say it again",
+        "continue": "💬 Continue talking"
+      },
+      "scenarios": {
+        "about_self": {
+          "button": "👋 About me",
+          "prompt": "Say where you are from and what you do.",
+          "example": "Hola, soy Alex. Soy de Ucrania y trabajo en diseño."
+        },
+        "daily_life": {
+          "button": "☀️ My day",
+          "prompt": "Say in one sentence what you did this morning.",
+          "example": "Esta mañana tomé café y fui al trabajo."
+        },
+        "travel": {
+          "button": "✈️ Travel",
+          "prompt": "Say where you would like to travel.",
+          "example": "Me gustaría visitar Italia porque me encantan la comida y la historia."
+        }
+      }
     }
   },
   "telegram_presentation": {

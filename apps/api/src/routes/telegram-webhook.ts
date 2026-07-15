@@ -22,6 +22,7 @@ interface TelegramWebhookContext {
   env: {
     botRuntimeRouteFlags: BotRuntimeRouteFlags;
     botImmediateAckEnabledBotKeys: ReadonlySet<string>;
+    botOnboardingV2EnabledBotKeys?: ReadonlySet<string>;
     internalApiSecret: string;
     jwtSecret: string;
     telegramBotTokensByBotKey: Record<string, string>;
@@ -73,7 +74,11 @@ export function createTelegramWebhookRouter(ctx: TelegramWebhookContext) {
         input,
         receivedAtMs
       });
-      await bootstrapTelegramUser(ctx.pool, { botKey, input });
+      await bootstrapTelegramUser(ctx.pool, {
+        botKey,
+        input,
+        onboardingEnabledBotKeys: ctx.env.botOnboardingV2EnabledBotKeys || new Set<string>()
+      });
       const contract = await prepareBotUpdate(ctx, {
         botKey,
         telegramUpdate: req.body

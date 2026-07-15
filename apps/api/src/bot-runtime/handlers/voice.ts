@@ -21,8 +21,13 @@ import {
 import {
   conversationReplyMarkup,
   executeConversation,
+  finishConversationOnboarding,
+  onboardingReplyText,
+  prepareConversationOnboarding,
+  suggestedOnboardingLevel,
   type ConversationEffectResult
 } from './conversation.js';
+import { buildOnboardingCompletionMarkup } from '../onboarding.js';
 
 type Locale = Record<string, unknown>;
 
@@ -154,6 +159,7 @@ export function createVoiceConversationHandler({
         webappUrl
       });
       if (!entryQuota.allowed) return entryQuota.outcome;
+      const onboarding = await prepareConversationOnboarding(pool, update, 'voice', locale);
 
       let result: VoiceConversationResult;
       result = await runBotPipelineStage(pipeline, 'conversation.generate', async () => {
@@ -192,7 +198,8 @@ export function createVoiceConversationHandler({
                 update,
                 ai,
                 transcript,
-                'voice'
+                'voice',
+                onboarding?.ai
               );
               await recordVoiceUsage(client, update, 'in', duration);
               return { ...conversation, transcript };
@@ -213,13 +220,17 @@ export function createVoiceConversationHandler({
         update,
         telegramClient,
         stepKey: 'message.voice:transcript:v1',
-        text: `${localeText(locale, 'user_text_prefix_multiline', 'You said:\n')}${result.transcript}`,
-        replyMarkup: {
-          inline_keyboard: [[{
-            text: localeText(locale, 'btn_translation', 'Translation'),
-            callback_data: 'trv:1'
-          }]]
-        }
+        text: onboarding
+          ? `${onboarding.locale.voice_input_header}\n${result.transcript}`
+          : `${localeText(locale, 'user_text_prefix_multiline', 'You said:\n')}${result.transcript}`,
+        replyMarkup: onboarding
+          ? null
+          : {
+              inline_keyboard: [[{
+                text: localeText(locale, 'btn_translation', 'Translation'),
+                callback_data: 'trv:1'
+              }]]
+            }
       });
       const explanation = sanitizeTelegramHtml(result.response.explanation_html);
       if (!result.response.is_target_language) {
@@ -295,15 +306,32 @@ export function createVoiceConversationHandler({
         });
       }
 
-      return textDeliverer({
+      const replyDelivery = await textDeliverer({
         pool,
         update,
         telegramClient,
         stepKey: 'message.voice:reply:v1',
         text: String(result.replyMode).toLowerCase() === 'voice'
           ? `${localeText(locale, 'voice_reply_prefix', '')}${reply}`
-          : reply,
-        replyMarkup: conversationReplyMarkup(assistantMessageId, locale)
+          : (onboarding ? onboardingReplyText(reply, onboarding, result.response) : reply),
+        replyMarkup: onboarding
+          ? buildOnboardingCompletionMarkup(
+              onboarding.locale,
+              suggestedOnboardingLevel(result.response)
+            )
+          : conversationReplyMarkup(assistantMessageId, locale)
+      });
+      if (!onboarding) return replyDelivery;
+      return finishConversationOnboarding({
+        pool,
+        update,
+        onboarding,
+        response: result.response,
+        userText: result.transcript,
+        getBotLocale,
+        telegramClient,
+        textDeliverer,
+        stepPrefix: 'message.voice'
       });
     }
   };

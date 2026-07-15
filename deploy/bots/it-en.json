@@ -182,6 +182,49 @@
       "free_limit_50": {
         "message_html": "<b>Hai già usato metà del tuo limite gratuito ✨</b>\nSe vuoi continuare, PRO costa meno di 2 caffè al mese.\n\nSblocca funzioni extra come nuovi argomenti, impostazioni del tono e altri aggiornamenti in futuro."
       }
+    },
+    "onboarding_v2": {
+      "welcome": "Ciao, {first_name}! 👋",
+      "choose_scenario": "Tra 30 secondi dirai la tua prima frase e riceverai una correzione personalizzata. Di cosa parliamo?",
+      "voice_instruction": "Tocca 🎙 e invia un messaggio vocale.",
+      "text_instruction": "Scrivi una frase breve.",
+      "success": "La tua prima pratica è completata 🔥",
+      "voice_input_header": "Ho sentito:",
+      "text_input_header": "La tua risposta:",
+      "level_suggestion": "Dalla prima risposta, il livello {suggested_level} potrebbe essere adatto a te. Lo manteniamo?",
+      "already_completed": "La tua prima pratica è già completata. Continuiamo?",
+      "retry_corrected": "Prova ancora una volta usando la correzione qui sopra.",
+      "continue_prompt": "Ottimo. Invia il prossimo messaggio vocale o di testo.",
+      "errors": {
+        "expired": "Questo pulsante non è più attivo.",
+        "retry_voice": "Non sono riuscita a capire il vocale. Riprova parlando un po’ più forte.",
+        "retry_delivery": "Non sono riuscita a inviare la risposta. Riprova."
+      },
+      "buttons": {
+        "use_text": "✍️ Rispondo con testo",
+        "change_scenario": "🔄 Altro tema",
+        "confirm_level": "✅ Sì, {suggested_level}",
+        "choose_level": "🎚 Scegli un altro",
+        "retry": "🔁 Dillo di nuovo",
+        "continue": "💬 Continua a parlare"
+      },
+      "scenarios": {
+        "about_self": {
+          "button": "👋 Su di me",
+          "prompt": "Di’ da dove vieni e che cosa fai.",
+          "example": "Hi, I’m Alex. I’m from Ukraine and I work in design."
+        },
+        "daily_life": {
+          "button": "☀️ La mia giornata",
+          "prompt": "Di’ in una frase che cosa hai fatto stamattina.",
+          "example": "This morning, I had coffee and went to work."
+        },
+        "travel": {
+          "button": "✈️ Viaggi",
+          "prompt": "Di’ dove ti piacerebbe viaggiare.",
+          "example": "I’d like to visit Italy because I love the food and history."
+        }
+      }
     }
   },
   "telegram_presentation": {

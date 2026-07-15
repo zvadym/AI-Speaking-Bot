@@ -97,7 +97,7 @@ test('admin day1 return reminder uses topic + voice variants without language me
   await withMockedQuery(async (source, params = []) => {
     queries.push(source);
 
-    if (source.includes('FROM users u') && source.includes('LEFT JOIN scheduled_task_dispatches onboarding')) {
+    if (source.includes('FROM users u') && source.includes('LEFT JOIN bot_onboarding_completion onboarding')) {
       assert.equal(params[0], 42);
       assert.equal(params[1], 'en-de');
       return {
@@ -866,7 +866,7 @@ test('automated day1 return sends generic text after 22 hours of inactivity', as
   const telegramBodies = [];
 
   await withMockedQuery(async (source, params = []) => {
-    if (source.includes('FROM users u') && source.includes('LEFT JOIN scheduled_task_dispatches onboarding')) {
+    if (source.includes('FROM users u') && source.includes('LEFT JOIN bot_onboarding_completion onboarding')) {
       return {
         rows: [{
           chat_id: 77,
@@ -944,7 +944,7 @@ test('automated day1 return skips when user was active after onboarding', async 
   let telegramCalled = false;
 
   await withMockedQuery(async (source, params = []) => {
-    if (source.includes('FROM users u') && source.includes('LEFT JOIN scheduled_task_dispatches onboarding')) {
+    if (source.includes('FROM users u') && source.includes('LEFT JOIN bot_onboarding_completion onboarding')) {
       return {
         rows: [{
           chat_id: 91,

@@ -13,7 +13,7 @@ export async function fetchKeyboardState(
     `SELECT
        ub.level,
        ub.reply_mode,
-       onboarding.onboarding_complete_at,
+       onboarding.completed_at AS onboarding_complete_at,
        COALESCE(ub.topic_enabled, false) AS topic_enabled,
        ub.topic_template_id,
        ub.topic_pack_json,
@@ -24,15 +24,9 @@ export async function fetchKeyboardState(
      LEFT JOIN user_progress up
        ON up.chat_id = ub.chat_id
       AND up.bot_key = ub.bot_key
-     LEFT JOIN LATERAL (
-       SELECT MIN(std.sent_at) AS onboarding_complete_at
-       FROM scheduled_task_dispatches std
-       WHERE std.chat_id = ub.chat_id
-         AND std.bot_key = ub.bot_key
-         AND std.task_type = 'onboarding_complete'
-         AND std.status = 'sent'
-         AND std.sent_at IS NOT NULL
-     ) onboarding ON true
+     LEFT JOIN bot_onboarding_completion onboarding
+       ON onboarding.chat_id = ub.chat_id
+      AND onboarding.bot_key = ub.bot_key
      WHERE ub.chat_id = $1
        AND ub.bot_key = $2
      LIMIT 1`,

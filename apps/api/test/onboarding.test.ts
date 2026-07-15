@@ -1,0 +1,159 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import type { Pool } from 'pg';
+import { loadBotConfigs } from '../src/bot-configs.js';
+import { parseOnboardingEnabledBotKeys } from '../src/bot-runtime/onboarding-config.js';
+import {
+  buildOnboardingCompletionMarkup,
+  buildOnboardingPracticeCard,
+  buildOnboardingScenarioPicker,
+  getOnboardingLocale,
+  validateOnboardingLocale
+} from '../src/bot-runtime/onboarding.js';
+import {
+  classifyOnboardingResponseStyle,
+  onboardingReplyText,
+  suggestedOnboardingLevel
+} from '../src/bot-runtime/handlers/conversation.js';
+import { createOnboardingStartHandler } from '../src/bot-runtime/handlers/onboarding.js';
+import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
+import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
+
+const configs = loadBotConfigs() as Record<string, { locale: unknown }>;
+
+function preparedStart() {
+  return buildPreparedUpdate({
+    botKey: 'uk-en',
+    input: normalizeTelegramUpdate({
+      update_id: 9701,
+      message: {
+        message_id: 1,
+        text: '/start',
+        chat: { id: 42, type: 'private' },
+        from: { id: 42, is_bot: false, first_name: 'Оля' }
+      }
+    })
+  });
+}
+
+test('onboarding rollout config supports dark, canary, and all-bot activation', () => {
+  const known = ['uk-en', 'de-es'];
+  assert.deepEqual([...parseOnboardingEnabledBotKeys('', known)], []);
+  assert.deepEqual([...parseOnboardingEnabledBotKeys('UK-EN, uk-en', known)], ['uk-en']);
+  assert.deepEqual([...parseOnboardingEnabledBotKeys('*', known)], known);
+  assert.throws(
+    () => parseOnboardingEnabledBotKeys('missing', known),
+    /unknown_onboarding_bot_key/
+  );
+});
+
+test('every production bot has a complete onboarding locale contract', () => {
+  assert.equal(Object.keys(configs).length, 15);
+  for (const [botKey, config] of Object.entries(configs)) {
+    assert.deepEqual(validateOnboardingLocale(config.locale), [], botKey);
+    const locale = getOnboardingLocale(config.locale);
+    assert.ok(locale, botKey);
+    for (const scenario of Object.values(locale.scenarios)) {
+      assert.ok(scenario.prompt.length > 10, `${botKey} prompt`);
+      assert.ok(scenario.example.length > 10, `${botKey} example`);
+    }
+  }
+});
+
+test('localized builders keep stable callback payloads and optional level row', () => {
+  const locale = getOnboardingLocale(configs['uk-en'].locale);
+  assert.ok(locale);
+  assert.deepEqual(buildOnboardingScenarioPicker(locale).inline_keyboard.map((row) => (
+    row.map((button) => button.callback_data)
+  )), [
+    ['onb:scenario:about_self', 'onb:scenario:daily_life'],
+    ['onb:scenario:travel']
+  ]);
+  assert.match(buildOnboardingPracticeCard(locale, 'daily_life'), /This morning/);
+  assert.equal(buildOnboardingCompletionMarkup(locale, null).inline_keyboard.length, 1);
+  assert.equal(buildOnboardingCompletionMarkup(locale, 'a2').inline_keyboard[0][0].callback_data, 'onb:level:a2');
+});
+
+test('onboarding level and repeated-example classification are conservative', () => {
+  const locale = getOnboardingLocale(configs['uk-en'].locale);
+  assert.ok(locale);
+  const mediumLevelResponse = {
+    detected_language: 'en',
+    is_target_language: true,
+    has_mistakes: false,
+    reply_text: 'Great',
+    explanation_html: '',
+    suggested_level: 'a2' as const,
+    suggested_level_confidence: 'medium' as const
+  };
+  assert.equal(suggestedOnboardingLevel({
+    ...mediumLevelResponse
+  }), 'a2');
+  assert.match(onboardingReplyText('Great start!', {
+    locale,
+    session: {} as never,
+    ai: { scenario: 'daily_life', prompt: 'Prompt', example: 'Example' }
+  }, mediumLevelResponse), /A2/);
+  assert.equal(suggestedOnboardingLevel({
+    detected_language: 'en',
+    is_target_language: true,
+    has_mistakes: false,
+    reply_text: 'Great',
+    explanation_html: '',
+    suggested_level: 'c1',
+    suggested_level_confidence: 'low'
+  }), null);
+  assert.equal(
+    classifyOnboardingResponseStyle(
+      'This morning I had coffee and went to work',
+      'This morning, I had coffee and went to work.'
+    ),
+    'repeated_example'
+  );
+  assert.equal(
+    classifyOnboardingResponseStyle('I stayed home today.', 'This morning I had coffee.'),
+    'custom'
+  );
+});
+
+test('new-user start handler renders the persisted onboarding state', async () => {
+  const update = preparedStart();
+  const deliveries: Array<Record<string, unknown>> = [];
+  const pool = {
+    async query(source: string) {
+      assert.match(source, /FROM bot_onboarding_sessions/);
+      return {
+        rows: [{
+          chat_id: 42,
+          bot_key: 'uk-en',
+          version: 2,
+          state: 'choose_scenario',
+          scenario: null,
+          first_input_mode: null,
+          suggested_level: null,
+          completion_decision_id: null,
+          started_at: new Date(),
+          updated_at: new Date(),
+          completed_at: null
+        }]
+      };
+    }
+  } as unknown as Pool;
+  const handler = createOnboardingStartHandler({
+    pool,
+    getBotLocale: () => configs['uk-en'].locale,
+    telegramClient: { async sendTelegramTextMessage() { return { message_id: 1 }; } },
+    textDeliverer: async (input) => {
+      deliveries.push(input as unknown as Record<string, unknown>);
+      return { status: 'delivered', telegramMessageId: 1 };
+    }
+  });
+
+  assert.deepEqual(await handler.execute(update as never), {
+    status: 'delivered',
+    telegramMessageId: 1
+  });
+  assert.equal(deliveries[0].stepKey, 'command.start:onboarding-picker:v2');
+  assert.match(String(deliveries[0].text), /Оля/);
+  assert.match(JSON.stringify(deliveries[0].replyMarkup), /onb:scenario:travel/);
+});

@@ -1,9 +1,26 @@
 import type { Pool, PoolClient } from 'pg';
 import { sanitizeTelegramHtml } from '../../shared/telegram-delivery.js';
-import type { BotAiClient, ConversationAiResult } from '../bot-ai.js';
+import type { BotAiClient, ConversationAiInput, ConversationAiResult } from '../bot-ai.js';
 import type { PreparedUpdate } from '../contracts.js';
+import { fetchKeyboardState } from '../context-loader.js';
 import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
+import {
+  buildPersistentKeyboardState,
+  buildPersistentReplyMarkup
+} from '../keyboard-state.js';
+import {
+  buildOnboardingCompletionMarkup,
+  completeOnboardingSession,
+  getOnboardingLocale,
+  loadOnboardingSession,
+  normalizeSuggestedLevel,
+  prepareOnboardingPractice,
+  renderOnboardingText,
+  type OnboardingLocale,
+  type OnboardingSession,
+  type SuggestedLevel
+} from '../onboarding.js';
 import { runBotPipelineStage } from '../pipeline.js';
 import {
   enforcePracticeQuota,
@@ -41,6 +58,12 @@ export interface ConversationEffectResult extends Record<string, unknown> {
   replyMode: string;
 }
 
+export interface ConversationOnboardingContext {
+  session: OnboardingSession;
+  locale: OnboardingLocale;
+  ai: NonNullable<ConversationAiInput['onboarding']>;
+}
+
 function localeRecord(value: unknown): Locale {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Locale
@@ -67,7 +90,8 @@ export async function executeConversation(
   update: PreparedUpdate,
   ai: BotAiClient,
   text: string,
-  inputMode: 'text' | 'voice' = 'text'
+  inputMode: 'text' | 'voice' = 'text',
+  onboarding: ConversationAiInput['onboarding'] = null
 ): Promise<ConversationEffectResult> {
   const chatId = update.input.chatId as number;
   const contextResult = await client.query<ConversationContext>(
@@ -112,6 +136,7 @@ export async function executeConversation(
     shortSummary: String(context.short_summary || ''),
     history: historyResult.rows,
     topic,
+    onboarding,
     trace: {
       decisionId: update.decisionId,
       chatId,
@@ -147,7 +172,128 @@ export async function executeConversation(
     );
     assistantMessageId = Number(inserted.rows[0]?.id) || null;
   }
-  return { assistantMessageId, response, replyMode: String(context.reply_mode || 'text') };
+  return {
+    assistantMessageId,
+    response,
+    replyMode: onboarding ? 'text' : String(context.reply_mode || 'text')
+  };
+}
+
+export async function prepareConversationOnboarding(
+  pool: Pool,
+  update: PreparedUpdate,
+  inputMode: 'text' | 'voice',
+  localeRaw: unknown
+): Promise<ConversationOnboardingContext | null> {
+  const chatId = update.input.chatId;
+  if (chatId === null || !Number.isSafeInteger(chatId) || chatId <= 0) return null;
+  const locale = getOnboardingLocale(localeRaw);
+  if (!locale) return null;
+  let session = await loadOnboardingSession(pool, chatId, update.botKey);
+  if (!session) return null;
+  if (session.state === 'completed') {
+    if (session.completion_decision_id !== update.decisionId) return null;
+  } else {
+    session = await prepareOnboardingPractice(pool, {
+      chatId,
+      botKey: update.botKey,
+      inputMode
+    });
+    if (!session) return null;
+  }
+  const scenario = session.scenario;
+  const localized = scenario && scenario !== 'freeform' ? locale.scenarios[scenario] : null;
+  return {
+    session,
+    locale,
+    ai: {
+      scenario: scenario || 'freeform',
+      prompt: localized?.prompt || '',
+      example: localized?.example || ''
+    }
+  };
+}
+
+function normalizedWords(value: string): string[] {
+  return value
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}'’]+/gu, ' ')
+    .trim()
+    .split(/\s+/gu)
+    .filter(Boolean);
+}
+
+export function classifyOnboardingResponseStyle(textValue: string, example: string) {
+  const actual = normalizedWords(textValue);
+  const expected = normalizedWords(example);
+  if (!actual.length || !expected.length) return 'unknown' as const;
+  const expectedSet = new Set(expected);
+  const overlap = actual.filter((word) => expectedSet.has(word)).length;
+  return overlap / Math.max(actual.length, expected.length) >= 0.8
+    ? 'repeated_example' as const
+    : 'custom' as const;
+}
+
+export function suggestedOnboardingLevel(response: ConversationAiResult): SuggestedLevel | null {
+  const confidence = String(response.suggested_level_confidence || '').trim().toLowerCase();
+  if (confidence !== 'medium' && confidence !== 'high') return null;
+  return normalizeSuggestedLevel(response.suggested_level);
+}
+
+export function onboardingReplyText(
+  reply: string,
+  onboarding: ConversationOnboardingContext,
+  response: ConversationAiResult
+): string {
+  const level = suggestedOnboardingLevel(response);
+  if (!level) return reply;
+  return [
+    reply,
+    renderOnboardingText(onboarding.locale.level_suggestion, { suggested_level: level })
+  ].join('\n\n');
+}
+
+export async function finishConversationOnboarding({
+  pool,
+  update,
+  onboarding,
+  response,
+  userText,
+  getBotLocale,
+  telegramClient,
+  textDeliverer,
+  stepPrefix
+}: {
+  pool: Pool;
+  update: PreparedUpdate;
+  onboarding: ConversationOnboardingContext;
+  response: ConversationAiResult;
+  userText: string;
+  getBotLocale(botKey: string): unknown;
+  telegramClient: TelegramTextClient;
+  textDeliverer: typeof deliverTelegramText;
+  stepPrefix: 'message.text' | 'message.voice';
+}) {
+  const chatId = update.input.chatId as number;
+  const level = suggestedOnboardingLevel(response);
+  const style = classifyOnboardingResponseStyle(userText, onboarding.ai.example);
+  await completeOnboardingSession(pool, {
+    chatId,
+    botKey: update.botKey,
+    suggestedLevel: level,
+    decisionId: update.decisionId,
+    responseStyle: style
+  });
+  const row = await fetchKeyboardState(pool, chatId, update.botKey);
+  const keyboard = buildPersistentKeyboardState(row, getBotLocale(update.botKey), update.input);
+  return textDeliverer({
+    pool,
+    update,
+    telegramClient,
+    stepKey: `${stepPrefix}:onboarding-success:v2`,
+    text: onboarding.locale.success,
+    replyMarkup: buildPersistentReplyMarkup(keyboard)
+  });
 }
 
 export function conversationReplyMarkup(messageId: number, locale: Locale) {
@@ -208,6 +354,9 @@ export function createTextConversationHandler({
       });
       if (!quota.allowed) return quota.outcome;
 
+      const localeRaw = getBotLocale(update.botKey);
+      const onboarding = await prepareConversationOnboarding(pool, update, 'text', localeRaw);
+
       let result: ConversationEffectResult;
       result = await runBotPipelineStage(pipeline, 'conversation.generate', async () => {
         await Promise.allSettled([
@@ -220,7 +369,7 @@ export function createTextConversationHandler({
           const effect = await effectRunner(pool, {
             decisionId: update.decisionId,
             stepKey: 'message.text:conversation:v1',
-            execute: (client) => executeConversation(client, update, ai, text)
+            execute: (client) => executeConversation(client, update, ai, text, 'text', onboarding?.ai)
           });
           return effect.result;
         } catch (error) {
@@ -232,7 +381,16 @@ export function createTextConversationHandler({
         }
       });
 
-      const locale = localeRecord(getBotLocale(update.botKey));
+      const locale = localeRecord(localeRaw);
+      if (onboarding) {
+        await textDeliverer({
+          pool,
+          update,
+          telegramClient,
+          stepKey: 'message.text:onboarding-input:v2',
+          text: `${onboarding.locale.text_input_header}\n${text}`
+        });
+      }
       const explanation = sanitizeTelegramHtml(result.response.explanation_html);
       if (!result.response.is_target_language) {
         return textDeliverer({
@@ -259,13 +417,30 @@ export function createTextConversationHandler({
       if (!reply || !result.assistantMessageId) {
         throw new BotRuntimeHandlerError('conversation_reply_missing', { retryable: false });
       }
-      return textDeliverer({
+      const replyDelivery = await textDeliverer({
         pool,
         update,
         telegramClient,
         stepKey: 'message.text:reply:v1',
-        text: reply,
-        replyMarkup: conversationReplyMarkup(result.assistantMessageId, locale)
+        text: onboarding ? onboardingReplyText(reply, onboarding, result.response) : reply,
+        replyMarkup: onboarding
+          ? buildOnboardingCompletionMarkup(
+              onboarding.locale,
+              suggestedOnboardingLevel(result.response)
+            )
+          : conversationReplyMarkup(result.assistantMessageId, locale)
+      });
+      if (!onboarding) return replyDelivery;
+      return finishConversationOnboarding({
+        pool,
+        update,
+        onboarding,
+        response: result.response,
+        userText: text,
+        getBotLocale,
+        telegramClient,
+        textDeliverer,
+        stepPrefix: 'message.text'
       });
     }
   };

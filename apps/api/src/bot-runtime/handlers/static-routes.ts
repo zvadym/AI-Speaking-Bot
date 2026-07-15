@@ -148,7 +148,6 @@ const STATIC_ROUTES = [
   'ignore',
   'guard.private_only',
   'guard.bot_sender',
-  'command.start',
   'command.voice',
   'command.lang',
   'command.level',
