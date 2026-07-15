@@ -549,18 +549,35 @@ test('admin user deletion matches the current schema and includes LLM telemetry'
 
 test('admin user directory returns effective tier source and active manual expiry', async () => {
   await withMockedQuery(async (source, params = []) => {
-    if (source.includes('SELECT COUNT(*)::int AS total') && source.includes('FROM users u')) {
-      assert.deepEqual(params, ['2026-07-01T00:00:00.000Z', '2026-08-01T00:00:00.000Z', null]);
+    if (source.includes('SELECT COUNT(*)::int AS total') && source.includes('FROM directory_filtered')) {
+      assert.match(source, /ELSE COALESCE\(all_bot_activity\.is_active, false\)/);
+      assert.deepEqual(params, [
+        '2026-07-01T00:00:00.000Z',
+        '2026-08-01T00:00:00.000Z',
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]);
       return { rows: [{ total: 1 }] };
     }
 
-    if (source.includes('WITH filtered_users AS')) {
-      assert.match(source, /END AS tier_source/);
-      assert.match(source, /END AS override_expires_at/);
+    if (source.includes('activity_days AS')) {
+      assert.match(source, /d\.tier_source/);
+      assert.match(source, /WHEN d\.tier_source = 'manual' THEN d\.override_expires_at/);
       assert.match(source, /END AS override_expires_on/);
       assert.deepEqual(params, [
         '2026-07-01T00:00:00.000Z',
         '2026-08-01T00:00:00.000Z',
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         50,
         0
@@ -598,6 +615,98 @@ test('admin user directory returns effective tier source and active manual expir
     assert.equal(response.json.items[0].effective_tier, 'pro');
     assert.equal(response.json.items[0].tier_source, 'manual');
     assert.equal(response.json.items[0].override_expires_on, '2026-07-31');
+  });
+});
+
+test('admin user directory applies combined search and bot-context filters to count and page queries', async () => {
+  let queryCount = 0;
+  await withMockedQuery(async (source, params = []) => {
+    queryCount += 1;
+    assert.match(source, /u\.username ILIKE/);
+    assert.match(source, /u\.first_name ILIKE/);
+    assert.match(source, /u\.chat_id::text LIKE/);
+    assert.match(source, /AND \(\$5::text IS NULL OR b\.bot_key = \$5::text\)/);
+    assert.match(source, /WHEN \$5::text IS NOT NULL THEN COALESCE\(bot_context\.is_active, false\)/);
+    assert.match(source, /\$8::timestamptz IS NULL OR last_seen_at >= \$8::timestamptz/);
+    assert.match(source, /\$9::timestamptz IS NULL OR last_seen_at < \$9::timestamptz/);
+
+    const expectedFilters = [
+      '2026-07-01T00:00:00.000Z',
+      '2026-08-01T00:00:00.000Z',
+      'campaign-a',
+      'ali',
+      'uk-de',
+      'pro',
+      true,
+      '2026-07-05T00:00:00.000Z',
+      '2026-07-13T00:00:00.000Z'
+    ];
+
+    if (source.includes('SELECT COUNT(*)::int AS total')) {
+      assert.deepEqual(params, expectedFilters);
+      return { rows: [{ total: 1 }] };
+    }
+
+    assert.match(source, /ORDER BY last_seen_at ASC NULLS LAST, d\.chat_id DESC/);
+    assert.deepEqual(params, [...expectedFilters, 25, 50]);
+    return {
+      rows: [{
+        chat_id: '42',
+        username: 'alice',
+        first_name: 'Alice',
+        bot_key: 'uk-de',
+        created_at: '2026-07-10T12:00:00.000Z',
+        last_seen_at: '2026-07-12T12:00:00.000Z',
+        is_active: true,
+        effective_tier: 'pro',
+        tier_source: 'subscription',
+        override_expires_at: null,
+        override_expires_on: null,
+        streak_days: 3,
+        xp_total: 220,
+        level: 2
+      }]
+    };
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const response = await request(app, {
+      path: '/admin/users?from=2026-07-01&to=2026-08-01&payload=campaign-a&q=%40ali&bot_key=uk-de&tier=pro&active=true&last_seen_from=2026-07-05&last_seen_to=2026-07-12&limit=25&offset=50&sort_key=last_seen_at&sort_dir=asc',
+      headers: { 'X-Admin-Password': 'secret-admin' }
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.json.total, 1);
+    assert.equal(response.json.q, 'ali');
+    assert.equal(response.json.bot_key, 'uk-de');
+    assert.equal(response.json.tier, 'pro');
+    assert.equal(response.json.active, true);
+    assert.equal(response.json.last_seen_from, '2026-07-05');
+    assert.equal(response.json.last_seen_to, '2026-07-12');
+  });
+  assert.equal(queryCount, 2);
+});
+
+test('admin user directory rejects invalid filter values before querying the database', async () => {
+  await withMockedQuery(async (source) => {
+    throw new Error(`Unexpected query for invalid users filter: ${source.slice(0, 120)}`);
+  }, async () => {
+    const app = await createApp({ apiBoss: { publish: async () => null } });
+    const cases = [
+      { query: 'bot_key=missing-bot', error: 'bad_bot_key' },
+      { query: 'tier=plus', error: 'bad_tier' },
+      { query: 'active=yes', error: 'bad_active' },
+      { query: 'last_seen_from=2026-02-30', error: 'bad_last_seen_date' },
+      { query: 'last_seen_from=2026-07-14&last_seen_to=2026-07-12', error: 'bad_last_seen_range' }
+    ];
+
+    for (const item of cases) {
+      const response = await request(app, {
+        path: `/admin/users?from=2026-07-01&to=2026-08-01&${item.query}`,
+        headers: { 'X-Admin-Password': 'secret-admin' }
+      });
+      assert.equal(response.status, 400);
+      assert.equal(response.json.error, item.error);
+    }
   });
 });
 

@@ -114,6 +114,40 @@ function parseInclusiveUtcExpiry(raw, nowMs = Date.now()) {
   return { ok: true, expiresOn, expiresAt };
 }
 
+function parseOptionalInclusiveUtcRange(fromRaw, toRaw, {
+  dateError = 'bad_date',
+  rangeError = 'bad_range'
+} = {}) {
+  const parseBoundary = (raw) => {
+    const value = String(raw ?? '').trim();
+    if (!value) return { value: null, date: null };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const date = new Date(`${value}T00:00:00.000Z`);
+    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== value) return null;
+    return { value, date };
+  };
+
+  const from = parseBoundary(fromRaw);
+  const to = parseBoundary(toRaw);
+  if (!from || !to) return { ok: false, error: dateError };
+
+  const toExclusive = to.date ? new Date(to.date.getTime() + DAY_MS) : null;
+  if (toExclusive && !Number.isFinite(toExclusive.getTime())) {
+    return { ok: false, error: dateError };
+  }
+  if (from.date && toExclusive && from.date >= toExclusive) {
+    return { ok: false, error: rangeError };
+  }
+
+  return {
+    ok: true,
+    from: from.date,
+    toExclusive,
+    fromValue: from.value,
+    toValue: to.value
+  };
+}
+
 export function createAdminRouter(ctx, helpers) {
   const router = Router();
   const requireAdmin = createRequireAdmin(ctx.env);
@@ -3633,6 +3667,37 @@ export function createAdminRouter(ctx, helpers) {
     const limit = helpers.clampInteger(req.query.limit, { min: 1, max: 500, fallback: 50 });
     const offset = helpers.clampInteger(req.query.offset, { min: 0, max: 100000, fallback: 0 });
 
+    const rawSearch = String(req.query.q ?? '').trim();
+    const search = rawSearch.replace(/^@/, '').slice(0, 80) || null;
+
+    const rawBotKey = String(req.query.bot_key ?? '').trim();
+    const botKey = rawBotKey ? normalizeBotKey(rawBotKey) : null;
+    if (rawBotKey && (!botKey || !helpers.publicBotMetaForKey(botKey))) {
+      return res.status(400).json({ error: 'bad_bot_key' });
+    }
+
+    const rawTier = String(req.query.tier ?? '').trim().toLowerCase();
+    const tier = rawTier && rawTier !== 'all' ? rawTier : null;
+    if (tier && !['free', 'pro'].includes(tier)) {
+      return res.status(400).json({ error: 'bad_tier' });
+    }
+
+    const rawActive = String(req.query.active ?? '').trim().toLowerCase();
+    let active = null;
+    if (rawActive && rawActive !== 'all') {
+      if (!['true', 'false'].includes(rawActive)) {
+        return res.status(400).json({ error: 'bad_active' });
+      }
+      active = rawActive === 'true';
+    }
+
+    const lastSeenRange = parseOptionalInclusiveUtcRange(
+      req.query.last_seen_from,
+      req.query.last_seen_to,
+      { dateError: 'bad_last_seen_date', rangeError: 'bad_last_seen_range' }
+    );
+    if (!lastSeenRange.ok) return res.status(400).json({ error: lastSeenRange.error });
+
     const sortKeyRaw = (req.query.sort_key ?? 'created_at').toString().trim().toLowerCase();
     const sortDirRaw = (req.query.sort_dir ?? 'desc').toString().trim().toLowerCase();
     const sortDir = sortDirRaw === 'asc' ? 'ASC' : 'DESC';
@@ -3652,11 +3717,11 @@ export function createAdminRouter(ctx, helpers) {
     const sortKey = sortKeyAllow.has(sortKeyRaw) ? sortKeyRaw : 'created_at';
 
     const orderByMap = {
-      created_at: `u.created_at`,
-      chat_id: `u.chat_id`,
-      username: `LOWER(u.username)`,
-      first_name: `LOWER(u.first_name)`,
-      bot_key: `ub.bot_key`,
+      created_at: `d.created_at`,
+      chat_id: `d.chat_id`,
+      username: `LOWER(d.username)`,
+      first_name: `LOWER(d.first_name)`,
+      bot_key: `d.bot_key`,
       effective_tier: `effective_tier`,
       is_active: `is_active`,
       last_seen_at: `last_seen_at`,
@@ -3666,33 +3731,99 @@ export function createAdminRouter(ctx, helpers) {
     };
     const orderExpr = orderByMap[sortKey] || orderByMap.created_at;
 
-    const params = [range.from.toISOString(), range.to.toISOString(), range.payload, limit, offset];
+    const params = [
+      range.from.toISOString(),
+      range.to.toISOString(),
+      range.payload,
+      search,
+      botKey,
+      tier,
+      active,
+      lastSeenRange.from?.toISOString() || null,
+      lastSeenRange.toExclusive?.toISOString() || null,
+      limit,
+      offset
+    ];
+    const directoryCte = `WITH directory_users AS (
+       SELECT
+         u.chat_id,
+         u.username,
+         u.first_name,
+         u.created_at,
+         u.updated_at,
+         u.plan_tier,
+         u.plan_expires_at,
+         u.override_plan_tier,
+         u.override_expires_at,
+         bot_context.bot_key,
+         bot_context.last_seen_at,
+         CASE
+           WHEN $5::text IS NOT NULL THEN COALESCE(bot_context.is_active, false)
+           ELSE COALESCE(all_bot_activity.is_active, false)
+         END AS is_active,
+         CASE
+           WHEN u.override_plan_tier IS NOT NULL
+             AND u.override_expires_at IS NOT NULL
+             AND NOW() < u.override_expires_at
+             THEN u.override_plan_tier
+           WHEN u.plan_expires_at IS NOT NULL AND NOW() < u.plan_expires_at
+             THEN u.plan_tier
+           ELSE 'free'
+         END AS effective_tier,
+         CASE
+           WHEN u.override_plan_tier IS NOT NULL
+             AND u.override_expires_at IS NOT NULL
+             AND NOW() < u.override_expires_at
+             THEN 'manual'
+           WHEN u.plan_expires_at IS NOT NULL AND NOW() < u.plan_expires_at
+             THEN 'subscription'
+           ELSE 'free'
+         END AS tier_source
+       FROM users u
+       LEFT JOIN LATERAL (
+         SELECT
+           b.bot_key,
+           b.last_seen_at,
+           COALESCE(b.is_active, true) AS is_active
+         FROM user_bots b
+         WHERE b.chat_id = u.chat_id
+           AND ($5::text IS NULL OR b.bot_key = $5::text)
+         ORDER BY COALESCE(b.last_seen_at, b.updated_at, b.created_at) DESC, b.bot_key ASC
+         LIMIT 1
+       ) bot_context ON true
+       LEFT JOIN LATERAL (
+         SELECT BOOL_OR(COALESCE(b.is_active, true)) AS is_active
+         FROM user_bots b
+         WHERE b.chat_id = u.chat_id
+       ) all_bot_activity ON true
+       WHERE u.created_at >= $1::timestamptz
+         AND u.created_at < $2::timestamptz
+         AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)
+         AND (
+           $4::text IS NULL
+           OR u.username ILIKE ('%' || $4::text || '%')
+           OR u.first_name ILIKE ('%' || $4::text || '%')
+           OR u.chat_id::text LIKE ('%' || $4::text || '%')
+         )
+         AND ($5::text IS NULL OR bot_context.bot_key IS NOT NULL)
+     ),
+     directory_filtered AS (
+       SELECT *
+       FROM directory_users
+       WHERE ($6::text IS NULL OR effective_tier = $6::text)
+         AND ($7::boolean IS NULL OR is_active = $7::boolean)
+         AND ($8::timestamptz IS NULL OR last_seen_at >= $8::timestamptz)
+         AND ($9::timestamptz IS NULL OR last_seen_at < $9::timestamptz)
+     )`;
     const [totalRes, rowsRes] = await Promise.all([
       ctx.pool.query(
-        `SELECT COUNT(*)::int AS total
-         FROM users u
-         WHERE u.created_at >= $1::timestamptz
-           AND u.created_at < $2::timestamptz
-           AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)`,
-        params.slice(0, 3)
+        `${directoryCte}
+         SELECT COUNT(*)::int AS total
+         FROM directory_filtered`,
+        params.slice(0, 9)
       ),
       ctx.pool.query(
-        `WITH filtered_users AS (
-           SELECT
-             u.chat_id,
-             u.username,
-             u.first_name,
-             u.created_at,
-             u.updated_at,
-             u.plan_tier,
-             u.plan_expires_at,
-             u.override_plan_tier,
-             u.override_expires_at
-           FROM users u
-           WHERE u.created_at >= $1::timestamptz
-             AND u.created_at < $2::timestamptz
-             AND ($3::text IS NULL OR u.acquisition_start_payload = $3::text)
-         ),
+        `${directoryCte},
          activity_days AS (
            SELECT DISTINCT activity.chat_id, activity.day_utc
            FROM (
@@ -3713,7 +3844,7 @@ export function createAdminRouter(ctx, helpers) {
                AND m.created_at >= $1::timestamptz
                AND m.created_at < $2::timestamptz
            ) activity
-           JOIN filtered_users u ON u.chat_id = activity.chat_id
+           JOIN directory_filtered d ON d.chat_id = activity.chat_id
          ),
          streak_groups AS (
            SELECT
@@ -3741,78 +3872,37 @@ export function createAdminRouter(ctx, helpers) {
              up.chat_id,
              COALESCE(SUM(up.xp_total), 0)::int AS xp_total
            FROM user_progress up
-           JOIN filtered_users u ON u.chat_id = up.chat_id
+           JOIN directory_filtered d ON d.chat_id = up.chat_id
            GROUP BY up.chat_id
-         ),
-         user_activity AS (
-           SELECT
-             ub.chat_id,
-             BOOL_OR(COALESCE(ub.is_active, true)) AS is_active
-           FROM user_bots ub
-           JOIN filtered_users u ON u.chat_id = ub.chat_id
-           GROUP BY ub.chat_id
          )
          SELECT
-           u.chat_id,
-           u.username,
-           u.first_name,
-           ub.bot_key,
-           u.created_at,
-           COALESCE(ub.last_seen_at, u.updated_at) AS last_seen_at,
-           COALESCE(ua.is_active, false) AS is_active,
+           d.chat_id,
+           d.username,
+           d.first_name,
+           d.bot_key,
+           d.created_at,
+           COALESCE(d.last_seen_at, d.updated_at) AS last_seen_at,
+           d.is_active,
+           d.effective_tier,
+           d.tier_source,
            CASE
-             WHEN u.override_plan_tier IS NOT NULL
-               AND u.override_expires_at IS NOT NULL
-               AND NOW() < u.override_expires_at
-               THEN u.override_plan_tier
-             WHEN u.plan_expires_at IS NOT NULL
-               AND NOW() < u.plan_expires_at
-               THEN u.plan_tier
-             ELSE 'free'
-           END AS effective_tier,
-           CASE
-             WHEN u.override_plan_tier IS NOT NULL
-               AND u.override_expires_at IS NOT NULL
-               AND NOW() < u.override_expires_at
-               THEN 'manual'
-             WHEN u.plan_expires_at IS NOT NULL
-               AND NOW() < u.plan_expires_at
-               THEN 'subscription'
-             ELSE 'free'
-           END AS tier_source,
-           CASE
-             WHEN u.override_plan_tier IS NOT NULL
-               AND u.override_expires_at IS NOT NULL
-               AND NOW() < u.override_expires_at
-               THEN u.override_expires_at
+             WHEN d.tier_source = 'manual' THEN d.override_expires_at
              ELSE NULL
            END AS override_expires_at,
            CASE
-             WHEN u.override_plan_tier IS NOT NULL
-               AND u.override_expires_at IS NOT NULL
-               AND NOW() < u.override_expires_at
-               THEN ((u.override_expires_at AT TIME ZONE 'UTC') - interval '1 day')::date::text
+             WHEN d.tier_source = 'manual'
+               THEN ((d.override_expires_at AT TIME ZONE 'UTC') - interval '1 day')::date::text
              ELSE NULL
            END AS override_expires_on,
            COALESCE(ms.streak_days, 0) AS streak_days,
            COALESCE(xp.xp_total, 0) AS xp_total,
            FLOOR(COALESCE(xp.xp_total, 0) / 200.0)::int + 1 AS level
-         FROM filtered_users u
-         LEFT JOIN LATERAL (
-           SELECT
-             b.bot_key,
-             b.last_seen_at
-           FROM user_bots b
-           WHERE b.chat_id = u.chat_id
-           ORDER BY COALESCE(b.last_seen_at, b.updated_at, b.created_at) DESC, b.bot_key ASC
-           LIMIT 1
-         ) ub ON true
-         LEFT JOIN max_streaks ms ON ms.chat_id = u.chat_id
-         LEFT JOIN xp ON xp.chat_id = u.chat_id
-         LEFT JOIN user_activity ua ON ua.chat_id = u.chat_id
-         ORDER BY ${orderExpr} ${sortDir} NULLS LAST, u.chat_id DESC
-         LIMIT $4::int
-         OFFSET $5::int`,
+         FROM directory_filtered d
+         LEFT JOIN max_streaks ms ON ms.chat_id = d.chat_id
+         LEFT JOIN xp ON xp.chat_id = d.chat_id
+         ORDER BY ${orderExpr} ${sortDir} NULLS LAST, d.chat_id DESC
+         LIMIT $10::int
+         OFFSET $11::int`,
         params
       )
     ]);
@@ -3822,6 +3912,12 @@ export function createAdminRouter(ctx, helpers) {
       from: range.from.toISOString(),
       to: range.to.toISOString(),
       payload: range.payload,
+      q: search,
+      bot_key: botKey,
+      tier,
+      active,
+      last_seen_from: lastSeenRange.fromValue,
+      last_seen_to: lastSeenRange.toValue,
       sort_key: sortKey,
       sort_dir: sortDirRaw === 'asc' ? 'asc' : 'desc',
       limit,

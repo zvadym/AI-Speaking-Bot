@@ -194,14 +194,14 @@
           </section>
 
           <div class="row">
-            <label class="field grow">
+            <div class="field grow">
               <span>Current query</span>
               <div class="query-chip-row">
                 <span class="query-chip">{{ activeRangeWindow }}</span>
                 <span v-if="payload.trim()" class="query-chip subtle">Payload: {{ payload.trim() }}</span>
                 <span v-if="excludedUsers.length" class="query-chip subtle">Excluded: {{ fmt(excludedUsers.length) }}</span>
               </div>
-            </label>
+            </div>
           </div>
 
           <div v-if="!password" class="callout">
@@ -639,9 +639,51 @@
 
         <div class="panel-body">
           <section class="filter-panel" aria-label="User filters">
+            <label class="field users-search-field">
+              <span>Search users</span>
+              <input
+                v-model="usersSearch"
+                type="search"
+                autocomplete="off"
+                placeholder="@username, name or chat ID"
+                @keydown.enter.prevent="applyUsersSearchNow"
+              />
+              <small>Searches the complete directory, not only the current page.</small>
+            </label>
+
+            <div class="users-filter-grid">
+              <label class="field">
+                <span>Bot</span>
+                <select v-model="usersFilterDraft.botKey">
+                  <option value="">All bots</option>
+                  <option v-for="bot in botScopeOptions" :key="`users-filter-${bot.bot_key}`" :value="bot.bot_key">
+                    {{ bot.bot_key }}
+                  </option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Tier</span>
+                <select v-model="usersFilterDraft.tier">
+                  <option value="">All tiers</option>
+                  <option value="free">Free</option>
+                  <option value="pro">PRO</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Active</span>
+                <select v-model="usersFilterDraft.active">
+                  <option value="">Any status</option>
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </label>
+            </div>
+
             <div class="filter-topline">
               <div class="field grow">
-                <span>Time window</span>
+                <span>Created date</span>
                 <div class="range-toolbar">
                   <button
                     v-for="option in rangePresetOptions"
@@ -707,16 +749,51 @@
                 </datalist>
               </label>
             </div>
+
+            <div class="row users-last-seen-row">
+              <label class="field">
+                <span>Last seen from (UTC)</span>
+                <input v-model="usersFilterDraft.lastSeenFrom" type="date" />
+              </label>
+
+              <label class="field">
+                <span>Last seen to (UTC, inclusive)</span>
+                <input v-model="usersFilterDraft.lastSeenTo" type="date" />
+              </label>
+            </div>
+
+            <p v-if="usersFilterError || usersLastSeenRangeError" class="error">
+              {{ usersFilterError || usersLastSeenRangeError }}
+            </p>
+
+            <div class="users-filter-actions">
+              <button class="btn primary" type="button" :disabled="usersLoading || Boolean(usersLastSeenRangeError)" @click="applyUsersFilters">
+                Apply filters
+              </button>
+              <button class="btn" type="button" :disabled="usersLoading" @click="clearUsersFilters">
+                Clear all
+              </button>
+            </div>
           </section>
 
           <div class="row">
-            <label class="field grow">
+            <div class="field grow">
               <span>Current query</span>
               <div class="query-chip-row">
-                <span class="query-chip">{{ activeRangeWindow }}</span>
-                <span v-if="payload.trim()" class="query-chip subtle">Payload: {{ payload.trim() }}</span>
+                <button
+                  v-for="chip in usersAppliedFilterChips"
+                  :key="chip.key"
+                  class="query-chip users-query-chip"
+                  type="button"
+                  :title="`Remove ${chip.label}`"
+                  :disabled="usersLoading"
+                  @click="removeUsersFilterChip(chip.key)"
+                >
+                  <span>{{ chip.label }}</span>
+                  <span class="users-query-chip-remove" aria-hidden="true">×</span>
+                </button>
               </div>
-            </label>
+            </div>
           </div>
 
           <div v-if="!password" class="callout">
@@ -880,7 +957,10 @@
             </tbody>
           </table>
         </div>
-        <p class="hint" v-else-if="!usersLoading">No users found for current filters.</p>
+        <div class="users-empty-state" v-else-if="!usersLoading">
+          <p class="hint">No users match the current filters.</p>
+          <button class="btn" type="button" @click="clearUsersFilters">Clear filters</button>
+        </div>
 
         <div class="feedback-pager">
           <button class="btn" type="button" :disabled="usersLoading || usersOffset <= 0" @click="usersPrevPage">
@@ -2058,13 +2138,19 @@ function defaultRange() {
 function parseYmdAsUtc(ymd) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd || '')) return null;
   const d = new Date(`${ymd}T00:00:00.000Z`);
-  return Number.isFinite(d.getTime()) ? d : null;
+  return Number.isFinite(d.getTime()) && dateToYmdUtc(d) === ymd ? d : null;
 }
 
 function toExclusiveBoundaryYmd(inclusiveYmd) {
   const d = parseYmdAsUtc(inclusiveYmd);
   if (!d) return inclusiveYmd;
   return dateToYmdUtc(new Date(d.getTime() + DAY_MS));
+}
+
+function previousUtcYmd(exclusiveYmd) {
+  const d = parseYmdAsUtc(exclusiveYmd);
+  if (!d) return exclusiveYmd;
+  return dateToYmdUtc(new Date(d.getTime() - DAY_MS));
 }
 
 function rangeForPreset(preset) {
@@ -2432,6 +2518,29 @@ const usersLimit = ref(50);
 const usersLoading = ref(false);
 const usersError = ref('');
 const usersUpdatedAt = ref('');
+const usersSearch = ref('');
+const usersFilterError = ref('');
+const usersFilterDraft = reactive({
+  botKey: '',
+  tier: '',
+  active: '',
+  lastSeenFrom: '',
+  lastSeenTo: ''
+});
+const usersAppliedFilters = reactive({
+  q: '',
+  botKey: '',
+  tier: '',
+  active: '',
+  lastSeenFrom: '',
+  lastSeenTo: '',
+  createdFrom: defaultFrom,
+  createdTo: toExclusiveBoundaryYmd(defaultTo),
+  payload: ''
+});
+let usersSearchTimer = null;
+let usersSearchWatchSuppressed = false;
+let usersRequestId = 0;
 const userDeleteBusyId = ref('');
 const userDeleteError = ref('');
 const userDeleteInfo = ref('');
@@ -2470,6 +2579,36 @@ const usersSort = reactive({
 
 const usersPageStart = computed(() => (usersTotal.value ? usersOffset.value + 1 : 0));
 const usersPageEnd = computed(() => Math.min(usersOffset.value + usersRows.value.length, usersTotal.value));
+const usersLastSeenRangeError = computed(() => {
+  const fromRaw = usersFilterDraft.lastSeenFrom.trim();
+  const toRaw = usersFilterDraft.lastSeenTo.trim();
+  const from = fromRaw ? parseYmdAsUtc(fromRaw) : null;
+  const to = toRaw ? parseYmdAsUtc(toRaw) : null;
+  if ((fromRaw && !from) || (toRaw && !to)) return 'Enter valid Last seen dates.';
+  if (from && to && from > to) return 'Last seen From cannot be later than To.';
+  return '';
+});
+const usersAppliedFilterChips = computed(() => {
+  const chips = [
+    {
+      key: 'created',
+      label: `Created: ${formatShortUtcDate(usersAppliedFilters.createdFrom)} – ${formatShortUtcDate(previousUtcYmd(usersAppliedFilters.createdTo))}`
+    }
+  ];
+  if (usersAppliedFilters.q) chips.push({ key: 'q', label: `Search: ${usersAppliedFilters.q}` });
+  if (usersAppliedFilters.botKey) chips.push({ key: 'botKey', label: `Bot: ${usersAppliedFilters.botKey}` });
+  if (usersAppliedFilters.tier) chips.push({ key: 'tier', label: `Tier: ${usersAppliedFilters.tier.toUpperCase()}` });
+  if (usersAppliedFilters.active) {
+    chips.push({ key: 'active', label: `Active: ${usersAppliedFilters.active === 'true' ? 'yes' : 'no'}` });
+  }
+  if (usersAppliedFilters.lastSeenFrom || usersAppliedFilters.lastSeenTo) {
+    const from = usersAppliedFilters.lastSeenFrom ? formatShortUtcDate(usersAppliedFilters.lastSeenFrom) : 'Any';
+    const to = usersAppliedFilters.lastSeenTo ? formatShortUtcDate(usersAppliedFilters.lastSeenTo) : 'Any';
+    chips.push({ key: 'lastSeen', label: `Last seen: ${from} – ${to}` });
+  }
+  if (usersAppliedFilters.payload) chips.push({ key: 'payload', label: `Payload: ${usersAppliedFilters.payload}` });
+  return chips;
+});
 const canSavePlanOverride = computed(() => {
   if (!password.value || userPlanOverrideBusyId.value || !planOverrideDraft.chatId) return false;
   const parsed = parseYmdAsUtc(planOverrideDraft.expiresOn);
@@ -2587,6 +2726,133 @@ const billingLivePriceCount = computed(() =>
 const billingStripeOnlyCount = computed(() =>
   billingPrices.value.filter((row) => row?.active && row?.status === 'stripe_only').length
 );
+
+function normalizeUsersSearch(raw) {
+  return String(raw ?? '').trim().slice(0, 80);
+}
+
+function clearUsersSearchTimer() {
+  if (!usersSearchTimer) return;
+  window.clearTimeout(usersSearchTimer);
+  usersSearchTimer = null;
+}
+
+function setUsersSearchSilently(value) {
+  const next = String(value ?? '');
+  if (usersSearch.value === next) return;
+  usersSearchWatchSuppressed = true;
+  usersSearch.value = next;
+}
+
+function usersDirectoryQuery() {
+  return {
+    from: usersAppliedFilters.createdFrom,
+    to: usersAppliedFilters.createdTo,
+    payload: usersAppliedFilters.payload || undefined,
+    q: usersAppliedFilters.q || undefined,
+    bot_key: usersAppliedFilters.botKey || undefined,
+    tier: usersAppliedFilters.tier || undefined,
+    active: usersAppliedFilters.active || undefined,
+    last_seen_from: usersAppliedFilters.lastSeenFrom || undefined,
+    last_seen_to: usersAppliedFilters.lastSeenTo || undefined
+  };
+}
+
+function applyUsersSearchNow() {
+  clearUsersSearchTimer();
+  usersAppliedFilters.q = normalizeUsersSearch(usersSearch.value);
+  usersFilterError.value = '';
+  refreshUsersPage({ resetOffset: true });
+}
+
+function applyUsersFilters() {
+  if (usersLastSeenRangeError.value) {
+    usersFilterError.value = usersLastSeenRangeError.value;
+    return;
+  }
+
+  clearUsersSearchTimer();
+  usersFilterError.value = '';
+  Object.assign(usersAppliedFilters, {
+    q: normalizeUsersSearch(usersSearch.value),
+    botKey: normalizeBotKeyValue(usersFilterDraft.botKey),
+    tier: usersFilterDraft.tier,
+    active: usersFilterDraft.active,
+    lastSeenFrom: usersFilterDraft.lastSeenFrom.trim(),
+    lastSeenTo: usersFilterDraft.lastSeenTo.trim(),
+    createdFrom: effectiveFromDate.value,
+    createdTo: toExclusiveBoundaryYmd(effectiveToDate.value),
+    payload: payload.value.trim()
+  });
+  refreshUsersPage({ resetOffset: true });
+}
+
+function clearUsersFilters() {
+  clearUsersSearchTimer();
+  const nextRange = defaultRange();
+  setUsersSearchSilently('');
+  Object.assign(usersFilterDraft, {
+    botKey: '',
+    tier: '',
+    active: '',
+    lastSeenFrom: '',
+    lastSeenTo: ''
+  });
+  rangePreset.value = 'last_30_days';
+  fromDate.value = nextRange.from;
+  toDate.value = nextRange.to;
+  payload.value = '';
+  Object.assign(usersAppliedFilters, {
+    q: '',
+    botKey: '',
+    tier: '',
+    active: '',
+    lastSeenFrom: '',
+    lastSeenTo: '',
+    createdFrom: nextRange.from,
+    createdTo: toExclusiveBoundaryYmd(nextRange.to),
+    payload: ''
+  });
+  usersFilterError.value = '';
+  refreshUsersPage({ resetOffset: true });
+}
+
+function removeUsersFilterChip(key) {
+  if (key === 'q') {
+    clearUsersSearchTimer();
+    setUsersSearchSilently('');
+    usersAppliedFilters.q = '';
+  } else if (key === 'botKey') {
+    usersFilterDraft.botKey = '';
+    usersAppliedFilters.botKey = '';
+  } else if (key === 'tier') {
+    usersFilterDraft.tier = '';
+    usersAppliedFilters.tier = '';
+  } else if (key === 'active') {
+    usersFilterDraft.active = '';
+    usersAppliedFilters.active = '';
+  } else if (key === 'lastSeen') {
+    usersFilterDraft.lastSeenFrom = '';
+    usersFilterDraft.lastSeenTo = '';
+    usersAppliedFilters.lastSeenFrom = '';
+    usersAppliedFilters.lastSeenTo = '';
+  } else if (key === 'payload') {
+    payload.value = '';
+    usersAppliedFilters.payload = '';
+  } else if (key === 'created') {
+    const nextRange = defaultRange();
+    rangePreset.value = 'last_30_days';
+    fromDate.value = nextRange.from;
+    toDate.value = nextRange.to;
+    usersAppliedFilters.createdFrom = nextRange.from;
+    usersAppliedFilters.createdTo = toExclusiveBoundaryYmd(nextRange.to);
+  } else {
+    return;
+  }
+
+  usersFilterError.value = '';
+  refreshUsersPage({ resetOffset: true });
+}
 
 function usersSortIndicator(key) {
   if (usersSort.key !== key) return '';
@@ -5057,11 +5323,12 @@ async function refreshFreeUsersInsights() {
 async function refreshUsersPage({ resetOffset = false } = {}) {
   if (!canFetch.value) return;
   if (resetOffset) usersOffset.value = 0;
+  const requestId = ++usersRequestId;
   usersLoading.value = true;
   usersError.value = '';
   try {
     const headers = adminHeaders();
-    const q = query();
+    const q = usersDirectoryQuery();
     const [usersRes, payloadsRes] = await Promise.allSettled([
       apiJson(props.apiBase, '/admin/users', {
         query: {
@@ -5073,9 +5340,13 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
         },
         headers
       }),
-      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers })
+      apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', {
+        query: { from: q.from, to: q.to },
+        headers
+      })
     ]);
 
+    if (requestId !== usersRequestId) return;
     if (usersRes.status !== 'fulfilled') throw usersRes.reason;
     const data = usersRes.value;
     usersRows.value = Array.isArray(data?.items) ? data.items : [];
@@ -5086,14 +5357,12 @@ async function refreshUsersPage({ resetOffset = false } = {}) {
       payloadOptions.value = Array.isArray(payloadsRes.value?.payloads) ? payloadsRes.value.payloads : payloadOptions.value;
     }
   } catch (err) {
+    if (requestId !== usersRequestId) return;
     console.error(err);
-    usersRows.value = [];
-    usersTotal.value = 0;
-    usersUpdatedAt.value = '';
     const msg = err?.payload?.error || err?.message || 'request_failed';
     usersError.value = `Failed to load users: ${msg}`;
   } finally {
-    usersLoading.value = false;
+    if (requestId === usersRequestId) usersLoading.value = false;
   }
 }
 
@@ -5466,6 +5735,8 @@ function resetFeedbackRange() {
 
 function clearPassword() {
   password.value = '';
+  usersRequestId += 1;
+  clearUsersSearchTimer();
   errorText.value = '';
   previewError.value = '';
   sendError.value = '';
@@ -5487,6 +5758,7 @@ function clearPassword() {
   usersTotal.value = 0;
   usersOffset.value = 0;
   usersError.value = '';
+  usersFilterError.value = '';
   usersUpdatedAt.value = '';
   userDeleteBusyId.value = '';
   userDeleteError.value = '';
@@ -5560,6 +5832,20 @@ function usersPrevPage() {
 onMounted(() => {
   loadExcludedUsersFromStorage();
   // No auto-fetch until password is provided.
+});
+
+watch(usersSearch, () => {
+  if (usersSearchWatchSuppressed) {
+    usersSearchWatchSuppressed = false;
+    return;
+  }
+  clearUsersSearchTimer();
+  usersSearchTimer = window.setTimeout(() => {
+    usersSearchTimer = null;
+    usersAppliedFilters.q = normalizeUsersSearch(usersSearch.value);
+    usersFilterError.value = '';
+    refreshUsersPage({ resetOffset: true });
+  }, 300);
 });
 
 watch(excludeSearch, () => {
@@ -5709,6 +5995,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  clearUsersSearchTimer();
   if (previewTimer) {
     window.clearTimeout(previewTimer);
     previewTimer = null;
@@ -6163,6 +6450,7 @@ h1 {
 }
 
 .field input[type='text'],
+.field input[type='search'],
 .field input[type='url'],
 .field input[type='password'],
 .field input[type='date'],
@@ -6179,6 +6467,7 @@ h1 {
 }
 
 .field input[type='text'],
+.field input[type='search'],
 .field input[type='url'],
 .field input[type='password'],
 .field input[type='date'],
@@ -6198,6 +6487,7 @@ h1 {
 }
 
 .field input[type='text']:focus,
+.field input[type='search']:focus,
 .field input[type='url']:focus,
 .field input[type='password']:focus,
 .field input[type='date']:focus,
@@ -7078,6 +7368,69 @@ h1 {
   gap: 10px;
 }
 
+.users-search-field {
+  min-width: 0;
+}
+
+.users-search-field small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.users-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.users-filter-grid .field {
+  min-width: 0;
+}
+
+.users-last-seen-row .field {
+  flex: 1 1 240px;
+}
+
+.users-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.users-query-chip {
+  gap: 8px;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.users-query-chip:hover {
+  border-color: rgba(174, 43, 40, 0.28);
+  background: rgba(174, 43, 40, 0.07);
+}
+
+.users-query-chip:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.users-query-chip-remove {
+  color: rgba(174, 43, 40, 0.78);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.users-empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 18px;
+  border: 1px dashed rgba(30, 26, 22, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
 .users-head {
   display: flex;
   justify-content: space-between;
@@ -7241,6 +7594,17 @@ h1 {
 
 .users-delete-btn {
   min-inline-size: 86px;
+}
+
+@media (max-width: 820px) {
+  .users-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .users-filter-actions .btn,
+  .users-empty-state .btn {
+    width: 100%;
+  }
 }
 
 .user-pro-modal-backdrop {
