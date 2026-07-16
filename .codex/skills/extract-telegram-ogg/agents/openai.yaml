@@ -1,0 +1,4 @@
+interface:
+  display_name: "Extract Telegram OGG"
+  short_description: "Export recent Telegram voice notes as OGG"
+  default_prompt: "Use $extract-telegram-ogg to export the latest five OGG voice messages for a bot and Telegram username."

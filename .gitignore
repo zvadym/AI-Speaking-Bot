@@ -15,5 +15,6 @@ deploy/.env.miniapp
 # Retired service state remains ignored during rollback retention.
 deploy/n8n-data
 .vercel
-.codex
+.codex/exports
+.codex/tmp
 .cursor
