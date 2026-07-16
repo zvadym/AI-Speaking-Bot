@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { createBotAiClient } from '../src/bot-runtime/bot-ai.js';
 import type { LlmCallEvent } from '../src/bot-runtime/llm-telemetry.js';
 
@@ -214,4 +217,98 @@ test('bot AI renders Hindi hint labels in the learner base language', async () =
   assert.match(input[0].content, /आप इसे इस तरह कह सकते हैं:/);
   assert.match(input[0].content, /explanation_html must be in Hindi/);
   assert.match(input[0].content, /Preserve the learner's intended meaning, referents, gender, number, names, and factual claims/);
+});
+
+test('bot AI loads transcription prompts by audio language and falls back to English', async () => {
+  const calls: Array<Record<string, unknown>> = [];
+  const telemetry: LlmCallEvent[] = [];
+  const client = createBotAiClient({
+    apiKey: 'test-key',
+    model: 'test-model',
+    transcriptionModel: 'test-transcription-model',
+    recordLlmCall: async (event) => { telemetry.push(event); },
+    getBotConfig: (botKey) => botKey === 'fr-en'
+      ? { bot_key: botKey, base_language: 'fr', learning_language: 'en' }
+      : { bot_key: botKey, base_language: 'uk', learning_language: 'en' },
+    createClient: () => ({
+      audio: {
+        transcriptions: {
+          async create(input: Record<string, unknown>) {
+            calls.push(input);
+            return { text: 'verbatim transcript' };
+          }
+        }
+      }
+    } as never)
+  });
+
+  assert.equal(await client.transcribe('uk-en', Buffer.from('voice')), 'verbatim transcript');
+  assert.equal(
+    await client.transcribe('uk-en', Buffer.from('voice'), { baseLanguage: true }),
+    'verbatim transcript'
+  );
+  assert.equal(
+    await client.transcribe('fr-en', Buffer.from('voice'), { baseLanguage: true }),
+    'verbatim transcript'
+  );
+
+  assert.equal(calls.length, 3);
+  assert.deepEqual(calls.map(({ model, language, response_format }) => ({
+    model,
+    language,
+    response_format
+  })), [
+    { model: 'test-transcription-model', language: 'en', response_format: 'json' },
+    { model: 'test-transcription-model', language: 'uk', response_format: 'json' },
+    { model: 'test-transcription-model', language: 'fr', response_format: 'json' }
+  ]);
+  assert.match(String(calls[0].prompt), /Create a strictly verbatim transcript/);
+  assert.match(String(calls[1].prompt), /Створи строго дослівну транскрипцію/);
+  assert.match(String(calls[2].prompt), /Create a strictly verbatim transcript/);
+  assert.deepEqual(telemetry.map(({ operation, model, success }) => ({
+    operation,
+    model,
+    success
+  })), [
+    { operation: 'conversation.transcribe', model: 'test-transcription-model', success: true },
+    { operation: 'feedback.transcribe', model: 'test-transcription-model', success: true },
+    { operation: 'feedback.transcribe', model: 'test-transcription-model', success: true }
+  ]);
+});
+
+test('bot AI fails clearly when the English transcription fallback is missing', async () => {
+  const promptRoot = await mkdtemp(path.join(os.tmpdir(), 'bot-runtime-prompts-'));
+  await mkdir(path.join(promptRoot, 'transcription'));
+  const previousPromptDir = process.env.BOT_RUNTIME_PROMPTS_DIR;
+  process.env.BOT_RUNTIME_PROMPTS_DIR = promptRoot;
+
+  try {
+    const client = createBotAiClient({
+      apiKey: 'test-key',
+      model: 'test-model',
+      getBotConfig: () => ({
+        bot_key: 'fr-en',
+        base_language: 'fr',
+        learning_language: 'en'
+      }),
+      createClient: () => ({
+        audio: {
+          transcriptions: {
+            async create() {
+              return { text: 'unexpected' };
+            }
+          }
+        }
+      } as never)
+    });
+
+    await assert.rejects(
+      client.transcribe('fr-en', Buffer.from('voice'), { baseLanguage: true }),
+      /bot_runtime_transcription_prompt_unreadable:.*transcription\/en\.md/
+    );
+  } finally {
+    if (previousPromptDir === undefined) delete process.env.BOT_RUNTIME_PROMPTS_DIR;
+    else process.env.BOT_RUNTIME_PROMPTS_DIR = previousPromptDir;
+    await rm(promptRoot, { recursive: true, force: true });
+  }
 });

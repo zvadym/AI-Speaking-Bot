@@ -13,6 +13,10 @@ Templates:
 - `model_hints_prompt.md`
 - `model_summary_prompt.md`
 - `model_vocab_prompt.md`
+- `transcription/<language-code>.md`
+
+Transcription prompts are selected by the audio language. `transcription/en.md`
+is required and is used when a language-specific file is unavailable.
 
 They are loaded by `apps/api/src/bot-runtime/bot-ai.ts` for each bot.
 

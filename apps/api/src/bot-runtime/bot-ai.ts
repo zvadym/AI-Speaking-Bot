@@ -217,14 +217,17 @@ function existingPath(candidates: string[]): string {
   return found;
 }
 
-function promptFile(name: string): string {
+function promptDirectory(): string {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  const promptDir = existingPath([
+  return existingPath([
     String(process.env.BOT_RUNTIME_PROMPTS_DIR || '').trim(),
     '/deploy/prompts',
     path.resolve(currentDir, '../../../../deploy/prompts')
   ].filter(Boolean));
-  return path.join(promptDir, `${name}.md`);
+}
+
+function promptFile(name: string): string {
+  return path.join(promptDirectory(), `${name}.md`);
 }
 
 function sharedToneFile(): string {
@@ -241,6 +244,24 @@ function readCached(filename: string): string {
   const value = fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n').trim();
   promptCache.set(filename, value);
   return value;
+}
+
+function transcriptionPrompt(language: string): string {
+  const normalizedLanguage = language.trim().toLowerCase().split('-')[0];
+  const languageCode = /^[a-z]{2,3}$/.test(normalizedLanguage) ? normalizedLanguage : 'en';
+  const directory = path.join(promptDirectory(), 'transcription');
+  const localizedFilename = path.join(directory, `${languageCode}.md`);
+  const fallbackFilename = path.join(directory, 'en.md');
+  const filename = fs.existsSync(localizedFilename) ? localizedFilename : fallbackFilename;
+
+  let prompt: string;
+  try {
+    prompt = readCached(filename);
+  } catch (error) {
+    throw new Error(`bot_runtime_transcription_prompt_unreadable:${filename}`, { cause: error });
+  }
+  if (!prompt) throw new Error(`bot_runtime_transcription_prompt_empty:${filename}`);
+  return prompt;
 }
 
 function promptContext(botKey: string, config: UnknownRecord): Record<string, string> {
@@ -545,7 +566,7 @@ export function createBotAiClient({
           model: transcriptionModel,
           language,
           response_format: 'json',
-          prompt: 'Transcribe literally. Preserve learner errors and repetitions. Do not correct or rewrite.'
+          prompt: transcriptionPrompt(language)
         })
       });
       return String(result.text || '').trim();
