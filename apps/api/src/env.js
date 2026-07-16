@@ -230,7 +230,7 @@ export const env = {
   botSupportModel,
   botSupportReasoningEffort,
   botModelPolicyOverrides,
-  botTranscriptionModel: (process.env.BOT_TRANSCRIPTION_MODEL || 'gpt-4o-transcribe').toString().trim() || 'gpt-4o-transcribe',
+  botTranscriptionModel: (process.env.BOT_TRANSCRIPTION_MODEL || 'whisper-1').toString().trim() || 'whisper-1',
   botTtsModel: (process.env.BOT_TTS_MODEL || 'gpt-4o-mini-tts').toString().trim() || 'gpt-4o-mini-tts',
   sentryDsn: (process.env.SENTRY_DSN || '').toString().trim(),
   sentryEnvironment: (process.env.SENTRY_ENVIRONMENT || '').toString().trim(),

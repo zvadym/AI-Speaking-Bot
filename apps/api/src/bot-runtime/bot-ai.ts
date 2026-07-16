@@ -353,7 +353,7 @@ export function createBotAiClient({
   supportModel = model,
   conversationReasoningEffort,
   supportReasoningEffort,
-  transcriptionModel = 'gpt-4o-transcribe',
+  transcriptionModel = 'whisper-1',
   ttsModel = 'gpt-4o-mini-tts',
   recordLlmCall,
   getModelPolicy,

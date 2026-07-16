@@ -312,3 +312,29 @@ test('bot AI fails clearly when the English transcription fallback is missing', 
     await rm(promptRoot, { recursive: true, force: true });
   }
 });
+
+test('bot AI defaults transcription to whisper-1', async () => {
+  const calls: Array<Record<string, unknown>> = [];
+  const client = createBotAiClient({
+    apiKey: 'test-key',
+    model: 'test-model',
+    getBotConfig: () => ({
+      bot_key: 'uk-en',
+      base_language: 'uk',
+      learning_language: 'en'
+    }),
+    createClient: () => ({
+      audio: {
+        transcriptions: {
+          async create(input: Record<string, unknown>) {
+            calls.push(input);
+            return { text: 'verbatim transcript' };
+          }
+        }
+      }
+    } as never)
+  });
+
+  assert.equal(await client.transcribe('uk-en', Buffer.from('voice')), 'verbatim transcript');
+  assert.equal(calls[0].model, 'whisper-1');
+});
