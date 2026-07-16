@@ -11,7 +11,7 @@
     "practical",
     "conversation-first"
   ],
-  "bot_voice": "Nova",
+  "bot_voice": "Fable",
   "telegram_url": "https://t.me/jackie_english_tutor_bot",
   "telegram_bot_token": "REDACTED_SECRET",
   "locale": {

@@ -231,7 +231,7 @@ export const env = {
   botSupportReasoningEffort,
   botModelPolicyOverrides,
   botTranscriptionModel: (process.env.BOT_TRANSCRIPTION_MODEL || 'whisper-1').toString().trim() || 'whisper-1',
-  botTtsModel: (process.env.BOT_TTS_MODEL || 'gpt-4o-mini-tts').toString().trim() || 'gpt-4o-mini-tts',
+  botTtsModel: (process.env.BOT_TTS_MODEL || 'tts-1-hd').toString().trim() || 'tts-1-hd',
   sentryDsn: (process.env.SENTRY_DSN || '').toString().trim(),
   sentryEnvironment: (process.env.SENTRY_ENVIRONMENT || '').toString().trim(),
   sentryRelease: (process.env.SENTRY_RELEASE || '').toString().trim(),

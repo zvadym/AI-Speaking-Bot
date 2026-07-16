@@ -12,7 +12,7 @@
     "practical",
     "conversation-first"
   ],
-  "bot_voice": "Nova",
+  "bot_voice": "Fable",
   "telegram_url": "https://t.me/giulia_italienisch_lehrerin_bot",
   "telegram_bot_token": "REDACTED_SECRET",
   "locale": {
