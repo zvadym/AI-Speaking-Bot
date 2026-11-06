@@ -12,7 +12,7 @@
     "worker:dev": "tsx src/worker.js",
     "start": "node --import ./dist/instrument-api.js dist/server.js",
     "worker": "node --import ./dist/instrument-worker.js dist/worker.js",
-    "test": "tsx --test test/*.test.js test/*.test.ts",
+    "test": "tsx --import ./test/setup-env.js --test test/*.test.js test/*.test.ts",
     "eval:conversation": "tsx scripts/evaluate-conversation-models.ts"
   },
   "dependencies": {

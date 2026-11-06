@@ -3,7 +3,7 @@
 Each file defines one Telegram bot for a fixed language pair and provides:
 
 - Language pair (`base_language`, `learning_language`)
-- Runtime credentials (`telegram_bot_token`)
+- Public bot metadata only; credentials are stored outside the repository
 - Runtime locale and prompt data (`locale`, model prompt fields)
 - **Telegram presentation data** in `telegram_presentation` (hard cutover)
 
@@ -35,7 +35,6 @@ Example:
   "bot_key": "en-de",
   "base_language": "en",
   "learning_language": "de",
-  "telegram_bot_token": "123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
   "telegram_presentation": {
     "name": "Emma",
     "description": "Practice German with Emma.",
@@ -185,3 +184,17 @@ python3 scripts/provision-bots.py apply --all --bots-dir deploy/bots-dev
 
 - Runtime `/start` message (`locale.hi_message_text`)
 - Other runtime locale/model prompt text sync
+
+## Credentials
+
+Set `TELEGRAM_BOT_TOKEN_<BOT_KEY>` in the private API env file, uppercasing the bot
+key and replacing hyphens with underscores (`uk-en` -> `TELEGRAM_BOT_TOKEN_UK_EN`).
+API/worker resolve tokens separately from this metadata; the landing generator does
+not need credentials. Do not add `telegram_bot_token` to JSON.
+
+`provision-bots.py sync` validates public metadata without secrets. `apply` resolves
+credentials from the process environment or external `API_ENV_FILE` (default
+`~/.config/ai-speaking-bot/api.env`) and checks every selected token before calls.
+Interactive provisioning stores the entered token only in that private file and
+refuses to overwrite a different existing credential. `--dry-run` writes no files
+and makes no Telegram API calls.

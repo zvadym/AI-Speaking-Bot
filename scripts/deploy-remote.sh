@@ -4,6 +4,7 @@ set -euo pipefail
 DEPLOY_HOST="${DEPLOY_HOST:-langbot-de-1}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-speaking-bot}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
+DEPLOY_CONFIG_DIR="${DEPLOY_CONFIG_DIR:-/etc/ai-speaking-bot}"
 SSH_FORWARD_AGENT="${SSH_FORWARD_AGENT:-true}"
 
 COMPOSE_FILE="${COMPOSE_FILE:-deploy/docker-compose.yml}"
@@ -72,12 +73,20 @@ ssh_cmd() {
   fi
 }
 
+for value_name in DEPLOY_DIR DEPLOY_BRANCH DEPLOY_CONFIG_DIR COMPOSE_FILE MIGRATE_SCRIPT PROJECT HEALTHCHECK_API_URL HEALTHCHECK_APP_URL; do
+  value="${!value_name}"
+  if [[ "$value" == *"'"* || "$value" == *$'\n'* ]]; then
+    echo "Invalid character in $value_name" >&2
+    exit 1
+  fi
+done
+
 log "Check SSH connectivity to ${DEPLOY_HOST}"
 ssh_cmd -o BatchMode=yes -o ConnectTimeout=10 "${DEPLOY_HOST}" "echo 'SSH OK'" >/dev/null
 
 log "Deploy ${DEPLOY_BRANCH} to ${DEPLOY_HOST}"
 ssh_cmd "${DEPLOY_HOST}" \
-  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' RESTART_ALL='${RESTART_ALL}' UPDATE_PHRASES='${UPDATE_PHRASES}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' bash -se" <<'REMOTE'
+  "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' DEPLOY_CONFIG_DIR='${DEPLOY_CONFIG_DIR}' COMPOSE_FILE='${COMPOSE_FILE}' MIGRATE_SCRIPT='${MIGRATE_SCRIPT}' PROJECT='${PROJECT}' HEALTH_ATTEMPTS='${HEALTH_ATTEMPTS}' HEALTH_DELAY_SEC='${HEALTH_DELAY_SEC}' HEALTH_TIMEOUT_SEC='${HEALTH_TIMEOUT_SEC}' SKIP_HEALTHCHECKS='${SKIP_HEALTHCHECKS}' RESTART_ALL='${RESTART_ALL}' UPDATE_PHRASES='${UPDATE_PHRASES}' HEALTHCHECK_API_URL='${HEALTHCHECK_API_URL}' HEALTHCHECK_APP_URL='${HEALTHCHECK_APP_URL}' bash -se" <<'REMOTE'
 set -euo pipefail
 
 step() { echo "==> $1"; }
@@ -85,37 +94,31 @@ step() { echo "==> $1"; }
 step "Verify repository"
 cd "${DEPLOY_DIR}"
 
-preserved_files=(deploy/.env.api deploy/.env.miniapp)
-backup_dir="$(mktemp -d)"
-trap 'rm -rf "${backup_dir}"' EXIT
-for file in "${preserved_files[@]}"; do
-  if [[ -f "${file}" ]]; then
-    mkdir -p "${backup_dir}/$(dirname "${file}")"
-    cp "${file}" "${backup_dir}/${file}"
-  fi
-done
-
-step "Update source"
-git fetch origin
-git checkout -f "${DEPLOY_BRANCH}"
-git reset --hard "origin/${DEPLOY_BRANCH}"
-for file in "${preserved_files[@]}"; do
-  if [[ -f "${backup_dir}/${file}" ]]; then
-    cp "${backup_dir}/${file}" "${file}"
-  fi
-done
-
-for file in deploy/.env.api deploy/.env.miniapp; do
-  if [[ ! -f "${file}" ]]; then
-    echo "Missing ${file} on server" >&2
+# Private files must already exist before deploying the sanitized branch. Do not
+# pull/reset first: old JSON may be the only remaining source of bot tokens.
+export API_ENV_FILE="${DEPLOY_CONFIG_DIR}/api.env"
+export MINIAPP_ENV_FILE="${DEPLOY_CONFIG_DIR}/miniapp.env"
+for file in "$API_ENV_FILE" "$MINIAPP_ENV_FILE"; do
+  if [[ ! -f "$file" ]]; then
+    echo "Missing private env file: $file. Run the documented migration before deployment." >&2
     exit 1
   fi
 done
 
-set -a
-source deploy/.env.api
-source deploy/.env.miniapp
-set +a
+step "Fetch and preflight target bot credentials before changing the running checkout"
+git fetch origin
+preflight_dir="$(mktemp -d)"
+trap 'rm -rf "$preflight_dir"' EXIT
+git archive "origin/${DEPLOY_BRANCH}" scripts/private_env.py deploy/bots | tar -x -C "$preflight_dir"
+python3 "$preflight_dir/scripts/private_env.py" check "$API_ENV_FILE" "$MINIAPP_ENV_FILE" \
+  --repo-root "$DEPLOY_DIR" --bots-dir "$preflight_dir/deploy/bots" --deployment
+
+step "Update source"
+git checkout -f "${DEPLOY_BRANCH}"
+git reset --hard "origin/${DEPLOY_BRANCH}"
+ROOT_DIR="$DEPLOY_DIR"
+source "$ROOT_DIR/scripts/private-env.sh"
+load_private_env --override "$API_ENV_FILE" "$MINIAPP_ENV_FILE"
 
 step "Run database migrations"
 bash "${MIGRATE_SCRIPT}"

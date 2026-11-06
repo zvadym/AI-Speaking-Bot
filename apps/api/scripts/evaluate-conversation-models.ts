@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import dotenv from 'dotenv';
+import '../src/private-env.js';
 import OpenAI from 'openai';
 import { loadBotConfigs } from '../src/bot-configs.js';
 import { createBotAiClient, type ConversationAiResult } from '../src/bot-runtime/bot-ai.js';
@@ -69,7 +69,6 @@ interface JudgeResult {
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const apiDir = path.resolve(currentDir, '..');
 const rootDir = path.resolve(apiDir, '../..');
-dotenv.config({ path: path.join(rootDir, 'deploy/.env.api') });
 
 const fixturePath = path.join(apiDir, 'evals/conversation-balanced-v1.json');
 const outputDir = path.join(rootDir, 'docs/model-evals');

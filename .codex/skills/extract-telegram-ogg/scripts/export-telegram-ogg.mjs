@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { botTokenEnvName } from '../../../../apps/api/src/bot-configs.js';
 
 const REMOTE_HOST = 'langbot-de-1';
 const API_CONTAINER = 'languagebot-api-1';
@@ -167,7 +168,7 @@ function loadBotToken(root, botKey) {
     fail(`bot_config_invalid_json:${botKey}`);
   }
 
-  const token = String(config?.telegram_bot_token || '').trim();
+  const token = String(process.env[botTokenEnvName(botKey)] || '').trim();
   if (!token || token.startsWith('YOUR_')) fail(`telegram_bot_token_missing:${botKey}`);
   return token;
 }

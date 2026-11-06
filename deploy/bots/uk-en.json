@@ -13,7 +13,6 @@
   ],
   "bot_voice": "Fable",
   "telegram_url": "https://t.me/jackie_english_tutor_bot",
-  "telegram_bot_token": "REDACTED_SECRET",
   "locale": {
     "btn_translation": "Переклад 🇺🇦",
     "btn_follow_up_hints": "Що сказати далі?",

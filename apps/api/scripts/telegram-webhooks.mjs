@@ -1,24 +1,26 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import { loadBotConfigs, extractBotTokens } from '../dist/bot-configs.js';
 import { deriveTelegramWebhookSecret } from '../dist/bot-runtime/webhook-secret.js';
 
 const command = String(process.argv[2] || 'inspect').trim().toLowerCase();
 const baseUrl = String(
   process.argv[3] ||
   process.env.TELEGRAM_WEBHOOK_BASE_URL ||
-  'https://learn-language-api.notarobot.dev/telegram/webhook'
+  (process.env.API_BASE_URL ? `${process.env.API_BASE_URL.replace(/\/+$/, '')}/telegram/webhook` : '')
 ).replace(/\/+$/, '');
 const signingSecret = String(process.env.INTERNAL_API_SECRET || process.env.JWT_SECRET || '');
-const botsDir = process.env.BOTS_DIR || '/deploy/bots';
-const files = fs.readdirSync(botsDir).filter((file) => file.endsWith('.json')).sort();
-const bots = files.map((file) => JSON.parse(fs.readFileSync(path.join(botsDir, file), 'utf8')));
+if (!['set', 'inspect'].includes(command)) throw new Error(`Unknown command: ${command}`);
+const configs = loadBotConfigs();
+const tokens = extractBotTokens({ configs, requireAll: true });
+const bots = Object.values(configs);
+if (!bots.length) throw new Error('No bot configs found');
+if (command === 'set' && !baseUrl) throw new Error('API_BASE_URL or TELEGRAM_WEBHOOK_BASE_URL is required');
 
 if (command === 'set' && !signingSecret) {
   throw new Error('INTERNAL_API_SECRET or JWT_SECRET is required');
 }
 
 async function telegram(bot, method, body = null) {
-  const response = await fetch(`https://api.telegram.org/bot${bot.telegram_bot_token}/${method}`, {
+  const response = await fetch(`https://api.telegram.org/bot${tokens[bot.bot_key]}/${method}`, {
     method: body ? 'POST' : 'GET',
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined
@@ -36,7 +38,7 @@ for (const bot of bots) {
       url: `${baseUrl}/${encodeURIComponent(bot.bot_key)}`,
       secret_token: deriveTelegramWebhookSecret({
         botKey: bot.bot_key,
-        botToken: bot.telegram_bot_token,
+        botToken: tokens[bot.bot_key],
         signingSecret
       }),
       allowed_updates: ['message', 'callback_query'],

@@ -11,27 +11,46 @@ The marketing site under `apps/landing` deploys separately to Vercel.
 
 ## Server Setup
 
-The server needs Git, Docker Engine, and the Docker Compose plugin. Point these
+The server needs Git, Python 3, Docker Engine, and the Docker Compose plugin. Point these
 domains to it:
 
 - `learn-language-api.notarobot.dev`
 - `learn-language-app.notarobot.dev`
 
-Clone the repository and create the two runtime env files:
+For a new server, clone the repository and create two private env files outside it:
 
 ```bash
 mkdir -p /opt/ai-speaking-bot
 cd /opt/ai-speaking-bot
 git clone <YOUR_REPO_URL> .
 
-cp deploy/.env.api.example deploy/.env.api
-cp deploy/.env.miniapp.example deploy/.env.miniapp
+sudo install -d -m 700 -o "$(id -un)" -g "$(id -gn)" /etc/ai-speaking-bot
+install -m 600 deploy/.env.api.example /etc/ai-speaking-bot/api.env
+install -m 600 deploy/.env.miniapp.example /etc/ai-speaking-bot/miniapp.env
 ```
 
-`deploy/.env.api` must contain the database, Stripe, JWT, OpenAI, and internal
-API secrets. Telegram bot tokens are read from `deploy/bots/*.json`.
-`deploy/.env.miniapp` must define `VITE_API_BASE` and the Mini App build values.
-Never commit populated env files or new bot tokens.
+`/etc/ai-speaking-bot/api.env` contains database, Stripe, JWT, OpenAI and internal
+API secrets, plus one `TELEGRAM_BOT_TOKEN_<BOT_KEY>` per bot (for example
+`TELEGRAM_BOT_TOKEN_UK_EN`). Public `deploy/bots/*.json` contains no credentials.
+`/etc/ai-speaking-bot/miniapp.env` defines `VITE_API_BASE` and public Mini App build values.
+Override the server directory with `DEPLOY_CONFIG_DIR`. Files must be mode 0600,
+with the directory mode 0700, readable by the SSH deployment user.
+
+**Existing servers: follow [PRIVATE_ENV_MIGRATION.md](PRIVATE_ENV_MIGRATION.md)
+before deploying this change. Do not replace existing configuration with templates.**
+The SSH deploy checks all credentials from the target Git revision before resetting
+the working checkout or running migrations. No secrets are uploaded during routine deploy.
+The host-side Compose env files supply API/worker variables; secret files are not image inputs.
+
+For direct Docker Compose commands outside the wrapper, export both paths:
+
+```bash
+export API_ENV_FILE=/etc/ai-speaking-bot/api.env
+export MINIAPP_ENV_FILE=/etc/ai-speaking-bot/miniapp.env
+```
+
+Do not print `docker compose config` with real credentials; its output expands env values.
+Use `docker compose config --quiet` for syntax validation.
 
 Interactive onboarding v2 is opt-in per bot through
 `BOT_ONBOARDING_V2_ENABLED_BOT_KEYS`. Use a comma-separated list of bot keys

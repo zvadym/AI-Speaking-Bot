@@ -1,24 +1,37 @@
 # Local Development
 
-The bot runs as an API process plus a pg-boss worker. Both use
-`deploy/.env.api`; the Mini App uses `deploy/.env.miniapp`.
+The bot runs as an API process plus a pg-boss worker. Use Node **22.12+** and Python 3.
+All populated env files live outside the repository. Defaults are under
+`~/.config/ai-speaking-bot`; override paths with `API_ENV_FILE`,
+`MINIAPP_ENV_FILE`, `LANDING_ENV_FILE`, or the directory with `LANGUAGEBOT_CONFIG_DIR`.
 
 ## Environment
 
-```bash
-cp deploy/.env.api.example deploy/.env.api
-cp deploy/.env.miniapp.example deploy/.env.miniapp
-```
-
-For local Mini App development, set:
+For a new development installation:
 
 ```bash
-VITE_API_BASE=http://localhost:3000
+mkdir -p "$HOME/.config/ai-speaking-bot"
+chmod 700 "$HOME/.config/ai-speaking-bot"
+install -m 600 deploy/.env.api.example "$HOME/.config/ai-speaking-bot/api.env"
+install -m 600 deploy/.env.miniapp.example "$HOME/.config/ai-speaking-bot/miniapp.env"
+install -m 600 apps/landing/.env.example "$HOME/.config/ai-speaking-bot/landing.env"
 ```
 
-Postgres must be reachable through `DATABASE_URL`. The API also requires valid
-Stripe, JWT, OpenAI, and Telegram bot credentials. Bot tokens and locale data
-come from `deploy/bots/*.json`.
+Fill the private files with your own development settings. Never overwrite an existing
+private env file with a template. Existing installations must follow
+[the migration runbook](deploy/PRIVATE_ENV_MIGRATION.md) to preserve credentials.
+
+Set local Mini App `VITE_API_BASE=http://localhost:3000`. `VITE_*` values are public
+browser build inputs; backend secrets belong only in `api.env`.
+Postgres must be reachable through `DATABASE_URL`. API/worker also need Stripe,
+JWT, OpenAI and Telegram configuration. Public bot JSON must never contain tokens.
+For each bot key, set its corresponding environment variable, for example
+`TELEGRAM_BOT_TOKEN_UK_EN` for `uk-en`. Local runtime can enable a subset of bots;
+production deployment requires credentials for every JSON config.
+
+Files use dotenv assignments, with no shell expansion. Quote literal values containing
+`#` or `$` with single quotes; do not use shell commands or variable references.
+Explicit process environment values take precedence over file values.
 
 ## Database
 
@@ -39,8 +52,7 @@ Use separate terminals:
 ```
 
 ```bash
-cd apps/api
-npm run worker:dev
+./scripts/dev-worker.sh
 ```
 
 ```bash
@@ -63,7 +75,15 @@ npm run typecheck
 
 For an isolated real-bot test, use a dedicated bot config and an HTTPS tunnel,
 then set its webhook to `/telegram/webhook/<bot-key>` with
-`apps/api/scripts/telegram-webhooks.mjs`.
+`apps/api/scripts/telegram-webhooks.mjs` after the API build. For direct Node/npm
+commands, opt into the private file explicitly:
+
+```bash
+API_ENV_FILE="$HOME/.config/ai-speaking-bot/api.env" npm --prefix apps/api run worker:dev
+```
+
+`npm test` uses synthetic credentials and does not load the private file. The optional
+Postgres integration test uses only an explicitly configured `BOT_RUNTIME_TEST_DATABASE_URL`.
 
 ## Production Deploy
 

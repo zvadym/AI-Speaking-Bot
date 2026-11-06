@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import 'dotenv/config';
+import '../src/private-env.js';
 import fs from 'fs';
 import path from 'path';
 import pg from 'pg';

@@ -6,6 +6,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEPLOY_HOST="${DEPLOY_HOST:-}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/ai-speaking-bot}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
+DEPLOY_CONFIG_DIR="${DEPLOY_CONFIG_DIR:-/etc/ai-speaking-bot}"
+source "$ROOT_DIR/scripts/private-env.sh"
 REPO_URL="${REPO_URL:-}"
 
 # How to handle sudo:
@@ -16,7 +18,7 @@ SUDO_MODE="${SUDO_MODE:-auto}"
 # SSH agent forwarding (useful for private GitHub repos with SSH clone URLs).
 SSH_FORWARD_AGENT="${SSH_FORWARD_AGENT:-false}"
 
-# Upload ignored config files from local repo -> server (won't overwrite by default).
+# Upload external private config files to the server (no overwrite by default).
 UPLOAD_CONFIG="${UPLOAD_CONFIG:-true}"
 FORCE_UPLOAD="${FORCE_UPLOAD:-false}"
 
@@ -32,6 +34,7 @@ Usage:
 Common overrides:
   DEPLOY_DIR=/opt/ai-speaking-bot
   DEPLOY_BRANCH=main
+  DEPLOY_CONFIG_DIR=/etc/ai-speaking-bot
   REPO_URL=git@github.com:YOUR_ORG/YOUR_REPO.git
   SUDO_MODE=auto|prompt
   SSH_FORWARD_AGENT=true
@@ -41,17 +44,15 @@ Common overrides:
 What it does:
   - Installs git, python3, curl, rsync and Docker (+ compose plugin) on the server (Debian/Ubuntu)
   - Creates DEPLOY_DIR and clones the repo there (or reuses existing clone)
-  - Uploads git-ignored env files from local repo to the server:
-      deploy/.env.api
-      deploy/.env.miniapp
-      deploy/.env.prod
+  - Uploads API_ENV_FILE and MINIAPP_ENV_FILE from outside the checkout to
+    DEPLOY_CONFIG_DIR/api.env and DEPLOY_CONFIG_DIR/miniapp.env (mode 0600)
 
 Notes:
   - If your server requires a sudo password, re-run with: SUDO_MODE=prompt
   - If git clone fails on a private repo, prefer SSH + agent forwarding:
       REPO_URL=git@github.com:... SSH_FORWARD_AGENT=true DEPLOY_HOST=... ./scripts/bootstrap-remote-server.sh
   - It does NOT run docker compose or deploy anything. Run ./scripts/deploy-remote.sh after.
-  - deploy/.env is tracked in git and is NOT uploaded by this script (to keep server git state clean).
+  - Bot credentials must already be present in the local private API_ENV_FILE.
 EOF
 }
 
@@ -117,42 +118,42 @@ scp_cmd() {
 run_remote_setup() {
   if [[ "${SUDO_MODE}" == "prompt" ]]; then
     ssh_cmd -tt "${DEPLOY_HOST}" \
-      "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' REPO_URL='${REPO_URL}' SUDO_MODE='${SUDO_MODE}' bash -se"
+      "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' DEPLOY_CONFIG_DIR='${DEPLOY_CONFIG_DIR}' REPO_URL='${REPO_URL}' SUDO_MODE='${SUDO_MODE}' bash -se"
   else
     ssh_cmd "${DEPLOY_HOST}" \
-      "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' REPO_URL='${REPO_URL}' SUDO_MODE='${SUDO_MODE}' bash -se"
+      "DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' DEPLOY_CONFIG_DIR='${DEPLOY_CONFIG_DIR}' REPO_URL='${REPO_URL}' SUDO_MODE='${SUDO_MODE}' bash -se"
   fi
 }
 
-remote_file_exists() {
-  local rel="$1"
-  ssh_cmd "${DEPLOY_HOST}" "test -f '${DEPLOY_DIR}/${rel}'"
-}
-
-upload_ignored_file() {
-  local rel="$1"
-  local local_path="${ROOT_DIR}/${rel}"
-  local remote_path="${DEPLOY_DIR}/${rel}"
-
-  if [[ ! -f "${local_path}" ]]; then
-    echo "⚠️  Missing local file (skipping): ${local_path}" >&2
-    return 0
-  fi
-
-  if remote_file_exists "${rel}"; then
-    if [[ "${FORCE_UPLOAD}" != "true" ]]; then
-      echo "⏭️  Remote file exists (skipping): ${remote_path}" >&2
+upload_private_file() {
+  local local_path="$1"
+  local name="$2"
+  local remote_path="${DEPLOY_CONFIG_DIR}/${name}.env"
+  python3 "$ROOT_DIR/scripts/private_env.py" check "$local_path"
+  if ssh_cmd "$DEPLOY_HOST" "test -f '$remote_path'"; then
+    if [[ "$FORCE_UPLOAD" != "true" ]]; then
+      echo "Remote file exists (skipping): $remote_path" >&2
       return 0
     fi
   fi
-
-  ssh_cmd "${DEPLOY_HOST}" "mkdir -p \"$(dirname "${remote_path}")\""
-  scp_cmd -p "${local_path}" "${DEPLOY_HOST}:${remote_path}"
-
-  # Restrict env file permissions on the server (safe: docker compose reads them host-side).
-  ssh_cmd "${DEPLOY_HOST}" "chmod 600 '${remote_path}'"
-  echo "✅ Uploaded: ${rel}"
+  # mktemp prevents a partially transferred file from replacing working config.
+  local temporary
+  temporary="$(ssh_cmd "$DEPLOY_HOST" "umask 077; mktemp '${DEPLOY_CONFIG_DIR}/.upload-XXXXXXXX'")"
+  scp_cmd "$local_path" "${DEPLOY_HOST}:${temporary}"
+  ssh_cmd "$DEPLOY_HOST" "chmod 600 '$temporary' && mv '$temporary' '$remote_path'"
+  echo "Uploaded private ${name}.env"
 }
+
+for value_name in DEPLOY_DIR DEPLOY_CONFIG_DIR DEPLOY_BRANCH REPO_URL; do
+  value="${!value_name}"
+  if [[ "$value" == *"'"* || "$value" == *$'\n'* ]]; then
+    echo "Invalid character in $value_name" >&2
+    exit 1
+  fi
+done
+if [[ "$UPLOAD_CONFIG" == "true" ]]; then
+  python3 "$ROOT_DIR/scripts/private_env.py" check "$API_ENV_FILE" "$MINIAPP_ENV_FILE" --bots-dir "$ROOT_DIR/deploy/bots" --deployment
+fi
 
 log "🔌 Step 1/4: Check SSH connectivity to ${DEPLOY_HOST}"
 if ! ssh_ok; then
@@ -242,6 +243,17 @@ fi
 step "2.6/7: Create deploy dir + clone repo (or reuse existing clone)"
 sudo mkdir -p "${DEPLOY_DIR}"
 sudo chown -R "${USER}:${USER}" "${DEPLOY_DIR}"
+# Runtime configuration has a separate lifecycle from the checkout.
+python3 - "$DEPLOY_DIR" "$DEPLOY_CONFIG_DIR" <<'PYCONFIG'
+from pathlib import Path
+import sys
+repo, config = map(lambda x: Path(x).resolve(), sys.argv[1:])
+if not Path(sys.argv[2]).is_absolute() or config == repo or repo in config.parents:
+    raise SystemExit('DEPLOY_CONFIG_DIR must be absolute and outside DEPLOY_DIR')
+PYCONFIG
+sudo mkdir -p "$DEPLOY_CONFIG_DIR"
+sudo chown "${USER}:${USER}" "$DEPLOY_CONFIG_DIR"
+sudo chmod 700 "$DEPLOY_CONFIG_DIR"
 
 cd "${DEPLOY_DIR}"
 if [[ -d .git ]]; then
@@ -286,16 +298,16 @@ docker compose version || true
 REMOTE
 
 if [[ "${UPLOAD_CONFIG}" == "true" ]]; then
-  log "📤 Step 3/4: Upload git-ignored env files to remote (won't overwrite by default)"
-  upload_ignored_file "deploy/.env.api"
-  upload_ignored_file "deploy/.env.miniapp"
+  log "📤 Step 3/4: Upload external private env files (no overwrite by default)"
+  upload_private_file "$API_ENV_FILE" api
+  upload_private_file "$MINIAPP_ENV_FILE" miniapp
 else
   log "⏭️  Step 3/4: Skipping config upload (UPLOAD_CONFIG=false)"
 fi
 
-log "🔎 Step 4/4: Verify required files exist (names only)"
-ssh_cmd "${DEPLOY_HOST}" \
-  "cd '${DEPLOY_DIR}' && for f in deploy/.env deploy/.env.api deploy/.env.miniapp deploy/.env.prod; do test -f \"\$f\" && echo \"✅ \$f\" || (echo \"❌ Missing \$f\" >&2; exit 1); done"
+log "🔎 Step 4/4: Verify private configuration"
+ssh_cmd "$DEPLOY_HOST" \
+  "python3 '${DEPLOY_DIR}/scripts/private_env.py' check '${DEPLOY_CONFIG_DIR}/api.env' '${DEPLOY_CONFIG_DIR}/miniapp.env' --bots-dir '${DEPLOY_DIR}/deploy/bots' --deployment"
 
 log "✅ Bootstrap complete. Next:"
-echo "DEPLOY_HOST='${DEPLOY_HOST}' DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' ./scripts/deploy-remote.sh"
+echo "DEPLOY_HOST='${DEPLOY_HOST}' DEPLOY_DIR='${DEPLOY_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' DEPLOY_CONFIG_DIR='${DEPLOY_CONFIG_DIR}' ./scripts/deploy-remote.sh"

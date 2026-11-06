@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './private-env.js';
 import { extractBotTokens } from './bot-configs.js';
 import { parseBotRuntimeRouteFlags } from './bot-runtime/route-flags.js';
 import { parseProgressEnabledBotKeys } from './bot-runtime/progress-config.js';
@@ -149,14 +149,14 @@ const sslRejectUnauthorized = (process.env.DATABASE_SSL_REJECT_UNAUTHORIZED || '
 const webappUrl = requireEnv('WEBAPP_URL');
 const webappReturnUrlRaw = optionalUrl('WEBAPP_RETURN_URL');
 
-// Load tokens from bot config files (deploy/bots/*.json)
+// Public bot configs identify pairs; credentials are injected from private env.
 const telegramBotTokensByBotKey = extractBotTokens();
 
 // Validation: require at least one bot token
 if (Object.keys(telegramBotTokensByBotKey).length === 0) {
   throw new Error(
     'Missing Telegram bot tokens. ' +
-    'Add telegram_bot_token field to bot config files in deploy/bots/*.json'
+    'Set TELEGRAM_BOT_TOKEN_<BOT_KEY> in the external API_ENV_FILE or process environment'
   );
 }
 
@@ -199,7 +199,7 @@ const idiomPracticeSendHoursUtc = optionalIntegerList(
   { min: 0, max: 23, maxItems: 2 }
 );
 
-console.log(`Loaded Telegram bot tokens from bot config files for: ${Object.keys(telegramBotTokensByBotKey).join(', ')}`)
+console.log(`Loaded Telegram bot credentials from environment for: ${Object.keys(telegramBotTokensByBotKey).join(', ')}`)
 
 export const env = {
   port,

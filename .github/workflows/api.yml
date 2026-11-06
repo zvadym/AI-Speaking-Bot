@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - "apps/api/**"
+      - "deploy/**"
+      - "scripts/**"
       - ".github/workflows/api.yml"
   push:
     branches:
       - main
     paths:
       - "apps/api/**"
+      - "deploy/**"
+      - "scripts/**"
       - ".github/workflows/api.yml"
 
 jobs:
@@ -29,6 +33,9 @@ jobs:
       - name: Install dependencies
         working-directory: apps/api
         run: npm ci
+
+      - name: Test private environment tooling
+        run: python3 -m unittest discover -s scripts/tests -v
 
       - name: Test
         working-directory: apps/api

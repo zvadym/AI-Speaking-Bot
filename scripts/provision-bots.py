@@ -15,6 +15,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from private_env import api_env_path, read_private_env, resolve_bot_token, store_bot_token
+
 try:
     import yaml
 except Exception:  # pragma: no cover
@@ -193,7 +195,6 @@ REQUIRED_KEYS = [
     "bot_key",
     "base_language",
     "learning_language",
-    "telegram_bot_token",
     "locale",
 ]
 BOT_TOKEN_RE = re.compile(r"^\d+:[A-Za-z0-9_-]{20,}$")
@@ -499,8 +500,8 @@ def validate_payload(config: Dict[str, Any]) -> None:
     if bot_key != expected:
         raise BotProvisioningError(f"bot_key must equal {expected}, got {bot_key}")
 
-    if not validate_bot_token(str(config.get("telegram_bot_token") or "")):
-        raise BotProvisioningError("telegram_bot_token does not look like a valid BotFather token")
+    if "telegram_bot_token" in config:
+        raise BotProvisioningError("Inline telegram_bot_token is forbidden; run migrate-private-env.py first")
 
     if not isinstance(config.get("locale"), dict):
         raise BotProvisioningError("locale must be an object")
@@ -1055,7 +1056,7 @@ def build_bot_config(template: Dict[str, Any], intake: Dict[str, Any], miniapp_u
     config["bot_voice"] = intake["bot_voice"]
     config["telegram_url"] = f"https://t.me/{intake['bot_username']}"
     config["username"] = intake["bot_username"]
-    config["telegram_bot_token"] = intake["telegram_bot_token"]
+    config.pop("telegram_bot_token", None)
 
     base = intake["base_language"]
     description = first_non_empty(
@@ -1127,6 +1128,11 @@ def run_apply(args: argparse.Namespace) -> int:
                 path = (repo_root / path).resolve()
             config_paths.append(path)
 
+    for config_path in config_paths:
+        config = read_json(config_path)
+        validate_payload(config)
+        resolve_bot_token(str(config["bot_key"]))
+
     summary: List[Dict[str, Any]] = []
     print(f"Repo root: {repo_root}")
     print(f"Contract: {contract_path}")
@@ -1181,7 +1187,7 @@ def run_apply(args: argparse.Namespace) -> int:
 
             steps = configure_bot_via_api(
                 bot_key=bot_key,
-                token=str(config["telegram_bot_token"]),
+                token=resolve_bot_token(bot_key),
                 presentation=normalized_presentation,
                 expected_username=expected_username,
                 profile_photo=profile_photo_path,
@@ -1409,9 +1415,12 @@ def run_interactive(args: argparse.Namespace) -> int:
                     )
                     continue
 
+            if not args.dry_run:
+                store_bot_token(bot_key, intake["telegram_bot_token"])
+
             steps = configure_bot_via_api(
                 bot_key=bot_key,
-                token=str(config["telegram_bot_token"]),
+                token=intake["telegram_bot_token"],
                 presentation=normalized_presentation,
                 expected_username=None
                 if args.skip_username_check
@@ -1537,6 +1546,12 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
+        # sync operates on public metadata and does not need private credentials.
+        if args.mode in ("interactive", "apply"):
+            private_file = api_env_path()
+            if private_file.exists() or os.environ.get("API_ENV_FILE"):
+                for name, value in read_private_env(private_file).items():
+                    os.environ.setdefault(name, value)
         if args.mode == "interactive":
             return run_interactive(args)
         if args.mode == "apply":
@@ -1547,8 +1562,10 @@ def main() -> int:
     except KeyboardInterrupt:
         print("\nInterrupted.")
         return 130
-    except BotProvisioningError as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+    except (BotProvisioningError, ValueError, OSError) as exc:
+        # JSON errors can include source fragments; never echo malformed config values.
+        message = "Invalid JSON configuration" if isinstance(exc, json.JSONDecodeError) else str(exc)
+        print(f"ERROR: {message}", file=sys.stderr)
         return 1
 
 

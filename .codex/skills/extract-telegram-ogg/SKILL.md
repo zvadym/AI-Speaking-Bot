@@ -22,6 +22,7 @@ Ask for a missing bot key or username. Do not ask for a limit when it is omitted
 From the repository root, run:
 
 ```bash
+API_ENV_FILE="$HOME/.config/ai-speaking-bot/api.env" \
 node .codex/skills/extract-telegram-ogg/scripts/export-telegram-ogg.mjs \
   --bot-key <bot-key> \
   --username <username> \
@@ -31,6 +32,7 @@ node .codex/skills/extract-telegram-ogg/scripts/export-telegram-ogg.mjs \
 Use `--dry-run` only when the user asks to inspect availability without downloading or when diagnosing the exporter:
 
 ```bash
+API_ENV_FILE="$HOME/.config/ai-speaking-bot/api.env" \
 node .codex/skills/extract-telegram-ogg/scripts/export-telegram-ogg.mjs \
   --bot-key <bot-key> \
   --username <username> \
@@ -38,7 +40,7 @@ node .codex/skills/extract-telegram-ogg/scripts/export-telegram-ogg.mjs \
   --dry-run
 ```
 
-The script reads production data without modifying it, downloads through the token in `deploy/bots/<bot-key>.json`, validates each Ogg container, and creates a timestamped directory, `manifest.json`, and ZIP under `.codex/exports/`.
+The script reads production data without modifying it, downloads through `TELEGRAM_BOT_TOKEN_<BOT_KEY>` from the external `API_ENV_FILE` (bot metadata remains in `deploy/bots/<bot-key>.json`), validates each Ogg container, and creates a timestamped directory, `manifest.json`, and ZIP under `.codex/exports/`.
 
 ## Report the result
 

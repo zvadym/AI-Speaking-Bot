@@ -18,3 +18,14 @@ deploy/n8n-data
 .codex/exports
 .codex/tmp
 .cursor
+
+# Runtime credentials live outside the checkout; guard accidental local copies.
+.env
+.env.*
+!.env.example
+!**/.env.example
+!**/.env.*.example
+*.pem
+*.key
+backups/
+exports/

@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_FILE="$ROOT_DIR/deploy/.env.api"
+source "$ROOT_DIR/scripts/private-env.sh"
+ENV_FILE="$API_ENV_FILE"
 SCHEMA_SCRIPT="$ROOT_DIR/scripts/db-schema.sh"
 
 # Colors for output
@@ -14,13 +15,11 @@ NC='\033[0m' # No Color
 load_database_env() {
   if [[ ! -f "$ENV_FILE" ]]; then
     echo -e "${RED}✗ Missing $ENV_FILE${NC}" >&2
-    echo "  Copy deploy/.env.api.example to deploy/.env.api and fill it in." >&2
+    echo "  Create a private API_ENV_FILE outside the repository using deploy/.env.api.example." >&2
     exit 1
   fi
 
-  set -a
-  source "$ENV_FILE"
-  set +a
+  load_private_env "$ENV_FILE"
 
   if [[ -z "${DATABASE_URL:-}" ]]; then
     echo -e "${RED}✗ DATABASE_URL is not set in $ENV_FILE${NC}" >&2

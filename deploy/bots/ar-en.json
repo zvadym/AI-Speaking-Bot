@@ -14,7 +14,6 @@
   ],
   "bot_voice": "Fable",
   "telegram_url": "https://t.me/NourArEnBot",
-  "telegram_bot_token": "REDACTED_SECRET",
   "locale": {
     "btn_translation": "الترجمة 🇸🇦",
     "btn_follow_up_hints": "ماذا يمكنني أن أقول بعد ذلك؟",

@@ -23,21 +23,21 @@ This file orients automated agents working in this repo. Keep it accurate as the
 
 ## Local Dev
 - API:
-  - `scripts/dev-api.sh` (loads `deploy/.env.api` if present).
+  - `scripts/dev-api.sh` / `scripts/dev-worker.sh` (load external `API_ENV_FILE`).
   - Or `cd apps/api && npm install && npm run dev`.
   - Tests: `cd apps/api && npm test`.
 - Mini-app:
-  - `scripts/dev-miniapp.sh` (loads `deploy/.env.miniapp` if present).
+  - `scripts/dev-miniapp.sh` (loads external `MINIAPP_ENV_FILE`).
   - Or `cd apps/miniapp && npm install && npm run dev`.
 - Landing:
-  - `scripts/dev-landing.sh` (loads `deploy/.env.landing` if present).
+  - `scripts/dev-landing.sh` (loads external `LANDING_ENV_FILE`).
   - Or `cd apps/landing && npm install && npm run dev`.
 - API has a `node:test` suite; run it with `cd apps/api && npm test`.
 
 ## Env & Secrets
 - API required env vars (see `apps/api/src/env.js`):
   - `DATABASE_URL`, `WEBAPP_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `JWT_SECRET`.
-  - At least one valid `deploy/bots/*.json` with `telegram_bot_token` is also required at runtime.
+  - Public `deploy/bots/*.json` identifies bot pairs. Supply `TELEGRAM_BOT_TOKEN_<BOT_KEY>` in the environment (for example `TELEGRAM_BOT_TOKEN_UK_EN`). At least one is required at runtime; deployment preflights every configured bot.
 - API optional env vars: `API_PORT`, `API_BASE_URL`, `CORS_ORIGINS`,
   `DATABASE_SSL`, `DATABASE_SSL_REJECT_UNAUTHORIZED`, `TELEGRAM_INITDATA_MAX_AGE`,
   `STRIPE_BILLING_PRODUCT_ID` (required to manage Stripe product prices from the admin dashboard),
@@ -67,7 +67,11 @@ This file orients automated agents working in this repo. Keep it accurate as the
     `LANDING_DISCORD_WEBHOOK_URL`,
     and legacy fallbacks `VITE_SITE_URL`, `API_BASE_URL`, `VITE_API_BASE`.
   - `apps/landing/scripts/generate-pricing.mjs` fetches `/public/plans` at build time; in CI/Vercel it fails hard if pricing env is missing.
-- Do not commit secrets. `deploy/.env.api` and `deploy/.env.miniapp` are gitignored.
+- Keep all populated env files outside Git checkouts, mode 0600, in a directory mode 0700.
+- Local defaults: `~/.config/ai-speaking-bot/{api,miniapp,landing}.env`; override with `API_ENV_FILE`, `MINIAPP_ENV_FILE`, `LANDING_ENV_FILE` or `LANGUAGEBOT_CONFIG_DIR`.
+- Server default: `/etc/ai-speaking-bot/{api,miniapp}.env` (`DEPLOY_CONFIG_DIR` override).
+- Node reads only an explicitly selected `API_ENV_FILE`; Docker receives env through Compose. Never put backend secrets in VITE/NUXT_PUBLIC values.
+- `scripts/migrate-private-env.py` copies legacy configuration into private storage, verifies parity and creates a private backup. `--remove-legacy` removes old local env files and inline token fields only after verification. See `deploy/PRIVATE_ENV_MIGRATION.md` before server rollout.
 
 ## DB / Migrations
 - Run migrations via `deploy/migrate.sh` (uses `ghcr.io/amacneil/dbmate:2.12`).
@@ -99,7 +103,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 
 ## Bot Configs
 - Production bot configs live in `deploy/bots/*.json`.
-- API startup reads `deploy/bots/*.json` directly via `apps/api/src/bot-configs.js`.
+- API startup reads public `deploy/bots/*.json` via `apps/api/src/bot-configs.js`; `extractBotTokens()` resolves private environment credentials separately. Never write tokens into JSON configs.
 - `scripts/provision-bots.py sync` validates/normalizes Telegram presentation fields; `scripts/provision-bots.py apply` pushes them to Telegram.
 - When changing bot config shape or meaning, verify both consumers: API and landing generators.
 

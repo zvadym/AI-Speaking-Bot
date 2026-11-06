@@ -6,7 +6,7 @@ services:
       context: ../apps/api
     restart: unless-stopped
     env_file:
-      - .env.api
+      - ${API_ENV_FILE:?Set API_ENV_FILE to an absolute private path outside the repository}
     environment:
       - NODE_ENV=production
     volumes:
@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
     command: ["npm", "run", "worker"]
     env_file:
-      - .env.api
+      - ${API_ENV_FILE:?Set API_ENV_FILE to an absolute private path outside the repository}
     environment:
       - NODE_ENV=production
     volumes:
@@ -42,7 +42,7 @@ services:
         - VITE_SCHOOL_URL=${VITE_SCHOOL_URL}
     restart: unless-stopped
     env_file:
-      - .env.miniapp
+      - ${MINIAPP_ENV_FILE:?Set MINIAPP_ENV_FILE to an absolute private path outside the repository}
     expose:
       - "80"
 

@@ -19,7 +19,7 @@
       "type": "node-terminal",
       "request": "launch",
       "name": "Worker",
-      "command": "cd apps/api && npm run worker:dev",
+      "command": "${workspaceFolder}/scripts/dev-worker.sh",
       "cwd": "${workspaceFolder}"
     }
   ],
