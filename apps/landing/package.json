@@ -20,5 +20,6 @@
   },
   "overrides": {
     "tinyexec": "1.0.2"
-  }
+  },
+  "license": "MIT"
 }
