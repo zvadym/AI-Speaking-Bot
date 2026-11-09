@@ -18,16 +18,6 @@
           {{ planLabel }}
         </button>
       </div>
-      <div class="stats-row" aria-label="Progress stats">
-        <div class="stat-card">
-          <span class="stat-label">{{ $t('dashboard.xpTotalLabel') }}</span>
-          <strong class="stat-value">{{ xpTotalDisplay }}</strong>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">{{ $t('dashboard.xpLevelLabel') }}</span>
-          <strong class="stat-value">L{{ xpLevelDisplay }}</strong>
-        </div>
-      </div>
       <div class="stats-row stats-row--single" aria-label="Current streak">
         <div class="stat-card stat-card--muted stat-card--streak">
           <span class="stat-label">{{ $t('dashboard.currentStreak') }}</span>
@@ -147,11 +137,6 @@ const streak = computed(() => dashboard.value?.streak || {
   activity_days: []
 });
 const usage = computed(() => dashboard.value?.usage || null);
-const xp = computed(() => dashboard.value?.xp || {
-  total: 0,
-  level: 1,
-  streak_bonus_applied: false
-});
 
 const levelLabel = computed(() => (selectedBot.value?.level || props.me?.level || 'b1').toString().toUpperCase());
 
@@ -165,8 +150,6 @@ const streakDaysDisplay = computed(() => (
     ? '—'
     : t('dashboard.streakDays', { count: streak.value.current ?? 0 })
 ));
-const xpTotalDisplay = computed(() => (loading.value ? '—' : String(xp.value.total ?? 0)));
-const xpLevelDisplay = computed(() => (loading.value ? '—' : String(xp.value.level ?? 1)));
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

@@ -22,7 +22,8 @@ export const ROUTES = [
   'command.lang',
   'command.level',
   'command.stats',
-  'command.xp',
+  'command.xp', // Legacy queued updates only.
+  'command.progress',
   'command.topic',
   'command.feedback',
   'command.unknown',
@@ -37,7 +38,7 @@ export const ROUTES = [
 
 export type Route = (typeof ROUTES)[number];
 export type UpdateType = 'callback_query' | 'message' | 'unknown';
-export type KeyboardIntent = 'level' | 'topic' | 'voice' | 'xp';
+export type KeyboardIntent = 'level' | 'topic' | 'voice' | 'progress';
 export type ReplyMode = 'text' | 'voice';
 export type GuardReason = 'ignore' | 'private_only' | 'bot_sender';
 export type IntentSource = 'callback_query' | 'reply_keyboard' | 'command' | 'message';
@@ -115,12 +116,10 @@ export interface PersistentKeyboardState {
   topicValue: string;
   voiceValue: string;
   replyMode: ReplyMode;
-  xpTotal: number;
-  xpLevel: number;
   levelButtonText: string;
   topicButtonText: string;
   voiceButtonText: string;
-  xpButtonText: string;
+  progressButtonText: string;
 }
 
 export interface RoutingFacts {
@@ -156,8 +155,6 @@ export interface KeyboardStateRow extends Record<string, unknown> {
   topic_template_id?: unknown;
   topic_pack_json?: unknown;
   topic_pinned_message_id?: unknown;
-  xp_total?: unknown;
-  xp_level?: unknown;
 }
 
 export interface Queryable {

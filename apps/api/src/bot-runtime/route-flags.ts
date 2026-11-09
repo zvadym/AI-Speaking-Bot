@@ -22,7 +22,8 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'command.lang': 1,
   'command.level': 1,
   'command.stats': 1,
-  'command.xp': 1,
+  'command.xp': 1, // Preserve execution identity for already queued legacy jobs.
+  'command.progress': 1,
   'command.topic': 1,
   'command.feedback': 1,
   'command.unknown': 1,

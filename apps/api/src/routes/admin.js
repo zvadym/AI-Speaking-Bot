@@ -48,10 +48,8 @@ const REPLY_KEYBOARD_ACTION_TYPES = [
   'reply_kbd_topic_click',
   'reply_kbd_level_click',
   'reply_kbd_voice_click',
-  'reply_kbd_xp_click',
   'idiom_phrase_more_click'
 ];
-const XP_BUTTON_EVENT_TYPES = ['btn_translation', 'btn_vocab', 'btn_hints'];
 const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
 const NOTIFICATION_TASK_TYPES = [
   'onboarding_complete',
@@ -452,15 +450,6 @@ export function createAdminRouter(ctx, helpers) {
          UNION
 
          SELECT
-           x.chat_id,
-           x.bot_key,
-           x.occurred_at
-         FROM xp_events x
-         JOIN filtered_users u ON u.chat_id = x.chat_id
-
-         UNION
-
-         SELECT
            a.chat_id,
            a.bot_key,
            a.occurred_at
@@ -687,15 +676,6 @@ export function createAdminRouter(ctx, helpers) {
          FROM messages m
          JOIN filtered_users u ON u.chat_id = m.chat_id
          WHERE m.role = 'user'
-
-         UNION
-
-         SELECT
-           x.chat_id,
-           x.bot_key,
-           x.occurred_at
-         FROM xp_events x
-         JOIN filtered_users u ON u.chat_id = x.chat_id
 
          UNION
 
@@ -941,187 +921,6 @@ export function createAdminRouter(ctx, helpers) {
        GROUP BY d.day_utc
        ORDER BY d.day_utc ASC`,
       [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
-    );
-
-    return res.json({
-      tz: 'UTC',
-      from: range.from.toISOString(),
-      to: range.to.toISOString(),
-      payload: range.payload,
-      series: rows
-    });
-  });
-
-  router.get('/admin/metrics/xp-earned-by-day', requireAdmin, async (req, res) => {
-    const range = helpers.parseAdminRange(req);
-    if (!range.ok) return res.status(400).json({ error: range.error });
-    res.set('Cache-Control', 'no-store');
-
-    const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
-    const { rows } = await ctx.pool.query(
-      `WITH params AS (
-         SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
-       ),
-       days AS (
-         SELECT generate_series(
-           date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
-           date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
-           interval '1 day'
-         )::date AS day_utc
-       ),
-       filtered_users AS (
-         SELECT chat_id
-         FROM users
-         WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
-           AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
-       ),
-       earned AS (
-         SELECT
-           date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
-           SUM(e.xp_delta)::bigint AS xp,
-           COUNT(DISTINCT e.chat_id)::int AS users
-         FROM xp_events e
-         JOIN filtered_users u ON u.chat_id = e.chat_id
-         WHERE e.occurred_at >= (SELECT from_ts FROM params)
-           AND e.occurred_at < (SELECT to_ts FROM params)
-         GROUP BY 1
-       )
-       SELECT
-         d.day_utc::text AS day,
-         COALESCE(er.xp, 0)::bigint AS xp,
-         COALESCE(er.users, 0)::int AS users
-       FROM days d
-       LEFT JOIN earned er USING (day_utc)
-       ORDER BY d.day_utc ASC`,
-      [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds]
-    );
-
-    return res.json({
-      tz: 'UTC',
-      from: range.from.toISOString(),
-      to: range.to.toISOString(),
-      payload: range.payload,
-      series: rows
-    });
-  });
-
-  router.get('/admin/metrics/xp-button-clicks-by-day', requireAdmin, async (req, res) => {
-    const range = helpers.parseAdminRange(req);
-    if (!range.ok) return res.status(400).json({ error: range.error });
-    res.set('Cache-Control', 'no-store');
-
-    const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
-    const { rows } = await ctx.pool.query(
-      `WITH params AS (
-         SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
-       ),
-       days AS (
-         SELECT generate_series(
-           date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
-           date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
-           interval '1 day'
-         )::date AS day_utc
-       ),
-       filtered_users AS (
-         SELECT chat_id
-         FROM users
-         WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
-           AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
-       ),
-       counts AS (
-         SELECT
-           date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
-           e.event_type,
-           COUNT(*)::int AS count
-         FROM xp_events e
-         JOIN filtered_users u ON u.chat_id = e.chat_id
-         WHERE e.occurred_at >= (SELECT from_ts FROM params)
-           AND e.occurred_at < (SELECT to_ts FROM params)
-           AND e.event_type = ANY($5::text[])
-         GROUP BY 1, 2
-       )
-       SELECT
-         d.day_utc::text AS day,
-         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_translation'), 0)::int AS btn_translation,
-         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_vocab'), 0)::int AS btn_vocab,
-         COALESCE(SUM(c.count) FILTER (WHERE c.event_type = 'btn_hints'), 0)::int AS btn_hints
-       FROM days d
-       LEFT JOIN counts c USING (day_utc)
-       GROUP BY d.day_utc
-       ORDER BY d.day_utc ASC`,
-      [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, XP_BUTTON_EVENT_TYPES]
-    );
-
-    return res.json({
-      tz: 'UTC',
-      from: range.from.toISOString(),
-      to: range.to.toISOString(),
-      payload: range.payload,
-      series: rows
-    });
-  });
-
-  router.get('/admin/metrics/xp-distribution', requireAdmin, async (req, res) => {
-    const range = helpers.parseAdminRange(req);
-    if (!range.ok) return res.status(400).json({ error: range.error });
-    res.set('Cache-Control', 'no-store');
-
-    const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
-    const { rows } = await ctx.pool.query(
-      `WITH filtered_users AS (
-         SELECT chat_id
-         FROM users
-         WHERE ($1::text IS NULL OR acquisition_start_payload = $1)
-           AND ($2::bigint[] IS NULL OR chat_id <> ALL($2::bigint[]))
-       ),
-       per_user AS (
-         SELECT
-           u.chat_id,
-           COALESCE(SUM(up.xp_total), 0)::int AS xp_total
-         FROM filtered_users u
-         LEFT JOIN user_progress up ON up.chat_id = u.chat_id
-         GROUP BY u.chat_id
-       ),
-       labeled AS (
-         SELECT
-           CASE
-             WHEN xp_total <= 49 THEN '1–49'
-             WHEN xp_total <= 99 THEN '50–99'
-             WHEN xp_total <= 199 THEN '100–199'
-             WHEN xp_total <= 499 THEN '200–499'
-             WHEN xp_total <= 999 THEN '500–999'
-             WHEN xp_total <= 1999 THEN '1k–1.9k'
-             WHEN xp_total <= 4999 THEN '2k–4.9k'
-             WHEN xp_total <= 9999 THEN '5k–9.9k'
-             ELSE '10k+'
-           END AS bucket,
-           COUNT(*)::int AS users
-         FROM per_user
-         WHERE xp_total > 0
-         GROUP BY 1
-       ),
-       buckets AS (
-         SELECT *
-         FROM (
-           VALUES
-             (1, '1–49'),
-             (2, '50–99'),
-             (3, '100–199'),
-             (4, '200–499'),
-             (5, '500–999'),
-             (6, '1k–1.9k'),
-             (7, '2k–4.9k'),
-             (8, '5k–9.9k'),
-             (9, '10k+')
-         ) AS b(ord, bucket)
-       )
-       SELECT
-         b.bucket AS day,
-         COALESCE(l.users, 0)::int AS users
-       FROM buckets b
-       LEFT JOIN labeled l ON l.bucket = b.bucket
-       ORDER BY b.ord ASC`,
-      [range.payload, excludeChatIds]
     );
 
     return res.json({
@@ -1386,14 +1185,6 @@ export function createAdminRouter(ctx, helpers) {
          FROM messages m
          JOIN filtered_users u ON u.chat_id = m.chat_id
          WHERE m.role = 'user'
-
-         UNION
-
-         SELECT
-           x.chat_id,
-           x.occurred_at
-         FROM xp_events x
-         JOIN filtered_users u ON u.chat_id = x.chat_id
 
          UNION
 
@@ -1770,7 +1561,6 @@ export function createAdminRouter(ctx, helpers) {
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_topic_click'), 0)::int AS reply_kbd_topic_click,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_level_click'), 0)::int AS reply_kbd_level_click,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_voice_click'), 0)::int AS reply_kbd_voice_click,
-         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_xp_click'), 0)::int AS reply_kbd_xp_click,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'idiom_phrase_more_click'), 0)::int AS idiom_phrase_more_click
        FROM days d
        LEFT JOIN counts c USING (day_utc)
@@ -3719,9 +3509,7 @@ export function createAdminRouter(ctx, helpers) {
       'effective_tier',
       'is_active',
       'last_seen_at',
-      'streak_days',
-      'xp_total',
-      'level'
+      'streak_days'
     ]);
     const sortKey = sortKeyAllow.has(sortKeyRaw) ? sortKeyRaw : 'created_at';
 
@@ -3734,9 +3522,7 @@ export function createAdminRouter(ctx, helpers) {
       effective_tier: `effective_tier`,
       is_active: `is_active`,
       last_seen_at: `last_seen_at`,
-      streak_days: `COALESCE(ms.streak_days, 0)`,
-      xp_total: `COALESCE(xp.xp_total, 0)`,
-      level: `FLOOR(COALESCE(xp.xp_total, 0) / 200.0)::int + 1`
+      streak_days: `COALESCE(ms.streak_days, 0)`
     };
     const orderExpr = orderByMap[sortKey] || orderByMap.created_at;
 
@@ -3875,14 +3661,6 @@ export function createAdminRouter(ctx, helpers) {
              MAX(streak_days)::int AS streak_days
            FROM streaks
            GROUP BY chat_id
-         ),
-         xp AS (
-           SELECT
-             up.chat_id,
-             COALESCE(SUM(up.xp_total), 0)::int AS xp_total
-           FROM user_progress up
-           JOIN directory_filtered d ON d.chat_id = up.chat_id
-           GROUP BY up.chat_id
          )
          SELECT
            d.chat_id,
@@ -3903,12 +3681,9 @@ export function createAdminRouter(ctx, helpers) {
                THEN ((d.override_expires_at AT TIME ZONE 'UTC') - interval '1 day')::date::text
              ELSE NULL
            END AS override_expires_on,
-           COALESCE(ms.streak_days, 0) AS streak_days,
-           COALESCE(xp.xp_total, 0) AS xp_total,
-           FLOOR(COALESCE(xp.xp_total, 0) / 200.0)::int + 1 AS level
+           COALESCE(ms.streak_days, 0) AS streak_days
          FROM directory_filtered d
          LEFT JOIN max_streaks ms ON ms.chat_id = d.chat_id
-         LEFT JOIN xp ON xp.chat_id = d.chat_id
          ORDER BY ${orderExpr} ${sortDir} NULLS LAST, d.chat_id DESC
          LIMIT $10::int
          OFFSET $11::int`,

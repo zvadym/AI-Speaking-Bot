@@ -495,15 +495,6 @@
             :series="replyKeyboardSeriesConfig"
           />
 
-          <AdminChart
-            title="Helper button clicks by day"
-            subtitle="Translate, vocab, and follow-up hints clicks"
-            kind="bar"
-            :stacked="true"
-            x-labels="all"
-            :data="xpButtonClicksSeries"
-            :series="xpButtonSeriesConfig"
-          />
         </div>
       </section>
 
@@ -598,28 +589,6 @@
         />
       </section>
 
-      <section class="charts-grid">
-        <AdminChart
-          title="XP distribution"
-          subtitle="Total XP per user (sum across bots). Buckets are inclusive."
-          kind="bar"
-          x-labels="all"
-          :data="xpDistributionSeries"
-          :series="[{ key: 'users', label: 'Users', color: 'rgba(103, 78, 167, 0.88)' }]"
-        />
-
-        <AdminChart
-          title="Daily XP earned"
-          subtitle="UTC. Total XP awarded per day (right axis: users earning XP)."
-          kind="line"
-          x-labels="all"
-          :data="xpEarnedByDaySeries"
-          :series="[
-            { key: 'xp', label: 'XP', color: 'rgba(31, 107, 99, 0.9)', type: 'line' },
-            { key: 'users', label: 'Users', color: 'rgba(199, 90, 36, 0.58)', type: 'bar', yAxisId: 'y1' }
-          ]"
-        />
-      </section>
     </template>
 
     <template v-else-if="activeTab === 'users'">
@@ -893,18 +862,6 @@
                     <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('streak_days') }}</span>
                   </button>
                 </th>
-                <th class="num">
-                  <button class="sort" type="button" @click="toggleUsersSort('level')">
-                    Level
-                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('level') }}</span>
-                  </button>
-                </th>
-                <th class="num">
-                  <button class="sort" type="button" @click="toggleUsersSort('xp_total')">
-                    XP
-                    <span class="sort-ind" aria-hidden="true">{{ usersSortIndicator('xp_total') }}</span>
-                  </button>
-                </th>
                 <th class="actions">Actions</th>
               </tr>
             </thead>
@@ -927,8 +884,6 @@
                 <td>{{ row.is_active ? 'yes' : 'no' }}</td>
                 <td>{{ row.last_seen_at ? formatFeedbackTime(row.last_seen_at) : '—' }}</td>
                 <td class="num">{{ fmt(row.streak_days || 0) }}</td>
-                <td class="num">{{ fmt(row.level || 1) }}</td>
-                <td class="num">{{ fmt(row.xp_total || 0) }}</td>
                 <td class="actions">
                   <div class="user-action-group">
                     <button
@@ -2330,7 +2285,6 @@ const replyKeyboardSummary = ref({
   total_clicks: 0,
   unique_users: 0
 });
-const xpButtonClicksSeries = ref([]);
 const topicUsageSeries = ref([]);
 const topicUsageSeriesConfig = ref([]);
 const activeUsersSeries = ref([]);
@@ -2354,8 +2308,6 @@ const freeUsersMessageBuckets = ref([]);
 const activeUsersByHourSeries = ref([]);
 const activeUsersByHourTodaySeries = ref([]);
 const userStreakSeries = ref([]);
-const xpDistributionSeries = ref([]);
-const xpEarnedByDaySeries = ref([]);
 const activeUsersChartSeries = computed(() => {
   const totalUsersByDay = new Map(
     totalUsersSeries.value.map((row) => [String(row?.day ?? '').trim(), safeNum(row?.count)])
@@ -2470,22 +2422,9 @@ const replyKeyboardActionMeta = {
   reply_kbd_topic_click: { label: 'Topic', color: 'rgba(31, 107, 99, 0.88)', order: 0 },
   reply_kbd_level_click: { label: 'Level', color: 'rgba(199, 90, 36, 0.88)', order: 1 },
   reply_kbd_voice_click: { label: 'Voice', color: 'rgba(46, 88, 142, 0.88)', order: 2 },
-  reply_kbd_xp_click: { label: 'XP', color: 'rgba(103, 78, 167, 0.88)', order: 3 },
   idiom_phrase_more_click: { label: 'Idiom More', color: 'rgba(177, 116, 41, 0.9)', order: 4 }
 };
 const replyKeyboardSeriesConfig = Object.entries(replyKeyboardActionMeta)
-  .sort((a, b) => a[1].order - b[1].order)
-  .map(([key, meta]) => ({
-    key,
-    label: meta.label,
-    color: meta.color
-  }));
-const xpButtonEventMeta = {
-  btn_translation: { label: 'Translate', color: 'rgba(38, 84, 124, 0.88)', order: 0 },
-  btn_vocab: { label: 'Vocab', color: 'rgba(199, 90, 36, 0.88)', order: 1 },
-  btn_hints: { label: 'What to say next', color: 'rgba(92, 140, 86, 0.9)', order: 2 }
-};
-const xpButtonSeriesConfig = Object.entries(xpButtonEventMeta)
   .sort((a, b) => a[1].order - b[1].order)
   .map(([key, meta]) => ({
     key,
@@ -2914,7 +2853,7 @@ function toggleUsersSort(key) {
     usersSort.dir = usersSort.dir === 'asc' ? 'desc' : 'asc';
   } else {
     usersSort.key = key;
-    usersSort.dir = ['created_at', 'last_seen_at', 'streak_days', 'xp_total', 'level'].includes(key) ? 'desc' : 'asc';
+    usersSort.dir = ['created_at', 'last_seen_at', 'streak_days'].includes(key) ? 'desc' : 'asc';
   }
   usersOffset.value = 0;
   refreshUsersPage({ resetOffset: true });
@@ -5241,7 +5180,7 @@ async function refreshAnalytics() {
       actionTotals,
       replyKeyboardClicks,
       replyKeyboardTotals,
-      xpButtonClicks,
+
       actionFunnelLast30Days,
       actionFunnelLast7Days,
       topicsByDay,
@@ -5254,8 +5193,8 @@ async function refreshAnalytics() {
       byHour,
       byHourToday,
       userStreaks,
-      xpDistribution,
-      xpEarnedByDay,
+
+
       payloads,
       notificationsByDay
     ] = await Promise.all([
@@ -5267,7 +5206,6 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/action-totals', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/reply-keyboard-clicks-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/reply-keyboard-click-totals', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/xp-button-clicks-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last30Days, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last7Days, headers }),
       apiJson(props.apiBase, '/admin/metrics/topics-by-day', { query: q, headers }),
@@ -5280,8 +5218,6 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-hour-today', { query: { payload: q.payload, exclude_chat_ids: q.exclude_chat_ids }, headers }),
       apiJson(props.apiBase, '/admin/metrics/user-streaks', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/xp-distribution', { query: q, headers }),
-      apiJson(props.apiBase, '/admin/metrics/xp-earned-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/acquisition-payloads', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/notifications-by-day', { query: q, headers })
     ]);
@@ -5309,7 +5245,6 @@ async function refreshAnalytics() {
       unique_users: 0
     };
     replyKeyboardTotalsSeries.value = Array.isArray(replyKeyboardTotals?.series) ? replyKeyboardTotals.series : [];
-    xpButtonClicksSeries.value = Array.isArray(xpButtonClicks?.series) ? xpButtonClicks.series : [];
     actionFunnelLast30DaysSeries.value = buildActionFunnelSeries(actionFunnelLast30Days?.series);
     actionFunnelLast7DaysSeries.value = buildActionFunnelSeries(actionFunnelLast7Days?.series);
     const topicsByDayRawRows = Array.isArray(topicsByDay?.series) ? topicsByDay.series : [];
@@ -5324,8 +5259,6 @@ async function refreshAnalytics() {
     activeUsersByHourSeries.value = Array.isArray(byHour?.series) ? byHour.series : [];
     activeUsersByHourTodaySeries.value = Array.isArray(byHourToday?.series) ? byHourToday.series : [];
     userStreakSeries.value = Array.isArray(userStreaks?.series) ? userStreaks.series : [];
-    xpDistributionSeries.value = Array.isArray(xpDistribution?.series) ? xpDistribution.series : [];
-    xpEarnedByDaySeries.value = Array.isArray(xpEarnedByDay?.series) ? xpEarnedByDay.series : [];
     payloadOptions.value = Array.isArray(payloads?.payloads) ? payloads.payloads : [];
     notificationRows.value = Array.isArray(notificationsByDay?.series) ? notificationsByDay.series : [];
     // Users list is loaded in the Users tab (separate request).
@@ -5550,7 +5483,7 @@ async function deleteUserCompletely(row) {
 
   const label = userDirectoryLabel(row);
   const confirmDelete = window.confirm(
-    `Delete ${label} (${chatId}) permanently?\n\nThis removes the user across all bots, messages, feedback, settings, usage, XP, and payments. This cannot be undone.`
+    `Delete ${label} (${chatId}) permanently?\n\nThis removes the user across all bots, messages, feedback, settings, usage, and payments. This cannot be undone.`
   );
   if (!confirmDelete) return;
 
@@ -5879,7 +5812,6 @@ function clearPassword() {
     total_clicks: 0,
     unique_users: 0
   };
-  xpButtonClicksSeries.value = [];
 }
 
 function usersNextPage() {

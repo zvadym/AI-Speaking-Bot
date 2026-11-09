@@ -61,7 +61,7 @@ contract during startup.
 
 For an enabled bot, a private `/start` creates or restarts interactive
 onboarding even for an existing user. The reset affects only onboarding state;
-level, XP, messages, subscription, and other preferences are preserved.
+language level, messages, subscription, and other preferences are preserved.
 
 ## Deploy
 

@@ -1129,36 +1129,6 @@ export function createApiHelpers(ctx) {
     };
   }
 
-  async function getUserXpSummary(chatIdRaw, botKeyRaw) {
-    const chatId = Number(chatIdRaw);
-    const botKey = normalizeBotKey(botKeyRaw);
-    if (!Number.isFinite(chatId) || !botKey) {
-      return {
-        total: 0,
-        level: 1,
-        streak_bonus_applied: false
-      };
-    }
-
-    const { rows } = await pool.query(
-      `SELECT
-         COALESCE(up.xp_total, 0)::int AS xp_total,
-         FLOOR(COALESCE(up.xp_total, 0) / 200.0)::int + 1 AS xp_level
-       FROM user_progress up
-       WHERE up.chat_id = $1
-         AND up.bot_key = $2
-       LIMIT 1`,
-      [chatId, botKey]
-    );
-
-    const row = rows[0] || null;
-    return {
-      total: Number(row?.xp_total || 0),
-      level: Number(row?.xp_level || 1) || 1,
-      streak_bonus_applied: false
-    };
-  }
-
   function feedbackPreviewText(raw) {
     const text = (raw ?? '').toString().replace(/\s+/g, ' ').trim();
     if (!text) return '';
@@ -2440,7 +2410,6 @@ export function createApiHelpers(ctx) {
     getUserFeedbackThread,
     getUserStreakSummary,
     getUserUsageSummary,
-    getUserXpSummary,
     handleStripeEvent,
     isStripeBackedPaidStatus,
     listAvailableBotsForUser,

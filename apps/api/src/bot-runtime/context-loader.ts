@@ -17,13 +17,8 @@ export async function fetchKeyboardState(
        COALESCE(ub.topic_enabled, false) AS topic_enabled,
        ub.topic_template_id,
        ub.topic_pack_json,
-       ub.topic_pinned_message_id,
-       COALESCE(up.xp_total, 0)::int AS xp_total,
-       FLOOR(COALESCE(up.xp_total, 0) / 200.0)::int + 1 AS xp_level
+       ub.topic_pinned_message_id
      FROM user_bots ub
-     LEFT JOIN user_progress up
-       ON up.chat_id = ub.chat_id
-      AND up.bot_key = ub.bot_key
      LEFT JOIN bot_onboarding_completion onboarding
        ON onboarding.chat_id = ub.chat_id
       AND onboarding.bot_key = ub.bot_key

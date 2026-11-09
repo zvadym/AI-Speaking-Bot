@@ -49,11 +49,10 @@ export function createMeRouter(ctx, helpers) {
     const user = await helpers.getMeUserRow(chatId, requestedBotKey);
     if (!user) return res.status(404).json({ error: 'user_not_found' });
 
-    const [usage, streak, feedbackSummary, xp] = await Promise.all([
+    const [usage, streak, feedbackSummary] = await Promise.all([
       helpers.getUserUsageSummary(chatId),
       helpers.getUserStreakSummary(chatId),
-      helpers.getUserFeedbackSummary(chatId, user.bot_key),
-      helpers.getUserXpSummary(chatId, user.bot_key)
+      helpers.getUserFeedbackSummary(chatId, user.bot_key)
     ]);
 
     return res.json({
@@ -79,7 +78,6 @@ export function createMeRouter(ctx, helpers) {
         teacher_style_tags: user.teacher_style_tags || null
       },
       streak,
-      xp,
       usage,
       feedback_summary: feedbackSummary
     });

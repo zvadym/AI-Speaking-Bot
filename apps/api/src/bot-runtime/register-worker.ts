@@ -46,7 +46,7 @@ import {
   type TopicTelegramClient,
   type TopicMenuHelpers
 } from './handlers/topic-menu.js';
-import { createXpHandler } from './handlers/xp.js';
+import { createProgressHandlers } from './handlers/progress.js';
 import {
   createTextConversationHandler,
   type ConversationTelegramClient
@@ -303,7 +303,7 @@ export async function registerBotRuntimeWorker(
       ai
     }),
     createStatsHandler({ pool, getBotLocale, telegramClient, webappUrl }),
-    createXpHandler({ pool, getBotLocale, telegramClient }),
+    ...createProgressHandlers({ pool, getBotLocale, telegramClient }),
     createTopicActionHandler({
       pool,
       getBotLocale,

@@ -97,14 +97,6 @@
     "level_label_beginner": "Başlangıç (A1-A2)",
     "level_label_conversational": "Konuşma seviyesi (B1-B2)",
     "level_label_advanced": "İleri (C1+)",
-    "xp_title": "<b>🔥 İlerlemen</b>",
-    "xp_streak_label": "Seri",
-    "xp_best_label": "En iyi seri",
-    "xp_level_label": "Seviye",
-    "xp_total_label": "XP",
-    "xp_next_label": "Sonraki seviyeye",
-    "xp_coming_soon": "XP yakında geliyor.",
-    "xp_digest_prefix": "İlerlemen:",
     "topic_btn_set_inline": "🧭 Konu belirle",
     "topic_btn_manage_inline": "🎯 Konuyu değiştir/iptal et",
     "onboarding_start_practice_text": "Güzel başlangıç ✨ Konu seçmek ister misin, yoksa serbest devam mı? İstediğin zaman sesli ya da yazılı mesaj gönderebilirsin.",
@@ -115,20 +107,13 @@
     "onboarding_voice_cta_text": "Harika. Kısa bir sesli mesaj gönder (1–2 cümle) 🎙️",
     "onboarding_text_cta_text": "Harika. Kısa bir metin gönder (1–2 cümle) ✍️",
     "onboarding_showcase_no_mistakes_text": "Çok iyi, burada hata yok 👏\nHataları nasıl düzelttiğimi görmek istersen bilerek hatalı bir cümle yaz.\nÖrneğin:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Harika ilerleme — profilin hazır 🚀\n\nKısaca en önemli noktalar:\n• Başlangıç seviyen A1. Bunu istediğin zaman A1, A2, B1, B2 veya C1 olarak değiştirebilirsin.\n• Sohbetin altındaki butonlarla dil seviyeni ve cevap formatını istediğin zaman değiştirebilirsin: ses veya metin.\n• Pratik yaptıkça XP kazanırsın. XP arttıkça zamanla daha fazla özellik açılır.\n• Serin, art arda pratik yaptığın günlerin sayısıdır. Daha uzun bir seri XP çarpanını artırır.\n• App içinde diğer ayarları açabilir, feedback gönderebilir ve başka seçenekleri yönetebilirsin.\n\nSerini sürdürmek için sonraki mesajını gönder 🔥\n\nTebrikler! Onboarding tamamlandı.",
+    "onboarding_complete_full_text": "Harika ilerleme — profilin hazır 🚀\n\nKısaca en önemli noktalar:\n• Başlangıç seviyen A1. Bunu istediğin zaman A1, A2, B1, B2 veya C1 olarak değiştirebilirsin.\n• Sohbetin altındaki butonlarla dil seviyeni ve cevap formatını istediğin zaman değiştirebilirsin: ses veya metin.\n• App içinde diğer ayarları açabilir, feedback gönderebilir ve başka seçenekleri yönetebilirsin.\n\nSerini sürdürmek için sonraki mesajını gönder 🔥\n\nTebrikler! Onboarding tamamlandı.",
     "keyboard_btn_level_prefix": "Seviye",
     "keyboard_btn_topic_prefix": "Konu",
     "keyboard_btn_topic_none": "Konu seç",
     "keyboard_btn_voice_prefix": "Yanıt türü",
     "keyboard_btn_voice_text": "Metin",
     "keyboard_btn_voice_voice": "Ses",
-    "keyboard_btn_xp_prefix": "XP",
-    "xp_today_title": "Bugün",
-    "xp_daily_cap_label": "Günlük limit",
-    "xp_today_left_label": "Bugün kalan",
-    "xp_level_progress_label": "Seviye ilerlemesi",
-    "xp_streak_bonus_label": "Seri bonusu",
-    "xp_streak_bonus_pending": "Seri çarpanı henüz XP ödüllerine uygulanmıyor.",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -224,7 +209,9 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
-    }
+    },
+    "keyboard_btn_progress": "İlerlemem",
+    "progress_empty_text": "Öğrenme ilerlemen henüz kullanıma hazır değil. Pratik yapmaya devam et; kelime bilgin ve dil bilgin hakkında henüz güvenilir bir değerlendirme yok."
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | Dil öğretmenin",
@@ -248,8 +235,8 @@
         "description": "Abonelik durumunu kontrol et"
       },
       {
-        "command": "xp",
-        "description": "Seri ve XP durumunu gör"
+        "command": "progress",
+        "description": "Öğrenme ilerlemesini gör"
       },
       {
         "command": "topic",

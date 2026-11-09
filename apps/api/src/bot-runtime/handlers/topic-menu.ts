@@ -125,7 +125,7 @@ function buildPersistentReplyMarkup(keyboard: ReturnType<typeof buildPersistentK
   return {
     keyboard: [
       [{ text: keyboard.topicButtonText }, { text: keyboard.levelButtonText }],
-      [{ text: keyboard.voiceButtonText }, { text: keyboard.xpButtonText }]
+      [{ text: keyboard.voiceButtonText }, { text: keyboard.progressButtonText || '· 📈 My progress' }]
     ],
     resize_keyboard: true,
     one_time_keyboard: false

@@ -83,7 +83,7 @@ export function resolvePreparedRoute({
   if (command && hasNoArgs(command, '/lang')) return 'command.lang';
   if ((command && hasNoArgs(command, '/level')) || keyboard.buttonIntent === 'level') return 'command.level';
   if (command && hasNoArgs(command, '/stats')) return 'command.stats';
-  if ((command && hasNoArgs(command, '/xp')) || keyboard.buttonIntent === 'xp') return 'command.xp';
+  if ((command && (hasNoArgs(command, '/progress') || hasNoArgs(command, '/xp'))) || keyboard.buttonIntent === 'progress') return 'command.progress';
   if ((command && hasNoArgs(command, '/topic')) || keyboard.buttonIntent === 'topic') return 'command.topic';
   if (command?.name === '/feedback') return 'command.feedback';
   if (command) return 'command.unknown';

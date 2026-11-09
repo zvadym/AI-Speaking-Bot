@@ -223,7 +223,7 @@ function createMiniappQueryHandler() {
     }
 
     if (source.includes('FROM user_progress up')) {
-      return { rows: [{ xp_total: 340, xp_level: 2 }] };
+      throw new Error('unexpected_xp_query');
     }
 
     if (source.includes('FROM feedback_threads') && source.includes('LIMIT 1')) {
@@ -812,7 +812,7 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
         'reply_kbd_topic_click',
         'reply_kbd_level_click',
         'reply_kbd_voice_click',
-        'reply_kbd_xp_click',
+
         'idiom_phrase_more_click'
       ]);
       return {
@@ -822,7 +822,6 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
             reply_kbd_topic_click: 4,
             reply_kbd_level_click: 2,
             reply_kbd_voice_click: 6,
-            reply_kbd_xp_click: 1,
             idiom_phrase_more_click: 3
           },
           {
@@ -830,7 +829,6 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
             reply_kbd_topic_click: 3,
             reply_kbd_level_click: 0,
             reply_kbd_voice_click: 5,
-            reply_kbd_xp_click: 2,
             idiom_phrase_more_click: 1
           }
         ]
@@ -855,7 +853,6 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
         reply_kbd_topic_click: 4,
         reply_kbd_level_click: 2,
         reply_kbd_voice_click: 6,
-        reply_kbd_xp_click: 1,
         idiom_phrase_more_click: 3
       },
       {
@@ -863,7 +860,6 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
         reply_kbd_topic_click: 3,
         reply_kbd_level_click: 0,
         reply_kbd_voice_click: 5,
-        reply_kbd_xp_click: 2,
         idiom_phrase_more_click: 1
       }
     ]);
@@ -881,7 +877,7 @@ test('admin reply keyboard click totals return clicks and unique users', async (
         'reply_kbd_topic_click',
         'reply_kbd_level_click',
         'reply_kbd_voice_click',
-        'reply_kbd_xp_click',
+
         'idiom_phrase_more_click'
       ]);
       return {
@@ -1107,58 +1103,16 @@ test('internal idiom practice more returns delivered result', async () => {
   assert.equal(telegramBodies[0].reply_markup, undefined);
 });
 
-test('admin xp button click metrics return daily click counts', async () => {
-  await withMockedQuery(async (source, params = []) => {
-    if (source.includes("btn_translation") && source.includes('GROUP BY d.day_utc')) {
-      assert.equal(params[0], '2026-03-01T00:00:00.000Z');
-      assert.equal(params[1], '2026-03-04T00:00:00.000Z');
-      assert.equal(params[2], null);
-      assert.equal(params[3], null);
-      assert.deepEqual(params[4], ['btn_translation', 'btn_vocab', 'btn_hints']);
-      return {
-        rows: [
-          {
-            day: '2026-03-01',
-            btn_translation: 5,
-            btn_vocab: 2,
-            btn_hints: 3
-          },
-          {
-            day: '2026-03-02',
-            btn_translation: 1,
-            btn_vocab: 4,
-            btn_hints: 0
-          }
-        ]
-      };
-    }
-
-    throw new Error(`Unexpected query in admin xp button clicks by day test: ${source.slice(0, 180)}`);
-  }, async () => {
+test('retired XP metric endpoints do not query the database', async () => {
+  await withMockedQuery(async () => { throw new Error('unexpected_xp_query'); }, async () => {
     const app = await createApp({ apiBoss: { publish: async () => null } });
-    const response = await request(app, {
-      path: '/admin/metrics/xp-button-clicks-by-day?from=2026-03-01&to=2026-03-04',
-      headers: { 'X-Admin-Password': 'secret-admin' }
-    });
-
-    assert.equal(response.status, 200);
-    assert.equal(response.json.tz, 'UTC');
-    assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
-    assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
-    assert.deepEqual(response.json.series, [
-      {
-        day: '2026-03-01',
-        btn_translation: 5,
-        btn_vocab: 2,
-        btn_hints: 3
-      },
-      {
-        day: '2026-03-02',
-        btn_translation: 1,
-        btn_vocab: 4,
-        btn_hints: 0
-      }
-    ]);
+    for (const metric of ['xp-button-clicks-by-day', 'xp-earned-by-day', 'xp-distribution']) {
+      const response = await request(app, {
+        path: `/admin/metrics/${metric}?from=2026-03-01&to=2026-03-04`,
+        headers: { 'X-Admin-Password': 'secret-admin' }
+      });
+      assert.equal(response.status, 404);
+    }
   });
 });
 
@@ -1359,7 +1313,7 @@ test('admin active users by day returns first-day and returning user splits', as
     if (source.includes('first_activity AS') && source.includes('returned_users')) {
       assert.match(source, /FROM voice_usage_events v/);
       assert.match(source, /FROM messages m/);
-      assert.match(source, /FROM xp_events x/);
+      assert.doesNotMatch(source, /\b(xp_events|user_progress|grant_xp)\b/);
       assert.match(source, /FROM action_events a/);
       assert.equal(params[0], '2026-03-01T00:00:00.000Z');
       assert.equal(params[1], '2026-03-04T00:00:00.000Z');
@@ -1403,7 +1357,7 @@ test('admin active users by day by bot counts any tracked activity with bot attr
     if (source.includes('COUNT(DISTINCT e.chat_id)::int AS count') && source.includes('CROSS JOIN (SELECT DISTINCT bot_key FROM counts) bots')) {
       assert.match(source, /FROM voice_usage_events v/);
       assert.match(source, /FROM messages m/);
-      assert.match(source, /FROM xp_events x/);
+      assert.doesNotMatch(source, /\b(xp_events|user_progress|grant_xp)\b/);
       assert.match(source, /FROM action_events a/);
       assert.match(source, /WHERE a\.bot_key IS NOT NULL/);
       assert.equal(params[0], '2026-03-01T00:00:00.000Z');
@@ -1450,7 +1404,7 @@ test('admin active users by hour counts any tracked activity', async () => {
     if (source.includes("LPAD(h.hour_utc::text, 2, '0') || ':00' AS day")) {
       assert.match(source, /FROM voice_usage_events v/);
       assert.match(source, /FROM messages m/);
-      assert.match(source, /FROM xp_events x/);
+      assert.doesNotMatch(source, /\b(xp_events|user_progress|grant_xp)\b/);
       assert.match(source, /FROM action_events a/);
       assert.equal(params[0], '2026-03-01T00:00:00.000Z');
       assert.equal(params[1], '2026-03-04T00:00:00.000Z');
@@ -1562,7 +1516,7 @@ test('miniapp read endpoints return personalized plans, dashboard, and bot catal
     assert.equal(dashboard.json.user.chat_id, 42);
     assert.equal(dashboard.json.selected_bot.bot_key, 'uk-de');
     assert.equal(dashboard.json.streak.current, 4);
-    assert.equal(dashboard.json.xp.total, 340);
+    assert.equal('xp' in dashboard.json, false);
     assert.equal(dashboard.json.feedback_summary.unread_admin_replies, 1);
 
     const bots = await request(app, {

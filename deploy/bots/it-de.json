@@ -97,14 +97,6 @@
     "level_label_beginner": "Principiante (A1-A2)",
     "level_label_conversational": "Intermedio (B1-B2)",
     "level_label_advanced": "Avanzato (C1+)",
-    "xp_title": "<b>🔥 I tuoi progressi</b>",
-    "xp_streak_label": "Streak",
-    "xp_best_label": "Miglior streak",
-    "xp_level_label": "Livello",
-    "xp_total_label": "XP",
-    "xp_next_label": "Al prossimo livello",
-    "xp_coming_soon": "XP in arrivo.",
-    "xp_digest_prefix": "I tuoi progressi:",
     "topic_btn_set_inline": "🧭 Scegli argomento",
     "topic_btn_manage_inline": "🎯 Cambia/rimuovi argomento",
     "onboarding_start_practice_text": "Ottimo inizio ✨ Vuoi scegliere un tema o continuare liberamente? Puoi inviare voce o testo in qualsiasi momento.",
@@ -115,20 +107,13 @@
     "onboarding_voice_cta_text": "Perfetto. Invia un breve vocale (1–2 frasi) 🎙️",
     "onboarding_text_cta_text": "Perfetto. Invia un breve testo (1–2 frasi) ✍️",
     "onboarding_showcase_no_mistakes_text": "Molto bene, qui non ci sono errori 👏\nSe vuoi vedere come correggo gli errori, scrivi una frase volutamente sbagliata.\nPer esempio:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Ottimo progresso — il tuo profilo è pronto 🚀\n\nLe cose principali:\n• Il tuo livello iniziale è A1. Puoi cambiarlo in qualsiasi momento in A1, A2, B1, B2 o C1.\n• Usa i pulsanti sotto la chat per cambiare in qualsiasi momento il tuo livello e il formato di risposta: voce o testo.\n• Guadagni XP ogni volta che ti eserciti. Con più XP, si sbloccano gradualmente più funzioni.\n• La tua streak è il numero di giorni consecutivi in cui ti eserciti. Una streak più lunga aumenta il tuo moltiplicatore XP.\n• Nell'App puoi aprire altre impostazioni, inviare feedback e gestire altre opzioni.\n\nInvia il tuo prossimo messaggio per continuare la streak 🔥\n\nCongratulazioni! L'onboarding è completato.",
+    "onboarding_complete_full_text": "Ottimo progresso — il tuo profilo è pronto 🚀\n\nLe cose principali:\n• Il tuo livello iniziale è A1. Puoi cambiarlo in qualsiasi momento in A1, A2, B1, B2 o C1.\n• Usa i pulsanti sotto la chat per cambiare in qualsiasi momento il tuo livello e il formato di risposta: voce o testo.\n• Nell'App puoi aprire altre impostazioni, inviare feedback e gestire altre opzioni.\n\nInvia il tuo prossimo messaggio per continuare la streak 🔥\n\nCongratulazioni! L'onboarding è completato.",
     "keyboard_btn_level_prefix": "Livello",
     "keyboard_btn_topic_prefix": "Tema",
     "keyboard_btn_topic_none": "Scegli tema",
     "keyboard_btn_voice_prefix": "Tipo di risposta",
     "keyboard_btn_voice_text": "Testo",
     "keyboard_btn_voice_voice": "Voce",
-    "keyboard_btn_xp_prefix": "XP",
-    "xp_today_title": "Oggi",
-    "xp_daily_cap_label": "Limite giornaliero",
-    "xp_today_left_label": "Rimasto oggi",
-    "xp_level_progress_label": "Progresso livello",
-    "xp_streak_bonus_label": "Bonus streak",
-    "xp_streak_bonus_pending": "Il moltiplicatore streak non viene ancora applicato agli XP.",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -224,7 +209,9 @@
           "example": "Ich möchte Italien besuchen, weil ich das Essen und die Geschichte liebe."
         }
       }
-    }
+    },
+    "keyboard_btn_progress": "I miei progressi",
+    "progress_empty_text": "I progressi di apprendimento non sono ancora disponibili. Continua a esercitarti: non c’è ancora una valutazione affidabile del tuo vocabolario e della tua grammatica."
   },
   "telegram_presentation": {
     "name": "Romi 🇩🇪 | La tua tutor di lingua",
@@ -248,8 +235,8 @@
         "description": "Controlla stato abbonamento"
       },
       {
-        "command": "xp",
-        "description": "Controlla streak e XP"
+        "command": "progress",
+        "description": "Visualizza i progressi"
       },
       {
         "command": "topic",

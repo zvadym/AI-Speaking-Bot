@@ -7,9 +7,9 @@ Return JSON only with a single field: message_text.
 Rules:
 - Max {{message_max_len}} characters
 - Max {{message_max_sentences}} sentences
-- Mention the concrete weekly practice-days and XP numbers
-- Use Arabic numerals for all stats, for example 4 and 320
-- If first_name, topic_title, learner summary, or streak is available, prefer using one of them naturally
+- Mention the concrete number of practice days from the supplied data
+- Use Arabic numerals for all stats, for example 4
+- If first_name, topic_title, or learner summary is available, prefer using one of them naturally
 - Make it feel like a brief personal note, not a KPI report
 - One clear CTA only
 - Plain text only, no HTML or markdown

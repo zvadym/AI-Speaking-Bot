@@ -96,14 +96,6 @@
     "level_label_beginner": "Початковий (A1-A2)",
     "level_label_conversational": "Розмовний (B1-B2)",
     "level_label_advanced": "Просунутий (C1+)",
-    "xp_title": "<b>🔥 Твій прогрес</b>",
-    "xp_streak_label": "Серія",
-    "xp_best_label": "Найкраща серія",
-    "xp_level_label": "Рівень",
-    "xp_total_label": "XP",
-    "xp_next_label": "До наступного рівня",
-    "xp_coming_soon": "XP скоро зʼявиться.",
-    "xp_digest_prefix": "Твій прогрес:",
     "topic_btn_set_inline": "🧭 Обрати тему",
     "topic_btn_manage_inline": "🎯 Змінити/прибрати тему",
     "onboarding_start_practice_text": "Можеш обрати тему або продовжити вільно. Надсилай голосове чи текст у будь-який момент.",
@@ -114,20 +106,13 @@
     "onboarding_voice_cta_text": "Добре. Надішли коротке голосове (1-2 речення) 🎙️",
     "onboarding_text_cta_text": "Добре. Надішли короткий текст (1-2 речення) ✍️",
     "onboarding_showcase_no_mistakes_text": "Тут без помилок 👏\nЯкщо хочеш побачити виправлення, надішли фразу з навмисною помилкою.\nНаприклад:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Профіль готовий 🚀\n\nКоротко про головне:\n• Стартовий рівень — A1. Його можна будь-коли змінити на A1, A2, B1, B2 або C1.\n• Кнопками під чатом можна змінити рівень і тип відповіді: голосом або текстом.\n• За практику ти отримуєш XP. З часом це відкриває додаткові можливості.\n• Серія — це кількість днів поспіль із практикою. Довша серія збільшує множник XP.\n• У міні-апці є додаткові налаштування, відгук і керування опціями.\n\nНадішли наступне повідомлення, щоб продовжити практику 🔥\n\nОнбординг завершено.",
+    "onboarding_complete_full_text": "Профіль готовий 🚀\n\nКоротко про головне:\n• Стартовий рівень — A1. Його можна будь-коли змінити на A1, A2, B1, B2 або C1.\n• Кнопками під чатом можна змінити рівень і тип відповіді: голосом або текстом.\n• У міні-апці є додаткові налаштування, відгук і керування опціями.\n\nНадішли наступне повідомлення, щоб продовжити практику 🔥\n\nОнбординг завершено.",
     "keyboard_btn_level_prefix": "Рівень",
     "keyboard_btn_topic_prefix": "Тема",
     "keyboard_btn_topic_none": "Обрати тему",
     "keyboard_btn_voice_prefix": "Тип відповіді",
     "keyboard_btn_voice_text": "Текст",
     "keyboard_btn_voice_voice": "Голос",
-    "keyboard_btn_xp_prefix": "XP",
-    "xp_today_title": "Сьогодні",
-    "xp_daily_cap_label": "Денний ліміт",
-    "xp_today_left_label": "Залишилось сьогодні",
-    "xp_level_progress_label": "Прогрес рівня",
-    "xp_streak_bonus_label": "Бонус за серію",
-    "xp_streak_bonus_pending": "Множник серії поки не застосовується до XP.",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -223,7 +208,9 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
-    }
+    },
+    "keyboard_btn_progress": "Мій прогрес",
+    "progress_empty_text": "Навчальний прогрес поки недоступний. Продовжуй практикуватися: наразі немає підтвердженої оцінки твого словника та граматики."
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | Твоя репетиторка з мови",
@@ -247,8 +234,8 @@
         "description": "Перевірити статус підписки"
       },
       {
-        "command": "xp",
-        "description": "Переглянути серію та XP"
+        "command": "progress",
+        "description": "Переглянути навчальний прогрес"
       },
       {
         "command": "topic",

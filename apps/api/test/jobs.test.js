@@ -36,7 +36,7 @@ const {
 
 async function withMockedQuery(handler, run) {
   const originalQuery = pool.query.bind(pool);
-  pool.query = async (sql, params) => handler(typeof sql === 'string' ? sql : sql?.text || '', params);
+  pool.query = async (sql, params) => (() => { const source = typeof sql === 'string' ? sql : sql?.text || ''; assert.doesNotMatch(source, /\b(xp_events|user_progress|grant_xp)\b/); return handler(source, params); })();
   try {
     await run();
   } finally {
@@ -504,22 +504,7 @@ test('idiom practice more reserves capacity for the evening automatic phrase', a
         return { rowCount: params[3].length, rows: [] };
       }
       if (source.includes('FROM public.grant_xp(')) {
-        assert.equal(params[2], 'btn_idiom_more');
-        assert.equal(params[3], 2);
-        return {
-          rows: [{
-            applied: true,
-            awarded_xp: 2,
-            xp_total: 42,
-            xp_daily: 8,
-            streak_current: 3,
-            streak_best: 5,
-            streak_last_day: '2026-03-28',
-            level: 1,
-            xp_into_level: 42,
-            xp_to_next: 158
-          }]
-        };
+        throw new Error('unexpected_xp_query');
       }
       if (source.includes('UPDATE scheduled_task_dispatches') && source.includes('SET payload_json =')) {
         dispatch.payload_json = JSON.parse(params[1]);
@@ -664,22 +649,7 @@ test('idiom practice more accepts dashboard test schedules', async () => {
           return { rowCount: params[3].length, rows: [] };
         }
         if (source.includes('FROM public.grant_xp(')) {
-          assert.equal(params[2], 'btn_idiom_more');
-          assert.equal(params[3], 2);
-          return {
-            rows: [{
-              applied: true,
-              awarded_xp: 2,
-              xp_total: 24,
-              xp_daily: 6,
-              streak_current: 2,
-              streak_best: 4,
-              streak_last_day: '2026-03-28',
-              level: 1,
-              xp_into_level: 24,
-              xp_to_next: 176
-            }]
-          };
+          throw new Error('unexpected_xp_query');
         }
         if (source.includes('UPDATE scheduled_task_dispatches') && source.includes('SET payload_json =')) {
           dispatch.payload_json = JSON.parse(params[1]);
@@ -806,22 +776,7 @@ test('idiom practice more accepts old buttons and uses today quota', async () =>
           return { rowCount: params[3].length, rows: [] };
         }
         if (source.includes('FROM public.grant_xp(')) {
-          assert.equal(params[2], 'btn_idiom_more');
-          assert.equal(params[3], 2);
-          return {
-            rows: [{
-              applied: true,
-              awarded_xp: 2,
-              xp_total: 42,
-              xp_daily: 8,
-              streak_current: 3,
-              streak_best: 5,
-              streak_last_day: '2026-03-28',
-              level: 1,
-              xp_into_level: 42,
-              xp_to_next: 158
-            }]
-          };
+          throw new Error('unexpected_xp_query');
         }
         if (source.includes('UPDATE scheduled_task_dispatches') && source.includes('SET payload_json =')) {
           dispatch.payload_json = JSON.parse(params[1]);
@@ -992,7 +947,7 @@ test('admin weekly digest reminder falls back to localized templates when LLM is
   __resetCapturedEventsForTests();
 
   await withMockedQuery(async (source, params = []) => {
-    if (source.includes('COALESCE(up.streak_current, 0)::int AS streak_current') && source.includes('COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp')) {
+    if (source.includes('COALESCE(week_stats.practice_days, 0)::int AS practice_days')) {
       assert.equal(params[0], 55);
       assert.equal(params[1], 'en-de');
       return {
@@ -1008,13 +963,11 @@ test('admin weekly digest reminder falls back to localized templates when LLM is
           topic_enabled: true,
           topic_pack_json: { title: 'coffee chat' },
           last_seen_at: '2026-03-09T10:00:00.000Z',
-          xp_total: 480,
-          streak_current: 3,
-          streak_best: 5,
+
           profile_summary: 'Enjoys travel topics',
           short_summary: 'Prefers short replies',
           onboarding_sent_at: '2026-03-01T09:00:00.000Z',
-          weekly_xp: 118,
+
           practice_days: 4
         }]
       };
@@ -1050,14 +1003,14 @@ test('admin weekly digest reminder falls back to localized templates when LLM is
       assert.equal(result.ok, true);
       assert.equal(result.reminder_type, 'weekly_digest');
       assert.equal(result.telegram_message_id, 904);
-      assert.match(result.message_text, /\b118\b/);
+      assert.doesNotMatch(result.message_text, /XP|118/);
       assert.match(result.message_text, /\b4\b/);
       assert.match(result.message_text, /coffee chat/i);
     });
   });
 
   assert.equal(telegramBodies.length, 1);
-  assert.match(telegramBodies[0].text, /\b118\b/);
+  assert.doesNotMatch(telegramBodies[0].text, /XP|118/);
   assert.match(telegramBodies[0].text, /\b4\b/);
   const events = __getCapturedEventsForTests();
   assert.ok(events.some((event) =>
@@ -1073,7 +1026,7 @@ test('automated weekly digest skips users active in the last 8 hours', async () 
   let telegramCalled = false;
 
   await withMockedQuery(async (source, params = []) => {
-    if (source.includes('COALESCE(up.streak_current, 0)::int AS streak_current') && source.includes('COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp')) {
+    if (source.includes('COALESCE(week_stats.practice_days, 0)::int AS practice_days')) {
       return {
         rows: [{
           chat_id: 88,
@@ -1087,13 +1040,11 @@ test('automated weekly digest skips users active in the last 8 hours', async () 
           topic_enabled: false,
           topic_pack_json: null,
           last_seen_at: new Date(Date.now() - (2 * 60 * 60 * 1000)).toISOString(),
-          xp_total: 620,
-          streak_current: 2,
-          streak_best: 7,
+
           profile_summary: '',
           short_summary: '',
           onboarding_sent_at: '2026-03-01T09:00:00.000Z',
-          weekly_xp: 76,
+
           practice_days: 3
         }]
       };
@@ -1132,7 +1083,7 @@ test('admin weekly digest reads structured Responses API output when output_text
 
   try {
     await withMockedQuery(async (source, params = []) => {
-      if (source.includes('COALESCE(up.streak_current, 0)::int AS streak_current') && source.includes('COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp')) {
+      if (source.includes('COALESCE(week_stats.practice_days, 0)::int AS practice_days')) {
         assert.equal(params[0], 56);
         assert.equal(params[1], 'en-de');
         return {
@@ -1148,13 +1099,11 @@ test('admin weekly digest reads structured Responses API output when output_text
             topic_enabled: false,
             topic_pack_json: null,
             last_seen_at: '2026-03-09T10:00:00.000Z',
-            xp_total: 510,
-            streak_current: 2,
-            streak_best: 6,
+
             profile_summary: 'Likes short practical prompts',
             short_summary: 'Consistent learner',
             onboarding_sent_at: '2026-03-01T09:00:00.000Z',
-            weekly_xp: 118,
+
             practice_days: 4
           }]
         };
@@ -1185,6 +1134,7 @@ test('admin weekly digest reads structured Responses API output when output_text
           const requestBody = JSON.parse(init.body);
           assert.equal(requestBody.model, env.reminderLlmModel);
           assert.deepEqual(requestBody.reasoning, { effort: env.reminderLlmReasoningEffort });
+          assert.doesNotMatch(JSON.stringify(requestBody.input), /weekly_xp|xp_total|streak_current|streak_best/);
           return new Response(
             JSON.stringify({
               id: 'resp_test_1',
@@ -1196,7 +1146,7 @@ test('admin weekly digest reads structured Responses API output when output_text
                     {
                       type: 'output_text',
                       text: JSON.stringify({
-                        message_text: 'Last week: 4 practice days, 118 XP. Write one short sentence and let\'s continue.'
+                        message_text: 'Last week: 4 practice days. Write one short sentence and let\'s continue.'
                       })
                     }
                   ]
@@ -1224,10 +1174,10 @@ test('admin weekly digest reads structured Responses API output when output_text
 
         assert.equal(result.ok, true);
         assert.equal(result.telegram_message_id, 906);
-        assert.equal(result.message_source, 'llm');
+        assert.equal(result.message_source, 'llm', result.generation_error);
         assert.equal(result.generation_error, null);
         assert.equal(result.llm_response_id, 'resp_test_1');
-        assert.match(result.message_text, /\b118\b/);
+        assert.doesNotMatch(result.message_text, /XP|118/);
         assert.match(result.message_text, /\b4\b/);
       } finally {
         globalThis.fetch = originalFetch;
@@ -1235,7 +1185,7 @@ test('admin weekly digest reads structured Responses API output when output_text
     });
 
     assert.equal(telegramBodies.length, 1);
-    assert.match(telegramBodies[0].text, /\b118\b/);
+    assert.doesNotMatch(telegramBodies[0].text, /XP|118/);
     assert.match(telegramBodies[0].text, /\b4\b/);
   } finally {
     env.openaiApiKey = originalOpenAiKey;

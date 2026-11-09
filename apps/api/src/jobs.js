@@ -88,8 +88,6 @@ const IDIOM_PRACTICE_TEST_TASK_TYPE = 'idiom_phrase_practice_test';
 const IDIOM_PRACTICE_INITIAL_SEND_COUNT = 1;
 const IDIOM_PRACTICE_DAILY_CAP = 3;
 const IDIOM_PRACTICE_MORE_ACTION_TYPE = 'idiom_phrase_more_click';
-const IDIOM_PRACTICE_MORE_XP_EVENT_TYPE = 'btn_idiom_more';
-const IDIOM_PRACTICE_MORE_XP_AMOUNT = 2;
 const FREE_LIMIT_HALF_TASK_TYPE = 'free_limit_50';
 const FREE_LIMIT_HALF_TEST_TASK_TYPE = 'free_limit_50_test';
 const FREE_LIMIT_HALF_SCAN_LIMIT = 500;
@@ -430,17 +428,13 @@ const WEEKLY_DIGEST_DEFAULT_LOCALE = {
   reply_cta_voice: 'send a short voice note',
   reply_cta_text: 'write one short sentence',
   default_variants: [
-    'Last week: {{practice_days}} practice days, {{weekly_xp}} XP. {{reply_cta_label}} and let’s keep it going.',
-    'You put in {{practice_days}} practice days and earned {{weekly_xp}} XP last week. {{reply_cta_label}} for a quick next step.'
+    'Last week: {{practice_days}} practice days. {{reply_cta_label}} and let’s keep it going.',
+    'You practised on {{practice_days}} days last week. {{reply_cta_label}} for a quick next step.'
   ],
   topic_variants: [
-    'Last week: {{practice_days}} practice days, {{weekly_xp}} XP. Quick challenge on {{topic_title}}: {{reply_cta_label}}.',
-    'You earned {{weekly_xp}} XP across {{practice_days}} practice days last week. Continue with {{topic_title}} by {{reply_cta_label}}.'
+    'Last week: {{practice_days}} practice days. Quick challenge on {{topic_title}}: {{reply_cta_label}}.',
+    'You practised on {{practice_days}} days last week. Continue with {{topic_title}} by {{reply_cta_label}}.'
   ],
-  streak_variants: [
-    'Last week: {{practice_days}} practice days, {{weekly_xp}} XP, and your streak is at {{streak_current}}. {{reply_cta_label}} to build on it.',
-    'You kept momentum last week: {{practice_days}} practice days, {{weekly_xp}} XP, streak {{streak_current}}. {{reply_cta_label}} and we’ll continue.'
-  ]
 };
 
 const IDIOM_PRACTICE_LOCALE_DEFAULTS = {
@@ -601,7 +595,6 @@ function resolveWeeklyDigestLocale(botKeyRaw) {
       || WEEKLY_DIGEST_DEFAULT_LOCALE.reply_cta_text,
     default_variants: normalizeWeeklyDigestVariantArray(raw.default_variants, WEEKLY_DIGEST_DEFAULT_LOCALE.default_variants),
     topic_variants: normalizeWeeklyDigestVariantArray(raw.topic_variants, WEEKLY_DIGEST_DEFAULT_LOCALE.topic_variants),
-    streak_variants: normalizeWeeklyDigestVariantArray(raw.streak_variants, WEEKLY_DIGEST_DEFAULT_LOCALE.streak_variants)
   };
 }
 
@@ -728,9 +721,7 @@ function buildOnboardingReplyMarkup(state, locale) {
   const voiceValue = replyMode === 'voice'
     ? String(locale.keyboard_btn_voice_voice || 'Voice').trim() || 'Voice'
     : String(locale.keyboard_btn_voice_text || 'Text').trim() || 'Text';
-  const xpPrefix = String(locale.keyboard_btn_xp_prefix || 'XP').trim() || 'XP';
-  const xpTotal = Number(state.xp_total ?? 0);
-  const xpLevel = Number(state.xp_level ?? 1) || 1;
+  const progressLabel = String(locale.keyboard_btn_progress || 'My progress');
   const levelValue = String(state.level || 'a1').trim().toUpperCase() || 'A1';
 
   return {
@@ -741,7 +732,7 @@ function buildOnboardingReplyMarkup(state, locale) {
       ],
       [
         { text: `· 🎤 ${voiceValue}` },
-        { text: `· ${xpPrefix}: ${xpTotal} • L${xpLevel}` }
+        { text: `· 📈 ${progressLabel}` }
       ]
     ],
     resize_keyboard: true,
@@ -907,13 +898,8 @@ async function loadOnboardingState(chatId, botKey) {
        ub.level,
        ub.reply_mode,
        COALESCE(ub.topic_enabled, false) AS topic_enabled,
-       ub.topic_pack_json,
-       COALESCE(up.xp_total, 0)::int AS xp_total,
-       FLOOR(COALESCE(up.xp_total, 0) / 200.0)::int + 1 AS xp_level
+       ub.topic_pack_json
      FROM user_bots ub
-     LEFT JOIN user_progress up
-       ON up.chat_id = ub.chat_id
-      AND up.bot_key = ub.bot_key
      WHERE ub.chat_id = $1
        AND ub.bot_key = $2
        AND COALESCE(ub.is_active, true) = true
@@ -1095,20 +1081,18 @@ async function scanEligibleWeeklyDigestUsers(now = new Date()) {
        ON u.chat_id = ub.chat_id
      JOIN LATERAL (
        SELECT
-         COALESCE(SUM(e.xp_delta), 0)::int AS weekly_xp,
-         (COUNT(DISTINCT ((e.occurred_at AT TIME ZONE 'UTC')::date))
-           FILTER (WHERE COALESCE((e.meta->>'practice')::boolean, false)))::int AS practice_days
-       FROM xp_events e
-       WHERE e.chat_id = ub.chat_id
+         COUNT(DISTINCT ((e.created_at AT TIME ZONE 'UTC')::date))::int AS practice_days
+       FROM messages e
+       WHERE e.role = 'user'
+         AND e.chat_id = ub.chat_id
          AND e.bot_key = ub.bot_key
-         AND e.occurred_at >= $1::timestamptz
-         AND e.occurred_at < $2::timestamptz
+         AND e.created_at >= $1::timestamptz
+         AND e.created_at < $2::timestamptz
      ) week_stats ON true
      WHERE COALESCE(ub.is_active, true) = true
        AND u.inactive_reason IS NULL
        AND ub.last_seen_at >= NOW() - interval '7 days'
        AND ub.last_seen_at <= NOW() - ($4::int * interval '1 hour')
-       AND week_stats.weekly_xp > 0
        AND week_stats.practice_days >= $3::int
        AND ($6::bigint[] IS NULL OR ub.chat_id = ANY($6::bigint[]))
        AND EXISTS (
@@ -1172,20 +1156,13 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
        COALESCE(ub.topic_enabled, false) AS topic_enabled,
        ub.topic_pack_json,
        ub.last_seen_at,
-       COALESCE(up.xp_total, 0)::int AS xp_total,
-       COALESCE(up.streak_current, 0)::int AS streak_current,
-       COALESCE(up.streak_best, 0)::int AS streak_best,
        COALESCE(us.profile_summary, '') AS profile_summary,
        COALESCE(us.short_summary, '') AS short_summary,
        onboarding.completed_at AS onboarding_sent_at,
-       COALESCE(week_stats.weekly_xp, 0)::int AS weekly_xp,
        COALESCE(week_stats.practice_days, 0)::int AS practice_days
      FROM users u
      JOIN user_bots ub
        ON ub.chat_id = u.chat_id
-     LEFT JOIN user_progress up
-       ON up.chat_id = ub.chat_id
-      AND up.bot_key = ub.bot_key
      LEFT JOIN user_summaries us
        ON us.chat_id = ub.chat_id
       AND us.bot_key = ub.bot_key
@@ -1194,14 +1171,13 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
       AND onboarding.bot_key = ub.bot_key
      LEFT JOIN LATERAL (
        SELECT
-         COALESCE(SUM(e.xp_delta), 0)::int AS weekly_xp,
-         (COUNT(DISTINCT ((e.occurred_at AT TIME ZONE 'UTC')::date))
-           FILTER (WHERE COALESCE((e.meta->>'practice')::boolean, false)))::int AS practice_days
-       FROM xp_events e
-       WHERE e.chat_id = ub.chat_id
+         COUNT(DISTINCT ((e.created_at AT TIME ZONE 'UTC')::date))::int AS practice_days
+       FROM messages e
+       WHERE e.role = 'user'
+         AND e.chat_id = ub.chat_id
          AND e.bot_key = ub.bot_key
-         AND e.occurred_at >= $3::timestamptz
-         AND e.occurred_at < $4::timestamptz
+         AND e.created_at >= $3::timestamptz
+         AND e.created_at < $4::timestamptz
      ) week_stats ON true
      WHERE u.chat_id = $1::bigint
        AND ub.bot_key = $2::text
@@ -1237,12 +1213,8 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
     topicTitle: extractTopicTitle(row.topic_pack_json),
     lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : null,
     onboardingSentAt: row.onboarding_sent_at ? new Date(row.onboarding_sent_at) : null,
-    xpTotal: clampInteger(row.xp_total, { min: 0, max: 10000000, fallback: 0 }),
-    streakCurrent: clampInteger(row.streak_current, { min: 0, max: 100000, fallback: 0 }),
-    streakBest: clampInteger(row.streak_best, { min: 0, max: 100000, fallback: 0 }),
     profileSummary: normalizeOptionalText(row.profile_summary, 2000) || '',
     shortSummary: normalizeOptionalText(row.short_summary, 1200) || '',
-    weeklyXp: clampInteger(row.weekly_xp, { min: 0, max: 10000000, fallback: 0 }),
     practiceDays: clampInteger(row.practice_days, { min: 0, max: 7, fallback: 0 }),
     weekStart: window.weekStart,
     weekEnd: window.weekEnd,
@@ -1260,9 +1232,6 @@ function pickWeeklyDigestFallbackFamily(context) {
   if (context.topicEnabled && context.topicTitle) {
     return { family: 'topic_variants', variants: context.weeklyDigestLocale.topic_variants };
   }
-  if (context.streakCurrent > 0) {
-    return { family: 'streak_variants', variants: context.weeklyDigestLocale.streak_variants };
-  }
   return { family: 'default_variants', variants: context.weeklyDigestLocale.default_variants };
 }
 
@@ -1276,9 +1245,6 @@ function validateWeeklyDigestMessageText(messageText, context = {}) {
   if (/\{\{\s*[a-zA-Z0-9_]+\s*\}\}/.test(value)) return { ok: false, error: 'unresolved_placeholder' };
   if (/\b(plan|subscription|billing|upgrade)\b/i.test(value)) return { ok: false, error: 'billing_language_not_allowed' };
   if (/\bwe miss you\b/i.test(value) || /\bcome back now\b/i.test(value)) return { ok: false, error: 'spammy_phrase_not_allowed' };
-  if (Number.isFinite(Number(context.weeklyXp)) && !value.includes(String(context.weeklyXp))) {
-    return { ok: false, error: 'missing_weekly_xp_stat' };
-  }
   if (Number.isFinite(Number(context.practiceDays)) && !value.includes(String(context.practiceDays))) {
     return { ok: false, error: 'missing_practice_days_stat' };
   }
@@ -1300,10 +1266,7 @@ function buildWeeklyDigestFallbackMessage(context, taskType) {
   const messageText = applyTemplateSlots(template, {
     first_name: context.firstName,
     topic_title: context.topicTitle,
-    weekly_xp: context.weeklyXp,
     practice_days: context.practiceDays,
-    streak_current: context.streakCurrent,
-    streak_best: context.streakBest,
     reply_cta_label: context.replyCtaLabel
   }).replace(/\s+/g, ' ').trim();
   const validation = validateWeeklyDigestMessageText(messageText, context);
@@ -1334,9 +1297,7 @@ function reportWeeklyDigestFallback(context, generationError, fallback, origin) 
       chat_id: context?.chatId || null,
       schedule_key: context?.scheduleKey || null,
       digest_schedule_key: context?.digestScheduleKey || null,
-      weekly_xp: context?.weeklyXp ?? null,
       practice_days: context?.practiceDays ?? null,
-      streak_current: context?.streakCurrent ?? null,
       reply_mode: context?.replyMode || null,
       topic_enabled: Boolean(context?.topicEnabled),
       topic_title: context?.topicTitle || null,
@@ -1480,13 +1441,9 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
       topic_enabled: context.topicEnabled,
       topic_title: context.topicTitle || null,
       profile_summary: context.profileSummary || null,
-      short_summary: context.shortSummary || null,
-      xp_total: context.xpTotal,
-      streak_current: context.streakCurrent,
-      streak_best: context.streakBest
+      short_summary: context.shortSummary || null
     },
     progress: {
-      weekly_xp: context.weeklyXp,
       practice_days: context.practiceDays
     },
     cta: {
@@ -1591,7 +1548,6 @@ async function evaluateWeeklyDigestEligibility({
   if (context.lastSeenAt.getTime() > Date.now() - (WEEKLY_DIGEST_RECENT_ACTIVITY_HOURS * 60 * 60 * 1000)) {
     return { ok: false, code: 'recent_user_activity', context };
   }
-  if (context.weeklyXp <= 0) return { ok: false, code: 'no_weekly_xp', context };
   if (context.practiceDays < WEEKLY_DIGEST_MIN_PRACTICE_DAYS) {
     return { ok: false, code: 'insufficient_practice_days', context };
   }
@@ -1706,7 +1662,6 @@ export async function sendWeeklyDigestReminderCore({
         digest_schedule_key: context.digestScheduleKey,
         week_start_utc: context.weekStart ? context.weekStart.toISOString() : null,
         week_end_utc: context.weekEnd ? context.weekEnd.toISOString() : null,
-        weekly_xp: context.weeklyXp,
         practice_days: context.practiceDays,
         message_source: generation.source,
         generation_error: generation.source === 'llm' ? null : (generationError || null),
@@ -1788,12 +1743,12 @@ async function loadIdiomPracticeContext(chatId, botKeyRaw, {
        onboarding.completed_at AS onboarding_sent_at,
        EXISTS (
          SELECT 1
-         FROM xp_events e
-         WHERE e.chat_id = ub.chat_id
+         FROM messages e
+         WHERE e.role = 'user'
+           AND e.chat_id = ub.chat_id
            AND e.bot_key = ub.bot_key
-           AND e.occurred_at >= $3::timestamptz
-           AND e.occurred_at < $4::timestamptz
-           AND COALESCE((e.meta->>'practice')::boolean, false)
+           AND e.created_at >= $3::timestamptz
+           AND e.created_at < $4::timestamptz
        ) AS practiced_today
      FROM users u
      JOIN user_bots ub
@@ -2595,52 +2550,6 @@ async function recordIdiomPracticeMoreClickOutcome(db, {
   );
 }
 
-async function grantIdiomPracticeMoreXp(client, {
-  chatId,
-  botKey,
-  callbackQueryId,
-  scheduleKey,
-  sourceMessageId,
-  deliveryIndex
-}) {
-  const normalizedChatId = Number(chatId);
-  const normalizedBotKey = normalizeBotKey(botKey);
-  const normalizedCallbackQueryId = String(callbackQueryId || '').trim();
-  if (!Number.isFinite(normalizedChatId) || normalizedChatId <= 0 || !normalizedBotKey || !normalizedCallbackQueryId) {
-    return null;
-  }
-
-  const { rows } = await client.query(
-    `SELECT *
-       FROM public.grant_xp(
-         $1::bigint,
-         $2::text,
-         $3::text,
-         $4::int,
-         $5::text,
-         false,
-         NOW(),
-         $6::jsonb
-       );`,
-    [
-      normalizedChatId,
-      normalizedBotKey,
-      IDIOM_PRACTICE_MORE_XP_EVENT_TYPE,
-      IDIOM_PRACTICE_MORE_XP_AMOUNT,
-      `xp:btn:idiom_more:${normalizedChatId}:${normalizedBotKey}:${normalizedCallbackQueryId}`,
-      JSON.stringify({
-        schedule_key: String(scheduleKey || '').trim() || null,
-        callback_query_id: normalizedCallbackQueryId,
-        source_message_id: Number.isFinite(Number(sourceMessageId)) ? Number(sourceMessageId) : null,
-        delivery_index: Number.isFinite(Number(deliveryIndex)) ? Number(deliveryIndex) : null,
-        source_group: 'idiom_more'
-      })
-    ]
-  );
-
-  return rows[0] || null;
-}
-
 export async function sendIdiomPracticeMorePhrase({
   chatId,
   botKey,
@@ -2872,15 +2781,6 @@ export async function sendIdiomPracticeMorePhrase({
       [dispatch.id, JSON.stringify(nextPayload)]
     );
 
-    await grantIdiomPracticeMoreXp(client, {
-      chatId: normalizedChatId,
-      botKey: normalizedBotKey,
-      callbackQueryId,
-      scheduleKey: effectiveScheduleKey,
-      sourceMessageId: telegramMessageId,
-      deliveryIndex: deliveredCount + 1
-    });
-
     await finalizeIdiomPracticeMoreClickEvent(client, reservedEventKey, {
       ...baseEventProperties,
       result: 'delivered',
@@ -3080,9 +2980,6 @@ async function loadWinbackBaseState(chatId, botKeyRaw) {
        COALESCE(ub.topic_enabled, false) AS topic_enabled,
        ub.topic_pack_json,
        ub.last_seen_at,
-       COALESCE(up.xp_total, 0)::int AS xp_total,
-       COALESCE(up.streak_current, 0)::int AS streak_current,
-       COALESCE(up.streak_best, 0)::int AS streak_best,
        COALESCE(us.profile_summary, '') AS profile_summary,
        COALESCE(us.short_summary, '') AS short_summary,
        last_user.created_at AS last_user_message_at,
@@ -3092,9 +2989,6 @@ async function loadWinbackBaseState(chatId, botKeyRaw) {
      FROM user_bots ub
      JOIN users u
        ON u.chat_id = ub.chat_id
-     LEFT JOIN user_progress up
-       ON up.chat_id = ub.chat_id
-      AND up.bot_key = ub.bot_key
      LEFT JOIN user_summaries us
        ON us.chat_id = ub.chat_id
       AND us.bot_key = ub.bot_key
@@ -3151,9 +3045,6 @@ async function loadWinbackBaseState(chatId, botKeyRaw) {
     inactivityHours,
     profileSummary: normalizeOptionalText(row.profile_summary, 2000) || '',
     shortSummary: normalizeOptionalText(row.short_summary, 1200) || '',
-    xpTotal: clampInteger(row.xp_total, { min: 0, max: 10000000, fallback: 0 }),
-    streakCurrent: clampInteger(row.streak_current, { min: 0, max: 100000, fallback: 0 }),
-    streakBest: clampInteger(row.streak_best, { min: 0, max: 100000, fallback: 0 }),
     lastUserMessageAt,
     lastUserMessageText: normalizeConversationText(row.last_user_message_text, 320),
     lastAssistantMessageAt: row.last_assistant_message_at ? new Date(row.last_assistant_message_at) : null,
@@ -3953,9 +3844,6 @@ function pickWinbackFallbackFamily(context) {
   if (context.topicEnabled && context.topicTitle) {
     return { family: 'd14.topic', variants: context.winbackLocale.d14.topic };
   }
-  if (context.streakBest >= 3) {
-    return { family: 'd14.streak', variants: context.winbackLocale.d14.streak };
-  }
   if (context.replyMode === WINBACK_REPLY_MODE_VOICE) {
     return { family: 'd14.voice', variants: context.winbackLocale.d14.voice };
   }
@@ -3981,8 +3869,7 @@ function buildWinbackFallbackMessage(context, taskType) {
     first_name: context.firstName,
     topic_title: context.topicTitle,
     target_language_label: context.targetLanguageLabel,
-    reply_cta_label: context.replyCtaLabel,
-    streak_best: context.streakBest
+    reply_cta_label: context.replyCtaLabel
   }).replace(/\s+/g, ' ').trim();
 
   return {
@@ -4048,9 +3935,6 @@ async function generateWinbackMessageWithLlm(context, taskType) {
       topic_title: context.topicTitle || null,
       profile_summary: context.profileSummary || null,
       short_summary: context.shortSummary || null,
-      xp_total: context.xpTotal,
-      streak_current: context.streakCurrent,
-      streak_best: context.streakBest,
       inactivity_days: context.inactivityDays
     },
     conversation: {

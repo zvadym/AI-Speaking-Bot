@@ -39,8 +39,7 @@ import type { StatsContext } from '../src/bot-runtime/stats-context.js';
 import { buildStatsMessage } from '../src/bot-runtime/stats-message.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
-import type { XpContext } from '../src/bot-runtime/xp-context.js';
-import { buildXpMessage } from '../src/bot-runtime/xp-message.js';
+import { buildProgressMessage } from '../src/bot-runtime/handlers/progress.js';
 import { callbackUpdate, messageUpdate, voice } from './fixtures/telegram-updates.js';
 
 const unusedPool = null as unknown as Pool;
@@ -135,23 +134,6 @@ function statsContext(overrides: Partial<StatsContext> = {}): StatsContext {
 
 async function allowPracticeQuota() {
   return { allowed: true as const, context: statsContext() };
-}
-
-function xpContext(overrides: Partial<XpContext> = {}): XpContext {
-  return {
-    xpTotal: 450,
-    streakCurrent: 3,
-    streakBest: 7,
-    level: 3,
-    xpIntoLevel: 50,
-    xpPerLevel: 200,
-    xpToNext: 150,
-    xpDailyToday: 125,
-    xpDailyLimit: 250,
-    xpDailyRemaining: 125,
-    streakMultiplier: 1,
-    ...overrides
-  };
 }
 
 const statsLocale = {
@@ -308,39 +290,13 @@ test('stats formatter preserves the legacy free and paid layouts', () => {
   );
 });
 
-test('XP formatter preserves progress bars and the persistent keyboard', () => {
+test('progress empty state preserves language controls without game metrics', () => {
   const update = preparedStats();
-  const message = buildXpMessage({
-    context: xpContext(),
-    locale: {
-      xp_title: '<b>Progress</b>',
-      xp_streak_label: 'Streak',
-      xp_best_label: 'Best',
-      xp_level_label: 'Level',
-      xp_total_label: 'XP',
-      xp_today_title: 'Today',
-      xp_daily_cap_label: 'Cap',
-      xp_today_left_label: 'Left',
-      xp_level_progress_label: 'Level progress',
-      xp_next_label: 'Next',
-      xp_streak_bonus_label: 'Bonus',
-      xp_streak_bonus_pending: 'Pending'
-    },
-    keyboard: update.context.keyboard
-  });
-
-  assert.match(message.text, /<code>\[■■■■□□□□\]<\/code> <b>125<\/b> \/ 250 XP/);
-  assert.match(message.text, /<code>\[■■□□□□□□\]<\/code> <b>50<\/b> \/ 200 XP/);
-  assert.deepEqual(message.replyMarkup.keyboard, [
-    [
-      { text: update.context.keyboard.topicButtonText },
-      { text: update.context.keyboard.levelButtonText }
-    ],
-    [
-      { text: update.context.keyboard.voiceButtonText },
-      { text: update.context.keyboard.xpButtonText }
-    ]
-  ]);
+  const message = buildProgressMessage(update, { progress_empty_text: 'No assessment yet.', keyboard_btn_progress: 'My progress' });
+  assert.equal(message.text, 'No assessment yet.');
+  assert.equal(message.replyMarkup.keyboard[0][1].text, update.context.keyboard.levelButtonText);
+  assert.equal(message.replyMarkup.keyboard[1][1].text, '· 📈 My progress');
+  assert.doesNotMatch(JSON.stringify(message), /XP/);
 });
 
 test('static command formatters preserve legacy menu callback payloads', () => {

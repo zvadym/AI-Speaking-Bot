@@ -97,14 +97,6 @@
     "level_label_beginner": "शुरुआती (A1-A2)",
     "level_label_conversational": "संवादी (B1-B2)",
     "level_label_advanced": "उन्नत (C1+)",
-    "xp_title": "<b>🔥 आपकी प्रगति</b>",
-    "xp_streak_label": "स्ट्रिक",
-    "xp_best_label": "सबसे लंबी स्ट्रिक",
-    "xp_level_label": "लेवल",
-    "xp_total_label": "XP",
-    "xp_next_label": "अगले लेवल तक",
-    "xp_coming_soon": "XP जल्द आ रहा है।",
-    "xp_digest_prefix": "आपकी प्रगति:",
     "topic_btn_set_inline": "🧭 विषय चुनें",
     "topic_btn_manage_inline": "🎯 विषय बदलें/रद्द करें",
     "onboarding_start_practice_text": "शानदार शुरुआत ✨ क्या आप कोई topic चुनना चाहेंगे या फ्री में जारी रखें? आप कभी भी voice या text भेज सकते हैं।",
@@ -115,20 +107,13 @@
     "onboarding_voice_cta_text": "बहुत बढ़िया। 1 छोटा वॉइस मैसेज भेजें (1–2 वाक्य) 🎙️",
     "onboarding_text_cta_text": "बहुत बढ़िया। 1 छोटा टेक्स्ट मैसेज भेजें (1–2 वाक्य) ✍️",
     "onboarding_showcase_no_mistakes_text": "बहुत बढ़िया, इसमें कोई गलती नहीं है 👏\nअगर आप देखना चाहते हैं कि मैं गलतियाँ कैसे ठीक करता हूँ, तो जानबूझकर गलत वाक्य लिखें।\nउदाहरण:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "बहुत बढ़िया प्रोग्रेस — आपका प्रोफाइल तैयार है 🚀\n\nमुख्य बातें:\n• आपका शुरुआती level A1 है। आप इसे कभी भी A1, A2, B1, B2 या C1 में बदल सकते हैं।\n• चैट के नीचे वाले buttons से आप कभी भी अपना language level और reply format बदल सकते हैं: voice या text।\n• Practice करते समय आप XP कमाते हैं। जैसे-जैसे आपका XP बढ़ता है, समय के साथ ज़्यादा features unlock होते हैं।\n• आपकी streak उन दिनों की संख्या है जिनमें आप लगातार practice करते हैं। लंबी streak आपका XP multiplier बढ़ाती है।\n• App में आप दूसरे settings खोल सकते हैं, feedback भेज सकते हैं और बाकी options manage कर सकते हैं।\n\nअपनी streak जारी रखने के लिए अगला message भेजें 🔥\n\nबधाई हो! Onboarding पूरा हो गया है।",
+    "onboarding_complete_full_text": "बहुत बढ़िया प्रोग्रेस — आपका प्रोफाइल तैयार है 🚀\n\nमुख्य बातें:\n• आपका शुरुआती level A1 है। आप इसे कभी भी A1, A2, B1, B2 या C1 में बदल सकते हैं।\n• चैट के नीचे वाले buttons से आप कभी भी अपना language level और reply format बदल सकते हैं: voice या text।\n• App में आप दूसरे settings खोल सकते हैं, feedback भेज सकते हैं और बाकी options manage कर सकते हैं।\n\nअपनी streak जारी रखने के लिए अगला message भेजें 🔥\n\nबधाई हो! Onboarding पूरा हो गया है।",
     "keyboard_btn_level_prefix": "लेवल",
     "keyboard_btn_topic_prefix": "टॉपिक",
     "keyboard_btn_topic_none": "विषय चुनें",
     "keyboard_btn_voice_prefix": "प्रतिक्रिया प्रकार",
     "keyboard_btn_voice_text": "टेक्स्ट",
     "keyboard_btn_voice_voice": "वॉइस",
-    "keyboard_btn_xp_prefix": "XP",
-    "xp_today_title": "आज",
-    "xp_daily_cap_label": "दैनिक सीमा",
-    "xp_today_left_label": "आज शेष",
-    "xp_level_progress_label": "लेवल प्रगति",
-    "xp_streak_bonus_label": "स्ट्रीक बोनस",
-    "xp_streak_bonus_pending": "स्ट्रीक मल्टिप्लायर अभी XP पर लागू नहीं होता।",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -224,7 +209,9 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
-    }
+    },
+    "keyboard_btn_progress": "मेरी प्रगति",
+    "progress_empty_text": "सीखने की प्रगति अभी उपलब्ध नहीं है। अभ्यास जारी रखें; आपकी शब्दावली और व्याकरण का भरोसेमंद आकलन अभी उपलब्ध नहीं है।"
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | आपकी भाषा ट्यूटर",
@@ -248,8 +235,8 @@
         "description": "सदस्यता स्थिति देखें"
       },
       {
-        "command": "xp",
-        "description": "स्ट्रिक और XP देखें"
+        "command": "progress",
+        "description": "सीखने की प्रगति देखें"
       },
       {
         "command": "topic",

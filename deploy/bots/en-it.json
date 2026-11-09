@@ -97,14 +97,6 @@
     "level_label_beginner": "Beginner (A1-A2)",
     "level_label_conversational": "Conversational (B1-B2)",
     "level_label_advanced": "Advanced (C1+)",
-    "xp_title": "<b>🔥 Your progress</b>",
-    "xp_streak_label": "Streak",
-    "xp_best_label": "Best streak",
-    "xp_level_label": "Level",
-    "xp_total_label": "XP",
-    "xp_next_label": "To next level",
-    "xp_coming_soon": "XP is coming soon.",
-    "xp_digest_prefix": "Your progress:",
     "topic_btn_set_inline": "🧭 Set topic",
     "topic_btn_manage_inline": "🎯 Change/cancel topic",
     "onboarding_start_practice_text": "You can choose a topic or continue freely. Send a voice or text message anytime.",
@@ -115,20 +107,13 @@
     "onboarding_voice_cta_text": "Okay. Send a short voice message (1-2 sentences) 🎙️",
     "onboarding_text_cta_text": "Okay. Send a short text message (1-2 sentences) ✍️",
     "onboarding_showcase_no_mistakes_text": "No mistakes here 👏\nIf you want to see how I correct things, send a sentence with an intentional mistake.\nFor example:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Your profile is ready 🚀\n\nA few quick notes:\n• Your starting level is A1. You can change it anytime to A1, A2, B1, B2, or C1.\n• Use the buttons below the chat to change your level and reply type: voice or text.\n• You earn XP as you practice. Over time, this unlocks more features.\n• Your streak is the number of days you practice in a row. A longer streak increases your XP multiplier.\n• The mini-app has more settings, feedback, and account options.\n\nSend your next message to continue practicing 🔥\n\nOnboarding is finished.",
+    "onboarding_complete_full_text": "Your profile is ready 🚀\n\nA few quick notes:\n• Your starting level is A1. You can change it anytime to A1, A2, B1, B2, or C1.\n• Use the buttons below the chat to change your level and reply type: voice or text.\n• The mini-app has more settings, feedback, and account options.\n\nSend your next message to continue practicing 🔥\n\nOnboarding is finished.",
     "keyboard_btn_level_prefix": "Level",
     "keyboard_btn_topic_prefix": "Topic",
     "keyboard_btn_topic_none": "Choose topic",
     "keyboard_btn_voice_prefix": "Response type",
     "keyboard_btn_voice_text": "Text",
     "keyboard_btn_voice_voice": "Voice",
-    "keyboard_btn_xp_prefix": "XP",
-    "xp_today_title": "Today",
-    "xp_daily_cap_label": "Daily cap",
-    "xp_today_left_label": "Left today",
-    "xp_level_progress_label": "Level progress",
-    "xp_streak_bonus_label": "Streak bonus",
-    "xp_streak_bonus_pending": "Streak multiplier is not applied to awards yet.",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -224,7 +209,9 @@
           "example": "Mi piacerebbe visitare la Spagna perché amo il cibo e la storia."
         }
       }
-    }
+    },
+    "keyboard_btn_progress": "My progress",
+    "progress_empty_text": "Learning progress is not available yet. Keep practising; there is no reliable vocabulary or grammar assessment to show yet."
   },
   "telegram_presentation": {
     "name": "Romi 🇮🇹 | Your language tutor",
@@ -248,8 +235,8 @@
         "description": "Check subscription status"
       },
       {
-        "command": "xp",
-        "description": "Check your streak and XP"
+        "command": "progress",
+        "description": "View learning progress"
       },
       {
         "command": "topic",
