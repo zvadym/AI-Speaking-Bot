@@ -29,3 +29,8 @@ deploy/n8n-data
 *.key
 backups/
 exports/
+
+# Private relaunch documents belong only in Notion, never in the public repository.
+/docs/research/*adaptive-tutor*.md
+/docs/superpowers/specs/*adaptive-tutor*.md
+/docs/superpowers/plans/*adaptive-tutor*.md
