@@ -1423,6 +1423,7 @@ async function requestReminderResponse({ context, operation, body }) {
     },
     operation,
     model: env.reminderLlmModel,
+    reasoningEffort: env.reminderLlmReasoningEffort,
     record: recordLlmCall,
     call: async () => {
       const response = await fetch('https://api.openai.com/v1/responses', {
@@ -1431,7 +1432,7 @@ async function requestReminderResponse({ context, operation, body }) {
           Authorization: `Bearer ${env.openaiApiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ ...body, reasoning: { effort: env.reminderLlmReasoningEffort } })
       });
 
       let payloadJson = null;

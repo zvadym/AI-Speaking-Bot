@@ -232,15 +232,17 @@ function parseResponseOutput(response) {
   throw new Error('OpenAI topic generation returned no text output');
 }
 
-async function requestTopicResponse({ apiKey, model, input, recordLlmCall, trace, operation }) {
+async function requestTopicResponse({ apiKey, model, reasoningEffort, input, recordLlmCall, trace, operation }) {
   const client = getClient(apiKey);
   return observeLlmCall({
     trace: trace || { botKey: 'topic-catalog', route: 'admin.topic' },
     operation,
     model,
+    reasoningEffort,
     record: recordLlmCall,
     call: () => client.responses.create({
       model,
+      reasoning: { effort: reasoningEffort },
       input,
       text: {
         format: {
@@ -257,6 +259,7 @@ async function requestTopicResponse({ apiKey, model, input, recordLlmCall, trace
 export async function generateTopicDraft({
   apiKey,
   model,
+  reasoningEffort = 'low',
   topicName,
   baseLanguage,
   targetLanguage,
@@ -270,6 +273,7 @@ export async function generateTopicDraft({
   const response = await requestTopicResponse({
     apiKey,
     model,
+    reasoningEffort,
     recordLlmCall,
     trace,
     operation: 'topic.generate',
@@ -292,6 +296,7 @@ export async function generateTopicDraft({
 export async function assistTopicDraft({
   apiKey,
   model,
+  reasoningEffort = 'low',
   instruction,
   baseLanguage,
   targetLanguage,
@@ -304,6 +309,7 @@ export async function assistTopicDraft({
   const response = await requestTopicResponse({
     apiKey,
     model,
+    reasoningEffort,
     recordLlmCall,
     trace,
     operation: 'topic.assist',
@@ -325,6 +331,7 @@ export async function assistTopicDraft({
 export async function cloneTopicDraftToBot({
   apiKey,
   model,
+  reasoningEffort = 'low',
   sourceBaseLanguage,
   sourceTargetLanguage,
   targetBaseLanguage,
@@ -341,6 +348,7 @@ export async function cloneTopicDraftToBot({
   const response = await requestTopicResponse({
     apiKey,
     model,
+    reasoningEffort,
     recordLlmCall,
     trace,
     operation: 'topic.clone',

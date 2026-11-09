@@ -196,6 +196,7 @@ export function collectIdiomPracticeBaseLanguages(configMap = {}) {
 export async function translateIdiomPhraseEntry({
   apiKey,
   model,
+  reasoningEffort = 'low',
   targetLanguage,
   baseLanguage,
   entry,
@@ -225,9 +226,11 @@ export async function translateIdiomPhraseEntry({
     trace: trace || { botKey: 'idiom-catalog', route: 'catalog.idiom.translate' },
     operation: 'idiom.translate',
     model,
+    reasoningEffort,
     record: recordLlmCall,
     call: () => client.responses.create({
       model,
+      reasoning: { effort: reasoningEffort },
       input: [
         {
           role: 'system',

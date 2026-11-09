@@ -176,14 +176,14 @@ const botOnboardingV2EnabledBotKeys = parseOnboardingEnabledBotKeys(
   process.env.BOT_ONBOARDING_V2_ENABLED_BOT_KEYS,
   Object.keys(telegramBotTokensByBotKey)
 );
-const botRuntimeModel = (process.env.BOT_RUNTIME_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4';
+const botRuntimeModel = (process.env.BOT_RUNTIME_MODEL || 'gpt-6-luna').toString().trim() || 'gpt-6-luna';
 const botSupportModel = (process.env.BOT_SUPPORT_MODEL || botRuntimeModel).toString().trim() || botRuntimeModel;
 const botRuntimeReasoningEffort = parseModelReasoningEffort(
-  process.env.BOT_RUNTIME_REASONING_EFFORT,
+  process.env.BOT_RUNTIME_REASONING_EFFORT || 'low',
   'BOT_RUNTIME_REASONING_EFFORT'
 );
 const botSupportReasoningEffort = parseModelReasoningEffort(
-  process.env.BOT_SUPPORT_REASONING_EFFORT,
+  process.env.BOT_SUPPORT_REASONING_EFFORT || 'none',
   'BOT_SUPPORT_REASONING_EFFORT'
 );
 const botModelPolicyOverrides = parseBotModelPolicyOverrides(
@@ -239,9 +239,12 @@ export const env = {
   sentryProfileSessionSampleRate: optionalNumber('SENTRY_PROFILE_SESSION_SAMPLE_RATE', 0, { min: 0, max: 1 }),
   discordEventsWebhookUrl: optionalUrl('DISCORD_EVENTS_WEBHOOK_URL'),
   discordUserMilestoneStep: optionalInteger('DISCORD_USER_MILESTONE_STEP', 100, { min: 1, max: 1000000 }),
-  topicGenerationModel: (process.env.TOPIC_GENERATION_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4',
-  reminderLlmModel: (process.env.REMINDER_LLM_MODEL || 'gpt-5-mini').toString().trim() || 'gpt-5-mini',
-  idiomPracticeOpenaiModel: (process.env.IDIOM_PRACTICE_OPENAI_MODEL || process.env.TOPIC_GENERATION_MODEL || 'gpt-5.4').toString().trim() || 'gpt-5.4',
+  topicGenerationModel: (process.env.TOPIC_GENERATION_MODEL || 'gpt-6.1-terra').toString().trim() || 'gpt-6.1-terra',
+  topicGenerationReasoningEffort: parseModelReasoningEffort(process.env.TOPIC_GENERATION_REASONING_EFFORT || 'low', 'TOPIC_GENERATION_REASONING_EFFORT'),
+  reminderLlmModel: (process.env.REMINDER_LLM_MODEL || 'gpt-6-luna').toString().trim() || 'gpt-6-luna',
+  reminderLlmReasoningEffort: parseModelReasoningEffort(process.env.REMINDER_LLM_REASONING_EFFORT || 'none', 'REMINDER_LLM_REASONING_EFFORT'),
+  idiomPracticeOpenaiModel: (process.env.IDIOM_PRACTICE_OPENAI_MODEL || process.env.TOPIC_GENERATION_MODEL || 'gpt-6.1-terra').toString().trim() || 'gpt-6.1-terra',
+  idiomPracticeReasoningEffort: parseModelReasoningEffort(process.env.IDIOM_PRACTICE_REASONING_EFFORT || 'low', 'IDIOM_PRACTICE_REASONING_EFFORT'),
   idiomPracticeSendHoursUtc,
   idiomPracticeSendMinuteUtc: optionalInteger('IDIOM_PRACTICE_SEND_MINUTE_UTC', 15, { min: 0, max: 59 }),
   idiomPracticeScanLimit: optionalInteger('IDIOM_PRACTICE_SCAN_LIMIT', 500, { min: 1, max: 5000 }),

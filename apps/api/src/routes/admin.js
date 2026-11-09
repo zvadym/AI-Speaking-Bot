@@ -2028,6 +2028,7 @@ export function createAdminRouter(ctx, helpers) {
       const draft = await generateTopicDraft({
         apiKey: ctx.env.openaiApiKey,
         model: ctx.env.topicGenerationModel,
+        reasoningEffort: ctx.env.topicGenerationReasoningEffort,
         topicName,
         baseLanguage: meta.base_language || 'en',
         targetLanguage: meta.learning_language || 'en',
@@ -2064,6 +2065,7 @@ export function createAdminRouter(ctx, helpers) {
       const draft = await assistTopicDraft({
         apiKey: ctx.env.openaiApiKey,
         model: ctx.env.topicGenerationModel,
+        reasoningEffort: ctx.env.topicGenerationReasoningEffort,
         instruction,
         baseLanguage: meta.base_language || 'en',
         targetLanguage: meta.learning_language || 'en',
@@ -2104,6 +2106,7 @@ export function createAdminRouter(ctx, helpers) {
       const clonedDraft = await cloneTopicDraftToBot({
         apiKey: ctx.env.openaiApiKey,
         model: ctx.env.topicGenerationModel,
+        reasoningEffort: ctx.env.topicGenerationReasoningEffort,
         sourceBaseLanguage: sourceMeta.base_language || 'en',
         sourceTargetLanguage: sourceMeta.learning_language || 'en',
         targetBaseLanguage: targetMeta.base_language || 'en',

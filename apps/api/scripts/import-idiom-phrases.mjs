@@ -12,6 +12,7 @@ import {
   translateIdiomPhraseEntry
 } from '../dist/idiom-phrases.js';
 import { createLlmCallRecorder } from '../dist/bot-runtime/llm-telemetry.js';
+import { parseModelReasoningEffort } from '../dist/bot-runtime/model-policy.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '../../..');
@@ -36,9 +37,13 @@ const recordLlmCall = createLlmCallRecorder(pool);
 
 const args = new Set(process.argv.slice(2));
 const shouldTranslate = !args.has('--skip-translate');
-const translationModel = (process.env.IDIOM_PRACTICE_OPENAI_MODEL || process.env.TOPIC_GENERATION_MODEL || 'gpt-5.4')
+const translationModel = (process.env.IDIOM_PRACTICE_OPENAI_MODEL || process.env.TOPIC_GENERATION_MODEL || 'gpt-6.1-terra')
   .toString()
-  .trim() || 'gpt-5.4';
+  .trim() || 'gpt-6.1-terra';
+const translationReasoningEffort = parseModelReasoningEffort(
+  process.env.IDIOM_PRACTICE_REASONING_EFFORT || 'low',
+  'IDIOM_PRACTICE_REASONING_EFFORT'
+);
 const translationConcurrency = Math.max(1, Math.min(8, Number(process.env.IDIOM_PRACTICE_TRANSLATION_CONCURRENCY || 4) || 4));
 
 async function upsertCatalogEntry(client, entry) {
@@ -205,6 +210,7 @@ async function main() {
         const translation = await translateIdiomPhraseEntry({
           apiKey,
           model: translationModel,
+          reasoningEffort: translationReasoningEffort,
           targetLanguage: job.entry.targetLanguage,
           baseLanguage: job.baseLanguage,
           entry: job.entry,

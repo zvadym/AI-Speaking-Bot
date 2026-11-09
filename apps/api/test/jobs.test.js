@@ -1182,6 +1182,9 @@ test('admin weekly digest reads structured Responses API output when output_text
       globalThis.fetch = async (input, init) => {
         const url = typeof input === 'string' ? input : input?.url || '';
         if (typeof url === 'string' && url.startsWith('https://api.openai.com/')) {
+          const requestBody = JSON.parse(init.body);
+          assert.equal(requestBody.model, env.reminderLlmModel);
+          assert.deepEqual(requestBody.reasoning, { effort: env.reminderLlmReasoningEffort });
           return new Response(
             JSON.stringify({
               id: 'resp_test_1',
