@@ -38,6 +38,7 @@ test('all topic operations pass explicit model/reasoning to Responses and teleme
     ['gpt-6.1-terra', 'low'], ['gpt-6.1-terra', 'low'], ['gpt-6.1-terra', 'medium']
   ]);
   assert.ok(requests.every((body) => body.text.format.type === 'json_schema'));
+  assert.ok(requests.every((body) => body.text.format.strict === false));
 });
 
 test('idiom translation preserves structured output and the reasoning override', async (t) => {

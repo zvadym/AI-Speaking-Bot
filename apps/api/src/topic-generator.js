@@ -248,6 +248,9 @@ async function requestTopicResponse({ apiKey, model, reasoningEffort, input, rec
         format: {
           type: 'json_schema',
           name: 'topic_pack_schema',
+          // Topic maps have dynamic grammar/level keys; normalizeTopicPayload
+          // validates the result. Do not let Responses infer strict mode.
+          strict: false,
           schema: TOPIC_GENERATION_SCHEMA,
           verbosity: 'low'
         }
