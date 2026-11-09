@@ -2,6 +2,23 @@
 
 This file orients automated agents working in this repo. Keep it accurate as the project evolves.
 
+## Documentation and Plans — Notion First
+- **Notion is the canonical workspace for project documentation, requirements, decisions, development plans, and implementation handoffs. All agents must work with the relevant Notion pages, not treat repository Markdown copies as the current plan.**
+- Project home: [LanguageBot](https://app.notion.com/p/2ffe327632fc8006bfaceacf80061304).
+- Current product documentation: [документація](https://app.notion.com/p/410e327632fc81409826f1692953aeaf).
+- Requirements and future work: [план розвитку](https://app.notion.com/p/410e327632fc8171a8bffe625189b661).
+- Relaunch execution references:
+  - [Master plan and agent handoff](https://app.notion.com/p/410e327632fc813cad06f39e7a30b1e9).
+  - [Relaunch specification](https://app.notion.com/p/410e327632fc81f8b82afc94080bf8b5).
+  - [Implementation phases P0–P7](https://app.notion.com/p/410e327632fc814fbfabd697cfea0dde), with a separate child page for each phase.
+- At the start of a task, use the connected Notion tools to read the relevant current documentation and plan pages. For a phase implementation, also read the specification, that phase's page, and dependency handoffs. Follow child-page links rather than assuming a parent page contains the complete instructions.
+- Keep current behavior separate from proposed behavior. Confirm implementation claims against the owning code, migrations, configuration, and verification results; a plan or checked box alone does not prove that a feature is live. Resolve material conflicts before dependent changes, respecting the user's latest instructions.
+- Write new documentation, decisions, plans, task status, and handoffs in the appropriate Notion section. After implementation, update the affected documentation and phase page with the actual result, commit IDs, checks, rollout state, and remaining work. Include the updated Notion links in the final handoff.
+- Fetch a page before editing it, preserve unrelated content and nested pages, and prefer targeted updates. Never copy secrets, populated env files, or private database exports into Notion.
+- Existing repository documentation, including `docs/research/`, `docs/superpowers/`, `DEV_DEPLOY.md`, and deployment guides, is a historical/reference copy of migrated material. Do not create or maintain a competing Markdown plan or mark only a local copy complete unless the user explicitly requests it. Local references in older instructions identify source material; read the corresponding current Notion page first.
+- This policy does not move executable sources to Notion: code, migrations, `db/schema.sql`, runtime prompt templates, bot configs, tests, and generated artifacts still belong in Git and follow their existing source-of-truth rules. Keep `AGENTS.md` in Git as the entry point for future agents.
+- If Notion access is unavailable, report the access problem and which context or update is missing. Do not silently substitute local copies or claim a Notion update succeeded. Continue only independent work that does not depend on the missing context, and identify any pending documentation synchronization in the handoff.
+
 ## Project Overview
 - Multi-bot Telegram language-learning product with voice transcription, corrections, feedback threads, broadcasts, admin metrics, and paid plans.
 - The API accepts Telegram webhooks directly and pg-boss workers execute the typed bot pipelines backed by Postgres, OpenAI, and Stripe.
@@ -71,7 +88,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Local defaults: `~/.config/ai-speaking-bot/{api,miniapp,landing}.env`; override with `API_ENV_FILE`, `MINIAPP_ENV_FILE`, `LANDING_ENV_FILE` or `LANGUAGEBOT_CONFIG_DIR`.
 - Server default: `/etc/ai-speaking-bot/{api,miniapp}.env` (`DEPLOY_CONFIG_DIR` override).
 - Node reads only an explicitly selected `API_ENV_FILE`; Docker receives env through Compose. Never put backend secrets in VITE/NUXT_PUBLIC values.
-- `scripts/migrate-private-env.py` copies legacy configuration into private storage, verifies parity and creates a private backup. `--remove-legacy` removes old local env files and inline token fields only after verification. See `deploy/PRIVATE_ENV_MIGRATION.md` before server rollout.
+- `scripts/migrate-private-env.py` copies legacy configuration into private storage, verifies parity and creates a private backup. `--remove-legacy` removes old local env files and inline token fields only after verification. Read the current [private environment migration runbook in Notion](https://app.notion.com/p/410e327632fc81d99a20eb316551c6c9) before server rollout; `deploy/PRIVATE_ENV_MIGRATION.md` is the repository reference copy.
 
 ## DB / Migrations
 - Run migrations via `deploy/migrate.sh` (uses `ghcr.io/amacneil/dbmate:2.12`).
@@ -82,6 +99,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Every migration PR must include the corresponding `db/schema.sql` update.
 
 ## Deployment
+- Read the current [deployment guide](https://app.notion.com/p/410e327632fc8165b40be491255f9c24) and [local development guide](https://app.notion.com/p/410e327632fc81db8eaef8b63f837edb) in Notion for the relevant operation.
 - `deploy/deploy.sh` runs migrations, starts API + worker + mini-app + Caddy, and registers Telegram webhooks.
 - `scripts/deploy-remote.sh` performs the same on the server via SSH.
 - `scripts/vercel-deploy-landing.sh [prod|preview]` deploys `apps/landing` to Vercel.
@@ -124,13 +142,13 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - API code is ESM; keep `import`/`export` style.
 - Avoid hardcoding secrets; use env vars.
 - When changing API responses used by the mini-app or landing generators, update the consumer in the same change.
-- When changing bot config fields, runtime prompt placeholders, or generated landing inputs, update the relevant docs/scripts together.
+- When changing bot config fields, runtime prompt placeholders, or generated landing inputs, update the relevant Notion documentation and repository scripts together.
 - When changing idiom phrase source shape or file naming under `deploy/phrases`, update the DB import script and reminder delivery code together.
 - Prefer editing source templates over generated outputs.
-- If you add new env vars, update docs and consider `.gitignore` as needed.
+- If you add new env vars, update Notion documentation and repository env examples/validation, and consider `.gitignore` as needed. Examples must contain no real secrets.
 
 ## Smoke Checks
 - API health: `GET /healthz`.
 - Mini-app production build: `cd apps/miniapp && npm run build`.
 - Landing production build: `cd apps/landing && npm run build`.
-- Deployed URLs and verification steps are documented in `deploy/README.md`.
+- Deployed URLs and verification steps are documented in the [Notion deployment guide](https://app.notion.com/p/410e327632fc8165b40be491255f9c24); `deploy/README.md` is the repository reference copy.
