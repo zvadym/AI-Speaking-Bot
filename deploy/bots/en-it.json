@@ -209,6 +209,24 @@
           "example": "Mi piacerebbe visitare la Spagna perché amo il cibo e la storia."
         }
       }
+    },
+    "settings": {
+      "title": "Settings",
+      "level": "Level",
+      "topic": "Topic",
+      "replies": "Bot replies",
+      "voice": "Voice",
+      "text": "Text",
+      "free": "Free conversation",
+      "done": "Done",
+      "back": "Back",
+      "card": "Card",
+      "widget": "Widget",
+      "choose": "Choose a settings view",
+      "saved": "Changes saved",
+      "pending": "Saving…",
+      "error": "Could not save. Refresh and try again.",
+      "refresh": "Refresh"
     }
   },
   "telegram_presentation": {

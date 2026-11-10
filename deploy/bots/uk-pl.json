@@ -209,6 +209,24 @@
           "example": "Chcę odwiedzić Włochy, ponieważ uwielbiam tamtejszą kuchnię i historię."
         }
       }
+    },
+    "settings": {
+      "title": "Налаштування",
+      "level": "Рівень",
+      "topic": "Тема",
+      "replies": "Відповіді бота",
+      "voice": "Голос",
+      "text": "Текст",
+      "free": "Вільна розмова",
+      "done": "Готово",
+      "back": "Назад",
+      "card": "Картка",
+      "widget": "Віджет",
+      "choose": "Як показати налаштування?",
+      "saved": "Зміни збережено",
+      "pending": "Зберігаємо…",
+      "error": "Не вдалося зберегти. Онови й спробуй ще раз.",
+      "refresh": "Оновити"
     }
   },
   "telegram_presentation": {

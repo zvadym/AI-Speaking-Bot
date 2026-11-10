@@ -209,6 +209,24 @@
           "example": "Ich möchte Italien besuchen, weil ich das Essen und die Geschichte liebe."
         }
       }
+    },
+    "settings": {
+      "title": "Impostazioni",
+      "level": "Livello",
+      "topic": "Argomento",
+      "replies": "Risposte del bot",
+      "voice": "Voce",
+      "text": "Testo",
+      "free": "Conversazione libera",
+      "done": "Fatto",
+      "back": "Indietro",
+      "card": "Scheda",
+      "widget": "Widget",
+      "choose": "Scegli la vista",
+      "saved": "Modifiche salvate",
+      "pending": "Salvataggio…",
+      "error": "Salvataggio non riuscito. Aggiorna e riprova.",
+      "refresh": "Aggiorna"
     }
   },
   "telegram_presentation": {

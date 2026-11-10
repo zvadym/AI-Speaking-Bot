@@ -76,7 +76,7 @@ test('XP-free dashboard/admin SQL and queued legacy delivery work against Postgr
         telegramClient: { async sendTelegramTextMessage(_chatId, text, options) {
           sends += 1;
           assert.equal(text, ctx.getBotLocale('uk-en').msg_error_command);
-          assert.equal(options.replyMarkup.keyboard.flat().length, 3);
+          assert.equal(options.replyMarkup.keyboard.flat().length, 1);
           assert.doesNotMatch(JSON.stringify(options.replyMarkup), /XP/);
           return { message_id: 77 };
         } }

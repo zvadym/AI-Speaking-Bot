@@ -16,6 +16,8 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'callback.reply': 1,
   'callback.topic': 1,
   'callback.onboarding': 2,
+  'callback.settings': 1,
+  'command.settings': 1,
   'callback.unknown': 1,
   'command.start': 2,
   'command.voice': 1,

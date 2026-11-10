@@ -209,6 +209,24 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
+    },
+    "settings": {
+      "title": "Ayarlar",
+      "level": "Seviye",
+      "topic": "Konu",
+      "replies": "Bot yanıtları",
+      "voice": "Ses",
+      "text": "Metin",
+      "free": "Serbest sohbet",
+      "done": "Bitti",
+      "back": "Geri",
+      "card": "Kart",
+      "widget": "Widget",
+      "choose": "Ayar görünümünü seç",
+      "saved": "Değişiklikler kaydedildi",
+      "pending": "Kaydediliyor…",
+      "error": "Kaydedilemedi. Yenileyip tekrar dene.",
+      "refresh": "Yenile"
     }
   },
   "telegram_presentation": {

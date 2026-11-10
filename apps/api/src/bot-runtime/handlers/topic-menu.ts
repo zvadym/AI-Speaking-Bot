@@ -3,7 +3,7 @@ import type { PreparedUpdate } from '../contracts.js';
 import { fetchKeyboardState } from '../context-loader.js';
 import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
-import { buildPersistentKeyboardState } from '../keyboard-state.js';
+import { buildPersistentKeyboardState, buildPersistentReplyMarkup } from '../keyboard-state.js';
 import { BOT_RUNTIME_HANDLER_VERSIONS } from '../route-flags.js';
 import {
   deliverTelegramText,
@@ -81,7 +81,7 @@ function levelList(value: unknown, level: string, fallback: unknown): string[] {
   return stringList(map[level] || map.default || fallback);
 }
 
-function buildTopicPack(topic: TopicRow, levelRaw: unknown): Record<string, unknown> {
+export function buildTopicPack(topic: TopicRow, levelRaw: unknown): Record<string, unknown> {
   const level = String(levelRaw || 'a1').trim().toLowerCase();
   const starters = levelList(
     topic.starter_questions_by_level_target,
@@ -118,17 +118,6 @@ function buildTopicPack(topic: TopicRow, levelRaw: unknown): Record<string, unkn
     must_pivot_next_turn: false,
     last_assistant_question: /[?¿？؟]/u.test(opening) ? opening : '',
     turns_in_topic: opening ? 1 : 0
-  };
-}
-
-function buildPersistentReplyMarkup(keyboard: ReturnType<typeof buildPersistentKeyboardState>) {
-  return {
-    keyboard: [
-      [{ text: keyboard.topicButtonText }, { text: keyboard.levelButtonText }],
-      [{ text: keyboard.voiceButtonText }]
-    ],
-    resize_keyboard: true,
-    one_time_keyboard: false
   };
 }
 

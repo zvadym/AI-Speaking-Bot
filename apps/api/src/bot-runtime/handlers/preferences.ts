@@ -6,7 +6,7 @@ import {
   type BotUpdateEffectResult
 } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
-import { buildPersistentKeyboardState } from '../keyboard-state.js';
+import { buildPersistentKeyboardState, buildPersistentReplyMarkup } from '../keyboard-state.js';
 import { BOT_RUNTIME_HANDLER_VERSIONS } from '../route-flags.js';
 import {
   deliverTelegramText,
@@ -50,17 +50,6 @@ function localeRecord(value: unknown): Locale {
 function localeText(locale: Locale, key: string, fallback: string): string {
   const value = String(locale[key] || '');
   return value.trim() ? value : fallback;
-}
-
-function buildPersistentReplyMarkup(keyboard: ReturnType<typeof buildPersistentKeyboardState>) {
-  return {
-    keyboard: [
-      [{ text: keyboard.topicButtonText }, { text: keyboard.levelButtonText }],
-      [{ text: keyboard.voiceButtonText }]
-    ],
-    resize_keyboard: true,
-    one_time_keyboard: false
-  };
 }
 
 async function applyPreference(

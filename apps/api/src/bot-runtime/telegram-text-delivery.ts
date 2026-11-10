@@ -96,6 +96,7 @@ export async function deliverTelegramText({
   text,
   parseMode = null,
   replyMarkup = null,
+  telegramMethod = 'sendMessage',
   deliveryRepository = defaultDeliveryRepository
 }: {
   pool: Pool;
@@ -105,6 +106,7 @@ export async function deliverTelegramText({
   text: string;
   parseMode?: 'HTML' | null;
   replyMarkup?: object | null;
+  telegramMethod?: 'sendMessage' | 'sendRichMessage' | 'sendWidget';
   deliveryRepository?: TelegramTextDeliveryRepository;
 }): Promise<BotHandlerOutcome> {
   const chatId = update.input.chatId;
@@ -117,7 +119,7 @@ export async function deliverTelegramText({
     delivery = await deliveryRepository.begin(pool, {
       decisionId: update.decisionId,
       stepKey,
-      telegramMethod: 'sendMessage'
+      telegramMethod
     });
   } catch (error) {
     throw new BotRuntimeHandlerError('delivery_state_unavailable', {

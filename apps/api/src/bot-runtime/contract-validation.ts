@@ -8,7 +8,7 @@ import {
 type UnknownRecord = Record<string, unknown>;
 
 const routeSet = new Set<string>(ROUTES);
-const updateTypes = new Set(['callback_query', 'message', 'unknown']);
+const updateTypes = new Set(['widget_query', 'callback_query', 'message', 'unknown']);
 
 export class PreparedUpdateContractError extends Error {
   constructor() {

@@ -16,7 +16,9 @@ export const ROUTES = [
   'callback.reply',
   'callback.topic',
   'callback.onboarding',
+  'callback.settings',
   'callback.unknown',
+  'command.settings',
   'command.start',
   'command.voice',
   'command.lang',
@@ -37,8 +39,8 @@ export const ROUTES = [
 ] as const;
 
 export type Route = (typeof ROUTES)[number];
-export type UpdateType = 'callback_query' | 'message' | 'unknown';
-export type KeyboardIntent = 'level' | 'topic' | 'voice' | 'retired';
+export type UpdateType = 'widget_query' | 'callback_query' | 'message' | 'unknown';
+export type KeyboardIntent = 'settings' | 'level' | 'topic' | 'voice' | 'retired';
 export type ReplyMode = 'text' | 'voice';
 export type GuardReason = 'ignore' | 'private_only' | 'bot_sender';
 export type IntentSource = 'callback_query' | 'reply_keyboard' | 'command' | 'message';
@@ -116,6 +118,7 @@ export interface PersistentKeyboardState {
   topicValue: string;
   voiceValue: string;
   replyMode: ReplyMode;
+  settingsButtonText?: string;
   levelButtonText: string;
   topicButtonText: string;
   voiceButtonText: string;

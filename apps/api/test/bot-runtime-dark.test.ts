@@ -294,8 +294,7 @@ test('retired command reply preserves language controls without progress', () =>
   const update = preparedStats();
   const message = buildRetiredCommandMessage(update, { msg_error_command: 'Unknown command' });
   assert.equal(message.text, 'Unknown command');
-  assert.equal(message.replyMarkup.keyboard[0][1].text, update.context.keyboard.levelButtonText);
-  assert.deepEqual(message.replyMarkup.keyboard[1], [{ text: update.context.keyboard.voiceButtonText }]);
+  assert.deepEqual(message.replyMarkup.keyboard, [[{ text: update.context.keyboard.settingsButtonText }]]);
   assert.doesNotMatch(JSON.stringify(message), /XP/);
 });
 

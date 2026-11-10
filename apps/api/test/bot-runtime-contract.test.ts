@@ -53,6 +53,7 @@ const callbackFixtures: RouteFixture[] = [
   ['reply', 'callback.reply'],
   ['topic', 'callback.topic'],
   ['onb', 'callback.onboarding'],
+  ['settings', 'callback.settings'],
   ['unknown_group', 'callback.unknown']
 ].map(([group, route], index) => ({
   name: `callback ${group}`,
@@ -61,6 +62,7 @@ const callbackFixtures: RouteFixture[] = [
 }));
 
 const routeFixtures: RouteFixture[] = [
+  { name: 'settings command', route: 'command.settings', update: messageUpdate({text:'/settings'}) },
   {
     name: 'pinned service update',
     route: 'ignore',

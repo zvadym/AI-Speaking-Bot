@@ -29,12 +29,12 @@ for (const text of ['/progress', '/xp', '· XP: 340 • L2', '· 📈 Мій п�
     assert.equal(update.route, 'command.unknown');
     const markup = buildPersistentReplyMarkup(update.context.keyboard);
     assert.doesNotMatch(JSON.stringify(markup), /XP|• L\d/);
-    assert.equal(markup.keyboard.flat().length, 3);
+    assert.equal(markup.keyboard.flat().length, 1);
     assert.doesNotMatch(JSON.stringify(markup), /📈|progress|прогрес/);
     const message = buildStaticRouteMessage('command.unknown', update, { msg_error_command: 'Unknown command' });
     assert.equal(message?.text, 'Unknown command');
     assert.deepEqual(message?.replyMarkup, markup);
-    assert.match(JSON.stringify(markup), /B1/);
+    assert.match(JSON.stringify(markup), /⚙️/);
   });
 }
 

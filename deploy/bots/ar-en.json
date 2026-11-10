@@ -209,6 +209,24 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
+    },
+    "settings": {
+      "title": "الإعدادات",
+      "level": "المستوى",
+      "topic": "الموضوع",
+      "replies": "ردود البوت",
+      "voice": "صوت",
+      "text": "نص",
+      "free": "محادثة حرة",
+      "done": "تم",
+      "back": "رجوع",
+      "card": "بطاقة",
+      "widget": "أداة تفاعلية",
+      "choose": "اختر طريقة عرض الإعدادات",
+      "saved": "تم حفظ التغييرات",
+      "pending": "جارٍ الحفظ…",
+      "error": "تعذر الحفظ. حدّث وحاول مجددًا.",
+      "refresh": "تحديث"
     }
   },
   "telegram_presentation": {

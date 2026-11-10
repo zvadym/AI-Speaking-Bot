@@ -64,6 +64,7 @@ export function buildPersistentKeyboardState(
   const replyMode = normalizeReplyMode(rowRaw.reply_mode);
   const voiceValue = replyMode === 'voice' ? voiceVoice : voiceText;
   const topicValue = topicTitle || topicNone;
+  const settingsButtonText = `· ⚙️ ${trimString(asObject(locale.settings).title) || 'Settings'}`;
   const levelButtonText = `${BUTTON_MARKER} ${LEVEL_ICON} ${levelValue}`;
   const topicButtonText = `${BUTTON_MARKER} ${TOPIC_ICON} ${topicValue}`;
   const voiceButtonText = `${BUTTON_MARKER} ${VOICE_ICON} ${voiceValue}`;
@@ -76,7 +77,9 @@ export function buildPersistentKeyboardState(
   let buttonIntent: KeyboardIntent | null = null;
 
   if (enabled && normalizedMessage) {
-    if (normalizedMessage === norm(levelButtonText) || normalizedMessage.startsWith(levelPrefixNorm)) {
+    if (normalizedMessage === norm(settingsButtonText) || normalizedMessage.startsWith(norm('· ⚙️'))) {
+      buttonIntent = 'settings';
+    } else if (normalizedMessage === norm(levelButtonText) || normalizedMessage.startsWith(levelPrefixNorm)) {
       buttonIntent = 'level';
     } else if (normalizedMessage === norm(topicButtonText) || normalizedMessage.startsWith(topicPrefixNorm)) {
       buttonIntent = 'topic';
@@ -94,6 +97,7 @@ export function buildPersistentKeyboardState(
     topicValue,
     voiceValue,
     replyMode,
+    settingsButtonText,
     levelButtonText,
     topicButtonText,
     voiceButtonText
@@ -102,15 +106,7 @@ export function buildPersistentKeyboardState(
 
 export function buildPersistentReplyMarkup(keyboard: PersistentKeyboardState) {
   return {
-    keyboard: [
-      [
-        { text: keyboard.topicButtonText },
-        { text: keyboard.levelButtonText }
-      ],
-      [
-        { text: keyboard.voiceButtonText }
-      ]
-    ],
+    keyboard: [[{ text: keyboard.settingsButtonText || '· ⚙️ Settings' }]],
     resize_keyboard: true,
     one_time_keyboard: false
   };

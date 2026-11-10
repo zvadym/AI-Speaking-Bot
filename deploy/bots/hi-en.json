@@ -209,6 +209,24 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
+    },
+    "settings": {
+      "title": "सेटिंग्स",
+      "level": "स्तर",
+      "topic": "विषय",
+      "replies": "बॉट के जवाब",
+      "voice": "आवाज़",
+      "text": "टेक्स्ट",
+      "free": "खुली बातचीत",
+      "done": "हो गया",
+      "back": "वापस",
+      "card": "कार्ड",
+      "widget": "विजेट",
+      "choose": "सेटिंग्स का दृश्य चुनें",
+      "saved": "बदलाव सेव हो गए",
+      "pending": "सेव हो रहा है…",
+      "error": "सेव नहीं हुआ। रीफ़्रेश करके फिर कोशिश करें।",
+      "refresh": "रीफ़्रेश"
     }
   },
   "telegram_presentation": {

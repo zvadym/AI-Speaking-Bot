@@ -1,3 +1,4 @@
+import { createSettingsHandlers } from './handlers/settings.js';
 import type { Pool } from 'pg';
 import { parsePreparedUpdateContract, PreparedUpdateContractError } from './contract-validation.js';
 import { BOT_UPDATE_QUEUE_NAME } from './contracts.js';
@@ -270,6 +271,7 @@ export async function registerBotRuntimeWorker(
     createOnboardingStartHandler({ pool, getBotLocale, telegramClient }),
     createOnboardingCallbackHandler({ pool, getBotLocale, telegramClient }),
     ...createPreferenceHandlers({ pool, getBotLocale, telegramClient }),
+    ...createSettingsHandlers({ pool, getBotLocale, telegramClient, helpers: topicMenuHelpers }),
     ...createFeedbackHandlers({ pool, getBotLocale, telegramClient }),
     ...createCallbackActionHandlers({
       pool,

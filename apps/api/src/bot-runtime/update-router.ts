@@ -14,6 +14,7 @@ import { buildPersistentKeyboardState } from './keyboard-state.js';
 import { parseCallbackData, parseCommand, parseStartPayload } from './telegram-update.js';
 
 const CALLBACK_ROUTES: Readonly<Record<string, Route>> = {
+  settings: 'callback.settings',
   busy: 'callback.busy',
   idiom_more: 'callback.idiom_more',
   trv: 'callback.transcript_translate',
@@ -73,10 +74,14 @@ export function resolvePreparedRoute({
   if (!input.isPrivate && input.chatType) return 'guard.private_only';
   if (input.sender.isBot) return 'guard.bot_sender';
 
+  if (input.updateType === 'widget_query') {
+    return callback?.group === 'settings' && callback.value === 'w' ? 'callback.settings' : 'ignore';
+  }
   if (input.callbackQuery) {
     return callback ? CALLBACK_ROUTES[callback.group] || 'callback.unknown' : 'callback.unknown';
   }
 
+  if ((command && hasNoArgs(command, '/settings')) || keyboard.buttonIntent === 'settings') return 'command.settings';
   if (command && isStartCommand(command)) return 'command.start';
   if (keyboard.buttonIntent === 'voice') return 'reply_keyboard.voice_toggle';
   if (command && hasNoArgs(command, '/voice')) return 'command.voice';
