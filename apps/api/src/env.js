@@ -225,12 +225,13 @@ export const env = {
   adminDashboardPassword: process.env.ADMIN_DASHBOARD_PASSWORD || '',
   internalApiSecret: process.env.INTERNAL_API_SECRET || '',
   openaiApiKey: (process.env.OPENAI_API_KEY || '').toString().trim(),
+  elevenlabsApiKey: (process.env.ELEVENLABS_API_KEY || '').toString().trim(),
   botRuntimeModel,
   botRuntimeReasoningEffort,
   botSupportModel,
   botSupportReasoningEffort,
   botModelPolicyOverrides,
-  botTranscriptionModel: (process.env.BOT_TRANSCRIPTION_MODEL || 'whisper-1').toString().trim() || 'whisper-1',
+  botTranscriptionModel: (process.env.BOT_TRANSCRIPTION_MODEL || 'scribe_v2').toString().trim() || 'scribe_v2',
   botTtsModel: (process.env.BOT_TTS_MODEL || 'tts-1-hd').toString().trim() || 'tts-1-hd',
   sentryDsn: (process.env.SENTRY_DSN || '').toString().trim(),
   sentryEnvironment: (process.env.SENTRY_ENVIRONMENT || '').toString().trim(),
@@ -261,3 +262,7 @@ export const env = {
   defaultBotKey: (process.env.DEFAULT_BOT_KEY || 'uk-de').toString().trim().toLowerCase(),
   botKeyByTargetLang: optionalJsonObject('BOT_KEY_BY_TARGET_LANG_JSON'),
 };
+
+if (env.botTranscriptionModel === 'scribe_v2' && !env.elevenlabsApiKey) {
+  throw new Error('Missing required env var: ELEVENLABS_API_KEY (scribe_v2 STT)');
+}

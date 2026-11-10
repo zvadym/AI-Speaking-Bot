@@ -51,6 +51,7 @@ try {
   const recordLlmCall = createLlmCallRecorder(runtime.pool);
   const botAi = createBotAiClient({
     apiKey: runtime.env.openaiApiKey,
+    elevenlabsApiKey: runtime.env.elevenlabsApiKey,
     model: runtime.env.botRuntimeModel,
     conversationReasoningEffort: runtime.env.botRuntimeReasoningEffort,
     supportModel: runtime.env.botSupportModel,

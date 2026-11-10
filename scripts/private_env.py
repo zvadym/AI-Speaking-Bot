@@ -129,6 +129,8 @@ def main():
         if args.deployment:
             required = ['DATABASE_URL', 'WEBAPP_URL', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'JWT_SECRET', 'VITE_API_BASE']
             missing = [key for key in required if not values.get(key, '').strip()]
+            if (values.get('BOT_TRANSCRIPTION_MODEL', '').strip() or 'scribe_v2') == 'scribe_v2' and not values.get('ELEVENLABS_API_KEY', '').strip():
+                missing.append('ELEVENLABS_API_KEY')
             if not (values.get('API_BASE_URL') or values.get('TELEGRAM_WEBHOOK_BASE_URL')):
                 missing.append('API_BASE_URL or TELEGRAM_WEBHOOK_BASE_URL')
             if missing:

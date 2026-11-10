@@ -15,6 +15,7 @@ Object.assign(process.env, {
   INTERNAL_API_SECRET: 'internal-secret',
   ADMIN_DASHBOARD_PASSWORD: 'secret-admin',
   OPENAI_API_KEY: '',
+  ELEVENLABS_API_KEY: 'test-elevenlabs-key',
   SENTRY_DSN: 'https://public@example.ingest.sentry.io/1',
   SENTRY_TEST_MODE: '1',
   DISCORD_EVENTS_WEBHOOK_URL: 'https://discord.test/api/webhooks/123'

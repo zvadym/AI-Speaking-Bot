@@ -286,6 +286,7 @@ test('bot AI fails clearly when the English transcription fallback is missing', 
     const client = createBotAiClient({
       apiKey: 'test-key',
       model: 'test-model',
+      transcriptionModel: 'whisper-1',
       getBotConfig: () => ({
         bot_key: 'fr-en',
         base_language: 'fr',
@@ -313,11 +314,12 @@ test('bot AI fails clearly when the English transcription fallback is missing', 
   }
 });
 
-test('bot AI defaults transcription to whisper-1', async () => {
+test('bot AI supports explicit rollback to whisper-1', async () => {
   const calls: Array<Record<string, unknown>> = [];
   const client = createBotAiClient({
     apiKey: 'test-key',
     model: 'test-model',
+    transcriptionModel: 'whisper-1',
     getBotConfig: () => ({
       bot_key: 'uk-en',
       base_language: 'uk',

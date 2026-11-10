@@ -59,6 +59,7 @@ echo docker >> "$TEST_EVENTS"
         api.write_text('DATABASE_URL=postgres://local/test\nWEBAPP_URL=https://example.test\n'
                        'API_BASE_URL=https://example.test\nSTRIPE_SECRET_KEY=test\n'
                        'STRIPE_WEBHOOK_SECRET=test\nJWT_SECRET=test\n'
+                       'ELEVENLABS_API_KEY=test-elevenlabs-key\n'
                        f'TELEGRAM_BOT_TOKEN_UK_EN={TOKEN}\n')
         api.chmod(0o600)
         mini = self.config / 'miniapp.env'
@@ -91,6 +92,26 @@ echo docker >> "$TEST_EVENTS"
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events[:5], ['git:fetch', 'git:archive', 'git:checkout', 'git:reset', 'migration'])
         self.assertIn('docker', events[5:])
+
+    def test_missing_scribe_key_stops_before_checkout_even_with_inherited_key(self):
+        self.configure()
+        api = self.config / 'api.env'
+        api.write_text(api.read_text().replace('ELEVENLABS_API_KEY=test-elevenlabs-key\n', ''))
+        self.env['ELEVENLABS_API_KEY'] = 'inherited-key-is-not-a-deployed-key'
+        result, events = self.run_deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('ELEVENLABS_API_KEY', result.stderr)
+        self.assertNotIn(self.env['ELEVENLABS_API_KEY'], result.stderr)
+        self.assertEqual(events, ['git:fetch', 'git:archive'])
+
+    def test_explicit_whisper_rollback_does_not_require_elevenlabs(self):
+        self.configure()
+        api = self.config / 'api.env'
+        api.write_text(api.read_text().replace('ELEVENLABS_API_KEY=test-elevenlabs-key\n',
+                                               'BOT_TRANSCRIPTION_MODEL=whisper-1\n'))
+        result, events = self.run_deploy()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('docker', events)
 
 
 if __name__ == '__main__':

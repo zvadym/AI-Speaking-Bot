@@ -8,6 +8,7 @@ import {
   type LlmTraceContext
 } from './llm-telemetry.js';
 import type { BotModelPolicyOverride } from './model-policy.js';
+import { transcribeWithScribe } from './scribe-transcription.js';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -349,18 +350,21 @@ function topicPrompt(topic: UnknownRecord | null): string {
 
 export function createBotAiClient({
   apiKey,
+  elevenlabsApiKey = '',
   model,
   supportModel = model,
   conversationReasoningEffort,
   supportReasoningEffort,
-  transcriptionModel = 'whisper-1',
+  transcriptionModel = 'scribe_v2',
   ttsModel = 'tts-1-hd',
   recordLlmCall,
   getModelPolicy,
   getBotConfig,
-  createClient = (key: string) => new OpenAI({ apiKey: key })
+  createClient = (key: string) => new OpenAI({ apiKey: key }),
+  fetchImpl = fetch
 }: {
   apiKey: string;
+  elevenlabsApiKey?: string;
   model: string;
   supportModel?: string;
   conversationReasoningEffort?: string;
@@ -371,6 +375,7 @@ export function createBotAiClient({
   getModelPolicy?(botKey: string): BotModelPolicyOverride | undefined;
   getBotConfig(botKey: string): UnknownRecord | null;
   createClient?: (apiKey: string) => Pick<OpenAI, 'responses' | 'audio'>;
+  fetchImpl?: typeof fetch;
 }): BotAiClient {
   let client: Pick<OpenAI, 'responses' | 'audio'> | null = null;
   const openai = () => {
@@ -561,13 +566,15 @@ export function createBotAiClient({
         operation: options.baseLanguage ? 'feedback.transcribe' : 'conversation.transcribe',
         model: transcriptionModel,
         record: recordLlmCall,
-        call: async () => openai().audio.transcriptions.create({
-          file: await toFile(audio, 'voice.ogg', { type: 'audio/ogg' }),
-          model: transcriptionModel,
-          language,
-          response_format: 'json',
-          prompt: transcriptionPrompt(language)
-        })
+        call: async () => transcriptionModel === 'scribe_v2'
+          ? transcribeWithScribe({ apiKey: elevenlabsApiKey, audio, language, fetchImpl })
+          : openai().audio.transcriptions.create({
+              file: await toFile(audio, 'voice.ogg', { type: 'audio/ogg' }),
+              model: transcriptionModel,
+              language,
+              response_format: 'json',
+              prompt: transcriptionPrompt(language)
+            })
       });
       return String(result.text || '').trim();
     },
