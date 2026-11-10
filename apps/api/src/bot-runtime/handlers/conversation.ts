@@ -22,6 +22,10 @@ import {
   type SuggestedLevel
 } from '../onboarding.js';
 import { runBotPipelineStage } from '../pipeline.js';
+import { startTelegramTyping } from '../immediate-telegram-ack.js';
+import { createTelegramDraft } from '../telegram-draft.js';
+import type { MessagePresentationService } from '../message-presentation.js';
+import { attachConversationAudio } from '../conversation-audio.js';
 import {
   enforcePracticeQuota,
   type PracticeQuotaGuard
@@ -38,7 +42,8 @@ export interface ConversationTelegramClient extends TelegramTextClient {
   callTelegramApi(
     botKey: string,
     method: string,
-    body: Record<string, unknown>
+    body: Record<string, unknown>,
+    options?: { signal?: AbortSignal }
   ): Promise<unknown>;
 }
 
@@ -91,7 +96,8 @@ export async function executeConversation(
   ai: BotAiClient,
   text: string,
   inputMode: 'text' | 'voice' = 'text',
-  onboarding: ConversationAiInput['onboarding'] = null
+  onboarding: ConversationAiInput['onboarding'] = null,
+  onReplyText?: ConversationAiInput['onReplyText']
 ): Promise<ConversationEffectResult> {
   const chatId = update.input.chatId as number;
   const contextResult = await client.query<ConversationContext>(
@@ -137,6 +143,7 @@ export async function executeConversation(
     history: historyResult.rows,
     topic,
     onboarding,
+    onReplyText,
     trace: {
       decisionId: update.decisionId,
       chatId,
@@ -323,6 +330,7 @@ export function createTextConversationHandler({
   telegramClient,
   ai,
   webappUrl,
+  presentation,
   quotaGuard = enforcePracticeQuota,
   effectRunner = runBotUpdateEffect,
   textDeliverer = deliverTelegramText
@@ -332,6 +340,7 @@ export function createTextConversationHandler({
   telegramClient: ConversationTelegramClient;
   ai: BotAiClient;
   webappUrl: string;
+  presentation?: MessagePresentationService;
   quotaGuard?: PracticeQuotaGuard;
   effectRunner?: typeof runBotUpdateEffect;
   textDeliverer?: typeof deliverTelegramText;
@@ -359,17 +368,13 @@ export function createTextConversationHandler({
 
       let result: ConversationEffectResult;
       result = await runBotPipelineStage(pipeline, 'conversation.generate', async () => {
-        await Promise.allSettled([
-          telegramClient.callTelegramApi(update.botKey, 'sendChatAction', {
-            chat_id: chatId,
-            action: 'typing'
-          })
-        ]);
+        startTelegramTyping({ telegramClient, botKey: update.botKey, input: update.input });
+        const draft = createTelegramDraft(telegramClient, update);
         try {
           const effect = await effectRunner(pool, {
             decisionId: update.decisionId,
             stepKey: 'message.text:conversation:v1',
-            execute: (client) => executeConversation(client, update, ai, text, 'text', onboarding?.ai)
+            execute: (client) => executeConversation(client, update, ai, text, 'text', onboarding?.ai, draft.update)
           });
           return effect.result;
         } catch (error) {
@@ -378,6 +383,8 @@ export function createTextConversationHandler({
             retryable: true,
             cause: error
           });
+        } finally {
+          await draft.stop();
         }
       });
 
@@ -417,19 +424,29 @@ export function createTextConversationHandler({
       if (!reply || !result.assistantMessageId) {
         throw new BotRuntimeHandlerError('conversation_reply_missing', { retryable: false });
       }
+      const replyText = onboarding ? onboardingReplyText(reply, onboarding, result.response) : reply;
+      const replyMarkup = onboarding
+        ? buildOnboardingCompletionMarkup(onboarding.locale, suggestedOnboardingLevel(result.response))
+        : conversationReplyMarkup(result.assistantMessageId, locale);
       const replyDelivery = await textDeliverer({
         pool,
         update,
         telegramClient,
         stepKey: 'message.text:reply:v1',
-        text: onboarding ? onboardingReplyText(reply, onboarding, result.response) : reply,
-        replyMarkup: onboarding
-          ? buildOnboardingCompletionMarkup(
-              onboarding.locale,
-              suggestedOnboardingLevel(result.response)
-            )
-          : conversationReplyMarkup(result.assistantMessageId, locale)
+        text: replyText,
+        replyMarkup
       });
+      if (presentation && replyDelivery.telegramMessageId) {
+        const key = { messageId: result.assistantMessageId, telegramMessageId: replyDelivery.telegramMessageId, chatId, botKey: update.botKey };
+        await presentation.initialize(key, replyText, replyMarkup);
+        if (!onboarding && result.replyMode === 'voice') {
+          const blocked = await attachConversationAudio({
+            pool, update, ai, presentation, key, reply, effectRunner,
+            quotaCheck: () => quotaGuard({ pool, update, getBotLocale, telegramClient, webappUrl })
+          });
+          if (blocked) return blocked;
+        }
+      }
       if (!onboarding) return replyDelivery;
       return finishConversationOnboarding({
         pool,

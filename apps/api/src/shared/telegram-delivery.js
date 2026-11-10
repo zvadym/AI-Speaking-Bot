@@ -303,7 +303,8 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
   async function editTelegramMessageText(chatId, messageId, text, {
     botKey = null,
     parseMode = null,
-    replyMarkup = null
+    replyMarkup = null,
+    signal
   } = {}) {
     const body = {
       chat_id: Number(chatId),
@@ -315,7 +316,40 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     if (replyMarkup && typeof replyMarkup === 'object' && !Array.isArray(replyMarkup)) {
       body.reply_markup = replyMarkup;
     }
-    return callTelegramApi(botKey, 'editMessageText', body);
+    return callTelegramApi(botKey, 'editMessageText', body, { signal });
+  }
+
+  /** @param {{botKey?: string | null, signal?: AbortSignal}} options */
+  async function editTelegramMessageReplyMarkup(chatId, messageId, replyMarkup, options = {}) {
+    const { botKey = null, signal } = options;
+    return callTelegramApi(botKey, 'editMessageReplyMarkup', {
+      chat_id: Number(chatId), message_id: Number(messageId), reply_markup: replyMarkup
+    }, { signal });
+  }
+
+  /** @param {{botKey?: string | null, replyMarkup?: object | null, audio?: Buffer, signal?: AbortSignal}} options */
+  async function editTelegramMessageRich(chatId, messageId, richMessage, options = {}) {
+    const { botKey = null, replyMarkup = null, audio, signal } = options;
+    const body = { chat_id: Number(chatId), message_id: Number(messageId), rich_message: richMessage, reply_markup: replyMarkup };
+    if (!audio) return callTelegramApi(botKey, 'editMessageText', body, { signal });
+    const token = resolveTelegramBotToken(botKey);
+    if (!token) throw Object.assign(new Error('missing_telegram_bot_token'), { code: 'missing_telegram_bot_token' });
+    const form = new FormData();
+    form.set('chat_id', String(body.chat_id));
+    form.set('message_id', String(body.message_id));
+    form.set('rich_message', JSON.stringify(richMessage));
+    if (replyMarkup) form.set('reply_markup', JSON.stringify(replyMarkup));
+    form.set('voice', new Blob([audio], { type: 'audio/ogg' }), 'reply.ogg');
+    const response = await fetchImpl(`https://api.telegram.org/bot${token}/editMessageText`, {
+      method: 'POST', body: form, signal
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !payload?.ok) {
+      throw Object.assign(new Error(payload?.description || `telegram_http_${response.status}`), {
+        telegramStatus: response.status, telegramDescription: payload?.description || null
+      });
+    }
+    return payload.result || null;
   }
 
   async function answerTelegramCallbackQuery(callbackQueryId, text = '', { botKey = null, showAlert = false } = {}) {
@@ -345,6 +379,8 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     downloadTelegramFile,
     sendTelegramVoiceMessage,
     editTelegramMessageText,
+    editTelegramMessageReplyMarkup,
+    editTelegramMessageRich,
     answerTelegramCallbackQuery,
     deleteTelegramMessage
   };

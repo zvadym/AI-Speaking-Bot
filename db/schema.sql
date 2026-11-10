@@ -573,6 +573,22 @@ COMMENT ON VIEW public.bot_dau IS 'Daily Active Users per bot (last 90 days)';
 
 
 --
+-- Name: bot_message_presentations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.bot_message_presentations (
+    message_id bigint NOT NULL,
+    telegram_message_id bigint NOT NULL,
+    state jsonb NOT NULL,
+    pending_audio bytea,
+    content_dirty boolean DEFAULT false NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT bot_message_presentations_state_check CHECK ((jsonb_typeof(state) = 'object'::text)),
+    CONSTRAINT bot_message_presentations_telegram_message_id_check CHECK ((telegram_message_id > 0))
+);
+
+
+--
 -- Name: bot_onboarding_sessions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1491,6 +1507,14 @@ ALTER TABLE ONLY public.action_events
 
 
 --
+-- Name: bot_message_presentations bot_message_presentations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bot_message_presentations
+    ADD CONSTRAINT bot_message_presentations_pkey PRIMARY KEY (message_id);
+
+
+--
 -- Name: bot_onboarding_sessions bot_onboarding_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2270,6 +2294,14 @@ CREATE TRIGGER trg_action_profile_set_level AFTER UPDATE OF level ON public.user
 
 
 --
+-- Name: bot_message_presentations bot_message_presentations_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bot_message_presentations
+    ADD CONSTRAINT bot_message_presentations_message_id_fkey FOREIGN KEY (message_id) REFERENCES public.messages(id) ON DELETE CASCADE;
+
+
+--
 -- Name: bot_onboarding_sessions bot_onboarding_sessions_user_bot_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2442,4 +2474,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20260711100000'),
     ('20260712100000'),
     ('20260715100000'),
-    ('20260715113000');
+    ('20260715113000'),
+    ('20261110130000');

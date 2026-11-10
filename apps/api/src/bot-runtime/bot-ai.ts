@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import OpenAI, { toFile } from 'openai';
+import type { ResponseCreateParamsStreaming } from 'openai/resources/responses/responses.js';
 import {
   observeLlmCall,
   type LlmCallRecorder,
@@ -9,6 +10,7 @@ import {
 } from './llm-telemetry.js';
 import type { BotModelPolicyOverride } from './model-policy.js';
 import { transcribeWithScribe } from './scribe-transcription.js';
+import { partialConversationReply } from './conversation-stream.js';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -27,6 +29,7 @@ export interface ConversationAiInput {
     example: string;
   } | null;
   trace?: LlmTraceContext;
+  onReplyText?: (text: string) => void;
 }
 
 export interface ConversationAiResult extends UnknownRecord {
@@ -392,7 +395,8 @@ export function createBotAiClient({
     system: string,
     user: string,
     name: string,
-    schema: UnknownRecord
+    schema: UnknownRecord,
+    onReplyText?: (text: string) => void
   ): Promise<UnknownRecord> {
     const observed = await observeLlmCall({
       trace,
@@ -401,7 +405,7 @@ export function createBotAiClient({
       reasoningEffort,
       record: recordLlmCall,
       call: async () => {
-        const response = await openai().responses.create({
+        const request = {
           model: selectedModel,
           ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}),
           input: [
@@ -416,7 +420,30 @@ export function createBotAiClient({
               verbosity: 'low'
             }
           }
-        } as never);
+        };
+        let response;
+        if (onReplyText) {
+          const stream = await openai().responses.create({ ...request, stream: true } as ResponseCreateParamsStreaming);
+          let source = '';
+          let preview = '';
+          for await (const event of stream) {
+            if (event.type === 'response.output_text.delta') {
+              source += event.delta;
+              const next = partialConversationReply(source);
+              if (next && next !== preview) {
+                preview = next;
+                try { onReplyText(next); } catch { /* Preview must not fail inference. */ }
+              }
+            } else if (event.type === 'response.completed') {
+              response = event.response;
+            } else if (event.type === 'response.failed' || event.type === 'response.incomplete' || event.type === 'error') {
+              throw new Error('openai_stream_failed');
+            }
+          }
+          if (!response) throw new Error('openai_stream_incomplete');
+        } else {
+          response = await openai().responses.create(request as never);
+        }
         const parsed = JSON.parse(responseText(response));
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
           throw new Error('openai_invalid_structured_output');
@@ -487,7 +514,8 @@ export function createBotAiClient({
           input.text
         ].join('\n'),
         input.onboarding ? 'response_onboarding' : 'response_core',
-        (input.onboarding ? ONBOARDING_RESPONSE_SCHEMA : RESPONSE_SCHEMA) as unknown as UnknownRecord
+        (input.onboarding ? ONBOARDING_RESPONSE_SCHEMA : RESPONSE_SCHEMA) as unknown as UnknownRecord,
+        input.onReplyText
       );
       return normalizeConversationResult(result);
     },

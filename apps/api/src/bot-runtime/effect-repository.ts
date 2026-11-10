@@ -34,6 +34,19 @@ async function rollbackQuietly(client: PoolClient): Promise<void> {
   }
 }
 
+export async function findCompletedBotUpdateEffect<T extends EffectResult>(
+  client: PoolClient,
+  decisionId: string,
+  stepKey: string
+): Promise<T | null> {
+  const result = await client.query<{ result_json: unknown }>(
+    `SELECT result_json FROM bot_update_effects
+     WHERE decision_id = $1 AND step_key = $2 AND status = 'completed'`,
+    [decisionId, normalizeStepKey(stepKey)]
+  );
+  return result.rows[0] ? normalizeResult<T>(result.rows[0].result_json) : null;
+}
+
 export async function runBotUpdateEffect<T extends EffectResult>(
   pool: Pool,
   {

@@ -39,7 +39,7 @@ function normalizedErrorCode(error: unknown): string {
     .slice(0, 128) || 'telegram_chat_action_failed';
 }
 
-function defaultReportEvent(event: ImmediateAckEvent): void {
+function defaultReportEvent(event: ImmediateAckEvent, eventName = 'telegram-immediate-ack'): void {
   const payload = {
     botKey: event.botKey,
     inputKind: event.inputKind,
@@ -49,9 +49,9 @@ function defaultReportEvent(event: ImmediateAckEvent): void {
     errorCode: event.errorCode
   };
   if (event.outcome === 'succeeded') {
-    console.info('telegram-immediate-ack', payload);
+    console.info(eventName, payload);
   } else {
-    console.warn('telegram-immediate-ack', payload);
+    console.warn(eventName, payload);
   }
 }
 
@@ -89,8 +89,33 @@ export function startImmediateTelegramAck({
   now?: () => number;
   reportEvent?: (event: ImmediateAckEvent) => void;
 }): boolean {
+  if (!enabledBotKeys.has(botKey)) return false;
+  return startTelegramTyping({
+    telegramClient, botKey, input, receivedAtMs, timeoutMs, now, reportEvent
+  });
+}
+
+// Worker handlers renew typing independently of webhook rollout flags.
+// Neither an unavailable Telegram API nor a stuck client may delay the AI call.
+export function startTelegramTyping({
+  telegramClient,
+  botKey,
+  input,
+  receivedAtMs = performance.now(),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  now = () => performance.now(),
+  reportEvent = (event: ImmediateAckEvent) => defaultReportEvent(event, 'telegram-typing')
+}: {
+  telegramClient: ImmediateAckTelegramClient;
+  botKey: string;
+  input: NormalizedTelegramUpdate;
+  receivedAtMs?: number;
+  timeoutMs?: number;
+  now?: () => number;
+  reportEvent?: (event: ImmediateAckEvent) => void;
+}): boolean {
   const inputKind = immediateAckInputKind(input);
-  if (!enabledBotKeys.has(botKey) || !inputKind) return false;
+  if (!inputKind) return false;
 
   const controller = new AbortController();
   const telegramStartedAt = now();

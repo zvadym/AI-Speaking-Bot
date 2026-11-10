@@ -40,6 +40,7 @@ import {
 } from './pipeline.js';
 import { createProgressIndicatorMiddleware } from './progress-middleware.js';
 import { createProgressService } from './progress-service.js';
+import { createMessagePresentationService, type PresentationClient } from './message-presentation.js';
 import {
   createTopicActionHandler,
   createTopicMenuHandler,
@@ -244,7 +245,7 @@ export async function registerBotRuntimeWorker(
   }: {
     pool: Pool;
     getBotLocale(botKey: string): unknown;
-    telegramClient: PreferenceTelegramClient & TopicTelegramClient & SupportTelegramClient & ConversationTelegramClient & VoiceTelegramClient;
+    telegramClient: PreferenceTelegramClient & TopicTelegramClient & SupportTelegramClient & ConversationTelegramClient & VoiceTelegramClient & PresentationClient;
     webappUrl: string;
     progressEnabledBotKeys: ReadonlySet<string>;
     reportProgressError?: (error: unknown, event: string, botKey: string) => void;
@@ -255,6 +256,7 @@ export async function registerBotRuntimeWorker(
   }
 ): Promise<void> {
   const progressService = createProgressService({ pool, boss, telegramClient });
+  const presentation = createMessagePresentationService(pool, telegramClient);
   const pipelineRunner = createBotPipelineRunner([
     createProgressIndicatorMiddleware({
       progressService,
@@ -277,12 +279,14 @@ export async function registerBotRuntimeWorker(
       sendIdiomMore
     }),
     ...createSupportCallbackHandlers({
+      presentation,
       pool,
       getBotLocale,
       telegramClient,
       ai
     }),
     createTextConversationHandler({
+      presentation,
       pool,
       getBotLocale,
       telegramClient,
@@ -290,6 +294,7 @@ export async function registerBotRuntimeWorker(
       webappUrl
     }),
     createVoiceConversationHandler({
+      presentation,
       pool,
       getBotLocale,
       telegramClient,

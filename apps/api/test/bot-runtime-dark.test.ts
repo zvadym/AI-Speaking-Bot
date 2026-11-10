@@ -796,6 +796,11 @@ test('voice conversation skips TTS when inbound usage consumes final quota', asy
   let quotaCalls = 0;
   let speechCalls = 0;
   const handler = createVoiceConversationHandler({
+    presentation: {
+      async initialize() {},
+      async hasVoice() { return false; },
+      async mutate() { throw new Error('unexpected audio attachment'); }
+    },
     pool: unusedPool,
     webappUrl: 'https://example.test/app',
     getBotLocale: () => ({ user_text_prefix_multiline: 'You said:\n' }),

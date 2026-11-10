@@ -9,6 +9,7 @@ import type { PreparedUpdate } from '../contracts.js';
 import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
 import { BOT_RUNTIME_HANDLER_VERSIONS } from '../route-flags.js';
+import type { MessagePresentationService } from '../message-presentation.js';
 import {
   classifyTelegramDeliveryError,
   deliverTelegramText,
@@ -23,6 +24,10 @@ type SupportRoute =
   | 'callback.vocab';
 
 export interface SupportTelegramClient extends TelegramTextClient {
+  editTelegramMessageReplyMarkup?(
+    chatId: number, messageId: number, replyMarkup: object,
+    options: { botKey: string }
+  ): Promise<unknown>;
   answerTelegramCallbackQuery(
     callbackQueryId: string,
     text?: string,
@@ -244,6 +249,7 @@ export function createSupportCallbackHandlers({
   getBotLocale,
   telegramClient,
   ai,
+  presentation,
   effectRunner = runBotUpdateEffect,
   textDeliverer = deliverTelegramText
 }: {
@@ -251,6 +257,7 @@ export function createSupportCallbackHandlers({
   getBotLocale(botKey: string): unknown;
   telegramClient: SupportTelegramClient;
   ai: BotAiClient;
+  presentation?: MessagePresentationService;
   effectRunner?: typeof runBotUpdateEffect;
   textDeliverer?: typeof deliverTelegramText;
 }): BotHandler[] {
@@ -311,6 +318,35 @@ export function createSupportCallbackHandlers({
       }
 
       const id = messageId(update);
+      const mutatePresentation = async (usedAction: 'tr' | 'hint' | 'voc', translation?: string) => {
+        if (!callback.messageId) throw new BotRuntimeHandlerError('callback_message_missing', { retryable: false });
+        if (!presentation) return false;
+        const key = {
+          messageId: id, telegramMessageId: callback.messageId, chatId, botKey: update.botKey
+        };
+        // Covers a callback racing the initial send's state write, and historical
+        // messages. Existing state always wins over the callback's stale snapshot.
+        await presentation.initialize(key, '', supportMarkup(id, update.routingFacts.callback?.tier,
+          usedAction === 'tr' ? 0 : usedAction === 'hint' ? 1 : 2, locale));
+        return presentation.mutate(key, {
+          usedAction,
+          ...(translation === undefined ? {} : { translation: {
+            text: translation || localeText(locale, 'translation_fallback_missing', 'Translation is unavailable.'),
+            header: localeText(locale, 'translation_header', 'Translation:')
+          } })
+        });
+      };
+      const markUsed = async (action: 'hint' | 'voc', bit: 1 | 2) => {
+        if (await mutatePresentation(action)) return;
+        // Historical messages also only need a keyboard edit; never replace their media.
+        if (!telegramClient.editTelegramMessageReplyMarkup) throw new Error('telegram_markup_editor_missing');
+        try {
+          await telegramClient.editTelegramMessageReplyMarkup(chatId, callback.messageId!,
+            supportMarkup(id, update.routingFacts.callback?.tier, bit, locale), { botKey: update.botKey });
+        } catch (error) {
+          if (!String((error as Error)?.message).toLowerCase().includes('message is not modified')) throw error;
+        }
+      };
       if (route === 'callback.translate') {
         const effect = await effectRunner(pool, {
           decisionId: update.decisionId,
@@ -334,6 +370,7 @@ export function createSupportCallbackHandlers({
             return { translation };
           }
         });
+        if (await mutatePresentation('tr', String(effect.result.translation || ''))) return { status: 'noop' };
         await editMessage(
           telegramClient,
           update,
@@ -381,12 +418,7 @@ export function createSupportCallbackHandlers({
           text: formatHints(effect.result.hints as FollowUpHints, locale),
           parseMode: 'HTML'
         });
-        await editMessage(
-          telegramClient,
-          update,
-          callback.messageText,
-          supportMarkup(id, update.routingFacts.callback?.tier, 1, locale)
-        );
+        await markUsed('hint', 1);
         return outcome;
       }
 
@@ -413,12 +445,7 @@ export function createSupportCallbackHandlers({
         text: formatVocabulary(effect.result.items as VocabularyItem[]),
         parseMode: 'HTML'
       });
-      await editMessage(
-        telegramClient,
-        update,
-        callback.messageText,
-        supportMarkup(id, update.routingFacts.callback?.tier, 2, locale)
-      );
+      await markUsed('voc', 2);
       return outcome;
     }
   }));

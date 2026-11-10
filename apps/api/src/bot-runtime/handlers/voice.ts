@@ -1,10 +1,14 @@
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 import { sanitizeTelegramHtml } from '../../shared/telegram-delivery.js';
 import type { BotAiClient } from '../bot-ai.js';
 import type { PreparedUpdate } from '../contracts.js';
-import { runBotUpdateEffect } from '../effect-repository.js';
+import { findCompletedBotUpdateEffect, runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
 import { runBotPipelineStage } from '../pipeline.js';
+import { startTelegramTyping } from '../immediate-telegram-ack.js';
+import { createTelegramDraft } from '../telegram-draft.js';
+import type { MessagePresentationService } from '../message-presentation.js';
+import { attachConversationAudio, recordVoiceUsage } from '../conversation-audio.js';
 import {
   enforcePracticeQuota,
   type PracticeQuotaGuard
@@ -14,10 +18,7 @@ import {
   deliverTelegramText,
   type TelegramTextClient
 } from '../telegram-text-delivery.js';
-import {
-  deliverTelegramVoice,
-  type TelegramVoiceClient
-} from '../telegram-voice-delivery.js';
+import type { TelegramVoiceClient } from '../telegram-voice-delivery.js';
 import {
   conversationReplyMarkup,
   executeConversation,
@@ -36,7 +37,8 @@ export interface VoiceTelegramClient extends TelegramTextClient, TelegramVoiceCl
   callTelegramApi(
     botKey: string,
     method: string,
-    body: Record<string, unknown>
+    body: Record<string, unknown>,
+    options?: { signal?: AbortSignal }
   ): Promise<unknown>;
 }
 
@@ -55,72 +57,26 @@ function localeText(locale: Locale, key: string, fallback: string): string {
   return value || fallback;
 }
 
-async function recordVoiceUsage(
-  client: PoolClient,
-  update: PreparedUpdate,
-  direction: 'in' | 'out',
-  seconds: number
-): Promise<void> {
-  const chatId = update.input.chatId as number;
-  const safeSeconds = Math.max(0, Math.round(seconds));
-  await client.query(
-    `INSERT INTO usage_hourly (
-       chat_id, bot_key, hour_start, in_voice_seconds, out_voice_seconds,
-       in_events, out_events, updated_at
-     ) VALUES (
-       $1, $2, date_trunc('hour', NOW()),
-       CASE WHEN $3 = 'in' THEN $4 ELSE 0 END,
-       CASE WHEN $3 = 'out' THEN $4 ELSE 0 END,
-       CASE WHEN $3 = 'in' THEN 1 ELSE 0 END,
-       CASE WHEN $3 = 'out' THEN 1 ELSE 0 END,
-       NOW()
-     )
-     ON CONFLICT (chat_id, bot_key, hour_start) DO UPDATE SET
-       in_voice_seconds = usage_hourly.in_voice_seconds + EXCLUDED.in_voice_seconds,
-       out_voice_seconds = usage_hourly.out_voice_seconds + EXCLUDED.out_voice_seconds,
-       in_events = usage_hourly.in_events + EXCLUDED.in_events,
-       out_events = usage_hourly.out_events + EXCLUDED.out_events,
-       updated_at = NOW()`,
-    [chatId, update.botKey, direction, safeSeconds]
-  );
-  await client.query(
-    `INSERT INTO voice_usage_events (chat_id, bot_key, direction, seconds, source, occurred_at)
-     VALUES ($1, $2, $3, $4, $5, NOW())`,
-    [
-      chatId,
-      update.botKey,
-      direction,
-      safeSeconds,
-      direction === 'in' ? 'telegram_voice_duration' : 'tts_estimate'
-    ]
-  );
-}
-
-function estimatedSpeechSeconds(text: string): number {
-  const words = text.trim() ? text.trim().split(/\s+/u).length : 0;
-  return Math.min(Math.max(Math.ceil(words / 2.5), 1), 60);
-}
-
 export function createVoiceConversationHandler({
   pool,
   getBotLocale,
   telegramClient,
   ai,
   webappUrl,
+  presentation,
   quotaGuard = enforcePracticeQuota,
   effectRunner = runBotUpdateEffect,
-  textDeliverer = deliverTelegramText,
-  voiceDeliverer = deliverTelegramVoice
+  textDeliverer = deliverTelegramText
 }: {
   pool: Pool;
   getBotLocale(botKey: string): unknown;
   telegramClient: VoiceTelegramClient;
   ai: BotAiClient;
   webappUrl: string;
+  presentation?: MessagePresentationService;
   quotaGuard?: PracticeQuotaGuard;
   effectRunner?: typeof runBotUpdateEffect;
   textDeliverer?: typeof deliverTelegramText;
-  voiceDeliverer?: typeof deliverTelegramVoice;
 }): BotHandler<'message.voice'> {
   return {
     route: 'message.voice',
@@ -163,27 +119,27 @@ export function createVoiceConversationHandler({
 
       let result: VoiceConversationResult;
       result = await runBotPipelineStage(pipeline, 'conversation.generate', async () => {
-        await Promise.allSettled([
-          telegramClient.callTelegramApi(update.botKey, 'sendChatAction', {
-            chat_id: chatId,
-            action: 'typing'
-          })
-        ]);
-        let audio: Buffer;
+        startTelegramTyping({ telegramClient, botKey: update.botKey, input: update.input });
+        const draft = createTelegramDraft(telegramClient, update);
         try {
-          audio = await telegramClient.downloadTelegramFile(fileId, { botKey: update.botKey });
-        } catch (error) {
-          throw new BotRuntimeHandlerError('telegram_voice_download_failed', {
-            retryable: true,
-            cause: error
-          });
-        }
-
-        try {
-          const effect = await effectRunner(pool, {
+          const transcription = await effectRunner(pool, {
             decisionId: update.decisionId,
-            stepKey: 'message.voice:conversation:v1',
+            stepKey: 'message.voice:transcription:v1',
             execute: async (client) => {
+              // A retry after upgrading may already have the old combined result.
+              const previous = await findCompletedBotUpdateEffect<VoiceConversationResult>(
+                client, update.decisionId, 'message.voice:conversation:v1'
+              );
+              if (previous?.transcript) return { transcript: previous.transcript };
+              let audio: Buffer;
+              try {
+                audio = await telegramClient.downloadTelegramFile(fileId, { botKey: update.botKey });
+              } catch (error) {
+                throw new BotRuntimeHandlerError('telegram_voice_download_failed', {
+                  retryable: true,
+                  cause: error
+                });
+              }
               const transcript = await ai.transcribe(update.botKey, audio, {
                 trace: {
                   decisionId: update.decisionId,
@@ -193,13 +149,41 @@ export function createVoiceConversationHandler({
                 }
               });
               if (!transcript) throw new Error('voice_transcript_empty');
+              return { transcript };
+            }
+          });
+          const { transcript } = transcription.result;
+          await textDeliverer({
+            pool,
+            update,
+            telegramClient,
+            stepKey: 'message.voice:transcript:v1',
+            text: onboarding
+              ? `${onboarding.locale.voice_input_header}\n${transcript}`
+              : `${localeText(locale, 'user_text_prefix_multiline', 'You said:\n')}${transcript}`,
+            replyMarkup: onboarding
+              ? null
+              : {
+                  inline_keyboard: [[{
+                    text: localeText(locale, 'btn_translation', 'Translation'),
+                    callback_data: 'trv:1'
+                  }]]
+                }
+          });
+          // Telegram clears typing when a message arrives; renew it for generation.
+          startTelegramTyping({ telegramClient, botKey: update.botKey, input: update.input });
+          const effect = await effectRunner(pool, {
+            decisionId: update.decisionId,
+            stepKey: 'message.voice:conversation:v1',
+            execute: async (client) => {
               const conversation = await executeConversation(
                 client,
                 update,
                 ai,
                 transcript,
                 'voice',
-                onboarding?.ai
+                onboarding?.ai,
+                draft.update
               );
               await recordVoiceUsage(client, update, 'in', duration);
               return { ...conversation, transcript };
@@ -212,26 +196,11 @@ export function createVoiceConversationHandler({
             retryable: true,
             cause: error
           });
+        } finally {
+          await draft.stop();
         }
       });
 
-      await textDeliverer({
-        pool,
-        update,
-        telegramClient,
-        stepKey: 'message.voice:transcript:v1',
-        text: onboarding
-          ? `${onboarding.locale.voice_input_header}\n${result.transcript}`
-          : `${localeText(locale, 'user_text_prefix_multiline', 'You said:\n')}${result.transcript}`,
-        replyMarkup: onboarding
-          ? null
-          : {
-              inline_keyboard: [[{
-                text: localeText(locale, 'btn_translation', 'Translation'),
-                callback_data: 'trv:1'
-              }]]
-            }
-      });
       const explanation = sanitizeTelegramHtml(result.response.explanation_html);
       if (!result.response.is_target_language) {
         return textDeliverer({
@@ -259,68 +228,25 @@ export function createVoiceConversationHandler({
         throw new BotRuntimeHandlerError('conversation_reply_missing', { retryable: false });
       }
 
-      if (String(result.replyMode).toLowerCase() === 'voice') {
-        const ttsQuota = await quotaGuard({
-          pool,
-          update,
-          getBotLocale,
-          telegramClient,
-          webappUrl,
-          beforeBlockedDelivery: () => textDeliverer({
-            pool,
-            update,
-            telegramClient,
-            stepKey: 'message.voice:reply:v1',
-            text: reply,
-            replyMarkup: conversationReplyMarkup(assistantMessageId, locale)
-          })
-        });
-        if (!ttsQuota.allowed) return ttsQuota.outcome;
-
-        let speech: Buffer;
-        try {
-          speech = await ai.speech(update.botKey, reply, {
-            decisionId: update.decisionId,
-            chatId,
-            botKey: update.botKey,
-            route: update.route
-          });
-        } catch (error) {
-          throw new BotRuntimeHandlerError('tts_failed', { retryable: true, cause: error });
-        }
-        await voiceDeliverer({
-          pool,
-          update,
-          telegramClient,
-          stepKey: 'message.voice:tts:v1',
-          buffer: speech
-        });
-        await effectRunner(pool, {
-          decisionId: update.decisionId,
-          stepKey: 'message.voice:tts-usage:v1',
-          execute: async (client) => {
-            const seconds = estimatedSpeechSeconds(reply);
-            await recordVoiceUsage(client, update, 'out', seconds);
-            return { seconds };
-          }
-        });
-      }
-
+      const replyText = onboarding ? onboardingReplyText(reply, onboarding, result.response) : reply;
+      const replyMarkup = onboarding
+        ? buildOnboardingCompletionMarkup(onboarding.locale, suggestedOnboardingLevel(result.response))
+        : conversationReplyMarkup(assistantMessageId, locale);
       const replyDelivery = await textDeliverer({
-        pool,
-        update,
-        telegramClient,
-        stepKey: 'message.voice:reply:v1',
-        text: String(result.replyMode).toLowerCase() === 'voice'
-          ? `${localeText(locale, 'voice_reply_prefix', '')}${reply}`
-          : (onboarding ? onboardingReplyText(reply, onboarding, result.response) : reply),
-        replyMarkup: onboarding
-          ? buildOnboardingCompletionMarkup(
-              onboarding.locale,
-              suggestedOnboardingLevel(result.response)
-            )
-          : conversationReplyMarkup(assistantMessageId, locale)
+        pool, update, telegramClient, stepKey: 'message.voice:reply:v1',
+        text: replyText, replyMarkup
       });
+      if (presentation && replyDelivery.telegramMessageId) {
+        const key = { messageId: assistantMessageId, telegramMessageId: replyDelivery.telegramMessageId, chatId, botKey: update.botKey };
+        await presentation.initialize(key, replyText, replyMarkup);
+        if (!onboarding && result.replyMode === 'voice') {
+          const blocked = await attachConversationAudio({
+            pool, update, ai, presentation, key, reply, effectRunner,
+            quotaCheck: () => quotaGuard({ pool, update, getBotLocale, telegramClient, webappUrl })
+          });
+          if (blocked) return blocked;
+        }
+      }
       if (!onboarding) return replyDelivery;
       return finishConversationOnboarding({
         pool,
