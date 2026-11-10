@@ -209,9 +209,7 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
-    },
-    "keyboard_btn_progress": "मेरी प्रगति",
-    "progress_empty_text": "सीखने की प्रगति अभी उपलब्ध नहीं है। अभ्यास जारी रखें; आपकी शब्दावली और व्याकरण का भरोसेमंद आकलन अभी उपलब्ध नहीं है।"
+    }
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | आपकी भाषा ट्यूटर",
@@ -233,10 +231,6 @@
       {
         "command": "stats",
         "description": "सदस्यता स्थिति देखें"
-      },
-      {
-        "command": "progress",
-        "description": "सीखने की प्रगति देखें"
       },
       {
         "command": "topic",

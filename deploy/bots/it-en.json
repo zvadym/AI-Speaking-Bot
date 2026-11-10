@@ -209,9 +209,7 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
-    },
-    "keyboard_btn_progress": "I miei progressi",
-    "progress_empty_text": "I progressi di apprendimento non sono ancora disponibili. Continua a esercitarti: non c’è ancora una valutazione affidabile del tuo vocabolario e della tua grammatica."
+    }
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | La tua tutor di lingua",
@@ -233,10 +231,6 @@
       {
         "command": "stats",
         "description": "Controlla stato abbonamento"
-      },
-      {
-        "command": "progress",
-        "description": "Visualizza i progressi"
       },
       {
         "command": "topic",

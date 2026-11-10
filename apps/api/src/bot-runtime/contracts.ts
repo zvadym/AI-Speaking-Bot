@@ -23,7 +23,7 @@ export const ROUTES = [
   'command.level',
   'command.stats',
   'command.xp', // Legacy queued updates only.
-  'command.progress',
+  'command.progress', // Legacy queued updates only.
   'command.topic',
   'command.feedback',
   'command.unknown',
@@ -38,7 +38,7 @@ export const ROUTES = [
 
 export type Route = (typeof ROUTES)[number];
 export type UpdateType = 'callback_query' | 'message' | 'unknown';
-export type KeyboardIntent = 'level' | 'topic' | 'voice' | 'progress';
+export type KeyboardIntent = 'level' | 'topic' | 'voice' | 'retired';
 export type ReplyMode = 'text' | 'voice';
 export type GuardReason = 'ignore' | 'private_only' | 'bot_sender';
 export type IntentSource = 'callback_query' | 'reply_keyboard' | 'command' | 'message';
@@ -119,7 +119,6 @@ export interface PersistentKeyboardState {
   levelButtonText: string;
   topicButtonText: string;
   voiceButtonText: string;
-  progressButtonText: string;
 }
 
 export interface RoutingFacts {

@@ -209,9 +209,7 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
-    },
-    "keyboard_btn_progress": "İlerlemem",
-    "progress_empty_text": "Öğrenme ilerlemen henüz kullanıma hazır değil. Pratik yapmaya devam et; kelime bilgin ve dil bilgin hakkında henüz güvenilir bir değerlendirme yok."
+    }
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | Dil öğretmenin",
@@ -233,10 +231,6 @@
       {
         "command": "stats",
         "description": "Abonelik durumunu kontrol et"
-      },
-      {
-        "command": "progress",
-        "description": "Öğrenme ilerlemesini gör"
       },
       {
         "command": "topic",

@@ -209,9 +209,7 @@
           "example": "Mi piacerebbe visitare la Spagna perché amo il cibo e la storia."
         }
       }
-    },
-    "keyboard_btn_progress": "My progress",
-    "progress_empty_text": "Learning progress is not available yet. Keep practising; there is no reliable vocabulary or grammar assessment to show yet."
+    }
   },
   "telegram_presentation": {
     "name": "Romi 🇮🇹 | Your language tutor",
@@ -233,10 +231,6 @@
       {
         "command": "stats",
         "description": "Check subscription status"
-      },
-      {
-        "command": "progress",
-        "description": "View learning progress"
       },
       {
         "command": "topic",

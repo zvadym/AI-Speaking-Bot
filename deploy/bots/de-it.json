@@ -209,9 +209,7 @@
           "example": "Mi piacerebbe visitare la Spagna perché amo il cibo e la storia."
         }
       }
-    },
-    "keyboard_btn_progress": "Mein Fortschritt",
-    "progress_empty_text": "Dein Lernfortschritt ist noch nicht verfügbar. Übe weiter: Eine verlässliche Bewertung deines Wortschatzes und deiner Grammatik liegt noch nicht vor."
+    }
   },
   "telegram_presentation": {
     "name": "Romi 🇮🇹 | Deine Sprachtrainerin",
@@ -233,10 +231,6 @@
       {
         "command": "stats",
         "description": "Abo-Status prüfen"
-      },
-      {
-        "command": "progress",
-        "description": "Lernfortschritt ansehen"
       },
       {
         "command": "topic",

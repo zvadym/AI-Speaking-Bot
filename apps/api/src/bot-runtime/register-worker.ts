@@ -46,7 +46,7 @@ import {
   type TopicTelegramClient,
   type TopicMenuHelpers
 } from './handlers/topic-menu.js';
-import { createProgressHandlers } from './handlers/progress.js';
+import { createRetiredCommandHandlers } from './handlers/retired-commands.js';
 import {
   createTextConversationHandler,
   type ConversationTelegramClient
@@ -303,7 +303,7 @@ export async function registerBotRuntimeWorker(
       ai
     }),
     createStatsHandler({ pool, getBotLocale, telegramClient, webappUrl }),
-    ...createProgressHandlers({ pool, getBotLocale, telegramClient }),
+    ...createRetiredCommandHandlers({ pool, getBotLocale, telegramClient }),
     createTopicActionHandler({
       pool,
       getBotLocale,

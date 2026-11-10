@@ -1,5 +1,6 @@
 import type { Pool } from 'pg';
 import type { PreparedUpdate, Route } from '../contracts.js';
+import { buildPersistentReplyMarkup } from '../keyboard-state.js';
 import type { BotHandler } from '../handler-registry.js';
 import {
   BOT_RUNTIME_HANDLER_VERSIONS,
@@ -95,7 +96,11 @@ export function buildStaticRouteMessage(
       };
     }
     case 'command.unknown':
-      return { text: localeText(locale, 'msg_error_command', 'I do not know that command yet.') };
+      return {
+        text: localeText(locale, 'msg_error_command', 'I do not know that command yet.'),
+        replyMarkup: update.context.keyboard.enabled || update.context.keyboard.buttonIntent === 'retired'
+          ? buildPersistentReplyMarkup(update.context.keyboard) : null
+      };
     case 'pending_feedback.unsupported':
       return {
         text: localeText(

@@ -209,9 +209,7 @@
           "example": "I’d like to visit Italy because I love the food and history."
         }
       }
-    },
-    "keyboard_btn_progress": "تقدّمي",
-    "progress_empty_text": "تقدّم التعلّم غير متاح بعد. واصل التدريب؛ لا يتوفر بعد تقييم موثوق لمفرداتك وقواعدك."
+    }
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | معلّمتك اللغوية",
@@ -233,10 +231,6 @@
       {
         "command": "stats",
         "description": "عرض حالة الاشتراك"
-      },
-      {
-        "command": "progress",
-        "description": "عرض تقدّم التعلّم"
       },
       {
         "command": "topic",

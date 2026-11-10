@@ -44,7 +44,6 @@ Example:
       { "command": "level", "description": "Set your language level" },
       { "command": "voice", "description": "Choose voice or text replies" },
       { "command": "stats", "description": "Check subscription status" },
-      { "command": "progress", "description": "View learning progress" },
       { "command": "feedback", "description": "Send feedback" },
       { "command": "lang", "description": "Show fixed learning language" }
     ],
@@ -76,12 +75,12 @@ The TypeScript bot runtime reads these `locale` keys to build the persistent bot
 - `keyboard_btn_voice_prefix`
 - `keyboard_btn_voice_text`
 - `keyboard_btn_voice_voice`
-- `keyboard_btn_progress`
 
 They should be localized in the bot's base language and kept short because Telegram reply-keyboard buttons have limited horizontal space.
 
-The `/progress` handler uses `progress_empty_text` for the learning-progress empty state.
-Legacy `/xp` and old XP reply-keyboard inputs open this same view without querying game metrics.
+The bottom keyboard offers topic, language level and reply format.
+`/progress` and `/xp` are not registered commands. Old reply-keyboard buttons and
+already queued jobs receive the standard unknown-command reply with the current keyboard.
 
 The API automated notifications also read these locale keys when present:
 

@@ -209,9 +209,7 @@
           "example": "Me gustaría visitar Italia porque me encantan la comida y la historia."
         }
       }
-    },
-    "keyboard_btn_progress": "Мій прогрес",
-    "progress_empty_text": "Навчальний прогрес поки недоступний. Продовжуй практикуватися: наразі немає підтвердженої оцінки твого словника та граматики."
+    }
   },
   "telegram_presentation": {
     "name": "Romi 🇪🇸 | Твоя репетиторка з мови",
@@ -233,10 +231,6 @@
       {
         "command": "stats",
         "description": "Перевірити статус підписки"
-      },
-      {
-        "command": "progress",
-        "description": "Переглянути навчальний прогрес"
       },
       {
         "command": "topic",

@@ -5,19 +5,16 @@ import { buildPersistentReplyMarkup } from '../keyboard-state.js';
 import { BOT_RUNTIME_HANDLER_VERSIONS } from '../route-flags.js';
 import { deliverTelegramText, type TelegramTextClient } from '../telegram-text-delivery.js';
 
-export function buildProgressMessage(update: PreparedUpdate, localeRaw: unknown) {
+export function buildRetiredCommandMessage(update: PreparedUpdate, localeRaw: unknown) {
   const locale = localeRaw && typeof localeRaw === 'object'
     ? localeRaw as Record<string, unknown> : {};
   return {
-    text: String(locale.progress_empty_text || 'Learning progress is not available yet. Keep practising; there is no reliable vocabulary or grammar assessment to show yet.'),
-    replyMarkup: buildPersistentReplyMarkup({
-      ...update.context.keyboard,
-      progressButtonText: `· 📈 ${String(locale.keyboard_btn_progress || 'My progress')}`
-    })
+    text: String(locale.msg_error_command || 'I do not know that command yet.'),
+    replyMarkup: buildPersistentReplyMarkup(update.context.keyboard)
   };
 }
 
-export function createProgressHandlers({ pool, getBotLocale, telegramClient }: {
+export function createRetiredCommandHandlers({ pool, getBotLocale, telegramClient }: {
   pool: Pool;
   getBotLocale(botKey: string): unknown;
   telegramClient: TelegramTextClient;
@@ -29,9 +26,9 @@ export function createProgressHandlers({ pool, getBotLocale, telegramClient }: {
     version: BOT_RUNTIME_HANDLER_VERSIONS[route],
     async execute(update: PreparedUpdate) {
       if (update.input.chatId === null || !Number.isSafeInteger(update.input.chatId) || update.input.chatId <= 0) {
-        throw new BotRuntimeHandlerError('invalid_progress_chat_id', { retryable: false });
+        throw new BotRuntimeHandlerError('invalid_retired_command_chat_id', { retryable: false });
       }
-      const message = buildProgressMessage(update, getBotLocale(update.botKey));
+      const message = buildRetiredCommandMessage(update, getBotLocale(update.botKey));
       return deliverTelegramText({
         pool, update, telegramClient,
         stepKey: route === 'command.xp' ? 'xp-message:v1' : 'progress-message:v1',

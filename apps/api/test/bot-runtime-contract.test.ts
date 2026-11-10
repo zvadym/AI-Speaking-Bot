@@ -103,11 +103,6 @@ const routeFixtures: RouteFixture[] = [
     update: messageUpdate({ updateId: 1105, text: '/stats' })
   },
   {
-    name: 'xp command',
-    route: 'command.progress',
-    update: messageUpdate({ updateId: 1106, text: '/xp' })
-  },
-  {
     name: 'topic command',
     route: 'command.topic',
     update: messageUpdate({ updateId: 1107, text: '/topic' })
@@ -166,10 +161,10 @@ const routeFixtures: RouteFixture[] = [
   }
 ];
 
-test('route fixture matrix covers every current route exactly once; legacy XP stays parser-only', () => {
+test('route fixture matrix covers every current route exactly once; retired commands stay parser-only', () => {
   assert.deepEqual(
     routeFixtures.map((fixture) => fixture.route).sort(),
-    ROUTES.filter((route) => route !== 'command.xp').sort()
+    ROUTES.filter((route) => route !== 'command.xp' && route !== 'command.progress').sort()
   );
 });
 
@@ -377,7 +372,7 @@ test('persistent keyboard uses locale and requires completed onboarding', () => 
   assert.equal(keyboard.levelButtonText, '· 📚 A2');
   assert.equal(keyboard.topicButtonText, '· 🧩 Coffee chat');
   assert.equal(keyboard.voiceButtonText, '· 🎤 Voice');
-  assert.equal(keyboard.progressButtonText, '· 📈 My progress');
+  assert.equal('progressButtonText' in keyboard, false);
 
   const disabled = buildPersistentKeyboardState({ level: 'a2' }, {}, input);
   assert.equal(disabled.enabled, false);

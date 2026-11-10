@@ -13,7 +13,7 @@ import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { parsePreparedUpdateContract } from '../src/bot-runtime/contract-validation.js';
 import { claimBotUpdateExecution } from '../src/bot-runtime/execution-repository.js';
-import { createProgressHandlers } from '../src/bot-runtime/handlers/progress.js';
+import { createRetiredCommandHandlers } from '../src/bot-runtime/handlers/retired-commands.js';
 import { messageUpdate } from './fixtures/telegram-updates.js';
 
 const connectionString = process.env.BOT_RUNTIME_TEST_DATABASE_URL;
@@ -36,7 +36,7 @@ test('XP-free dashboard/admin SQL and queued legacy delivery work against Postgr
   const server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const base = `http://127.0.0.1:${server.address().port}`;
-  const decisionId = `v1:uk-en:${chatId}`;
+  const decisionIds = [chatId, chatId + 1].map((id) => `v1:uk-en:${id}`);
   try {
     await pool.query('INSERT INTO users (chat_id) VALUES ($1)', [chatId]);
     await pool.query("INSERT INTO user_bots (chat_id, bot_key, level) VALUES ($1, 'uk-en', 'b1')", [chatId]);
@@ -64,29 +64,31 @@ test('XP-free dashboard/admin SQL and queued legacy delivery work against Postgr
     assert.equal('xp' in body, false);
     assert.equal(body.selected_bot.level, 'b1');
 
-    const legacy = buildPreparedUpdate({ botKey: 'uk-en', input: normalizeTelegramUpdate(messageUpdate({ updateId: chatId, chatId, text: '/xp' })) });
-    legacy.route = 'command.xp';
-    delete legacy.context.keyboard.progressButtonText;
-    Object.assign(legacy.context.keyboard, { xpTotal: 340, xpLevel: 2, xpButtonText: '· XP: 340 • L2' });
-    const parsed = parsePreparedUpdateContract(JSON.parse(JSON.stringify(legacy)));
-    await claimBotUpdateExecution(pool, { contract: parsed, handlerVersion: 1, jobId: '00000000-0000-4000-8000-000000000077' });
-    let sends = 0;
-    const handler = createProgressHandlers({
-      pool, getBotLocale: ctx.getBotLocale,
-      telegramClient: { async sendTelegramTextMessage(_chatId, text, options) {
-        sends += 1;
-        assert.match(text, /Навчальний прогрес поки недоступний/);
-        assert.doesNotMatch(JSON.stringify(options.replyMarkup), /XP/);
-        return { message_id: 77 };
-      } }
-    }).find((item) => item.route === 'command.xp');
-    assert.equal((await handler.execute(parsed)).status, 'delivered');
-    assert.equal((await handler.execute(parsed)).status, 'duplicate');
-    assert.equal(sends, 1);
+    for (const [index, route] of ['command.xp', 'command.progress'].entries()) {
+      const legacy = buildPreparedUpdate({ botKey: 'uk-en', input: normalizeTelegramUpdate(messageUpdate({ updateId: chatId + index, chatId, text: '/xp' })) });
+      legacy.route = route;
+      Object.assign(legacy.context.keyboard, { xpTotal: 340, xpLevel: 2, xpButtonText: '· XP: 340 • L2' });
+      const parsed = parsePreparedUpdateContract(JSON.parse(JSON.stringify(legacy)));
+      await claimBotUpdateExecution(pool, { contract: parsed, handlerVersion: 1, jobId: '00000000-0000-4000-8000-000000000077' });
+      let sends = 0;
+      const handler = createRetiredCommandHandlers({
+        pool, getBotLocale: ctx.getBotLocale,
+        telegramClient: { async sendTelegramTextMessage(_chatId, text, options) {
+          sends += 1;
+          assert.equal(text, ctx.getBotLocale('uk-en').msg_error_command);
+          assert.equal(options.replyMarkup.keyboard.flat().length, 3);
+          assert.doesNotMatch(JSON.stringify(options.replyMarkup), /XP/);
+          return { message_id: 77 };
+        } }
+      }).find((item) => item.route === route);
+      assert.equal((await handler.execute(parsed)).status, 'delivered');
+      assert.equal((await handler.execute(parsed)).status, 'duplicate');
+      assert.equal(sends, 1);
+    }
   } finally {
     server.close();
     await once(server, 'close');
-    await pool.query('DELETE FROM bot_update_executions WHERE decision_id = $1', [decisionId]);
+    await pool.query('DELETE FROM bot_update_executions WHERE decision_id = ANY($1)', [decisionIds]);
     await pool.query('DELETE FROM messages WHERE chat_id = $1', [chatId]);
     await pool.query('DELETE FROM action_events WHERE chat_id = $1', [chatId]);
     await pool.query('DELETE FROM user_bots WHERE chat_id = $1', [chatId]);

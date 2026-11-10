@@ -39,7 +39,7 @@ import type { StatsContext } from '../src/bot-runtime/stats-context.js';
 import { buildStatsMessage } from '../src/bot-runtime/stats-message.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
-import { buildProgressMessage } from '../src/bot-runtime/handlers/progress.js';
+import { buildRetiredCommandMessage } from '../src/bot-runtime/handlers/retired-commands.js';
 import { callbackUpdate, messageUpdate, voice } from './fixtures/telegram-updates.js';
 
 const unusedPool = null as unknown as Pool;
@@ -290,12 +290,12 @@ test('stats formatter preserves the legacy free and paid layouts', () => {
   );
 });
 
-test('progress empty state preserves language controls without game metrics', () => {
+test('retired command reply preserves language controls without progress', () => {
   const update = preparedStats();
-  const message = buildProgressMessage(update, { progress_empty_text: 'No assessment yet.', keyboard_btn_progress: 'My progress' });
-  assert.equal(message.text, 'No assessment yet.');
+  const message = buildRetiredCommandMessage(update, { msg_error_command: 'Unknown command' });
+  assert.equal(message.text, 'Unknown command');
   assert.equal(message.replyMarkup.keyboard[0][1].text, update.context.keyboard.levelButtonText);
-  assert.equal(message.replyMarkup.keyboard[1][1].text, '· 📈 My progress');
+  assert.deepEqual(message.replyMarkup.keyboard[1], [{ text: update.context.keyboard.voiceButtonText }]);
   assert.doesNotMatch(JSON.stringify(message), /XP/);
 });
 

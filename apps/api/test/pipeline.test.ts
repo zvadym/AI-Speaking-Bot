@@ -63,8 +63,7 @@ function preparedText(): PreparedUpdate & { route: 'message.text' } {
         replyMode: 'text',
         levelButtonText: '',
         topicButtonText: '',
-        voiceButtonText: '',
-        progressButtonText: ''
+        voiceButtonText: ''
       }
     }
   };

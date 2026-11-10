@@ -721,7 +721,6 @@ function buildOnboardingReplyMarkup(state, locale) {
   const voiceValue = replyMode === 'voice'
     ? String(locale.keyboard_btn_voice_voice || 'Voice').trim() || 'Voice'
     : String(locale.keyboard_btn_voice_text || 'Text').trim() || 'Text';
-  const progressLabel = String(locale.keyboard_btn_progress || 'My progress');
   const levelValue = String(state.level || 'a1').trim().toUpperCase() || 'A1';
 
   return {
@@ -731,8 +730,7 @@ function buildOnboardingReplyMarkup(state, locale) {
         { text: `· 📚 ${levelValue}` }
       ],
       [
-        { text: `· 🎤 ${voiceValue}` },
-        { text: `· 📈 ${progressLabel}` }
+        { text: `· 🎤 ${voiceValue}` }
       ]
     ],
     resize_keyboard: true,

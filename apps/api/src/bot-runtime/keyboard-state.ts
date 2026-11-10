@@ -60,7 +60,6 @@ export function buildPersistentKeyboardState(
   const voiceVoice = trimString(locale.keyboard_btn_voice_voice) || 'Voice';
   // Old Telegram reply keyboards can remain on clients after the rollout.
   const legacyXpPrefix = trimString(locale.keyboard_btn_xp_prefix) || 'XP';
-  const progressLabel = trimString(locale.keyboard_btn_progress) || 'My progress';
   const levelValue = (trimString(rowRaw.level) || 'a1').toUpperCase();
   const replyMode = normalizeReplyMode(rowRaw.reply_mode);
   const voiceValue = replyMode === 'voice' ? voiceVoice : voiceText;
@@ -68,7 +67,6 @@ export function buildPersistentKeyboardState(
   const levelButtonText = `${BUTTON_MARKER} ${LEVEL_ICON} ${levelValue}`;
   const topicButtonText = `${BUTTON_MARKER} ${TOPIC_ICON} ${topicValue}`;
   const voiceButtonText = `${BUTTON_MARKER} ${VOICE_ICON} ${voiceValue}`;
-  const progressButtonText = `${BUTTON_MARKER} 📈 ${progressLabel}`;
   const normalizedMessage = norm(input.message.text);
   const enabled = input.isPrivate && Boolean(rowRaw.onboarding_complete_at);
   const levelPrefixNorm = norm(`${BUTTON_MARKER} ${LEVEL_ICON}`);
@@ -84,8 +82,8 @@ export function buildPersistentKeyboardState(
       buttonIntent = 'topic';
     } else if (normalizedMessage === norm(voiceButtonText) || normalizedMessage.startsWith(voicePrefixNorm)) {
       buttonIntent = 'voice';
-    } else if (normalizedMessage === norm(progressButtonText) || normalizedMessage.startsWith(norm(`${BUTTON_MARKER} 📈`)) || normalizedMessage.startsWith(legacyXpPrefixNorm)) {
-      buttonIntent = 'progress';
+    } else if (normalizedMessage.startsWith(norm(`${BUTTON_MARKER} 📈`)) || normalizedMessage.startsWith(legacyXpPrefixNorm)) {
+      buttonIntent = 'retired';
     }
   }
 
@@ -98,8 +96,7 @@ export function buildPersistentKeyboardState(
     replyMode,
     levelButtonText,
     topicButtonText,
-    voiceButtonText,
-    progressButtonText
+    voiceButtonText
   };
 }
 
@@ -111,8 +108,7 @@ export function buildPersistentReplyMarkup(keyboard: PersistentKeyboardState) {
         { text: keyboard.levelButtonText }
       ],
       [
-        { text: keyboard.voiceButtonText },
-        { text: keyboard.progressButtonText || '· 📈 My progress' }
+        { text: keyboard.voiceButtonText }
       ]
     ],
     resize_keyboard: true,
