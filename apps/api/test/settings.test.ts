@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { deleteSettingsMessage } from '../src/bot-runtime/settings-message.js';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import type { Pool, PoolClient } from 'pg';
@@ -112,10 +113,16 @@ test('retired widget queries never change preferences or send a widget',async()=
     assert.deepEqual(h.state,{level:'a1',reply_mode:'voice'});
   }
 });
-test('done collapses the card and back reads current settings without changing preferences',async()=>{
-  const h=harness();await h.run('settings:r:close');
-  const closed=h.calls.at(-1)!.body.rich_message as {blocks:unknown[]};
-  assert.equal(closed.blocks.length,3);assert.ok(JSON.stringify(closed).includes(labels.saved));
+test('done deletes the card for every production bot; historical back buttons still read current settings',async()=>{
+  const dir=new URL('../../../deploy/bots/',import.meta.url);
+  for(const file of readdirSync(dir).filter(f=>f.endsWith('.json'))){
+    const bot=JSON.parse(readFileSync(new URL(file,dir),'utf8'));
+    const h=harness(), update=prepared('settings:r:close');update.botKey=bot.bot_key;
+    await h.handlers.find(x=>x.route==='callback.settings')!.execute(update);
+    assert.deepEqual(h.calls,[{method:'deleteMessage',body:{chat_id:42,message_id:2200}}],bot.bot_key);
+    assert.equal(h.mutations(),0);assert.deepEqual(h.state,{level:'a1',reply_mode:'voice'});
+  }
+  const h=harness();
   h.state.level='b2';await h.run('settings:r:home');
   assert.ok(JSON.stringify(h.calls.at(-1)!.body.rich_message).includes('✓ B2'));
   assert.equal(h.mutations(),0);
@@ -185,4 +192,14 @@ test('simple controls do not wait for entitlement/catalog reads; topics still ch
 test('a missing preference row cannot be reported as a successful save',async()=>{
   const client={query:async()=>({rows:[],rowCount:0})} as unknown as PoolClient;
   await assert.rejects(applySettingsAction(client,prepared('settings:r:level:b2'),parseSettingsAction('settings:r:level:b2'),[]),/missing/);
+});
+
+test('deletion acknowledges missing cards but preserves other Telegram failures',async()=>{
+  for(const error of [new Error('Bad Request: message to delete not found'),{telegramDescription:'Bad Request: message to delete not found'}]){
+    await deleteSettingsMessage(async()=>{throw error},42,80);
+  }
+  for(const error of [new Error('timeout'),{telegramStatus:429,telegramDescription:'Too Many Requests'},
+    {telegramStatus:400,telegramDescription: "Bad Request: message can't be deleted"}]){
+    await assert.rejects(deleteSettingsMessage(async()=>{throw error},42,80),e=>e===error);
+  }
 });

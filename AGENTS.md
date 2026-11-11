@@ -114,7 +114,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - `apps/api/src/bot-runtime` owns route preparation, typed handlers, AI calls, durable effects, and Telegram delivery.
 - Settings UI uses `settings-model.ts`, `settings-views.ts`, and `handlers/settings.ts`;
   `/settings` and the reply button open a rich card directly. Changes save immediately;
-  Done collapses the card. Retired widget queries are acknowledged without mutations
+  Done deletes the card message. Retired widget queries are acknowledged without mutations
   for queued-update compatibility; do not subscribe to `widget_query` in webhooks.
 - Settings UI labels live in `deploy/bots/*.json` under `locale.settings`.
 - Settings cards open and update directly in the authenticated webhook through

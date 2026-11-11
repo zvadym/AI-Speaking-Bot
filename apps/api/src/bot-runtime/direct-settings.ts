@@ -5,6 +5,7 @@ import { withSettingsLock } from './handlers/settings.js';
 import { buildTopicPack, type TopicMenuHelpers } from './handlers/topic-menu.js';
 import { accessibleSettingsCatalog, parseSettingsAction, SETTINGS_LEVELS, settingsView, topicToken, type SettingsAction } from './settings-model.js';
 import { renderSettingsRich, settingsLabels } from './settings-views.js';
+import { deleteSettingsMessage } from './settings-message.js';
 import { classifyTelegramDeliveryError } from './telegram-text-delivery.js';
 import { buildPreparedUpdate } from './update-router.js';
 import { buildPersistentReplyMarkup } from './keyboard-state.js';
@@ -143,7 +144,8 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,he
           replyMarkup:buildPersistentReplyMarkup(prepared.context.keyboard),api});
         status=sent.status;errorCode=sent.errorCode;deliveries=sent.deliveries;
       }else try{
-        await api('editMessageText',{chat_id:input.chatId,message_id:cb!.messageId,rich_message:renderSettingsRich(view,labels)});
+        if(action.kind==='close')await deleteSettingsMessage(api,input.chatId!,cb!.messageId!);
+        else await api('editMessageText',{chat_id:input.chatId,message_id:cb!.messageId,rich_message:renderSettingsRich(view,labels)});
       }catch(error){
         if(!String((error as Error).message).includes('message is not modified')){
           const failure=classifyTelegramDeliveryError(error);
@@ -163,7 +165,7 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,he
         answer(saved.inputError||status!=='succeeded'),
         saved.old_pin?api('unpinChatMessage',{chat_id:input.chatId,message_id:Number(saved.old_pin)}).catch(()=>{}):Promise.resolve()
       ]);
-      console.info('settings-direct:processed',{botKey,updateId:input.updateId,action:action.kind,status,...(action.kind==='open'?{sentMs:editedMs}:{editedMs})});
+      console.info('settings-direct:processed',{botKey,updateId:input.updateId,action:action.kind,status,...(action.kind==='open'?{sentMs:editedMs}:action.kind==='close'?{deletedMs:editedMs}:{editedMs})});
       if(status==='retryable_failed')throw new Error(errorCode!);
       return true;
     });

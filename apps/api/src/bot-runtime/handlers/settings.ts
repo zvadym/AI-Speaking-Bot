@@ -7,6 +7,7 @@ import { buildPersistentReplyMarkup } from '../keyboard-state.js';
 import { deliverTelegramText, classifyTelegramDeliveryError } from '../telegram-text-delivery.js';
 import { accessibleSettingsCatalog, applySettingsAction, parseSettingsAction, SettingsInputError, settingsView, type SettingsAction } from '../settings-model.js';
 import { renderSettingsRich, settingsLabels } from '../settings-views.js';
+import { deleteSettingsMessage } from '../settings-message.js';
 import type { TopicMenuHelpers, TopicTelegramClient } from './topic-menu.js';
 
 // A session lock serializes settings cards for the same learner/bot, including
@@ -88,7 +89,8 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient, hel
           await answer();return outcome;
         }
         try {
-          await api('editMessageText',{chat_id:chatId,message_id:cb!.messageId,rich_message:renderSettingsRich(view,l)});
+          if(action.kind==='close')await deleteSettingsMessage(api,chatId,cb!.messageId!);
+          else await api('editMessageText',{chat_id:chatId,message_id:cb!.messageId,rich_message:renderSettingsRich(view,l)});
         } catch(error) { if(!String((error as Error).message).includes('message is not modified')) throw error; }
         await answer(inputError);
         return {status:'delivered',telegramMessageId:cb!.messageId};
@@ -96,7 +98,7 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient, hel
         await answer(true);
         if(error instanceof BotRuntimeHandlerError) throw error;
         const failure = classifyTelegramDeliveryError(error);
-        // Editing an existing message is safe to retry, including ambiguous HTTP failures.
+        // Editing or deleting an existing message is safe to retry after ambiguous failures.
         throw new BotRuntimeHandlerError(failure.errorCode,{retryable:failure.kind!=='permanent',cause:error});
       }
     });

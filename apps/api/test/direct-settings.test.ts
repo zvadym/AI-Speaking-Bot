@@ -30,6 +30,7 @@ test('Postgres: direct settings atomically persist, survive edit failures, seria
   const {default:pg}=await import('pg');
   const pool=new pg.Pool({connectionString:process.env.BOT_RUNTIME_TEST_DATABASE_URL,application_name:'direct-settings-test'});
   const chatId=9900091,botKey='uk-en';let id=9850000,fail=false,releaseEdit:(()=>void)|undefined;
+  let deleteFailure:unknown;
   let editGate:Promise<void>|undefined,editStarted:(()=>void)|undefined;
   const calls:Array<{method:string;body:Record<string,unknown>}>=[];const ids:string[]=[];
   const catalog=[{topic_id:'direct-test-topic',title_base:'Test topic',access_tier:'all',starter_questions_by_level_target:{a1:['A1?'],b2:['B2?']}},
@@ -41,6 +42,7 @@ test('Postgres: direct settings atomically persist, survive edit failures, seria
   const handle=createDirectSettingsHandler({pool,getBotLocale:()=>({}),helpers:{fetchEffectiveTierForChat:async()=> 'free',fetchTopicCatalogRows:async()=>catalog} as never,
     telegramClient:{callTelegramApi:async(_b,method,body)=>{
       calls.push({method,body});
+      if(method==='deleteMessage' && deleteFailure){const error=deleteFailure;deleteFailure=undefined;throw error;}
       if(method==='editMessageText'){
         assert.equal((await pool.query("SELECT count(*)::int AS n FROM pg_stat_activity WHERE application_name='direct-settings-test' AND state='idle in transaction'")).rows[0].n,0);
         if(fail){fail=false;throw new Error('timeout');}
@@ -83,7 +85,16 @@ test('Postgres: direct settings atomically persist, survive edit failures, seria
     assert.ok(calls.some(c=>c.method==='unpinChatMessage'&&c.body.message_id===88));
     assert.equal((await pool.query("SELECT count(*)::int AS n FROM action_events WHERE chat_id=$1 AND action_type='topic_set'",[chatId])).rows[0].n,1);
     await handle(botKey,make('settings:r:page:0'));
-    await handle(botKey,make('settings:r:close'));
+    const close=make('settings:r:close');
+    const beforeClose=await state(), beforeCloseCalls=calls.length;
+    deleteFailure=new Error('timeout');await assert.rejects(handle(botKey,close));
+    deleteFailure={telegramStatus:400,telegramDescription:'Bad Request: message to delete not found'};
+    await handle(botKey,close);await handle(botKey,close);
+    const closeCalls=calls.slice(beforeCloseCalls).filter(c=>c.method!=='answerCallbackQuery');
+    assert.deepEqual(closeCalls,Array(2).fill({method:'deleteMessage',body:{chat_id:chatId,message_id:close.callbackQuery!.messageId}}));
+    assert.equal((await pool.query('SELECT status FROM bot_update_executions WHERE decision_id=$1',[`v1:${botKey}:${close.updateId}`])).rows[0].status,'succeeded');
+    const afterClose=await state();
+    for(const field of ['level','reply_mode','topic_pack_json','topic_template_id','topic_enabled'])assert.deepEqual(afterClose[field],beforeClose[field]);
     await handle(botKey,make('settings:r:home'));
     await handle(botKey,make('settings:r:topic:free'));
     assert.equal((await state()).topic_pack_json,null);

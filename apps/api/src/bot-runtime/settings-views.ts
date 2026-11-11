@@ -10,7 +10,6 @@ export function renderSettingsRich(s: SettingsView, l: SettingsLabels): { blocks
   const heading = (text: string) => blocks.push({type:'paragraph',text:{type:'bold',text}});
   const row = (buttons: Array<[string,string,boolean?]>) => blocks.push({type:'buttons',buttons:buttons.map(([text,action,selected]) => ({text:(selected?'✓ ':'')+text,callback_data:'settings:r:'+action,...(selected?{style:'primary'}:{})}))});
   heading('⚙️ '+l.title);
-  if (s.screen === 'closed') { blocks.push({type:'paragraph',text:l.saved});row([[l.back,'home']]); return {blocks}; }
   if (s.e) blocks.push({type:'paragraph',text:l.error});
   if (s.screen === 'topics') {
     heading(l.topic);row([[l.free,'topic:free',s.t==='free']]);

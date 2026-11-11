@@ -22,7 +22,7 @@ export const topicToken = (id: unknown) => createHash('sha256').update(String(id
 export const shortText = (value: unknown, max = 32) => Array.from(String(value ?? '').replace(/\u0000/g, '')).slice(0,max).join('');
 export interface SettingsView {
   v: number; l: string; r: string; t: string; n: string;
-  p: number; pages: number; o: Array<[string,string]>; screen: 'home' | 'topics' | 'closed'; e?: string;
+  p: number; pages: number; o: Array<[string,string]>; screen: 'home' | 'topics'; e?: string;
 }
 export function settingsView(row: KeyboardStateRow, catalog: Record<string, unknown>[], action: SettingsAction, freeLabel: string): SettingsView {
   const pack = typeof row.topic_pack_json === 'string' ? JSON.parse(row.topic_pack_json) : row.topic_pack_json;
@@ -34,7 +34,7 @@ export function settingsView(row: KeyboardStateRow, catalog: Record<string, unkn
     t: current ? topicToken(current) : 'free',
     n: shortText(current ? (pack as Record<string, unknown>)?.title_base || current : freeLabel, 36),
     p, pages, o: action.kind === 'page' ? catalog.slice(p*3,p*3+3).map(t => [topicToken(t.topic_id), shortText(t.title_base || t.topic_id)]) : [],
-    screen: action.kind === 'page' ? 'topics' : action.kind === 'close' ? 'closed' : 'home'
+    screen: action.kind === 'page' ? 'topics' : 'home'
   };
 }
 export async function accessibleSettingsCatalog(helpers: TopicMenuHelpers, chatId: number, botKey: string) {
