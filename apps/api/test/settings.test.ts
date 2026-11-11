@@ -53,6 +53,7 @@ test('all production cards separate the closing action and explain autosave',()=
 function harness() {
   const calls:Array<{method:string;body:Record<string,unknown>}>=[];
   const sql:Array<{sql:string;params:unknown[]}>=[];
+  const deliveries:Array<{stepKey:string;replyMarkup?:unknown}>=[];
   const state:Record<string,unknown>={level:'a1',reply_mode:'voice'};
   let mutations=0;let failEdit=false;
   const client={query:async(q:string,p:unknown[]=[])=>{sql.push({sql:q,params:p});if(q.startsWith('SELECT level'))return {rows:[{level:state.level,topic_pinned_message_id:77}]};if(q.includes('SET level ='))state.level=p[2];if(q.includes('SET reply_mode ='))state.reply_mode=p[2];if(q.includes('SET topic_enabled')){state.topic_enabled=p[2];state.topic_template_id=p[3];state.topic_pack_json=JSON.parse(String(p[4]||'null'))}return {rows:[],rowCount:1}}} as unknown as PoolClient;
@@ -62,9 +63,9 @@ function harness() {
     helpers:{fetchEffectiveTierForChat:async()=> 'free',fetchTopicCatalogRows:async()=>catalog} as never,
     stateLoader:async()=>state,lock:async(_p,_k,work)=>work(),
     effectRunner:async(_p,input)=>{let result=cache.get(input.decisionId);if(!result){result=await input.execute(client);cache.set(input.decisionId,result);mutations++}return {result} as never},
-    textDeliverer:async(args)=>{if(args.telegramMethod)await args.telegramClient.sendTelegramTextMessage(42,args.text,{botKey:'uk-en'});return {status:'delivered',telegramMessageId:90}}
+    textDeliverer:async(args)=>{deliveries.push(args);if(args.telegramMethod)await args.telegramClient.sendTelegramTextMessage(42,args.text,{botKey:'uk-en'});return {status:'delivered',telegramMessageId:90}}
   });
-  return {calls,sql,state,client,handlers,mutations:()=>mutations,fail:()=>{failEdit=true},run:(data:string,widget=false)=>handlers.find(x=>x.route==='callback.settings')!.execute(prepared(data,widget))};
+  return {calls,sql,deliveries,state,client,handlers,mutations:()=>mutations,fail:()=>{failEdit=true},run:(data:string,widget=false)=>handlers.find(x=>x.route==='callback.settings')!.execute(prepared(data,widget))};
 }
 test('card edits in place, persists once across failed render/retry and rejects inaccessible topics',async()=>{
   const h=harness(),data='settings:r:level:b2';
@@ -83,15 +84,17 @@ test('topic selection snapshots correct level without inserting a fictional assi
   assert.equal(h.state.topic_enabled,false);assert.equal(h.state.topic_pack_json,null);
 });
 test('commands and reply keyboard open one card directly; old chooser buttons redirect to it',async()=>{
-  for(const text of ['/settings','· ⚙️ Налаштування']){
+  for(const text of ['/settings','· ⚙️ Налаштування'])for(const keyboardState of [{},{onboarding_complete_at:'2026-01-01'}]){
     const h=harness();
-    const u=buildPreparedUpdate({botKey:'uk-en',input:normalizeTelegramUpdate(messageUpdate({text})),keyboardState:{onboarding_complete_at:'2026-01-01'}});
+    const u=buildPreparedUpdate({botKey:'uk-en',input:normalizeTelegramUpdate(messageUpdate({text})),keyboardState});
     assert.equal(u.route,'command.settings');
     await h.handlers.find(x=>x.route===u.route)!.execute(u);
     assert.equal(h.calls.length,1);
     assert.equal(h.calls[0].method,'sendRichMessage');
     assert.ok(h.calls[0].body.rich_message);
-    assert.deepEqual(h.calls[0].body.reply_markup,{keyboard:[[{text:u.context.keyboard.settingsButtonText}]],resize_keyboard:true,one_time_keyboard:false});
+    assert.equal(h.calls[0].body.reply_markup,undefined); // Keep the card editable in Telegram.
+    assert.equal(h.deliveries.length,text==='/settings'?2:1);
+    if(text==='/settings')assert.deepEqual(h.deliveries[0].replyMarkup,{keyboard:[[{text:u.context.keyboard.settingsButtonText}]],resize_keyboard:true,one_time_keyboard:false});
     assert.ok(!JSON.stringify(h.calls).includes('settings:w:'));
   }
   for(const variant of ['r','w']){

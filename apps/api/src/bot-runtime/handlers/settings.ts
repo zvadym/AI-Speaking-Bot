@@ -51,6 +51,12 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient, hel
     };
     // Retired widgets may still have queued queries. Never apply their mutations.
     if (widget) { await answer(true); return {status:'noop'}; }
+    if (update.route === 'command.settings' && update.context.keyboard.buttonIntent !== 'settings') {
+      // Telegram cannot edit a message carrying a reply keyboard. Refresh legacy
+      // keyboards separately on /settings; the reply button itself needs one card.
+      await textDeliverer({pool,update,telegramClient,stepKey:'settings:keyboard:v1',text:'⚙️ '+l.title,
+        replyMarkup:buildPersistentReplyMarkup(update.context.keyboard)});
+    }
     let action: SettingsAction;
     try {
       action = update.route === 'command.settings'
@@ -76,8 +82,7 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient, hel
         if (action.kind === 'open') {
           const outcome = await textDeliverer({pool,update,stepKey:'settings:open:r:v1',text:l.title,telegramMethod:'sendRichMessage',
             telegramClient:{sendTelegramTextMessage:async()=>api('sendRichMessage',{
-              chat_id:chatId,rich_message:renderSettingsRich(view,l),
-              reply_markup:buildPersistentReplyMarkup(update.context.keyboard)
+              chat_id:chatId,rich_message:renderSettingsRich(view,l)
             }) as Promise<{message_id?:unknown}>}});
           await answer();return outcome;
         }

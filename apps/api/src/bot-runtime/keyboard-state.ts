@@ -76,10 +76,12 @@ export function buildPersistentKeyboardState(
   const legacyXpPrefixNorm = norm(`${BUTTON_MARKER} ${legacyXpPrefix}:`);
   let buttonIntent: KeyboardIntent | null = null;
 
-  if (enabled && normalizedMessage) {
-    if (normalizedMessage === norm(settingsButtonText) || normalizedMessage.startsWith(norm('· ⚙️'))) {
-      buttonIntent = 'settings';
-    } else if (normalizedMessage === norm(levelButtonText) || normalizedMessage.startsWith(levelPrefixNorm)) {
+  // /settings can expose this button for legacy profiles without an onboarding
+  // completion row. Recognize it just like the command, independently of that row.
+  if (input.isPrivate && (normalizedMessage === norm(settingsButtonText) || normalizedMessage.startsWith(norm('· ⚙️')))) {
+    buttonIntent = 'settings';
+  } else if (enabled && normalizedMessage) {
+    if (normalizedMessage === norm(levelButtonText) || normalizedMessage.startsWith(levelPrefixNorm)) {
       buttonIntent = 'level';
     } else if (normalizedMessage === norm(topicButtonText) || normalizedMessage.startsWith(topicPrefixNorm)) {
       buttonIntent = 'topic';
