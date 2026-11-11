@@ -1,7 +1,7 @@
 import { PgBoss } from 'pg-boss';
 import { env } from './env.js';
 import { captureException } from './sentry.js';
-import { BOT_UPDATE_QUEUE_NAME } from './bot-runtime/contracts.js';
+import { BOT_UPDATE_QUEUE_NAME, BOT_SETTINGS_QUEUE_NAME } from './bot-runtime/contracts.js';
 import {
   QUEUE_LOADER_ROTATE,
   QUEUE_LOADER_TIMEOUT_CLEANUP
@@ -61,6 +61,12 @@ async function ensureQueues(boss) {
   await boss.createQueue(QUEUE_LOADER_ROTATE);
   await boss.createQueue(QUEUE_LOADER_TIMEOUT_CLEANUP);
   await boss.createQueue(QUEUE_DISCORD_EVENT_SEND, retryOptions);
+  await boss.createQueue(BOT_SETTINGS_QUEUE_NAME, {
+    ...retryOptions,
+    retryDelay: 1,
+    policy: 'exclusive',
+    expireInSeconds: 120
+  });
   await boss.createQueue(QUEUE_BOT_UPDATE_PROCESS, {
     ...retryOptions,
     policy: 'exclusive',

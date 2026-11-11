@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
 import type { NormalizedTelegramUpdate } from './contracts.js';
-import { parseStartPayload } from './telegram-update.js';
+import { parseStartPayload, parseCallbackData } from './telegram-update.js';
 
 async function rollbackQuietly(client: PoolClient): Promise<void> {
   try { await client.query('ROLLBACK'); } catch { /* Preserve the original failure. */ }
@@ -27,6 +27,27 @@ export async function bootstrapTelegramUser(
     input.sender.isBot
   ) {
     return;
+  }
+  // Existing settings users only need their activity/profile refreshed. One
+  // atomic statement preserves those writes without five transaction roundtrips.
+  // New users fall through to normal bootstrap, including onboarding creation.
+  if (input.updateType === 'callback_query' && input.sender.id === chatId &&
+      parseCallbackData(input.callbackQuery)?.group === 'settings') {
+    const refreshed = await pool.query(
+      `WITH touched_user AS (
+         UPDATE users SET username = $3, first_name = $4,
+           inactive_reason = NULL, inactive_at = NULL, last_delivery_error = NULL,
+           updated_at = NOW()
+         WHERE chat_id = $1 AND EXISTS (
+           SELECT 1 FROM user_bots WHERE chat_id = $1 AND bot_key = $2
+         ) RETURNING chat_id
+       )
+       UPDATE user_bots ub SET last_seen_at = NOW(), is_active = true, updated_at = NOW()
+       FROM touched_user u WHERE ub.chat_id = u.chat_id AND ub.bot_key = $2
+       RETURNING ub.chat_id`,
+      [chatId, botKey, input.sender.username, input.sender.firstName]
+    );
+    if (refreshed.rowCount) return;
   }
   const startPayload = parseStartPayload(input.message.text);
   const isStart = input.message.text.trim().toLowerCase().startsWith('/start');

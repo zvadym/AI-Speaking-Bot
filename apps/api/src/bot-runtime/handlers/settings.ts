@@ -68,7 +68,8 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient, hel
     } catch { await answer(true);return {status:'noop'}; }
     return lock(pool, `settings:${update.botKey}:${chatId}`, async () => {
       try {
-        const catalog = await accessibleSettingsCatalog(helpers,chatId,update.botKey);
+        const catalog = action.kind === 'page' || action.kind === 'topic'
+          ? await accessibleSettingsCatalog(helpers,chatId,update.botKey) : [];
         let inputError = false;
         if (['level','reply','topic'].includes(action.kind)) {
           try {

@@ -117,6 +117,8 @@ This file orients automated agents working in this repo. Keep it accurate as the
   Done collapses the card. Retired widget queries are acknowledged without mutations
   for queued-update compatibility; do not subscribe to `widget_query` in webhooks.
 - Settings UI labels live in `deploy/bots/*.json` under `locale.settings`.
+- Settings commands/callbacks use the dedicated `bot-settings-process` queue;
+  keep long AI work off this queue. The general worker still handles older queued settings jobs.
 - `apps/api/src/bot-runtime/pipeline.ts` is the universal middleware runner;
   cross-cutting behavior wraps complete handlers or explicit named stages.
 - Progress messages are enabled per bot with `BOT_PROGRESS_ENABLED_BOT_KEYS`;

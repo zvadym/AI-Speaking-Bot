@@ -1,7 +1,7 @@
 import { createSettingsHandlers } from './handlers/settings.js';
 import type { Pool } from 'pg';
 import { parsePreparedUpdateContract, PreparedUpdateContractError } from './contract-validation.js';
-import { BOT_UPDATE_QUEUE_NAME } from './contracts.js';
+import { BOT_UPDATE_QUEUE_NAME, BOT_SETTINGS_QUEUE_NAME } from './contracts.js';
 import {
   claimBotUpdateExecution,
   markBotUpdateExecutionFailed,
@@ -325,13 +325,17 @@ export async function registerBotRuntimeWorker(
     })
   ]);
 
-  await boss.work(
-    BOT_UPDATE_QUEUE_NAME,
-    { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: 1 },
-    async (jobs) => {
-      for (const job of jobs) {
-        await processBotUpdateJob(job, { pool, registry, pipelineRunner });
+  // Keep the general worker able to drain settings jobs queued before rollout.
+  // Independent workers prevent slow AI responses from blocking card controls.
+  for (const queue of [BOT_UPDATE_QUEUE_NAME, BOT_SETTINGS_QUEUE_NAME]) {
+    await boss.work(
+      queue,
+      { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: queue === BOT_SETTINGS_QUEUE_NAME ? 0.5 : 1 },
+      async (jobs) => {
+        for (const job of jobs) {
+          await processBotUpdateJob(job, { pool, registry, pipelineRunner });
+        }
       }
-    }
-  );
+    );
+  }
 }

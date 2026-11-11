@@ -6,7 +6,7 @@ import {
   type PreparedUpdate
 } from './contracts.js';
 import { fetchKeyboardState, fetchPendingFeedbackState } from './context-loader.js';
-import { normalizeTelegramUpdate } from './telegram-update.js';
+import { normalizeTelegramUpdate, parseCallbackData } from './telegram-update.js';
 import { buildPreparedUpdate } from './update-router.js';
 
 export async function prepareBotUpdate(
@@ -22,7 +22,10 @@ export async function prepareBotUpdate(
   let keyboardState: KeyboardStateRow = {};
   let pendingFeedback = false;
 
-  if (input.chatId !== null && input.isPrivate && !input.sender.isBot) {
+  // Settings callbacks route only by their payload and load live state in the
+  // handler. Neither keyboard snapshots nor pending feedback affect this route.
+  const isSettingsCallback = parseCallbackData(input.callbackQuery)?.group === 'settings';
+  if (!isSettingsCallback && input.chatId !== null && input.isPrivate && !input.sender.isBot) {
     [keyboardState, pendingFeedback] = await Promise.all([
       fetchKeyboardState(ctx.pool, input.chatId, botKey),
       fetchPendingFeedbackState(ctx.pool, input.chatId, botKey)

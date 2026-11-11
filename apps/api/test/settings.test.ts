@@ -55,17 +55,17 @@ function harness() {
   const sql:Array<{sql:string;params:unknown[]}>=[];
   const deliveries:Array<{stepKey:string;replyMarkup?:unknown}>=[];
   const state:Record<string,unknown>={level:'a1',reply_mode:'voice'};
-  let mutations=0;let failEdit=false;
+  let mutations=0;let failEdit=false;let catalogReads=0;
   const client={query:async(q:string,p:unknown[]=[])=>{sql.push({sql:q,params:p});if(q.startsWith('SELECT level'))return {rows:[{level:state.level,topic_pinned_message_id:77}]};if(q.includes('SET level ='))state.level=p[2];if(q.includes('SET reply_mode ='))state.reply_mode=p[2];if(q.includes('SET topic_enabled')){state.topic_enabled=p[2];state.topic_template_id=p[3];state.topic_pack_json=JSON.parse(String(p[4]||'null'))}return {rows:[],rowCount:1}}} as unknown as PoolClient;
   const cache=new Map<string,unknown>();
   const handlers=createSettingsHandlers({pool:{} as Pool,getBotLocale:()=>({}),
     telegramClient:{sendTelegramTextMessage:async()=>({message_id:90}),answerTelegramCallbackQuery:async()=>{},callTelegramApi:async(_bot,method,body)=>{calls.push({method,body});if(failEdit&&method.startsWith('edit')){failEdit=false;throw new Error('timeout')}return {message_id:90}}},
-    helpers:{fetchEffectiveTierForChat:async()=> 'free',fetchTopicCatalogRows:async()=>catalog} as never,
+    helpers:{fetchEffectiveTierForChat:async()=> {catalogReads++;return 'free'},fetchTopicCatalogRows:async()=>catalog} as never,
     stateLoader:async()=>state,lock:async(_p,_k,work)=>work(),
     effectRunner:async(_p,input)=>{let result=cache.get(input.decisionId);if(!result){result=await input.execute(client);cache.set(input.decisionId,result);mutations++}return {result} as never},
     textDeliverer:async(args)=>{deliveries.push(args);if(args.telegramMethod)await args.telegramClient.sendTelegramTextMessage(42,args.text,{botKey:'uk-en'});return {status:'delivered',telegramMessageId:90}}
   });
-  return {calls,sql,deliveries,state,client,handlers,mutations:()=>mutations,fail:()=>{failEdit=true},run:(data:string,widget=false)=>handlers.find(x=>x.route==='callback.settings')!.execute(prepared(data,widget))};
+  return {calls,sql,deliveries,state,client,handlers,catalogReads:()=>catalogReads,mutations:()=>mutations,fail:()=>{failEdit=true},run:(data:string,widget=false)=>handlers.find(x=>x.route==='callback.settings')!.execute(prepared(data,widget))};
 }
 test('card edits in place, persists once across failed render/retry and rejects inaccessible topics',async()=>{
   const h=harness(),data='settings:r:level:b2';
@@ -168,4 +168,21 @@ test('Postgres: real settings effects, topic snapshots and delivery records surv
     await pool.query('DELETE FROM users WHERE chat_id=$1',[chatId]);
     await pool.query('DELETE FROM bot_topic_catalog WHERE bot_key=$1 AND topic_id=$2',[botKey,'settings-test-topic']);await pool.end();
   }
+});
+
+test('simple controls do not wait for entitlement/catalog reads; topics still check access',async()=>{
+  const h=harness();
+  for(const action of ['home','close','level:b2','reply:text'])await h.run('settings:r:'+action);
+  assert.equal(h.catalogReads(),0);
+  assert.ok(!h.sql.some(q=>q.sql.startsWith('SELECT level')));
+  await h.run('settings:r:page:0');
+  assert.equal(h.catalogReads(),1);
+  await h.run('settings:r:topic:'+topicToken('topic-7'));
+  assert.equal(h.catalogReads(),2);
+  assert.equal(h.state.topic_enabled,undefined);
+});
+
+test('a missing preference row cannot be reported as a successful save',async()=>{
+  const client={query:async()=>({rows:[],rowCount:0})} as unknown as PoolClient;
+  await assert.rejects(applySettingsAction(client,prepared('settings:r:level:b2'),parseSettingsAction('settings:r:level:b2'),[]),/missing/);
 });

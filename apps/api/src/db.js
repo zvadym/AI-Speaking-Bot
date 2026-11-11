@@ -7,5 +7,9 @@ const ssl = env.databaseSsl
 
 export const pool = new pg.Pool({
   connectionString: env.databaseUrl,
-  ssl
+  ssl,
+  // Settings hold one advisory-lock connection while using another for effects.
+  // Retain two idle clients instead of reconnecting after every short pause.
+  min: 2,
+  idleTimeoutMillis: 60000
 });

@@ -1,6 +1,7 @@
 import { parsePreparedUpdateContract, PreparedUpdateContractError } from './contract-validation.js';
 import {
   BOT_UPDATE_QUEUE_NAME,
+  BOT_SETTINGS_QUEUE_NAME,
   type BotCatalogMeta,
   type PreparedUpdate
 } from './contracts.js';
@@ -77,7 +78,8 @@ export async function ingestBotUpdate(
   let jobId: string | null;
   try {
     jobId = await ctx.apiBoss.send(
-      BOT_UPDATE_QUEUE_NAME,
+      contract.route === 'command.settings' || contract.route === 'callback.settings'
+        ? BOT_SETTINGS_QUEUE_NAME : BOT_UPDATE_QUEUE_NAME,
       jobData,
       {
         singletonKey: `bot-update:${contract.botKey}:${contract.updateId}`

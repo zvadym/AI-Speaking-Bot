@@ -45,14 +45,15 @@ export async function accessibleSettingsCatalog(helpers: TopicMenuHelpers, chatI
 // Called inside the durable effect transaction. No network or AI calls here.
 export async function applySettingsAction(client: PoolClient, update: PreparedUpdate, action: SettingsAction, catalog: Record<string,unknown>[]) {
   const scope = [update.input.chatId, update.botKey];
-  const current = await client.query('SELECT level, topic_pinned_message_id FROM user_bots WHERE chat_id = $1 AND bot_key = $2 FOR UPDATE', scope);
-  if (!current.rows[0]) throw new SettingsInputError('missing');
   if (action.kind === 'level' || action.kind === 'reply') {
     const column = action.kind === 'level' ? 'level' : 'reply_mode';
-    await client.query(`UPDATE user_bots SET ${column} = $3, updated_at = NOW() WHERE chat_id = $1 AND bot_key = $2`, [...scope, action.value]);
+    const changed = await client.query(`UPDATE user_bots SET ${column} = $3, updated_at = NOW() WHERE chat_id = $1 AND bot_key = $2 RETURNING chat_id`, [...scope, action.value]);
+    if (!changed.rowCount) throw new SettingsInputError('missing');
     return { oldPin: null };
   }
   if (action.kind !== 'topic') return { oldPin: null };
+  const current = await client.query('SELECT level, topic_pinned_message_id FROM user_bots WHERE chat_id = $1 AND bot_key = $2 FOR UPDATE', scope);
+  if (!current.rows[0]) throw new SettingsInputError('missing');
   const topic = action.value === 'free' ? null : catalog.find(t => topicToken(t.topic_id) === action.value);
   if (action.value !== 'free' && !topic) throw new SettingsInputError('topic');
   const pack = topic ? buildTopicPack(topic, current.rows[0].level) : null;
