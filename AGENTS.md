@@ -117,10 +117,11 @@ This file orients automated agents working in this repo. Keep it accurate as the
   Done collapses the card. Retired widget queries are acknowledged without mutations
   for queued-update compatibility; do not subscribe to `widget_query` in webhooks.
 - Settings UI labels live in `deploy/bots/*.json` under `locale.settings`.
-- Existing settings cards update directly in the authenticated webhook through
-  `direct-settings.ts`; keep preference/effect writes atomic and serialize rendering
-  with the shared settings lock. New card sends and legacy jobs retain the
-  `bot-settings-process` queue. Keep long AI work off this queue.
+- Settings cards open and update directly in the authenticated webhook through
+  `direct-settings.ts`; keep preference/effect writes and send reservations atomic,
+  and serialize rendering with the shared settings lock. Do not retry ambiguous
+  sends: retain the delivery ledger to prevent duplicate cards. Legacy queued jobs
+  still use `bot-settings-process`; keep long AI work off this queue.
 - `apps/api/src/bot-runtime/pipeline.ts` is the universal middleware runner;
   cross-cutting behavior wraps complete handlers or explicit named stages.
 - Progress messages are enabled per bot with `BOT_PROGRESS_ENABLED_BOT_KEYS`;

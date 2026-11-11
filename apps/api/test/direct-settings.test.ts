@@ -12,7 +12,7 @@ import { createTelegramWebhookRouter } from '../src/routes/telegram-webhook.js';
 import { parseBotRuntimeRouteFlags } from '../src/bot-runtime/route-flags.js';
 import { deriveTelegramWebhookSecret } from '../src/bot-runtime/webhook-secret.js';
 
-test('direct settings rejects invalid owners/values before DB access, retaining queued open',async()=>{
+test('direct settings rejects invalid owners/values before DB access',async()=>{
   const calls:string[]=[];
   const handle=createDirectSettingsHandler({pool:{connect:()=>{throw new Error('must not access DB')}} as unknown as Pool,
     getBotLocale:()=>({}),telegramClient:{callTelegramApi:async(_b,m)=>{calls.push(m);}}});
@@ -21,7 +21,6 @@ test('direct settings rejects invalid owners/values before DB access, retaining 
     assert.equal(await handle('uk-en',normalizeTelegramUpdate(raw)),true);
   }
   assert.deepEqual(calls,Array(5).fill('answerCallbackQuery'));
-  assert.equal(await handle('uk-en',normalizeTelegramUpdate(callbackUpdate({data:'settings:r:open'}))),false);
   assert.equal(await handle('uk-en',normalizeTelegramUpdate(callbackUpdate({data:'reply:text'}))),false);
 });
 
@@ -31,6 +30,7 @@ test('Postgres: direct settings atomically persist, survive edit failures, seria
   const {default:pg}=await import('pg');
   const pool=new pg.Pool({connectionString:process.env.BOT_RUNTIME_TEST_DATABASE_URL,application_name:'direct-settings-test'});
   const chatId=9900091,botKey='uk-en';let id=9850000,fail=false,releaseEdit:(()=>void)|undefined;
+  let editGate:Promise<void>|undefined,editStarted:(()=>void)|undefined;
   const calls:Array<{method:string;body:Record<string,unknown>}>=[];const ids:string[]=[];
   const catalog=[{topic_id:'direct-test-topic',title_base:'Test topic',access_tier:'all',starter_questions_by_level_target:{a1:['A1?'],b2:['B2?']}},
     {topic_id:'pro-test-topic',title_base:'Pro',access_tier:'pro'}];
@@ -44,7 +44,7 @@ test('Postgres: direct settings atomically persist, survive edit failures, seria
       if(method==='editMessageText'){
         assert.equal((await pool.query("SELECT count(*)::int AS n FROM pg_stat_activity WHERE application_name='direct-settings-test' AND state='idle in transaction'")).rows[0].n,0);
         if(fail){fail=false;throw new Error('timeout');}
-        if(releaseEdit)await new Promise<void>(resolve=>{releaseEdit=resolve;});
+        if(editGate){editStarted?.();await editGate;}
       }
       return {};
     }}});
@@ -63,10 +63,12 @@ test('Postgres: direct settings atomically persist, survive edit failures, seria
     assert.equal((await pool.query("SELECT count(*)::int AS n FROM bot_update_effects WHERE decision_id=$1",[`v1:${botKey}:${failed.updateId}`])).rows[0].n,1);
 
     // Two overlapping taps remain FIFO, including the network edit.
-    releaseEdit=()=>{};const a=handle(botKey,make('settings:r:level:a2'));
-    while((await state()).level!=='a2')await new Promise(r=>setTimeout(r,5));
+    const reachedEdit=new Promise<void>(resolve=>{editStarted=resolve;});
+    editGate=new Promise<void>(resolve=>{releaseEdit=resolve;});
+    const a=handle(botKey,make('settings:r:level:a2'));
+    await reachedEdit;
     const b=handle(botKey,make('settings:r:level:b2'));
-    const release=releaseEdit;releaseEdit=undefined;release();await Promise.all([a,b]);
+    const release=releaseEdit!;editGate=undefined;editStarted=undefined;releaseEdit=undefined;release();await Promise.all([a,b]);
     assert.equal((await state()).level,'b2');
     await handle(botKey,make('settings:r:reply:text'));assert.equal((await state()).reply_mode,'text');
     const denied=make('settings:r:topic:'+topicToken('pro-test-topic'));
