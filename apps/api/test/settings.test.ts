@@ -131,12 +131,12 @@ test('Postgres: real settings effects, topic snapshots and delivery records surv
 }, async()=>{
   const {default:pg}=await import('pg');
   const {claimBotUpdateExecution}=await import('../src/bot-runtime/execution-repository.js');
-  const pool=new pg.Pool({connectionString:process.env.BOT_RUNTIME_TEST_DATABASE_URL});
+  const pool=new pg.Pool({connectionString:process.env.BOT_RUNTIME_TEST_DATABASE_URL,application_name:'settings-card-test'});
   const chatId=9900088,botKey='uk-en';let id=9800000;const decisions:string[]=[];const sent:string[]=[];
   let failEdit=false;
   const helpers={fetchEffectiveTierForChat:async()=> 'free',fetchTopicCatalogRows:async()=> (await pool.query('SELECT * FROM bot_topic_catalog WHERE bot_key=$1 AND topic_id=$2',[botKey,'settings-test-topic'])).rows} as unknown as Parameters<typeof createSettingsHandlers>[0]['helpers'];
   const handlers=createSettingsHandlers({pool,getBotLocale:()=>({}),helpers,telegramClient:{sendTelegramTextMessage:async()=>({message_id:90}),answerTelegramCallbackQuery:async()=>{},callTelegramApi:async(_key,method)=>{
-    const tx=await pool.query("SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=current_database() AND state='idle in transaction'");assert.equal(tx.rows[0].n,0);
+    const tx=await pool.query("SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=current_database() AND application_name='settings-card-test' AND state='idle in transaction'");assert.equal(tx.rows[0].n,0);
     sent.push(method);if(failEdit&&method.startsWith('edit')){failEdit=false;throw new Error('timeout')};return {message_id:90};
   }}});
   const make=async(data:string,widget=false)=>{

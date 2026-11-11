@@ -78,6 +78,10 @@ function createBoss({ enableScheduling }) {
   const boss = new PgBoss({
     connectionString: env.databaseUrl,
     ssl,
+    // pg-boss forwards these options to its own pg.Pool. Retain a producer
+    // connection so the first enqueue after a pause does not reconnect.
+    min: 1,
+    idleTimeoutMillis: 60000,
     supervise: enableScheduling,
     schedule: enableScheduling
   });
