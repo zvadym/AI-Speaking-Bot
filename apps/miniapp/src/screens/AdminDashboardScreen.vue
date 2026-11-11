@@ -510,7 +510,7 @@
 
         <AdminChart
           title="New paid users by day (first time)"
-          subtitle="First-time plus/pro activations split by first associated bot"
+          subtitle="First-time paid activations split by first associated bot"
           kind="bar"
           x-labels="all"
           :data="newPaidSeries"

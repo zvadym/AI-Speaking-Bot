@@ -48,7 +48,7 @@ test('broadcast helpers normalize filters and validate reply markup', () => {
   });
 
   assert.equal(filters.username, 'alice');
-  assert.deepEqual(filters.plans, ['free', 'pro']);
+  assert.equal(filters.plans, null);
   assert.deepEqual(filters.bots, ['uk-de', 'uk-en']);
   assert.equal(filters.lastActivityMode, 'inactive_for');
   assert.equal(filters.lastActivityDays, 9);
@@ -68,6 +68,12 @@ test('broadcast helpers normalize filters and validate reply markup', () => {
   });
   assert.equal(badMarkup.ok, false);
   assert.equal(badMarkup.error, 'inline_keyboard_bad_url_scheme');
+});
+
+test('unsupported broadcast plan filters do not expand the audience', () => {
+  assert.deepEqual(normalizeBroadcastFilters({ plans: ['plus'] }).plans, []);
+  assert.deepEqual(normalizeBroadcastFilters({ plans: ['pro'] }).plans, ['pro']);
+  assert.equal(normalizeBroadcastFilters({ plans: ['free', 'pro'] }).plans, null);
 });
 
 test('shared normalization and telegram sanitizing stay stable', () => {

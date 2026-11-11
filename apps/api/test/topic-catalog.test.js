@@ -164,7 +164,7 @@ test('topic mode derivation matches runtime defaults', () => {
 test('effective topic tier normalization maps non-free paid plans to pro', () => {
   assert.equal(normalizeEffectiveTopicAccessTier('free'), 'free');
   assert.equal(normalizeEffectiveTopicAccessTier('pro'), 'pro');
-  assert.equal(normalizeEffectiveTopicAccessTier('plus'), 'pro');
+  assert.equal(normalizeEffectiveTopicAccessTier('legacy-paid'), 'pro');
   assert.equal(normalizeEffectiveTopicAccessTier('trialing'), 'pro');
   assert.equal(normalizeEffectiveTopicAccessTier(''), 'pro');
 });

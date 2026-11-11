@@ -1118,88 +1118,6 @@
                     },
                     {
                       "type": "frame",
-                      "id": "HM5093",
-                      "name": "TierPlus",
-                      "width": "fill_container",
-                      "fill": "#FFFFFF",
-                      "cornerRadius": 24,
-                      "stroke": {
-                        "fill": "#E4E4E7",
-                        "thickness": 1
-                      },
-                      "layout": "vertical",
-                      "gap": 12,
-                      "padding": 24,
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "HM5087",
-                          "name": "TierPlusTitle",
-                          "fill": "#000000",
-                          "content": "Plus",
-                          "fontFamily": "Outfit",
-                          "fontSize": 24,
-                          "fontWeight": "900"
-                        },
-                        {
-                          "type": "text",
-                          "id": "HM5088",
-                          "name": "TierPlusDesc",
-                          "fill": "#71717A",
-                          "content": "A steady practice rhythm.",
-                          "fontFamily": "Inter",
-                          "fontSize": 14,
-                          "fontWeight": "normal",
-                          "lineHeight": 1.5
-                        },
-                        {
-                          "type": "text",
-                          "id": "HM5089",
-                          "name": "TierPlusPrice",
-                          "fill": "#000000",
-                          "content": "EUR 5 / month",
-                          "fontFamily": "Outfit",
-                          "fontSize": 34,
-                          "fontWeight": "900"
-                        },
-                        {
-                          "type": "text",
-                          "id": "HM5090",
-                          "name": "TierPlusFeatures",
-                          "fill": "#71717A",
-                          "content": "Limited practice time/month\nVoice or text\nCorrections and better phrasing",
-                          "fontFamily": "Inter",
-                          "fontSize": 14,
-                          "fontWeight": "normal",
-                          "lineHeight": 1.6
-                        },
-                        {
-                          "type": "frame",
-                          "id": "HM5092",
-                          "name": "TierPlusBtn",
-                          "fill": "#000000",
-                          "cornerRadius": 16,
-                          "padding": [
-                            12,
-                            16
-                          ],
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "HM5091",
-                              "name": "TierPlusBtnText",
-                              "fill": "#FFFFFF",
-                              "content": "Browse teachers",
-                              "fontFamily": "Inter",
-                              "fontSize": 14,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
                       "id": "HM5100",
                       "name": "TierPro",
                       "width": "fill_container",
@@ -1249,7 +1167,7 @@
                           "id": "HM5097",
                           "name": "TierProFeatures",
                           "fill": "#71717A",
-                          "content": "10x more practice time than Plus\nVoice or text\nMore reps, faster habit",
+                          "content": "120 minutes of practice per month\nVoice or text\nMore reps, faster habit",
                           "fontFamily": "Inter",
                           "fontSize": 14,
                           "fontWeight": "normal",

@@ -479,7 +479,7 @@ export function createBillingRouter(ctx, helpers) {
     }
 
     const currentTier = await helpers.resolveTierByPrice(currentPriceId);
-    const tierRank = { free: 0, plus: 1, pro: 2 };
+    const tierRank = { free: 0, pro: 1 };
     if (currentTier && (tierRank[targetTier] ?? 0) <= (tierRank[currentTier] ?? 0)) {
       return res.status(400).json({ error: 'not_an_upgrade', current_tier: currentTier });
     }
@@ -575,7 +575,7 @@ export function createBillingRouter(ctx, helpers) {
     }
 
     const currentTier = await helpers.resolveTierByPrice(currentPriceId);
-    const tierRank = { free: 0, plus: 1, pro: 2 };
+    const tierRank = { free: 0, pro: 1 };
     if (currentTier && (tierRank[targetTier] ?? 0) <= (tierRank[currentTier] ?? 0)) {
       return res.status(400).json({ error: 'not_an_upgrade', current_tier: currentTier });
     }

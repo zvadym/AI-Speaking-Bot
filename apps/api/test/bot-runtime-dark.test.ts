@@ -140,7 +140,6 @@ const statsLocale = {
   stats_title: '<b>Stats</b>',
   stats_plan_prefix: 'Plan: ',
   tier_pro: 'PRO',
-  tier_plus: 'PLUS',
   tier_free: 'FREE',
   plan_valid_until_prefix: 'Valid until: ',
   stats_week_title: '<b>This month</b>',

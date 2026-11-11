@@ -1,6 +1,6 @@
 import { clampInteger, clampNumber, normalizeBotKey, parseChatIdList } from './normalization.js';
 
-export const BROADCAST_ALLOWED_TIERS = new Set(['free', 'plus', 'pro']);
+export const BROADCAST_ALLOWED_TIERS = new Set(['free', 'pro']);
 export const BROADCAST_LAST_ACTIVITY_MODES = new Set(['active_within', 'inactive_for', 'never_active']);
 export const BROADCAST_USAGE_MODES = new Set(['reached', 'percent_gte']);
 export const BROADCAST_STREAK_MODES = new Set(['gte', 'zero']);

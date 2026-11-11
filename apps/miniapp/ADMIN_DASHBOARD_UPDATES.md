@@ -170,7 +170,7 @@ Colors can be customized in the `transformByBotData()` function.
 ```
 ┌─────────────────────────┐
 │ Total Users: 1250       │
-│ Plus: 210  Pro: 60      │
+│ Pro: 60                 │
 └─────────────────────────┘
 │ Active users by day     │ ← Single bar per day
 ```
@@ -179,7 +179,7 @@ Colors can be customized in the `transformByBotData()` function.
 ```
 ┌─────────────────────────┐
 │ Total Users: 2093       │
-│ Plus: 340  Pro: 98      │
+│ Pro: 98                 │
 └─────────────────────────┘
 ┌─────────────────────────┐
 │ BOT STATISTICS          │

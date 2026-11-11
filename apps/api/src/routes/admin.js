@@ -187,12 +187,10 @@ export function createAdminRouter(ctx, helpers) {
          COUNT(*)::int AS total_users_all_time,
          SUM((is_active)::int)::int AS active_users_all_time,
          SUM((NOT is_active)::int)::int AS inactive_users_all_time,
-         SUM((effective_tier = 'plus')::int)::int AS plus_users_all_time,
          SUM((effective_tier = 'pro')::int)::int AS pro_users_all_time,
          COUNT(*) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS total_users_in_range,
          SUM((is_active)::int) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS active_users_in_range,
          SUM((NOT is_active)::int) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS inactive_users_in_range,
-         SUM((effective_tier = 'plus')::int) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS plus_users_in_range,
          SUM((effective_tier = 'pro')::int) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz)::int AS pro_users_in_range
        FROM filtered`,
       [range.payload, excludeChatIds, range.from.toISOString(), range.to.toISOString()]
@@ -207,12 +205,10 @@ export function createAdminRouter(ctx, helpers) {
         total_users_all_time: 0,
         active_users_all_time: 0,
         inactive_users_all_time: 0,
-        plus_users_all_time: 0,
         pro_users_all_time: 0,
         total_users_in_range: 0,
         active_users_in_range: 0,
         inactive_users_in_range: 0,
-        plus_users_in_range: 0,
         pro_users_in_range: 0
       }
     });
@@ -362,7 +358,8 @@ export function createAdminRouter(ctx, helpers) {
          WHERE u.plan_started_at IS NOT NULL
            AND u.plan_started_at >= (SELECT from_ts FROM params)
            AND u.plan_started_at < (SELECT to_ts FROM params)
-           AND u.plan_started_tier IN ('plus', 'pro')
+           AND u.plan_started_tier IS NOT NULL
+           AND u.plan_started_tier <> 'free'
        ),
        first_bot AS (
          SELECT

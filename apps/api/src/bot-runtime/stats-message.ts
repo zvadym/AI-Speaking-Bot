@@ -53,17 +53,11 @@ export function buildStatsMessage({
   const locale = localeRaw && typeof localeRaw === 'object' && !Array.isArray(localeRaw)
     ? localeRaw as Locale
     : {};
-  const isPaid = context.tier === 'pro' || context.tier === 'plus';
-  const tier = context.tier === 'plus'
-    ? localeText(locale, 'tier_plus', 'PLUS ⭐')
-    : context.tier === 'pro'
-      ? localeText(locale, 'tier_pro', 'PRO 🚀')
-      : localeText(locale, 'tier_free', 'FREE');
-  const pendingTier = context.pendingPlanTier === 'plus'
-    ? 'PLUS'
-    : context.pendingPlanTier === 'pro'
-      ? 'PRO'
-      : 'FREE';
+  const isPaid = context.tier === 'pro';
+  const tier = isPaid
+    ? localeText(locale, 'tier_pro', 'PRO 🚀')
+    : localeText(locale, 'tier_free', 'FREE');
+  const pendingTier = context.pendingPlanTier === 'pro' ? 'PRO' : 'FREE';
   const pending = context.pendingPlanTier
     ? `${localeText(locale, 'pending_change_prefix', 'change to ')}${pendingTier}${localeText(locale, 'pending_change_suffix', ' at period end')}`
     : '—';

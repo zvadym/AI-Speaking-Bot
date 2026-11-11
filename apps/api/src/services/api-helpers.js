@@ -36,7 +36,7 @@ import { enqueueDiscordEventNotificationJob } from '../jobs.js';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MINIAPP_FEEDBACK_MESSAGE_MAX_LEN = 1000;
 const ACTIVE_STRIPE_BILLING_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid']);
-const BROADCAST_ALLOWED_TIERS = new Set(['free', 'plus', 'pro']);
+const BROADCAST_ALLOWED_TIERS = new Set(['free', 'pro']);
 const BROADCAST_LAST_ACTIVITY_MODES = new Set(['active_within', 'inactive_for', 'never_active']);
 const BROADCAST_USAGE_MODES = new Set(['reached', 'percent_gte']);
 const BROADCAST_STREAK_MODES = new Set(['gte', 'zero']);
@@ -2215,11 +2215,11 @@ export function createApiHelpers(ctx) {
         `UPDATE users
             SET plan_tier = $1,
                 plan_started_at = CASE
-                  WHEN plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2::timestamptz IS NOT NULL THEN $2::timestamptz
+                  WHEN plan_started_at IS NULL AND $1 = 'pro' AND $2::timestamptz IS NOT NULL THEN $2::timestamptz
                   ELSE plan_started_at
                 END,
                 plan_started_tier = CASE
-                  WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2::timestamptz IS NOT NULL THEN $1
+                  WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 = 'pro' AND $2::timestamptz IS NOT NULL THEN $1
                   ELSE plan_started_tier
                 END,
                 plan_expires_at = COALESCE($3::timestamptz, plan_expires_at),
@@ -2264,11 +2264,11 @@ export function createApiHelpers(ctx) {
             `UPDATE users
                 SET plan_tier = $1,
                     plan_started_at = CASE
-                      WHEN plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2::timestamptz IS NOT NULL THEN $2::timestamptz
+                      WHEN plan_started_at IS NULL AND $1 = 'pro' AND $2::timestamptz IS NOT NULL THEN $2::timestamptz
                       ELSE plan_started_at
                     END,
                     plan_started_tier = CASE
-                      WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 IN ('plus', 'pro') AND $2::timestamptz IS NOT NULL THEN $1
+                      WHEN plan_started_tier IS NULL AND plan_started_at IS NULL AND $1 = 'pro' AND $2::timestamptz IS NOT NULL THEN $1
                       ELSE plan_started_tier
                     END,
                     plan_expires_at = COALESCE($3::timestamptz, plan_expires_at),
@@ -2315,7 +2315,7 @@ export function createApiHelpers(ctx) {
         });
       }
 
-      const firstPaidTier = nextPlanTier === 'plus' || nextPlanTier === 'pro';
+      const firstPaidTier = nextPlanTier === 'pro';
       if (updatedChatId && firstPaidTier && !prevPlanStartedAt) {
         const notificationBotKey = await resolveUserBotKey(updatedChatId);
         await queueDiscordEventNotification(
