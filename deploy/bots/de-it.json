@@ -220,13 +220,9 @@
       "free": "Freies Gespräch",
       "done": "Fertig",
       "back": "Zurück",
-      "card": "Karte",
-      "widget": "Widget",
-      "choose": "Ansicht auswählen",
       "saved": "Änderungen gespeichert",
-      "pending": "Speichern…",
-      "error": "Speichern fehlgeschlagen. Aktualisieren und erneut versuchen.",
-      "refresh": "Aktualisieren"
+      "error": "Speichern fehlgeschlagen. Bitte versuche es erneut.",
+      "autosave": "Änderungen werden automatisch gespeichert"
     }
   },
   "telegram_presentation": {

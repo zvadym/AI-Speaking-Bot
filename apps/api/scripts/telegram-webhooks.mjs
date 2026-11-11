@@ -41,7 +41,7 @@ for (const bot of bots) {
         botToken: tokens[bot.bot_key],
         signingSecret
       }),
-      allowed_updates: ['message', 'callback_query', 'widget_query'],
+      allowed_updates: ['message', 'callback_query'],
       drop_pending_updates: false,
       max_connections: 20
     });

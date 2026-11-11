@@ -37,11 +37,6 @@ export function settingsView(row: KeyboardStateRow, catalog: Record<string, unkn
     screen: action.kind === 'page' ? 'topics' : action.kind === 'close' ? 'closed' : 'home'
   };
 }
-export function encodeSettingsView(view: SettingsView): string {
-  const json = JSON.stringify(view);
-  if (Buffer.byteLength(json) > 1024) throw new Error('settings_state_too_large');
-  return json;
-}
 export async function accessibleSettingsCatalog(helpers: TopicMenuHelpers, chatId: number, botKey: string) {
   const tier = await helpers.fetchEffectiveTierForChat(chatId);
   return (await helpers.fetchTopicCatalogRows(botKey,{ userTier: tier }))

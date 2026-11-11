@@ -5,8 +5,8 @@ import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler, type BotHandlerOutcome } from '../handler-registry.js';
 import { buildPersistentReplyMarkup } from '../keyboard-state.js';
 import { deliverTelegramText, classifyTelegramDeliveryError } from '../telegram-text-delivery.js';
-import { accessibleSettingsCatalog, applySettingsAction, encodeSettingsView, parseSettingsAction, SettingsInputError, settingsView, type SettingsAction } from '../settings-model.js';
-import { renderSettingsRich, renderSettingsWidget, settingsLabels } from '../settings-views.js';
+import { accessibleSettingsCatalog, applySettingsAction, parseSettingsAction, SettingsInputError, settingsView, type SettingsAction } from '../settings-model.js';
+import { renderSettingsRich, settingsLabels } from '../settings-views.js';
 import type { TopicMenuHelpers, TopicTelegramClient } from './topic-menu.js';
 
 // A session lock serializes settings cards for the same learner/bot, including
@@ -42,25 +42,24 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient, hel
     }
     const l = settingsLabels(getBotLocale(update.botKey));
     const api = (method: string, body: Record<string,unknown>) => telegramClient.callTelegramApi(update.botKey,method,body);
-    const answer = async (data?: string, error = false) => {
+    const answer = async (error = false) => {
       if (!cb) return;
       try {
-        if(widget) await api('answerWidgetQuery',{widget_query_id:cb.id,data:data || JSON.stringify({error:true})});
+        if(widget) await api('answerWidgetQuery',{widget_query_id:cb.id,data:JSON.stringify({error:true})});
         else await telegramClient.answerTelegramCallbackQuery(cb.id,error?l.error:undefined,{botKey:update.botKey,showAlert:error});
       } catch { /* Query IDs expire; persisted state and message edits are durable. */ }
     };
-    if (update.route === 'command.settings') {
-      await textDeliverer({pool,update,telegramClient,stepKey:'settings:keyboard:v1',text:'⚙️ '+l.title,replyMarkup:buildPersistentReplyMarkup(update.context.keyboard)});
-      return textDeliverer({pool,update,telegramClient,stepKey:'settings:chooser:v1',text:l.choose,replyMarkup:{inline_keyboard:[[
-        {text:l.card,callback_data:'settings:r:open'}, {text:l.widget,callback_data:'settings:w:open'}
-      ]]}});
-    }
+    // Retired widgets may still have queued queries. Never apply their mutations.
+    if (widget) { await answer(true); return {status:'noop'}; }
     let action: SettingsAction;
     try {
-      action = parseSettingsAction(cb?.data || '');
-      if (widget && (action.variant !== 'w' || action.kind === 'open')) throw new SettingsInputError('invalid');
-      if (!widget && action.variant === 'w' && action.kind !== 'open') throw new SettingsInputError('invalid');
-    } catch { await answer(undefined,true);return {status:'noop'}; }
+      action = update.route === 'command.settings'
+        ? {variant:'r',kind:'open',value:''}
+        : parseSettingsAction(cb?.data || '');
+      // Buttons in previously sent choosers now open the remaining card.
+      if (action.variant === 'w' && action.kind !== 'open') throw new SettingsInputError('invalid');
+      action.variant = 'r';
+    } catch { await answer(true);return {status:'noop'}; }
     return lock(pool, `settings:${update.botKey}:${chatId}`, async () => {
       try {
         const catalog = await accessibleSettingsCatalog(helpers,chatId,update.botKey);
@@ -74,24 +73,21 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient, hel
         const row = await stateLoader(pool,chatId,update.botKey);
         const view = settingsView(row,catalog,action,l.free);
         if(inputError) view.e='unavailable';
-        const data = encodeSettingsView(view);
         if (action.kind === 'open') {
-          const method = action.variant === 'r' ? 'sendRichMessage' : 'sendWidget';
-          const body = action.variant === 'r'
-            ? {rich_message:renderSettingsRich(view,l)}
-            : {html:renderSettingsWidget(l),chat_data:data,allow_queries:true,caption:l.title,reply_markup:{inline_keyboard:[[{text:l.card,callback_data:'settings:r:open'}]]}};
-          const outcome = await textDeliverer({pool,update,stepKey:'settings:open:'+action.variant+':v1',text:l.title,telegramMethod:method,
-            telegramClient:{sendTelegramTextMessage:async()=>api(method,{chat_id:chatId,...body}) as Promise<{message_id?:unknown}>}});
+          const outcome = await textDeliverer({pool,update,stepKey:'settings:open:r:v1',text:l.title,telegramMethod:'sendRichMessage',
+            telegramClient:{sendTelegramTextMessage:async()=>api('sendRichMessage',{
+              chat_id:chatId,rich_message:renderSettingsRich(view,l),
+              reply_markup:buildPersistentReplyMarkup(update.context.keyboard)
+            }) as Promise<{message_id?:unknown}>}});
           await answer();return outcome;
         }
         try {
-          if(widget) await api('editMessageWidgetData',{chat_id:chatId,message_id:cb!.messageId,chat_data:data});
-          else await api('editMessageText',{chat_id:chatId,message_id:cb!.messageId,rich_message:renderSettingsRich(view,l)});
+          await api('editMessageText',{chat_id:chatId,message_id:cb!.messageId,rich_message:renderSettingsRich(view,l)});
         } catch(error) { if(!String((error as Error).message).includes('message is not modified')) throw error; }
-        await answer(data,inputError);
+        await answer(inputError);
         return {status:'delivered',telegramMessageId:cb!.messageId};
       } catch(error) {
-        await answer(undefined,true);
+        await answer(true);
         if(error instanceof BotRuntimeHandlerError) throw error;
         const failure = classifyTelegramDeliveryError(error);
         // Editing an existing message is safe to retry, including ambiguous HTTP failures.

@@ -113,8 +113,9 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - The API validates the per-bot webhook secret, persists ingestion state, and enqueues a pg-boss job.
 - `apps/api/src/bot-runtime` owns route preparation, typed handlers, AI calls, durable effects, and Telegram delivery.
 - Settings UI uses `settings-model.ts`, `settings-views.ts`, and `handlers/settings.ts`;
-  rich-card callbacks and private `widget_query` updates share validated mutations.
-  Keep `widget_query` in webhook `allowed_updates` when deploying these handlers.
+  `/settings` and the reply button open a rich card directly. Changes save immediately;
+  Done collapses the card. Retired widget queries are acknowledged without mutations
+  for queued-update compatibility; do not subscribe to `widget_query` in webhooks.
 - Settings UI labels live in `deploy/bots/*.json` under `locale.settings`.
 - `apps/api/src/bot-runtime/pipeline.ts` is the universal middleware runner;
   cross-cutting behavior wraps complete handlers or explicit named stages.

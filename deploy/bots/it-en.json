@@ -220,13 +220,9 @@
       "free": "Conversazione libera",
       "done": "Fatto",
       "back": "Indietro",
-      "card": "Scheda",
-      "widget": "Widget",
-      "choose": "Scegli la vista",
       "saved": "Modifiche salvate",
-      "pending": "Salvataggio…",
-      "error": "Salvataggio non riuscito. Aggiorna e riprova.",
-      "refresh": "Aggiorna"
+      "error": "Salvataggio non riuscito. Riprova.",
+      "autosave": "Le modifiche vengono salvate automaticamente"
     }
   },
   "telegram_presentation": {

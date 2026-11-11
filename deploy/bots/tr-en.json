@@ -220,13 +220,9 @@
       "free": "Serbest sohbet",
       "done": "Bitti",
       "back": "Geri",
-      "card": "Kart",
-      "widget": "Widget",
-      "choose": "Ayar görünümünü seç",
       "saved": "Değişiklikler kaydedildi",
-      "pending": "Kaydediliyor…",
-      "error": "Kaydedilemedi. Yenileyip tekrar dene.",
-      "refresh": "Yenile"
+      "error": "Kaydedilemedi. Lütfen tekrar dene.",
+      "autosave": "Değişiklikler otomatik kaydedilir"
     }
   },
   "telegram_presentation": {

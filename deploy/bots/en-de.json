@@ -220,13 +220,9 @@
       "free": "Free conversation",
       "done": "Done",
       "back": "Back",
-      "card": "Card",
-      "widget": "Widget",
-      "choose": "Choose a settings view",
       "saved": "Changes saved",
-      "pending": "Saving…",
-      "error": "Could not save. Refresh and try again.",
-      "refresh": "Refresh"
+      "error": "Could not save. Please try again.",
+      "autosave": "Changes are saved automatically"
     }
   },
   "telegram_presentation": {
