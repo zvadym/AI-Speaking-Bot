@@ -11,7 +11,9 @@ import {
   deriveTelegramWebhookSecret,
   verifyTelegramWebhookSecret
 } from '../bot-runtime/webhook-secret.js';
-import type { BotRuntimeRouteFlags } from '../bot-runtime/route-flags.js';
+import { isBotRuntimeRouteEnabled, type BotRuntimeRouteFlags } from '../bot-runtime/route-flags.js';
+import { createDirectSettingsHandler } from '../bot-runtime/direct-settings.js';
+import type { TopicMenuHelpers } from '../bot-runtime/handlers/topic-menu.js';
 import { startImmediateTelegramAck } from '../bot-runtime/immediate-telegram-ack.js';
 
 interface TelegramWebhookContext {
@@ -39,8 +41,9 @@ interface TelegramWebhookContext {
   getBotLocale(botKey: string): unknown;
 }
 
-export function createTelegramWebhookRouter(ctx: TelegramWebhookContext) {
+export function createTelegramWebhookRouter(ctx: TelegramWebhookContext, helpers?: TopicMenuHelpers) {
   const router = express.Router();
+  const handleSettings = createDirectSettingsHandler({...ctx,helpers});
 
   router.post('/telegram/webhook/:botKey', async (req, res) => {
     const receivedAtMs = performance.now();
@@ -67,6 +70,10 @@ export function createTelegramWebhookRouter(ctx: TelegramWebhookContext) {
     try {
       const input = normalizeTelegramUpdate(req.body);
       updateId = input.updateId;
+      if (isBotRuntimeRouteEnabled(ctx.env.botRuntimeRouteFlags, botKey, 'callback.settings') &&
+          await handleSettings(botKey,input)) {
+        return res.status(200).json({ok:true});
+      }
       startImmediateTelegramAck({
         telegramClient: ctx.telegramClient,
         enabledBotKeys: ctx.env.botImmediateAckEnabledBotKeys,

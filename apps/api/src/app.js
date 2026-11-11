@@ -36,7 +36,7 @@ export async function createApp({ apiBoss = undefined, configureApp = undefined 
   app.use(morgan('tiny'));
   app.use('/stripe/webhook', express.raw({ type: 'application/json' }), createStripeWebhookRouter(ctx, helpers));
   app.use(express.json());
-  app.use(createTelegramWebhookRouter(ctx));
+  app.use(createTelegramWebhookRouter(ctx, helpers));
   app.use(createPublicRouter(ctx, helpers));
   app.use(createInternalRouter(ctx, helpers));
   app.use(createAuthRouter(ctx, helpers));

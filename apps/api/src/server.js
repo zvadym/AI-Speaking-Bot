@@ -2,10 +2,14 @@ import './instrument-api.js';
 import { env } from './env.js';
 import { createApp, shutdown } from './app.js';
 import { captureException, flushSentry } from './sentry.js';
+import { pool } from './db.js';
 
 let app;
 try {
   app = await createApp();
+  // Open the lock and mutation connections before accepting interactive taps.
+  // The pool retains these two clients between requests.
+  await Promise.all([pool.query('SELECT 1'), pool.query('SELECT 1')]);
 } catch (error) {
   console.error('API startup failed', error);
   captureException(error, { tags: { phase: 'startup' } });
