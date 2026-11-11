@@ -157,6 +157,76 @@ test('voice transcript is committed and delivered while the tutor is still pendi
   assert.equal(h.events.at(-1), 'message.voice:reply:v1');
 });
 
+for (const duration of [1, 40, 41, 90]) {
+  test(`voice duration ${duration}s is accepted with a length tip only above 40s`, async () => {
+    const h = harness();
+    h.update.input.message.voiceDuration = duration;
+    await createVoiceConversationHandler(h.dependencies).execute(h.update);
+    assert.ok(h.events.includes('transcribe'));
+    assert.ok(h.events.includes('respond'));
+    const tip = h.events.indexOf('message.voice:length-tip:v1');
+    assert.equal(tip >= 0, duration > 40);
+    if (duration > 40) assert.ok(tip < h.events.indexOf('download'));
+  });
+}
+
+for (const duration of [0, 91]) {
+  test(`voice duration ${duration}s is rejected before quota, advice, or AI`, async () => {
+    const h = harness();
+    h.update.input.message.voiceDuration = duration;
+    let quotaCalls = 0;
+    await createVoiceConversationHandler({
+      ...h.dependencies,
+      quotaGuard: async () => {
+        quotaCalls++;
+        return { allowed: true, context: {} as EntitlementContext };
+      }
+    }).execute(h.update);
+    assert.deepEqual(h.events, [duration === 0 ? 'message.voice:too-short:v1' : 'message.voice:too-long:v1']);
+    assert.equal(quotaCalls, 0);
+  });
+}
+
+test('long voice advice uses the localized text and is not repeated after generation retry', async () => {
+  let attempts = 0;
+  const h = harness({ respond: async () => {
+    if (++attempts === 1) throw new Error('temporary AI failure');
+    return response;
+  } });
+  h.update.input.message.voiceDuration = 90;
+  const deliveredTexts: string[] = [];
+  const handler = createVoiceConversationHandler({
+    ...h.dependencies,
+    getBotLocale: () => ({ msg_voice_length_tip: 'Спробуй 30–45 секунд.' }),
+    textDeliverer: async (input) => {
+      const result = await h.dependencies.textDeliverer(input);
+      if (result.status === 'delivered') deliveredTexts.push(input.text);
+      return result;
+    }
+  });
+  await assert.rejects(handler.execute(h.update), /voice_conversation_failed/);
+  await handler.execute(h.update);
+  assert.equal(deliveredTexts.filter((text) => text === 'Спробуй 30–45 секунд.').length, 1);
+  assert.equal(h.events.filter((event) => event === 'message.voice:length-tip:v1').length, 1);
+  assert.equal(h.events.filter((event) => event === 'transcribe').length, 1);
+  assert.equal(h.events.filter((event) => event === 'usage').length, 1);
+});
+
+test('exhausted practice quota blocks a long voice before advice or transcription', async () => {
+  const h = harness();
+  h.update.input.message.voiceDuration = 90;
+  const result = await createVoiceConversationHandler({
+    ...h.dependencies,
+    quotaGuard: async () => ({
+      allowed: false,
+      context: {} as EntitlementContext,
+      outcome: { status: 'delivered', telegramMessageId: 999 }
+    })
+  }).execute(h.update);
+  assert.equal(result.telegramMessageId, 999);
+  assert.deepEqual(h.events, []);
+});
+
 test('generation retry reuses transcription, avoids duplicate transcript, and accounts usage once', async () => {
   let attempts = 0;
   const h = harness({ respond: async () => {

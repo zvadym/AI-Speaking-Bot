@@ -98,13 +98,13 @@ export function createVoiceConversationHandler({
           text: localeText(locale, 'msg_too_short', 'The voice message is too short.')
         });
       }
-      if (duration > 25) {
+      if (duration > 90) {
         return textDeliverer({
           pool,
           update,
           telegramClient,
           stepKey: 'message.voice:too-long:v1',
-          text: localeText(locale, 'msg_too_long', 'Please keep voice messages under 25 seconds.')
+          text: localeText(locale, 'msg_too_long', 'Please send a voice message of up to 90 seconds.')
         });
       }
       const entryQuota = await quotaGuard({
@@ -115,6 +115,15 @@ export function createVoiceConversationHandler({
         webappUrl
       });
       if (!entryQuota.allowed) return entryQuota.outcome;
+      if (duration > 40) {
+        await textDeliverer({
+          pool,
+          update,
+          telegramClient,
+          stepKey: 'message.voice:length-tip:v1',
+          text: localeText(locale, 'msg_voice_length_tip', 'For more focused practice, try to keep each voice message to 30–45 seconds.')
+        });
+      }
       const onboarding = await prepareConversationOnboarding(pool, update, 'voice', locale);
 
       let result: VoiceConversationResult;
