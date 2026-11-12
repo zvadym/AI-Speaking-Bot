@@ -426,8 +426,8 @@ test('parseCommand distinguishes non-commands and malformed command text', () =>
 });
 
 test('removed commands and stored keyboard buttons are unknown; retired callbacks cannot select anything', () => {
-  for (const text of ['/topic', '/topics', '/topic@TeacherBot', '· 🧩 Coffee chat']) {
-    const prepared = buildPreparedUpdate({botKey:'uk-en', input:normalizeTelegramUpdate(messageUpdate({text})), keyboardState:{onboarding_complete_at:'2026-01-01'}});
+  for (const keyboardState of [{},{onboarding_complete_at:'2026-01-01'}]) for (const text of ['/topic', '/topics', '/topic@TeacherBot', '· 🧩 Coffee chat']) {
+    const prepared = buildPreparedUpdate({botKey:'uk-en', input:normalizeTelegramUpdate(messageUpdate({text})), keyboardState});
     assert.equal(prepared.route, 'command.unknown', text);
   }
   for (const data of ['topic:travel', 'topic:clear']) {

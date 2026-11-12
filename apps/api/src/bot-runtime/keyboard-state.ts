@@ -57,11 +57,12 @@ export function buildPersistentKeyboardState(
   // completion row. Recognize it just like the command, independently of that row.
   if (input.isPrivate && (normalizedMessage === norm(settingsButtonText) || normalizedMessage.startsWith(norm('· ⚙️')))) {
     buttonIntent = 'settings';
+  } else if (input.isPrivate && normalizedMessage.startsWith(norm('· 🧩'))) {
+    // Telegram can retain retired buttons on legacy profiles too.
+    buttonIntent = 'retired';
   } else if (enabled && normalizedMessage) {
     if (normalizedMessage === norm(levelButtonText) || normalizedMessage.startsWith(levelPrefixNorm)) {
       buttonIntent = 'level';
-    } else if (normalizedMessage.startsWith(norm('· 🧩'))) {
-      buttonIntent = 'retired';
     } else if (normalizedMessage === norm(voiceButtonText) || normalizedMessage.startsWith(voicePrefixNorm)) {
       buttonIntent = 'voice';
     } else if (normalizedMessage.startsWith(norm(`${BUTTON_MARKER} 📈`)) || normalizedMessage.startsWith(legacyXpPrefixNorm)) {
