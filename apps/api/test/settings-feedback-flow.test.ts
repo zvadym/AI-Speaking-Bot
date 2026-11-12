@@ -22,8 +22,8 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
    assert.equal(tx.rows[0].n,0,'network calls must not hold a DB transaction');
    calls.push({method,body});
    if(method==='deleteMessage'&&failDelete){failDelete=false;throw new Error('timeout');}
-   if(method==='editMessageText'&&failEdit){failEdit=false;throw new Error('timeout');}
-   return {message_id:++messageId};
+   if((method==='editMessageText'||method==='editMessageWidgetData')&&failEdit){failEdit=false;throw new Error('timeout');}
+   return {message_id:method==='sendWidget'?777:++messageId};
   },
   sendTelegramTextMessage:async(_chat:number,text:string,options:object)=>{calls.push({method:'sendMessage',body:{text,...options}});return {message_id:++messageId};}
  };
@@ -31,7 +31,7 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
  const ctx={pool,getBotLocale:()=>locale,publicBotMetaForKey:()=>({bot_key:botKey})};
  const direct=createDirectSettingsHandler({pool,telegramClient,getBotLocale:ctx.getBotLocale,webappUrl:'https://example.test'});
  const callback=(data:string)=>{
-  const raw=callbackUpdate({data,chatId,updateId:++id}) as Record<string,any>;raw.callback_query.from.id=chatId;raw.callback_query.message.message_id=777;
+  const raw={update_id:++id,widget_query:{id:'widget-'+id,from:{id:chatId,is_bot:false},chat:{id:chatId,type:'private'},message_id:777,type:{type:'data'},data:data.replace('settings:r:','settings:h:')}};
   ids.push(`v1:${botKey}:${id}`);return normalizeTelegramUpdate(raw);
  };
  const button=()=>{
@@ -56,13 +56,17 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
  try{
   await pool.query('INSERT INTO users(chat_id) VALUES($1)',[chatId]);
   await pool.query("INSERT INTO user_bots(chat_id,bot_key,level,reply_mode) VALUES($1,$2,'b1','voice')",[chatId,botKey]);
+  const unregistered=callback('settings:r:level:c1');await direct(botKey,unregistered);
+  assert.equal((await pool.query('SELECT level FROM user_bots WHERE chat_id=$1 AND bot_key=$2',[chatId,botKey])).rows[0].level,'b1');
+  assert.deepEqual(JSON.parse(String(calls.at(-1)!.body.data)),{error:true});
+  calls.length=0;
   await direct(botKey,button());
-  assert.equal(calls.filter(c=>c.method==='sendRichMessage').length,1);
-  const home=JSON.stringify(calls.at(-1)!.body.rich_message);
-  assert.ok(home.includes('settings:r:stats')&&home.includes('settings:r:feedback'));
+  assert.equal(calls.filter(c=>c.method==='sendWidget').length,1);
+  const home=String(calls.at(-1)!.body.html);
+  assert.ok(home.includes("L.stats,'stats'")&&home.includes("L.feedback,'feedback'"));
   await direct(botKey,callback('settings:r:stats'));
-  const stats=JSON.stringify(calls.at(-2)?.body.rich_message||calls.at(-1)!.body.rich_message);
-  assert.ok(stats.includes('settings:r:home'));assert.ok(stats.includes('/subscription?bot-key=uk-en'));
+  const stats=JSON.stringify(calls.filter(c=>c.method==='editMessageReplyMarkup').at(-1)!.body.reply_markup);
+  assert.equal(JSON.parse(calls.filter(c=>c.method==='editMessageWidgetData').at(-1)!.body.chat_data).screen,'stats');assert.ok(stats.includes('/subscription?bot-key=uk-en'));
   await direct(botKey,callback('settings:r:home'));
   const first=callback('settings:r:feedback');await direct(botKey,first);await direct(botKey,first);
   assert.equal(calls.filter(c=>c.method==='sendMessage'&&c.body.reply_markup?.force_reply).length,1);
@@ -97,7 +101,7 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM voice_usage_events WHERE chat_id=$1',[chatId])).rows[0].n,0);
 
   // A failed old Close cannot delete the Cancel UI of a newer request.
-  const close=callback('settings:r:close');failDelete=true;await assert.rejects(direct(botKey,close));
+  const close=callback('settings:r:close');close.updateType='callback_query';close.callbackQuery!.data='settings:r:close';failDelete=true;await assert.rejects(direct(botKey,close));
   await direct(botKey,callback('settings:r:feedback'));const protectedRequest=await active();
   const deletesBefore=calls.filter(c=>c.method==='deleteMessage').length;
   await direct(botKey,close);
@@ -116,8 +120,8 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
   assert.equal((await active()).session_id,newer.session_id);
   await pool.query("UPDATE bot_update_executions SET status='retryable_failed' WHERE decision_id=$1",[`v1:${botKey}:${olderFeedback.updateId}`]);
   await direct(botKey,olderFeedback);assert.equal((await active()).session_id,newer.session_id);
-  const edits=calls.filter(c=>c.method==='editMessageText');
-  assert.ok(JSON.stringify(edits.at(-1)!.body.rich_message).includes('settings:r:cancel'));
+  const edits=calls.filter(c=>c.method==='editMessageWidgetData');
+  assert.equal(JSON.parse(edits.at(-1)!.body.chat_data).screen,'feedback');
   assert.equal((await message('Old request',Number(oldPrompt.prompt_message_id))).route,'feedback.expired');
   const oldReply=await message('Old cancelled request',Number(oldPrompt.prompt_message_id));
   const restoredBefore=keyboardRestorations().length;
@@ -134,7 +138,11 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
   assert.equal(calls.at(-1)!.body.replyMarkup?.is_persistent,true,'expired notice restores the keyboard');
   assert.equal(await feedbackCount(),2);
   // Opening settings explicitly exits a pending feedback request.
-  await direct(botKey,callback('settings:r:feedback'));await direct(botKey,button());assert.equal(await active(),undefined);
+  await direct(botKey,callback('settings:r:feedback'));await pool.query('DELETE FROM bot_settings_widget_cards WHERE chat_id=$1',[chatId]);await direct(botKey,button());assert.equal(await active(),undefined);
+  const closed=callback('settings:r:close');await direct(botKey,closed);
+  assert.equal((await pool.query('SELECT screen FROM bot_settings_widget_cards WHERE chat_id=$1',[chatId])).rows[0].screen,'closed');
+  await direct(botKey,callback('settings:r:level:c1'));
+  assert.equal((await pool.query('SELECT level FROM user_bots WHERE chat_id=$1 AND bot_key=$2',[chatId,botKey])).rows[0].level,'b2');
  }finally{
   await pool.query('DELETE FROM pending_feedback WHERE chat_id=$1',[chatId]);
   await pool.query('DELETE FROM feedback WHERE chat_id=$1',[chatId]);

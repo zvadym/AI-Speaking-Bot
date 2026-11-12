@@ -9,7 +9,7 @@ import { lockFeedbackReply,feedbackExitReplyMarkup } from '../feedback-session.j
 import { withSettingsLock } from './settings.js';
 import { fetchKeyboardState } from '../context-loader.js';
 import { settingsView } from '../settings-model.js';
-import { renderSettingsRich,settingsLabels } from '../settings-views.js';
+import { completeFeedbackCard } from '../settings-card-update.js';
 
 type FeedbackRoute='pending_feedback.text'|'pending_feedback.voice'|'pending_feedback.unsupported'|'feedback.expired';
 interface FeedbackClient extends TelegramTextClient {
@@ -59,8 +59,7 @@ export function createFeedbackMessageHandler(route:FeedbackRoute,{
           const active=await pool.query(`SELECT 1 FROM pending_feedback WHERE chat_id=$1 AND bot_key=$2 AND card_message_id=$3 AND status='awaiting' AND expires_at>NOW() LIMIT 1`,[chatId,update.botKey,cardId]);
           if(!active.rows.length){
             const view=settingsView(await fetchKeyboardState(pool,chatId,update.botKey));
-            await telegramClient.callTelegramApi(update.botKey,'editMessageText',{chat_id:chatId,message_id:cardId,
-              rich_message:renderSettingsRich(view,settingsLabels(locale))}).catch(()=>{});
+            await completeFeedbackCard(pool,update,cardId,view,locale,(method,body)=>telegramClient.callTelegramApi(update.botKey,method,body)).catch(()=>{});
           }
         }
       }

@@ -662,6 +662,21 @@ CREATE VIEW public.bot_onboarding_completion AS
 
 
 --
+-- Name: bot_settings_widget_cards; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.bot_settings_widget_cards (
+    decision_id text NOT NULL,
+    chat_id bigint NOT NULL,
+    bot_key text NOT NULL,
+    message_id bigint,
+    screen text DEFAULT 'home'::text NOT NULL,
+    action_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT bot_settings_widget_cards_screen_check CHECK ((screen = ANY (ARRAY['home'::text, 'stats'::text, 'feedback'::text, 'closed'::text])))
+);
+
+
+--
 -- Name: bot_stats; Type: VIEW; Schema: public; Owner: -
 --
 
@@ -1490,6 +1505,22 @@ ALTER TABLE ONLY public.bot_onboarding_sessions
 
 
 --
+-- Name: bot_settings_widget_cards bot_settings_widget_cards_chat_id_bot_key_message_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bot_settings_widget_cards
+    ADD CONSTRAINT bot_settings_widget_cards_chat_id_bot_key_message_id_key UNIQUE (chat_id, bot_key, message_id);
+
+
+--
+-- Name: bot_settings_widget_cards bot_settings_widget_cards_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bot_settings_widget_cards
+    ADD CONSTRAINT bot_settings_widget_cards_pkey PRIMARY KEY (decision_id);
+
+
+--
 -- Name: bot_update_deliveries bot_update_deliveries_execution_step_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2284,6 +2315,14 @@ ALTER TABLE ONLY public.bot_onboarding_sessions
 
 
 --
+-- Name: bot_settings_widget_cards bot_settings_widget_cards_decision_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bot_settings_widget_cards
+    ADD CONSTRAINT bot_settings_widget_cards_decision_id_fkey FOREIGN KEY (decision_id) REFERENCES public.bot_update_executions(decision_id) ON DELETE CASCADE;
+
+
+--
 -- Name: bot_update_deliveries bot_update_deliveries_execution_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2470,4 +2509,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20261111160000'),
     ('20261112190000'),
     ('20261112200000'),
-    ('20261112201000');
+    ('20261112201000'),
+    ('20261112210000');

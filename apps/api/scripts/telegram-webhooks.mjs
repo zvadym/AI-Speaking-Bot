@@ -23,7 +23,8 @@ async function telegram(bot, method, body = null) {
   const response = await fetch(`https://api.telegram.org/bot${tokens[bot.bot_key]}/${method}`, {
     method: body ? 'POST' : 'GET',
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(20000)
   });
   const payload = await response.json();
   if (!response.ok || !payload.ok) {
@@ -41,7 +42,7 @@ for (const bot of bots) {
         botToken: tokens[bot.bot_key],
         signingSecret
       }),
-      allowed_updates: ['message', 'callback_query'],
+      allowed_updates: ['message', 'callback_query', 'widget_query'],
       drop_pending_updates: false,
       max_connections: 20
     });

@@ -11,6 +11,10 @@ import { classifyTelegramDeliveryError } from './telegram-text-delivery.js';
 import { buildPreparedUpdate } from './update-router.js';
 import { bootstrapTelegramUser } from './user-bootstrap.js';
 import { sendReservedSettingsMessages, type ReservedSettingsDelivery, type SettingsDeliveryResult } from './direct-settings-open.js';
+import { renderSettingsWidget,encodeWidgetSettings } from './settings-widget.js';
+import { loadWidgetCard,saveWidgetScreen } from './settings-widget-cards.js';
+import { editSettingsCard } from './settings-card-update.js';
+import { loadStatsContext } from './stats-context.js';
 
 interface TelegramApi {
   callTelegramApi(botKey: string, method: string, body: Record<string, unknown>, options?: {signal?: AbortSignal}): Promise<unknown>;
@@ -35,9 +39,18 @@ export async function saveDirectSettings(pool: Pool, botKey: string, input: Norm
       WHERE bot_update_executions.status NOT IN ('succeeded','permanent_failed')
         AND bot_update_executions.bot_key=EXCLUDED.bot_key AND bot_update_executions.update_id=EXCLUDED.update_id
         AND bot_update_executions.route=EXCLUDED.route AND bot_update_executions.handler_version=1
-      RETURNING decision_id
+      RETURNING decision_id,created_at
     ), desired_delivery AS (
-      SELECT 'settings:open:r:v1'::text AS step_key,'sendRichMessage'::text AS telegram_method WHERE $6='open'
+      SELECT step_key,telegram_method FROM bot_update_deliveries WHERE decision_id=$3
+        AND step_key IN ('settings:open:r:v1','settings:open:h:v1') AND $6='open'
+      UNION ALL
+      SELECT 'settings:open:h:v1'::text,'sendWidget'::text WHERE $6='open'
+        AND NOT EXISTS(SELECT 1 FROM bot_update_deliveries WHERE decision_id=$3 AND step_key IN ('settings:open:r:v1','settings:open:h:v1'))
+    ), widget_card AS (
+      INSERT INTO bot_settings_widget_cards(decision_id,chat_id,bot_key,action_at)
+      SELECT e.decision_id,$1,$2,e.created_at
+      FROM execution e,desired_delivery d WHERE d.telegram_method='sendWidget'
+      ON CONFLICT(decision_id) DO NOTHING
     ), reserved_delivery AS (
       INSERT INTO bot_update_deliveries(decision_id,step_key,telegram_method,status,attempts)
       SELECT e.decision_id,d.step_key,d.telegram_method,'pending',1 FROM execution e CROSS JOIN desired_delivery d
@@ -84,23 +97,28 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,on
   return async (botKey:string,input:NormalizedTelegramUpdate):Promise<boolean> => {
     const started=performance.now();
     const cb=input.callbackQuery;
+    const widget=input.updateType==='widget_query';
     const prepared=buildPreparedUpdate({botKey,input,locale:getBotLocale(botKey)});
     const command=prepared.route==='settings.open' && input.updateType==='message';
-    if(!command&&(input.updateType!=='callback_query'||!cb?.data.startsWith('settings:')))return false;
+    if(!command&&(!['callback_query','widget_query'].includes(input.updateType)||!cb?.data.startsWith('settings:')))return false;
     const labels=settingsLabels(getBotLocale(botKey));
     const api=(method:string,body:Record<string,unknown>)=>telegramClient.callTelegramApi(botKey,method,body,{signal:AbortSignal.timeout(method.startsWith('send')?10000:3000)});
-    const answer=async(error=false)=>{if(!cb)return;await api('answerCallbackQuery',{
-      callback_query_id:cb.id,...(error?{text:labels.error,show_alert:true}:{})
-    }).catch(()=>{});};
+    let answerData:string|undefined;
+    const answer=async(error=false)=>{if(!cb)return;await api(widget?'answerWidgetQuery':'answerCallbackQuery',widget?
+      {widget_query_id:cb.id,data:error?JSON.stringify({error:true}):answerData||JSON.stringify({ok:true})}:
+      {callback_query_id:cb.id,...(error?{text:labels.error,show_alert:true}:{})}).catch(()=>{});};
     if(!input.isPrivate||input.sender.isBot||!input.chatId||!Number.isSafeInteger(input.chatId)||input.chatId<=0||input.sender.id!==input.chatId||(cb&&(cb.userId!==input.chatId||!cb.messageId))){
       await answer(true);return true;
     }
     let action:SettingsAction;
-    try{action=command?{variant:'r',kind:'open',value:''}:parseSettingsAction(cb!.data);}catch{await answer(true);return true;}
-    if(action.kind==='open')action.variant='r'; // Old chooser buttons open the remaining card.
-    if(action.variant!=='r'){await answer(true);return true;}
+    try{action=command?{variant:'h',kind:'open',value:''}:parseSettingsAction(cb!.data);}catch{await answer(true);return true;}
+    if(widget?(action.variant!=='h'||action.kind==='open'):!command&&action.variant==='h'){await answer(true);return true;}
+    if(action.kind==='open')action.variant='h'; // Old chooser buttons open the current card.
+    if(!widget&&action.variant==='w'){await answer(true);return true;}
     const key=`settings:${botKey}:${input.chatId}`;
     const run=async()=>withSettingsLock(pool,key,async()=>{
+      const card=widget?await loadWidgetCard(pool,prepared):null;
+      if(widget&&(!card||(card.screen==='closed'&&action.kind!=='close'))){await answer(true);return true;}
       const requestId=randomUUID(),decisionId=`v1:${botKey}:${input.updateId}`;
       let saved=await saveDirectSettings(pool,botKey,input,action,requestId);
       if(!saved && action.kind==='open'){
@@ -114,15 +132,25 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,on
       let status='succeeded',errorCode:string|null=null;
       let deliveries:SettingsDeliveryResult[]=[];
       try {
-      if(['stats','feedback','cancel'].includes(action.kind)||saved.feedback_active)
+      if(action.kind==='refresh'&&card){
+        view.screen=card.screen;
+        if(view.screen==='stats')view.stats=await loadStatsContext(pool,input.chatId!);
+      }else if(['stats','feedback','cancel'].includes(action.kind)||saved.feedback_active)
         await prepareSettingsScreen({pool,update:prepared,action,view,locale:getBotLocale(botKey),api});
+      if(widget){
+        const screen=action.kind==='close'&&view.screen!=='feedback'?'closed':view.screen||'home';
+        const current=await saveWidgetScreen(pool,prepared,screen);
+        view.screen=current?.screen||screen;
+        if(view.screen==='stats'&&!view.stats)view.stats=await loadStatsContext(pool,input.chatId!);
+        answerData=encodeWidgetSettings(view);
+      }
       if(action.kind==='open'){
         const sent=await sendReservedSettingsMessages({deliveries:saved.deliveries,chatId:input.chatId!,
-          richMessage:renderSettingsRich(view,labels),api});
+          richMessage:renderSettingsRich(view,labels),widget:{html:renderSettingsWidget(labels),chat_data:encodeWidgetSettings(view),allow_queries:true},api});
         status=sent.status;errorCode=sent.errorCode;deliveries=sent.deliveries;
       }else {
         if(action.kind==='close'&&view.screen!=='feedback')await deleteSettingsMessage(api,input.chatId!,cb!.messageId!);
-        else await api('editMessageText',{chat_id:input.chatId,message_id:cb!.messageId,rich_message:renderSettingsRich(view,labels)});
+        else await editSettingsCard({chatId:input.chatId!,messageId:cb!.messageId!,view,locale:getBotLocale(botKey),widget,api});
       }
       }catch(error){
         if(!String((error as Error).message).includes('message is not modified')){
@@ -138,6 +166,11 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,on
             error_code=r.error_code,error_detail=NULL,updated_at=NOW()
           FROM jsonb_to_recordset($5::jsonb) AS r(id bigint,status text,message_id bigint,error_code text)
           WHERE d.id=r.id AND d.decision_id=$1 AND d.status IN ('pending','unknown')
+          RETURNING d.decision_id,d.telegram_method,d.telegram_message_id
+        ), bound AS (
+          UPDATE bot_settings_widget_cards c SET message_id=r.message_id
+          FROM jsonb_to_recordset($5::jsonb) AS r(id bigint,status text,message_id bigint,error_code text),bot_update_deliveries d
+          WHERE d.id=r.id AND c.decision_id=d.decision_id AND d.telegram_method='sendWidget' AND r.status='delivered' AND r.message_id IS NOT NULL
         ) UPDATE bot_update_executions SET status=$3,terminal_error_code=$4,
           completed_at=CASE WHEN $3='retryable_failed' THEN NULL ELSE NOW() END,updated_at=NOW(),lease_expires_at=NOW()
           WHERE decision_id=$1 AND current_job_id=$2::uuid`,[decisionId,requestId,status,errorCode,JSON.stringify(deliveries)]),

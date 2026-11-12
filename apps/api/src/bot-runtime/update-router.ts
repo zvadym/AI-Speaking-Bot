@@ -69,7 +69,7 @@ export function resolvePreparedRoute({
   if (input.sender.isBot) return 'guard.bot_sender';
 
   if (input.updateType === 'widget_query') {
-    return callback?.group === 'settings' && callback.value === 'w' ? 'callback.settings' : 'ignore';
+    return callback?.group === 'settings' && ['w','h'].includes(callback.value) ? 'callback.settings' : 'ignore';
   }
   if (input.callbackQuery) {
     return callback ? CALLBACK_ROUTES[callback.group] || 'callback.unknown' : 'callback.unknown';

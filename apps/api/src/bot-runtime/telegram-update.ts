@@ -57,7 +57,7 @@ export function normalizeTelegramUpdate(rawUpdate: unknown): NormalizedTelegramU
   // so widget queries are never answered with answerCallbackQuery.
   const rawCallbackQuery = widget ? {
     id: widget.id, from: widget.from,
-    data: asObject(widget.type).type === 'data' ? widget.data : '',
+    data: !widget.type || asObject(widget.type).type === 'data' ? widget.data : '',
     message: { chat: widget.chat, message_id: widget.message_id }
   } : asOptionalObject(update.callback_query);
   const rawCallbackMessage = asOptionalObject(rawCallbackQuery?.message);

@@ -110,12 +110,13 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Telegram sends each bot update to `/telegram/webhook/:botKey`.
 - The API validates the per-bot webhook secret, persists ingestion state, and enqueues a pg-boss job.
 - `apps/api/src/bot-runtime` owns route preparation, typed handlers, AI calls, durable effects, and Telegram delivery.
-- Settings UI uses `settings-model.ts`, `settings-views.ts`, and `handlers/settings.ts`;
-  the reply button opens a rich card directly. Level/reply changes save immediately;
+- Settings UI uses `settings-model.ts`, `settings-widget.ts`, `settings-views.ts`, and `handlers/settings.ts`;
+  the reply button opens an HTML widget directly. Level/reply changes save immediately;
   Stats and feedback actions live in the same card. Slash menus are empty; only
   technical `/start` remains for first contact and deep links, without resetting onboarding.
-  Done deletes the card message. Retired widget queries are acknowledged without mutations
-  for queued-update compatibility; do not subscribe to `widget_query` in webhooks.
+  Done deletes the card message. New `settings:h:*` widget requests use the
+  `bot_settings_widget_cards` ownership ledger; subscribe to `widget_query` in webhooks.
+  Retired `settings:w:*` queries remain acknowledged without mutations; old rich cards retain their callbacks.
 - Settings UI labels live in `deploy/bots/*.json` under `locale.settings`.
   `level_descriptions` and `reply_descriptions` provide the per-option explanations;
   keep them outside button labels because Telegram truncates multiline button text.
