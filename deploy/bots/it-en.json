@@ -95,9 +95,7 @@
     "level_label_beginner": "Principiante (A1-A2)",
     "level_label_conversational": "Intermedio (B1-B2)",
     "level_label_advanced": "Avanzato (C1+)",
-    "topic_btn_set_inline": "🧭 Scegli argomento",
-    "topic_btn_manage_inline": "🎯 Cambia/rimuovi argomento",
-    "onboarding_start_practice_text": "Ottimo inizio ✨ Vuoi scegliere un tema o continuare liberamente? Puoi inviare voce o testo in qualsiasi momento.",
+    "onboarding_start_practice_text": "Continuiamo a parlare. Puoi inviare un messaggio vocale o di testo in qualsiasi momento.",
     "onboarding_btn_start_voice": "🎙️ Inizia con voce",
     "onboarding_btn_start_text": "✍️ Inizia con testo",
     "onboarding_btn_show_example": "👀 Mostra esempio",
@@ -107,8 +105,6 @@
     "onboarding_showcase_no_mistakes_text": "Molto bene, qui non ci sono errori 👏\nSe vuoi vedere come correggo gli errori, scrivi una frase volutamente sbagliata.\nPer esempio:\n❌ Yesterday I go to work by bus.",
     "onboarding_complete_full_text": "Ottimo progresso — il tuo profilo è pronto 🚀\n\nLe cose principali:\n• Il tuo livello iniziale è A1. Puoi cambiarlo in qualsiasi momento in A1, A2, B1, B2 o C1.\n• Usa i pulsanti sotto la chat per cambiare in qualsiasi momento il tuo livello e il formato di risposta: voce o testo.\n• Nell'App puoi aprire altre impostazioni, inviare feedback e gestire altre opzioni.\n\nInvia il tuo prossimo messaggio per continuare la streak 🔥\n\nCongratulazioni! L'onboarding è completato.",
     "keyboard_btn_level_prefix": "Livello",
-    "keyboard_btn_topic_prefix": "Tema",
-    "keyboard_btn_topic_none": "Scegli tema",
     "keyboard_btn_voice_prefix": "Tipo di risposta",
     "keyboard_btn_voice_text": "Testo",
     "keyboard_btn_voice_voice": "Voce",
@@ -121,14 +117,6 @@
         "voice_variants": [
           "Pronto per una pratica veloce? Invia un breve messaggio vocale.",
           "Vuoi rientrare in pratica? Invia un breve messaggio vocale."
-        ],
-        "topic_text_variants": [
-          "Vuoi ripartire con {{topic_title}}? Scrivi una frase breve.",
-          "Pronto a tornare su {{topic_title}}? Scrivi una frase breve."
-        ],
-        "topic_voice_variants": [
-          "Vuoi ripartire con {{topic_title}}? Invia un breve messaggio vocale.",
-          "Pronto a tornare su {{topic_title}}? Invia un breve messaggio vocale."
         ]
       },
       "winback": {
@@ -147,10 +135,6 @@
             "Nessuna pressione. Possiamo ricominciare da zero in qualsiasi momento. {{reply_cta_label}} quando vuoi.",
             "Quando ti va, possiamo ripartire da capo. {{reply_cta_label}}."
           ],
-          "topic": [
-            "Vuoi tornare al tema “{{topic_title}}”? Scrivi una frase breve — e continuiamo.",
-            "Vuoi rientrare nel tema “{{topic_title}}”? Scrivi una frase breve — e continuiamo."
-          ],
           "streak": [
             "Hai già costruito una streak di {{streak_best}} giorni. Possiamo ricominciare con un passo piccolo. {{reply_cta_label}}.",
             "La tua streak migliore è stata di {{streak_best}} giorni. Il rientro può iniziare con un messaggio breve. {{reply_cta_label}}."
@@ -162,7 +146,7 @@
         }
       },
       "free_limit_50": {
-        "message_html": "<b>Hai già usato metà del tuo limite gratuito ✨</b>\nSe vuoi continuare, PRO costa meno di 2 caffè al mese.\n\nSblocca funzioni extra come nuovi argomenti, impostazioni del tono e altri aggiornamenti in futuro."
+        "message_html": "<b>Hai già usato metà del tuo limite gratuito ✨</b>\nSe vuoi continuare, PRO costa meno di 2 caffè al mese.\n\nTi offre più tempo per fare pratica di conversazione."
       }
     },
     "onboarding_v2": {
@@ -184,7 +168,7 @@
       },
       "buttons": {
         "use_text": "✍️ Rispondo con testo",
-        "change_scenario": "🔄 Altro tema",
+        "change_scenario": "🔄 Cambia scenario",
         "confirm_level": "✅ Sì, {suggested_level}",
         "choose_level": "🎚 Scegli un altro",
         "retry": "🔁 Dillo di nuovo",
@@ -211,11 +195,9 @@
     "settings": {
       "title": "Impostazioni",
       "level": "Livello",
-      "topic": "Argomento",
       "replies": "Risposte del bot",
       "voice": "Voce",
       "text": "Testo",
-      "free": "Conversazione libera",
       "done": "Fatto",
       "back": "Indietro",
       "saved": "Modifiche salvate",
@@ -247,10 +229,6 @@
       {
         "command": "stats",
         "description": "Controlla stato abbonamento"
-      },
-      {
-        "command": "topic",
-        "description": "Scegli un argomento"
       },
       {
         "command": "feedback",

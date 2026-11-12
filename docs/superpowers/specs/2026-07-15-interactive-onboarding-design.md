@@ -49,8 +49,6 @@ first personalized correction within ten minutes of `/start`.
   practice.
 - Automatically re-onboarding existing users when the feature is deployed;
   an existing user opts in by explicitly sending `/start` to an enabled bot.
-- Adding generated file-based topic catalogs; the DB-backed topic catalog
-  remains unrelated to these fixed onboarding scenarios.
 
 ## User Experience
 
@@ -77,7 +75,7 @@ The layout may use two rows to keep localized labels readable. For a bot with
 interactive onboarding enabled, every private `/start` explicitly restarts the
 flow at the scenario picker. This also lets an existing user opt into or retest
 the onboarding without deleting their account. The restart clears only
-onboarding-session fields; it preserves level, XP, messages, topic, reply mode,
+onboarding-session fields; it preserves level, XP, messages, reply mode,
 subscription state, and other user preferences. Disabled bots retain the
 legacy `/start` behavior.
 

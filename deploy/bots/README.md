@@ -70,15 +70,13 @@ It defines required fields, length limits, regex, and Telegram method mapping.
 The TypeScript bot runtime reads these `locale` keys to build the persistent bottom keyboard labels:
 
 - `keyboard_btn_level_prefix`
-- `keyboard_btn_topic_prefix`
-- `keyboard_btn_topic_none`
 - `keyboard_btn_voice_prefix`
 - `keyboard_btn_voice_text`
 - `keyboard_btn_voice_voice`
 
 They should be localized in the bot's base language and kept short because Telegram reply-keyboard buttons have limited horizontal space.
 
-The bottom keyboard offers topic, language level and reply format.
+The bottom keyboard opens settings for language level and reply format.
 `/progress` and `/xp` are not registered commands. Old reply-keyboard buttons and
 already queued jobs receive the standard unknown-command reply with the current keyboard.
 

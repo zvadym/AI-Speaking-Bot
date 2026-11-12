@@ -58,11 +58,9 @@ function preparedText(): PreparedUpdate & { route: 'message.text' } {
         enabled: false,
         buttonIntent: null,
         levelValue: 'a1',
-        topicValue: '',
         voiceValue: 'text',
         replyMode: 'text',
         levelButtonText: '',
-        topicButtonText: '',
         voiceButtonText: ''
       }
     }

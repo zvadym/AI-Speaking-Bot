@@ -117,7 +117,6 @@ No deployment occurs in this release.
 2. Keep transcription and TTS unchanged.
 3. Compare canary telemetry and sampled response quality against baseline.
 4. If canary passes, enable the balanced policy globally and set:
-   - topic generation to `gpt-5.6-terra`;
    - idiom translation to `gpt-5.4-mini`;
    - reminders unchanged.
 5. If canary fails, restore the prior model config without reverting middleware

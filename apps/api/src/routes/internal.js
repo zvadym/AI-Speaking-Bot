@@ -94,66 +94,6 @@ export function createInternalRouter(ctx, helpers) {
     }
   });
 
-  router.post('/internal/topics/menu', requireInternalApi, async (req, res) => {
-    const chatId = Number(req.body?.chat_id);
-    const botKey = normalizeBotKey(req.body?.bot_key);
-    if (!Number.isFinite(chatId) || chatId <= 0 || !botKey) {
-      return res.status(400).json({ error: 'bad_request' });
-    }
-
-    try {
-      const locale = helpers.getBotLocale(botKey);
-      const [userTier, stateResult] = await Promise.all([
-        helpers.fetchEffectiveTierForChat(chatId),
-        ctx.pool.query(
-          `SELECT topic_enabled, topic_template_id, topic_pack_json
-           FROM user_bots
-           WHERE chat_id = $1
-             AND bot_key = $2
-           LIMIT 1`,
-          [chatId, botKey]
-        )
-      ]);
-      const catalog = await helpers.fetchTopicCatalogRows(botKey, { userTier });
-      const state = stateResult.rows[0] || {};
-      const pack = helpers.normalizeTopicPackValue(state.topic_pack_json);
-      const catalogTopic = catalog.find((item) => item.topic_id === String(state.topic_template_id || '').trim().toLowerCase()) || null;
-      const activeTopic = state.topic_enabled
-        ? { ...(catalogTopic || {}), ...(pack || {}) }
-        : null;
-      const topicTitle = activeTopic ? helpers.formatTopicMenuLabel(activeTopic, locale, { userTier }) : '';
-      const currentPrefix = String(locale.topic_menu_current_prefix || 'Current topic: ').trim() || 'Current topic: ';
-      const currentNone = String(locale.topic_menu_current_none || 'Current topic: none active.').trim() || 'Current topic: none active.';
-      const bodyText = [
-        String(locale.topic_menu_title || 'Choose a conversation topic 👇').trim() || 'Choose a conversation topic 👇',
-        '',
-        topicTitle ? `${currentPrefix}${topicTitle}` : currentNone
-      ].join('\n');
-
-      const telegramResult = await helpers.sendTelegramTextMessage(chatId, bodyText, {
-        botKey,
-        replyMarkup: helpers.buildTopicMenuReplyMarkup(catalog, locale, { userTier })
-      });
-
-      return res.json({
-        ok: true,
-        message_id: Number(telegramResult?.message_id || 0) || null,
-        count: catalog.length
-      });
-    } catch (error) {
-      console.error('internal-topics-menu failed', {
-        chatId,
-        botKey,
-        error: error?.message || String(error)
-      });
-      captureException(error, {
-        tags: { route: 'internal-topics-menu' },
-        extra: { chatId, botKey }
-      });
-      return res.status(500).json({ error: 'topic_menu_failed' });
-    }
-  });
-
   router.post('/internal/bot/prepare-update', requireInternalApi, async (req, res) => {
     const startedAtMs = Date.now();
     const rawBotKey = req.body?.bot_key ?? req.body?.botKey;

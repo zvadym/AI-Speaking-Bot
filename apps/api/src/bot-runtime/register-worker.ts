@@ -42,12 +42,6 @@ import {
 import { createProgressIndicatorMiddleware } from './progress-middleware.js';
 import { createProgressService } from './progress-service.js';
 import { createMessagePresentationService, type PresentationClient } from './message-presentation.js';
-import {
-  createTopicActionHandler,
-  createTopicMenuHandler,
-  type TopicTelegramClient,
-  type TopicMenuHelpers
-} from './handlers/topic-menu.js';
 import { createRetiredCommandHandlers } from './handlers/retired-commands.js';
 import {
   createTextConversationHandler,
@@ -239,18 +233,16 @@ export async function registerBotRuntimeWorker(
     webappUrl,
     progressEnabledBotKeys,
     reportProgressError = () => {},
-    topicMenuHelpers,
     getBotConfig,
     sendIdiomMore,
     ai
   }: {
     pool: Pool;
     getBotLocale(botKey: string): unknown;
-    telegramClient: PreferenceTelegramClient & TopicTelegramClient & SupportTelegramClient & ConversationTelegramClient & VoiceTelegramClient & PresentationClient;
+    telegramClient: PreferenceTelegramClient & SupportTelegramClient & ConversationTelegramClient & VoiceTelegramClient & PresentationClient;
     webappUrl: string;
     progressEnabledBotKeys: ReadonlySet<string>;
     reportProgressError?: (error: unknown, event: string, botKey: string) => void;
-    topicMenuHelpers: TopicMenuHelpers;
     getBotConfig(botKey: string): Record<string, unknown> | null;
     sendIdiomMore: IdiomMoreSender;
     ai: BotAiClient;
@@ -271,7 +263,7 @@ export async function registerBotRuntimeWorker(
     createOnboardingStartHandler({ pool, getBotLocale, telegramClient }),
     createOnboardingCallbackHandler({ pool, getBotLocale, telegramClient }),
     ...createPreferenceHandlers({ pool, getBotLocale, telegramClient }),
-    ...createSettingsHandlers({ pool, getBotLocale, telegramClient, helpers: topicMenuHelpers }),
+    ...createSettingsHandlers({ pool, getBotLocale, telegramClient }),
     ...createFeedbackHandlers({ pool, getBotLocale, telegramClient }),
     ...createCallbackActionHandlers({
       pool,
@@ -311,18 +303,6 @@ export async function registerBotRuntimeWorker(
     }),
     createStatsHandler({ pool, getBotLocale, telegramClient, webappUrl }),
     ...createRetiredCommandHandlers({ pool, getBotLocale, telegramClient }),
-    createTopicActionHandler({
-      pool,
-      getBotLocale,
-      telegramClient,
-      helpers: topicMenuHelpers
-    }),
-    createTopicMenuHandler({
-      pool,
-      getBotLocale,
-      telegramClient,
-      helpers: topicMenuHelpers
-    })
   ]);
 
   // Keep the general worker able to drain settings jobs queued before rollout.

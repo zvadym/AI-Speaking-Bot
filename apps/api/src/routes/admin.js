@@ -5,15 +5,8 @@ import { captureException } from '../sentry.js';
 import {
   normalizeBotKey,
   normalizeCurrencyCode,
-  normalizeOptionalText,
   normalizeRuntimeCurrencyCode
 } from '../shared/normalization.js';
-import { normalizeTopicAccessTier, normalizeTopicId } from '../topic-catalog.js';
-import {
-  assistTopicDraft,
-  cloneTopicDraftToBot,
-  generateTopicDraft
-} from '../topic-generator.js';
 import {
   enqueueBroadcastCampaign as enqueueBroadcastCampaignJob,
   getAutomatedMessageTestState,
@@ -24,7 +17,6 @@ import {
   sendAdminTestWinbackReminder
 } from '../jobs.js';
 import { billingRouteErrorResponse } from '../core/errors.js';
-import { createLlmCallRecorder } from '../bot-runtime/llm-telemetry.js';
 
 const ACTION_EVENT_TYPES = [
   'start',
@@ -36,21 +28,16 @@ const ACTION_EVENT_TYPES = [
   'onboarding_completed',
   'onboarding_level_confirmed',
   'onboarding_bonus_selected',
-  'topic_set',
-  'topic_message_sent',
-  'topic_clear',
   'day1_return',
   'free_limit_half',
   'paywall_shown',
   'purchase_success'
 ];
 const REPLY_KEYBOARD_ACTION_TYPES = [
-  'reply_kbd_topic_click',
   'reply_kbd_level_click',
   'reply_kbd_voice_click',
   'idiom_phrase_more_click'
 ];
-const TOPIC_USAGE_ACTION_TYPES = ['topic_set', 'topic_message_sent'];
 const NOTIFICATION_TASK_TYPES = [
   'onboarding_complete',
   'day1_return',
@@ -149,7 +136,6 @@ function parseOptionalInclusiveUtcRange(fromRaw, toRaw, {
 export function createAdminRouter(ctx, helpers) {
   const router = Router();
   const requireAdmin = createRequireAdmin(ctx.env);
-  const recordLlmCall = createLlmCallRecorder(ctx.pool);
   const broadcastMediaUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: BROADCAST_MEDIA_UPLOAD_MAX_BYTES }
@@ -1374,9 +1360,6 @@ export function createAdminRouter(ctx, helpers) {
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'onboarding_completed'), 0)::int AS onboarding_completed,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'onboarding_level_confirmed'), 0)::int AS onboarding_level_confirmed,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'onboarding_bonus_selected'), 0)::int AS onboarding_bonus_selected,
-         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'topic_set'), 0)::int AS topic_set,
-         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'topic_message_sent'), 0)::int AS topic_message_sent,
-         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'topic_clear'), 0)::int AS topic_clear,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'day1_return'), 0)::int AS day1_return,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'paywall_shown'), 0)::int AS paywall_shown,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'purchase_success'), 0)::int AS purchase_success
@@ -1385,73 +1368,6 @@ export function createAdminRouter(ctx, helpers) {
        GROUP BY d.day_utc
        ORDER BY d.day_utc ASC`,
       [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, ACTION_EVENT_TYPES]
-    );
-
-    return res.json({
-      tz: 'UTC',
-      from: range.from.toISOString(),
-      to: range.to.toISOString(),
-      payload: range.payload,
-      series: rows
-    });
-  });
-
-  router.get('/admin/metrics/topics-by-day', requireAdmin, async (req, res) => {
-    const range = helpers.parseAdminRange(req);
-    if (!range.ok) return res.status(400).json({ error: range.error });
-    res.set('Cache-Control', 'no-store');
-
-    const excludeChatIds = range.excludeChatIds?.length ? range.excludeChatIds : null;
-    const { rows } = await ctx.pool.query(
-      `WITH params AS (
-         SELECT $1::timestamptz AS from_ts, $2::timestamptz AS to_ts
-       ),
-       days AS (
-         SELECT generate_series(
-           date_trunc('day', (SELECT from_ts FROM params) AT TIME ZONE 'UTC'),
-           date_trunc('day', ((SELECT to_ts FROM params) - interval '1 millisecond') AT TIME ZONE 'UTC'),
-           interval '1 day'
-         )::date AS day_utc
-       ),
-       filtered_users AS (
-         SELECT chat_id
-         FROM users
-         WHERE ($3::text IS NULL OR acquisition_start_payload = $3)
-           AND ($4::bigint[] IS NULL OR chat_id <> ALL($4::bigint[]))
-       ),
-       topic_ids AS (
-         SELECT DISTINCT NULLIF(BTRIM(e.properties->>'topic_id'), '') AS topic_id
-         FROM action_events e
-         JOIN filtered_users u ON u.chat_id = e.chat_id
-         WHERE e.occurred_at >= (SELECT from_ts FROM params)
-           AND e.occurred_at < (SELECT to_ts FROM params)
-           AND e.action_type = ANY($5::text[])
-           AND NULLIF(BTRIM(e.properties->>'topic_id'), '') IS NOT NULL
-       ),
-       counts AS (
-         SELECT
-           date_trunc('day', e.occurred_at AT TIME ZONE 'UTC')::date AS day_utc,
-           NULLIF(BTRIM(e.properties->>'topic_id'), '') AS topic_id,
-           COUNT(DISTINCT e.chat_id)::int AS count
-         FROM action_events e
-         JOIN filtered_users u ON u.chat_id = e.chat_id
-         WHERE e.occurred_at >= (SELECT from_ts FROM params)
-           AND e.occurred_at < (SELECT to_ts FROM params)
-           AND e.action_type = ANY($5::text[])
-           AND NULLIF(BTRIM(e.properties->>'topic_id'), '') IS NOT NULL
-         GROUP BY 1, 2
-       )
-       SELECT
-         d.day_utc::text AS day,
-         t.topic_id,
-         COALESCE(c.count, 0)::int AS count
-       FROM days d
-       CROSS JOIN topic_ids t
-       LEFT JOIN counts c
-         ON c.day_utc = d.day_utc
-        AND c.topic_id = t.topic_id
-       ORDER BY d.day_utc ASC, t.topic_id ASC`,
-      [range.from.toISOString(), range.to.toISOString(), range.payload, excludeChatIds, TOPIC_USAGE_ACTION_TYPES]
     );
 
     return res.json({
@@ -1555,7 +1471,6 @@ export function createAdminRouter(ctx, helpers) {
        )
        SELECT
          d.day_utc::text AS day,
-         COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_topic_click'), 0)::int AS reply_kbd_topic_click,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_level_click'), 0)::int AS reply_kbd_level_click,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'reply_kbd_voice_click'), 0)::int AS reply_kbd_voice_click,
          COALESCE(SUM(c.count) FILTER (WHERE c.action_type = 'idiom_phrase_more_click'), 0)::int AS idiom_phrase_more_click
@@ -1782,405 +1697,6 @@ export function createAdminRouter(ctx, helpers) {
         { action: 'paywall_shown', count: paywallShownCount, pct: pct(paywallShownCount) }
       ]
     });
-  });
-
-  router.get('/admin/topics', requireAdmin, async (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    const bots = helpers.adminTopicBots();
-    if (!bots.length) {
-      return res.json({ bots: [], selected_bot_key: '', items: [] });
-    }
-
-    let selectedBotKey = normalizeBotKey(req.query?.bot_key);
-    if (!selectedBotKey || !helpers.publicBotMetaForKey(selectedBotKey)) {
-      selectedBotKey = bots[0].bot_key;
-    }
-
-    const items = await helpers.fetchTopicCatalogRows(selectedBotKey);
-    return res.json({ bots, selected_bot_key: selectedBotKey, items });
-  });
-
-  router.post('/admin/topics/generate-draft', requireAdmin, async (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    try {
-      if (!ctx.env.openaiApiKey) {
-        return res.status(503).json({ error: 'topic_generation_not_configured' });
-      }
-      const meta = helpers.requireTopicBotMeta(req.body?.bot_key);
-      const topicName = normalizeOptionalText(req.body?.topic_name, 120);
-      if (!topicName) return res.status(400).json({ error: 'bad_topic_name' });
-      const sortOrder = Number(req.body?.sort_order ?? 0);
-      const accessTier = normalizeTopicAccessTier(req.body?.access_tier ?? 'all');
-      const baseTemplate = helpers.normalizeTopicBaseTemplate(req.body?.base_template, topicName);
-      const draft = await generateTopicDraft({
-        apiKey: ctx.env.openaiApiKey,
-        model: ctx.env.topicGenerationModel,
-        reasoningEffort: ctx.env.topicGenerationReasoningEffort,
-        topicName,
-        baseLanguage: meta.base_language || 'en',
-        targetLanguage: meta.learning_language || 'en',
-        sortOrder: Number.isInteger(sortOrder) ? sortOrder : 0,
-        accessTier,
-        baseTemplate,
-        recordLlmCall,
-        trace: { botKey: meta.bot_key, route: 'admin.topic.generate' }
-      });
-      return res.json({
-        bot_key: meta.bot_key,
-        base_language: meta.base_language || null,
-        learning_language: meta.learning_language || null,
-        draft: helpers.serializeTopicRow({ bot_key: meta.bot_key, ...draft })
-      });
-    } catch (err) {
-      return res.status(err?.status || 400).json({
-        error: err?.code || 'topic_generation_failed',
-        detail: err?.detail || err?.message || 'topic_generation_failed'
-      });
-    }
-  });
-
-  router.post('/admin/topics/assist-draft', requireAdmin, async (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    try {
-      if (!ctx.env.openaiApiKey) {
-        return res.status(503).json({ error: 'topic_generation_not_configured' });
-      }
-      const meta = helpers.requireTopicBotMeta(req.body?.bot_key);
-      const instruction = normalizeOptionalText(req.body?.instruction, 1600);
-      if (!instruction) return res.status(400).json({ error: 'bad_instruction' });
-      const currentDraft = helpers.normalizeTopicAssistDraft(req.body?.draft);
-      const draft = await assistTopicDraft({
-        apiKey: ctx.env.openaiApiKey,
-        model: ctx.env.topicGenerationModel,
-        reasoningEffort: ctx.env.topicGenerationReasoningEffort,
-        instruction,
-        baseLanguage: meta.base_language || 'en',
-        targetLanguage: meta.learning_language || 'en',
-        currentDraft,
-        recordLlmCall,
-        trace: { botKey: meta.bot_key, route: 'admin.topic.assist' }
-      });
-      return res.json({
-        bot_key: meta.bot_key,
-        base_language: meta.base_language || null,
-        learning_language: meta.learning_language || null,
-        draft: helpers.serializeTopicRow({ bot_key: meta.bot_key, ...draft })
-      });
-    } catch (err) {
-      return res.status(err?.status || 400).json({
-        error: err?.code || 'topic_assist_failed',
-        detail: err?.detail || err?.message || 'topic_assist_failed'
-      });
-    }
-  });
-
-  router.post('/admin/topics/clone-to-bot', requireAdmin, async (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    try {
-      if (!ctx.env.openaiApiKey) {
-        return res.status(503).json({ error: 'topic_generation_not_configured' });
-      }
-      const sourceMeta = helpers.requireTopicBotMeta(req.body?.source_bot_key ?? req.body?.bot_key);
-      const targetMeta = helpers.requireTopicBotMeta(req.body?.target_bot_key);
-      if (sourceMeta.bot_key === targetMeta.bot_key) {
-        return res.status(400).json({ error: 'bad_target_bot_key', detail: 'target_bot_key must differ from source bot' });
-      }
-      const currentDraft = helpers.normalizeTopicAssistDraft(req.body?.draft);
-      if (!currentDraft) {
-        return res.status(400).json({ error: 'bad_draft', detail: 'draft is required' });
-      }
-      const instruction = normalizeOptionalText(req.body?.instruction, 1600) || '';
-      const clonedDraft = await cloneTopicDraftToBot({
-        apiKey: ctx.env.openaiApiKey,
-        model: ctx.env.topicGenerationModel,
-        reasoningEffort: ctx.env.topicGenerationReasoningEffort,
-        sourceBaseLanguage: sourceMeta.base_language || 'en',
-        sourceTargetLanguage: sourceMeta.learning_language || 'en',
-        targetBaseLanguage: targetMeta.base_language || 'en',
-        targetTargetLanguage: targetMeta.learning_language || 'en',
-        currentDraft,
-        instruction,
-        recordLlmCall,
-        trace: { botKey: targetMeta.bot_key, route: 'admin.topic.clone' }
-      });
-      const payload = helpers.normalizeTopicRequestBody(clonedDraft);
-
-      const { rows } = await ctx.pool.query(
-        `INSERT INTO bot_topic_catalog (
-           bot_key,
-           topic_id,
-           emoji,
-           access_tier,
-           title_base,
-           goal_base,
-           allowed_base,
-           subareas_json,
-           avoid_base,
-           starter_questions_target,
-           recovery_questions_target,
-           topic_mode,
-           speech_acts_base,
-           lexical_anchors_target,
-           grammar_targets_json,
-           starter_questions_by_level_target,
-           recovery_questions_by_level_target,
-           bridge_patterns_target,
-           hard_block_base,
-           soft_redirect_base,
-           opening_prompt_target,
-           sort_order,
-           updated_at
-         )
-         VALUES (
-           $1, $2, $3, $4, $5, $6,
-           $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb,
-           $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb,
-           $18::jsonb, $19::jsonb, $20::jsonb, $21,
-           $22, NOW()
-         )
-         ON CONFLICT (bot_key, topic_id) DO UPDATE SET
-           emoji = EXCLUDED.emoji,
-           access_tier = EXCLUDED.access_tier,
-           title_base = EXCLUDED.title_base,
-           goal_base = EXCLUDED.goal_base,
-           allowed_base = EXCLUDED.allowed_base,
-           subareas_json = EXCLUDED.subareas_json,
-           avoid_base = EXCLUDED.avoid_base,
-           starter_questions_target = EXCLUDED.starter_questions_target,
-           recovery_questions_target = EXCLUDED.recovery_questions_target,
-           topic_mode = EXCLUDED.topic_mode,
-           speech_acts_base = EXCLUDED.speech_acts_base,
-           lexical_anchors_target = EXCLUDED.lexical_anchors_target,
-           grammar_targets_json = EXCLUDED.grammar_targets_json,
-           starter_questions_by_level_target = EXCLUDED.starter_questions_by_level_target,
-           recovery_questions_by_level_target = EXCLUDED.recovery_questions_by_level_target,
-           bridge_patterns_target = EXCLUDED.bridge_patterns_target,
-           hard_block_base = EXCLUDED.hard_block_base,
-           soft_redirect_base = EXCLUDED.soft_redirect_base,
-           opening_prompt_target = EXCLUDED.opening_prompt_target,
-           sort_order = EXCLUDED.sort_order,
-           updated_at = NOW()
-         RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, subareas_json, avoid_base,
-                   starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at,
-                   topic_mode, speech_acts_base, lexical_anchors_target, grammar_targets_json,
-                   starter_questions_by_level_target, recovery_questions_by_level_target,
-                   bridge_patterns_target, hard_block_base, soft_redirect_base, opening_prompt_target`,
-        [
-          targetMeta.bot_key,
-          payload.topic_id,
-          payload.emoji,
-          payload.access_tier_value,
-          payload.title_base,
-          payload.goal_base,
-          payload.allowed_base_json,
-          payload.subareas_json_json,
-          payload.avoid_base_json,
-          payload.starter_questions_target_json,
-          payload.recovery_questions_target_json,
-          payload.topic_mode_value,
-          payload.speech_acts_base_json,
-          payload.lexical_anchors_target_json,
-          payload.grammar_targets_json_value,
-          payload.starter_questions_by_level_target_json,
-          payload.recovery_questions_by_level_target_json,
-          payload.bridge_patterns_target_json,
-          payload.hard_block_base_json,
-          payload.soft_redirect_base_json,
-          payload.opening_prompt_target_value,
-          payload.sort_order
-        ]
-      );
-
-      return res.json({
-        source_bot_key: sourceMeta.bot_key,
-        target_bot_key: targetMeta.bot_key,
-        item: helpers.serializeTopicRow(rows[0])
-      });
-    } catch (err) {
-      return res.status(err?.status || 400).json({
-        error: err?.code || 'topic_clone_failed',
-        detail: err?.detail || err?.message || 'topic_clone_failed'
-      });
-    }
-  });
-
-  router.post('/admin/topics', requireAdmin, async (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    try {
-      const meta = helpers.requireTopicBotMeta(req.body?.bot_key);
-      const payload = helpers.normalizeTopicRequestBody(req.body);
-      const { rows } = await ctx.pool.query(
-        `INSERT INTO bot_topic_catalog (
-           bot_key,
-           topic_id,
-           emoji,
-           access_tier,
-           title_base,
-           goal_base,
-           allowed_base,
-           subareas_json,
-           avoid_base,
-           starter_questions_target,
-           recovery_questions_target,
-           topic_mode,
-           speech_acts_base,
-           lexical_anchors_target,
-           grammar_targets_json,
-           starter_questions_by_level_target,
-           recovery_questions_by_level_target,
-           bridge_patterns_target,
-           hard_block_base,
-           soft_redirect_base,
-           opening_prompt_target,
-           sort_order,
-           updated_at
-         )
-         VALUES (
-           $1, $2, $3, $4, $5, $6,
-           $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb,
-           $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb,
-           $18::jsonb, $19::jsonb, $20::jsonb, $21,
-           $22, NOW()
-         )
-         RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, subareas_json, avoid_base,
-                   starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at,
-                   topic_mode, speech_acts_base, lexical_anchors_target, grammar_targets_json,
-                   starter_questions_by_level_target, recovery_questions_by_level_target,
-                   bridge_patterns_target, hard_block_base, soft_redirect_base, opening_prompt_target`,
-        [
-          meta.bot_key,
-          payload.topic_id,
-          payload.emoji,
-          payload.access_tier_value,
-          payload.title_base,
-          payload.goal_base,
-          payload.allowed_base_json,
-          payload.subareas_json_json,
-          payload.avoid_base_json,
-          payload.starter_questions_target_json,
-          payload.recovery_questions_target_json,
-          payload.topic_mode_value,
-          payload.speech_acts_base_json,
-          payload.lexical_anchors_target_json,
-          payload.grammar_targets_json_value,
-          payload.starter_questions_by_level_target_json,
-          payload.recovery_questions_by_level_target_json,
-          payload.bridge_patterns_target_json,
-          payload.hard_block_base_json,
-          payload.soft_redirect_base_json,
-          payload.opening_prompt_target_value,
-          payload.sort_order
-        ]
-      );
-      return res.status(201).json({ item: helpers.serializeTopicRow(rows[0]) });
-    } catch (err) {
-      if (err?.code === '23505') {
-        return res.status(409).json({ error: 'topic_already_exists' });
-      }
-      return res.status(err?.status || 400).json({
-        error: err?.code || 'bad_topic_payload',
-        detail: err?.detail || err?.message || 'bad_topic_payload'
-      });
-    }
-  });
-
-  router.put('/admin/topics/:id', requireAdmin, async (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    try {
-      const currentTopicId = normalizeTopicId(req.params.id);
-      const meta = helpers.requireTopicBotMeta(req.body?.bot_key ?? req.query?.bot_key);
-      const existingTopic = await helpers.fetchTopicCatalogItem(meta.bot_key, currentTopicId);
-      if (!existingTopic) return res.status(404).json({ error: 'topic_not_found' });
-      const payload = helpers.normalizeTopicRequestBody(req.body, { existingTopic });
-      const { rows } = await ctx.pool.query(
-        `UPDATE bot_topic_catalog
-         SET topic_id = $3,
-             emoji = $4,
-             access_tier = $5,
-             title_base = $6,
-             goal_base = $7,
-             allowed_base = $8::jsonb,
-             subareas_json = $9::jsonb,
-             avoid_base = $10::jsonb,
-             starter_questions_target = $11::jsonb,
-             recovery_questions_target = $12::jsonb,
-             topic_mode = $13,
-             speech_acts_base = $14::jsonb,
-             lexical_anchors_target = $15::jsonb,
-             grammar_targets_json = $16::jsonb,
-             starter_questions_by_level_target = $17::jsonb,
-             recovery_questions_by_level_target = $18::jsonb,
-             bridge_patterns_target = $19::jsonb,
-             hard_block_base = $20::jsonb,
-             soft_redirect_base = $21::jsonb,
-             opening_prompt_target = $22,
-             sort_order = $23,
-             updated_at = NOW()
-         WHERE bot_key = $1
-           AND topic_id = $2
-         RETURNING bot_key, topic_id, emoji, access_tier, title_base, goal_base, allowed_base, subareas_json, avoid_base,
-                   starter_questions_target, recovery_questions_target, sort_order, created_at, updated_at,
-                   topic_mode, speech_acts_base, lexical_anchors_target, grammar_targets_json,
-                   starter_questions_by_level_target, recovery_questions_by_level_target,
-                   bridge_patterns_target, hard_block_base, soft_redirect_base, opening_prompt_target`,
-        [
-          meta.bot_key,
-          currentTopicId,
-          payload.topic_id,
-          payload.emoji,
-          payload.access_tier_value,
-          payload.title_base,
-          payload.goal_base,
-          payload.allowed_base_json,
-          payload.subareas_json_json,
-          payload.avoid_base_json,
-          payload.starter_questions_target_json,
-          payload.recovery_questions_target_json,
-          payload.topic_mode_value,
-          payload.speech_acts_base_json,
-          payload.lexical_anchors_target_json,
-          payload.grammar_targets_json_value,
-          payload.starter_questions_by_level_target_json,
-          payload.recovery_questions_by_level_target_json,
-          payload.bridge_patterns_target_json,
-          payload.hard_block_base_json,
-          payload.soft_redirect_base_json,
-          payload.opening_prompt_target_value,
-          payload.sort_order
-        ]
-      );
-      if (!rows[0]) return res.status(404).json({ error: 'topic_not_found' });
-      return res.json({ item: helpers.serializeTopicRow(rows[0]) });
-    } catch (err) {
-      if (err?.code === '23505') {
-        return res.status(409).json({ error: 'topic_already_exists' });
-      }
-      return res.status(err?.status || 400).json({
-        error: err?.code || 'bad_topic_payload',
-        detail: err?.detail || err?.message || 'bad_topic_payload'
-      });
-    }
-  });
-
-  router.delete('/admin/topics/:id', requireAdmin, async (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    try {
-      const topicId = normalizeTopicId(req.params.id);
-      const meta = helpers.requireTopicBotMeta(req.query?.bot_key);
-      const { rowCount } = await ctx.pool.query(
-        `DELETE FROM bot_topic_catalog
-         WHERE bot_key = $1
-           AND topic_id = $2`,
-        [meta.bot_key, topicId]
-      );
-      if (!rowCount) return res.status(404).json({ error: 'topic_not_found' });
-      return res.json({ ok: true, removed: true });
-    } catch (err) {
-      return res.status(err?.status || 400).json({
-        error: err?.code || 'bad_topic_request',
-        detail: err?.detail || err?.message || 'bad_topic_request'
-      });
-    }
   });
 
   router.get('/admin/stripe/product-prices', requireAdmin, async (_req, res) => {

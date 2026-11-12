@@ -717,8 +717,8 @@ For each route:
 
 Promotion order:
 
-1. `command.xp`, topic menu, level menu, and voice menu
-2. level, reply mode, feedback, and topic state transitions
+1. `command.xp`, level menu, and voice menu
+2. level, reply mode, and feedback state transitions
 3. callbacks
 4. text conversation
 5. voice, STT, and TTS conversation

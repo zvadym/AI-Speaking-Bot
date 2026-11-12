@@ -22,7 +22,6 @@ export interface ConversationAiInput {
   profileSummary: string;
   shortSummary: string;
   history: Array<{ role: string; content: string }>;
-  topic: UnknownRecord | null;
   onboarding?: {
     scenario: string;
     prompt: string;
@@ -73,7 +72,6 @@ export interface BotAiClient {
     level: string;
     userMessage: string;
     assistantReply: string;
-    topic: UnknownRecord | null;
     trace?: LlmTraceContext;
   }): Promise<FollowUpHints>;
   vocabulary(
@@ -338,19 +336,6 @@ function normalizeConversationResult(value: UnknownRecord): ConversationAiResult
   } as ConversationAiResult;
 }
 
-function topicPrompt(topic: UnknownRecord | null): string {
-  if (!topic) return 'Status: unpinned';
-  return [
-    'Status: pinned',
-    `Topic ID: ${String(topic.topic_id || '')}`,
-    `PINNED TOPIC (base language): ${String(topic.title_base || '')}`,
-    `TOPIC GOAL (base language): ${String(topic.goal_base || '')}`,
-    `ALLOWED SUB-AREAS: ${Array.isArray(topic.allowed_base) ? topic.allowed_base.join('; ') : ''}`,
-    `AVOID AREAS: ${Array.isArray(topic.avoid_base) ? topic.avoid_base.join('; ') : ''}`,
-    `LAST ASSISTANT QUESTION: ${String(topic.last_assistant_question || '')}`
-  ].join('\n');
-}
-
 export function createBotAiClient({
   apiKey,
   elevenlabsApiKey = '',
@@ -498,9 +483,6 @@ export function createBotAiClient({
           `User level: ${input.level || 'A1'}`,
           `Input mode: ${input.inputMode}`,
           '',
-          'TOPIC STATE:',
-          topicPrompt(input.topic),
-          '',
           'LONG-TERM USER PROFILE (base language):',
           input.profileSummary || 'no data',
           '',
@@ -551,7 +533,6 @@ export function createBotAiClient({
           `Target language: ${context.target_language_label}`,
           `User level: ${input.level}`,
           '',
-          input.topic ? `PINNED TOPIC:\n${topicPrompt(input.topic)}\n` : '',
           `user_message:\n${input.userMessage}`,
           '',
           `assistant_reply:\n${input.assistantReply}`

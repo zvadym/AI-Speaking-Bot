@@ -44,7 +44,7 @@ function harness({
         return { rows: legacy ? [{ result_json: legacyResult }] : [] };
       }
       if (sql.includes('FROM user_bots ub')) {
-        return { rows: [{ level: 'a1', reply_mode: replyMode, topic_enabled: false }] };
+        return { rows: [{ level: 'a1', reply_mode: replyMode }] };
       }
       if (sql.includes('FROM messages')) return { rows: [] };
       if (sql.includes('INSERT INTO voice_usage_events')) events.push('usage');

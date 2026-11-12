@@ -1,7 +1,6 @@
 Write one win-back message from this structured context.
 Prefer one personal detail when it is genuinely available and useful:
 - first_name
-- topic_title when topic_enabled is true
 - short_summary or profile_summary
 - recent_turns or last_user_message only if it helps the message feel continuous
 

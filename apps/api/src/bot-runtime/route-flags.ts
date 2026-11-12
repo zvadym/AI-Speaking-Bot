@@ -14,7 +14,6 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'callback.lang': 1,
   'callback.level': 1,
   'callback.reply': 1,
-  'callback.topic': 1,
   'callback.onboarding': 2,
   'callback.settings': 1,
   'command.settings': 1,
@@ -26,7 +25,6 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'command.stats': 1,
   'command.xp': 1, // Preserve execution identity for already queued legacy jobs.
   'command.progress': 1,
-  'command.topic': 1,
   'command.feedback': 1,
   'command.unknown': 1,
   'reply_keyboard.voice_toggle': 1,

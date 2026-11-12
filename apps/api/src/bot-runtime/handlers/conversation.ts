@@ -52,9 +52,6 @@ interface ConversationContext extends Record<string, unknown> {
   reply_mode: string;
   profile_summary: string;
   short_summary: string;
-  topic_enabled: boolean;
-  topic_template_id: string | null;
-  topic_pack_json: unknown;
 }
 
 export interface ConversationEffectResult extends Record<string, unknown> {
@@ -80,16 +77,6 @@ function localeText(locale: Locale, key: string, fallback: string): string {
   return value || fallback;
 }
 
-function topicValue(raw: unknown, enabled: unknown): Record<string, unknown> | null {
-  if (!enabled) return null;
-  if (typeof raw === 'string') {
-    try { raw = JSON.parse(raw); } catch { return null; }
-  }
-  return raw && typeof raw === 'object' && !Array.isArray(raw)
-    ? raw as Record<string, unknown>
-    : null;
-}
-
 export async function executeConversation(
   client: PoolClient,
   update: PreparedUpdate,
@@ -104,9 +91,6 @@ export async function executeConversation(
     `SELECT
        ub.level,
        ub.reply_mode,
-       ub.topic_enabled,
-       ub.topic_template_id,
-       ub.topic_pack_json,
        COALESCE(s.profile_summary, '') AS profile_summary,
        COALESCE(s.short_summary, '') AS short_summary
      FROM user_bots ub
@@ -125,14 +109,12 @@ export async function executeConversation(
            FROM messages
           WHERE chat_id = $1
             AND bot_key = $2
-            AND (($3::boolean AND topic_template_id = $4) OR (NOT $3::boolean AND topic_template_id IS NULL))
           ORDER BY id DESC
           LIMIT 20
        ) recent
       ORDER BY id`,
-    [chatId, update.botKey, Boolean(context.topic_enabled), context.topic_template_id]
+    [chatId, update.botKey]
   );
-  const topic = topicValue(context.topic_pack_json, context.topic_enabled);
   const response = await ai.respond({
     botKey: update.botKey,
     level: String(context.level || 'a1'),
@@ -141,7 +123,6 @@ export async function executeConversation(
     profileSummary: String(context.profile_summary || ''),
     shortSummary: String(context.short_summary || ''),
     history: historyResult.rows,
-    topic,
     onboarding,
     onReplyText,
     trace: {
@@ -152,13 +133,12 @@ export async function executeConversation(
     }
   });
   await client.query(
-    `INSERT INTO messages (chat_id, role, content, bot_key, topic_template_id)
-     VALUES ($1, 'user', $2, $3, $4)`,
+    `INSERT INTO messages (chat_id, role, content, bot_key)
+     VALUES ($1, 'user', $2, $3)`,
     [
       chatId,
       text,
-      update.botKey,
-      context.topic_enabled ? context.topic_template_id : null
+      update.botKey
     ]
   );
 
@@ -167,14 +147,13 @@ export async function executeConversation(
   if (response.is_target_language && reply) {
     const inserted = await client.query<{ id: string }>(
       `INSERT INTO messages (
-         chat_id, role, content, translation_base, follow_up_hints, bot_key, topic_template_id
-       ) VALUES ($1, 'assistant', $2, '', '[]', $3, $4)
+         chat_id, role, content, translation_base, follow_up_hints, bot_key
+       ) VALUES ($1, 'assistant', $2, '', '[]', $3)
        RETURNING id::text`,
       [
         chatId,
         reply,
-        update.botKey,
-        context.topic_enabled ? context.topic_template_id : null
+        update.botKey
       ]
     );
     assistantMessageId = Number(inserted.rows[0]?.id) || null;

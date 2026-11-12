@@ -95,9 +95,7 @@
     "level_label_beginner": "Anfänger (A1-A2)",
     "level_label_conversational": "Mittelstufe (B1-B2)",
     "level_label_advanced": "Fortgeschritten (C1+)",
-    "topic_btn_set_inline": "🧭 Thema setzen",
-    "topic_btn_manage_inline": "🎯 Thema ändern/entfernen",
-    "onboarding_start_practice_text": "Starker Start ✨ Möchtest du ein Thema wählen oder frei weitermachen? Du kannst jederzeit Sprache oder Text senden.",
+    "onboarding_start_practice_text": "Lass uns weiterreden. Du kannst jederzeit eine Sprach- oder Textnachricht senden.",
     "onboarding_btn_start_voice": "🎙️ Mit Sprache starten",
     "onboarding_btn_start_text": "✍️ Mit Text starten",
     "onboarding_btn_show_example": "👀 Beispiel zeigen",
@@ -107,8 +105,6 @@
     "onboarding_showcase_no_mistakes_text": "Sehr gut, hier sind keine Fehler 👏\nWenn du sehen willst, wie ich korrigiere, schreibe absichtlich einen falschen Satz.\nZum Beispiel:\n❌ Yesterday I go to work by bus.",
     "onboarding_complete_full_text": "Starker Fortschritt — dein Profil ist bereit 🚀\n\nKurz das Wichtigste:\n• Dein Startniveau ist A1. Du kannst es jederzeit auf A1, A2, B1, B2 oder C1 ändern.\n• Mit den Buttons unter dem Chat kannst du jederzeit dein Sprachniveau und das Antwortformat wechseln: Sprache oder Text.\n• In der App kannst du weitere Einstellungen öffnen, Feedback senden und andere Optionen verwalten.\n\nSende jetzt deine nächste Nachricht, um deinen Streak fortzusetzen 🔥\n\nGlückwunsch! Onboarding ist abgeschlossen.",
     "keyboard_btn_level_prefix": "Level",
-    "keyboard_btn_topic_prefix": "Thema",
-    "keyboard_btn_topic_none": "Thema wählen",
     "keyboard_btn_voice_prefix": "Antworttyp",
     "keyboard_btn_voice_text": "Text",
     "keyboard_btn_voice_voice": "Stimme",
@@ -121,14 +117,6 @@
         "voice_variants": [
           "Bereit fuer eine kurze Uebung? Schick eine kurze Sprachnachricht.",
           "Willst du wieder kurz einsteigen? Schick eine kurze Sprachnachricht."
-        ],
-        "topic_text_variants": [
-          "Willst du wieder mit {{topic_title}} einsteigen? Schreib einen kurzen Satz.",
-          "Bereit fuer einen schnellen Neustart mit {{topic_title}}? Schreib einen kurzen Satz."
-        ],
-        "topic_voice_variants": [
-          "Willst du wieder mit {{topic_title}} einsteigen? Schick eine kurze Sprachnachricht.",
-          "Bereit fuer einen schnellen Neustart mit {{topic_title}}? Schick eine kurze Sprachnachricht."
         ]
       },
       "winback": {
@@ -147,10 +135,6 @@
             "Kein Druck. Wir können jederzeit wieder bei null anfangen. {{reply_cta_label}}, wenn du magst.",
             "Wenn du bereit bist, starten wir einfach neu. {{reply_cta_label}}."
           ],
-          "topic": [
-            "Willst du zum Thema „{{topic_title}}“ zurückkehren? Schreib einen kurzen Satz — und wir machen weiter.",
-            "Willst du wieder zu „{{topic_title}}“ zurück? Schreib einen kurzen Satz — und wir machen weiter."
-          ],
           "streak": [
             "Du hattest schon einmal eine Serie von {{streak_best}} Tagen. Wir können mit einem kleinen Schritt neu anfangen. {{reply_cta_label}}.",
             "Deine beste Serie waren {{streak_best}} Tage. Der Neustart kann mit nur einer kurzen Nachricht beginnen. {{reply_cta_label}}."
@@ -162,7 +146,7 @@
         }
       },
       "free_limit_50": {
-        "message_html": "<b>Du hast schon die Hälfte deines freien Limits geschafft ✨</b>\nWenn du weitermachen willst, kostet PRO weniger als 2 Tassen Kaffee pro Monat.\n\nDamit bekommst du Extras wie neue Themen, Toneinstellungen und weitere Updates in Zukunft."
+        "message_html": "<b>Du hast schon die Hälfte deines freien Limits geschafft ✨</b>\nWenn du weitermachen willst, kostet PRO weniger als 2 Tassen Kaffee pro Monat.\n\nDamit bekommst du mehr Zeit für Gesprächsübungen."
       }
     },
     "onboarding_v2": {
@@ -184,7 +168,7 @@
       },
       "buttons": {
         "use_text": "✍️ Mit Text antworten",
-        "change_scenario": "🔄 Anderes Thema",
+        "change_scenario": "🔄 Anderes Szenario",
         "confirm_level": "✅ Ja, {suggested_level}",
         "choose_level": "🎚 Anderes wählen",
         "retry": "🔁 Noch einmal sagen",
@@ -211,11 +195,9 @@
     "settings": {
       "title": "Einstellungen",
       "level": "Niveau",
-      "topic": "Thema",
       "replies": "Bot-Antworten",
       "voice": "Sprache",
       "text": "Text",
-      "free": "Freies Gespräch",
       "done": "Fertig",
       "back": "Zurück",
       "saved": "Änderungen gespeichert",
@@ -247,10 +229,6 @@
       {
         "command": "stats",
         "description": "Abo-Status prüfen"
-      },
-      {
-        "command": "topic",
-        "description": "Gespraechsthema waehlen"
       },
       {
         "command": "feedback",

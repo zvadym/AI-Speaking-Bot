@@ -24,7 +24,6 @@ const CALLBACK_ROUTES: Readonly<Record<string, Route>> = {
   lang: 'callback.lang',
   level: 'callback.level',
   reply: 'callback.reply',
-  topic: 'callback.topic',
   onb: 'callback.onboarding'
 };
 
@@ -89,7 +88,6 @@ export function resolvePreparedRoute({
   if ((command && hasNoArgs(command, '/level')) || keyboard.buttonIntent === 'level') return 'command.level';
   if (command && hasNoArgs(command, '/stats')) return 'command.stats';
   if (keyboard.buttonIntent === 'retired') return 'command.unknown';
-  if ((command && hasNoArgs(command, '/topic')) || keyboard.buttonIntent === 'topic') return 'command.topic';
   if (command?.name === '/feedback') return 'command.feedback';
   if (command) return 'command.unknown';
   if (pendingFeedback && input.message.hasVoice) return 'pending_feedback.voice';

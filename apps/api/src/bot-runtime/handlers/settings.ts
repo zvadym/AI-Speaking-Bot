@@ -5,10 +5,15 @@ import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler, type BotHandlerOutcome } from '../handler-registry.js';
 import { buildPersistentReplyMarkup } from '../keyboard-state.js';
 import { deliverTelegramText, classifyTelegramDeliveryError } from '../telegram-text-delivery.js';
-import { accessibleSettingsCatalog, applySettingsAction, parseSettingsAction, SettingsInputError, settingsView, type SettingsAction } from '../settings-model.js';
+import { applySettingsAction, parseSettingsAction, SettingsInputError, settingsView, type SettingsAction } from '../settings-model.js';
 import { renderSettingsRich, settingsLabels } from '../settings-views.js';
 import { deleteSettingsMessage } from '../settings-message.js';
-import type { TopicMenuHelpers, TopicTelegramClient } from './topic-menu.js';
+import type { TelegramTextClient } from '../telegram-text-delivery.js';
+
+export interface SettingsTelegramClient extends TelegramTextClient {
+  answerTelegramCallbackQuery(id: string, text?: string, options?: {botKey?: string | null; showAlert?: boolean}): Promise<unknown>;
+  callTelegramApi(botKey: string, method: string, body: Record<string, unknown>): Promise<unknown>;
+}
 
 // A session lock serializes settings cards for the same learner/bot, including
 // rendering. It never holds a transaction open while calling Telegram.
@@ -27,10 +32,10 @@ export async function withSettingsLock<T>(pool: Pool, key: string, work: () => P
     client.release(releaseError);
   }
 }
-export function createSettingsHandlers({ pool, getBotLocale, telegramClient, helpers,
+export function createSettingsHandlers({ pool, getBotLocale, telegramClient,
   effectRunner = runBotUpdateEffect, stateLoader = fetchKeyboardState,
   textDeliverer = deliverTelegramText, lock = withSettingsLock
-}: { pool: Pool; getBotLocale(key: string): unknown; telegramClient: TopicTelegramClient; helpers: TopicMenuHelpers;
+}: { pool: Pool; getBotLocale(key: string): unknown; telegramClient: SettingsTelegramClient;
   effectRunner?: typeof runBotUpdateEffect; stateLoader?: typeof fetchKeyboardState;
   textDeliverer?: typeof deliverTelegramText; lock?: typeof withSettingsLock;
 }): BotHandler[] {
@@ -69,17 +74,14 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient, hel
     } catch { await answer(true);return {status:'noop'}; }
     return lock(pool, `settings:${update.botKey}:${chatId}`, async () => {
       try {
-        const catalog = action.kind === 'page' || action.kind === 'topic'
-          ? await accessibleSettingsCatalog(helpers,chatId,update.botKey) : [];
         let inputError = false;
-        if (['level','reply','topic'].includes(action.kind)) {
+        if (['level','reply'].includes(action.kind)) {
           try {
-            const effect = await effectRunner(pool,{decisionId:update.decisionId,stepKey:'settings:mutation:v1',execute:client=>applySettingsAction(client,update,action,catalog)});
-            if(effect.result.oldPin) await api('unpinChatMessage',{chat_id:chatId,message_id:effect.result.oldPin}).catch(()=>{});
+            await effectRunner(pool,{decisionId:update.decisionId,stepKey:'settings:mutation:v1',execute:client=>applySettingsAction(client,update,action)});
           } catch(error) { if(error instanceof SettingsInputError) inputError=true; else throw error; }
         }
         const row = await stateLoader(pool,chatId,update.botKey);
-        const view = settingsView(row,catalog,action,l.free);
+        const view = settingsView(row);
         if(inputError) view.e='unavailable';
         if (action.kind === 'open') {
           const outcome = await textDeliverer({pool,update,stepKey:'settings:open:r:v1',text:l.title,telegramMethod:'sendRichMessage',

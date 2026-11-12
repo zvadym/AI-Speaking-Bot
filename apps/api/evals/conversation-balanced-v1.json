@@ -13,8 +13,11 @@
       "profileSummary": "The learner likes everyday practical topics.",
       "shortSummary": "No active local thread.",
       "history": [],
-      "topic": null,
-      "dimensions": ["target-language", "grammar", "a1"]
+      "dimensions": [
+        "target-language",
+        "grammar",
+        "a1"
+      ]
     },
     {
       "id": "de-en-a2-base-language",
@@ -27,8 +30,11 @@
       "profileSummary": "Die lernende Person mag Musik.",
       "shortSummary": "Die Unterhaltung beginnt gerade.",
       "history": [],
-      "topic": null,
-      "dimensions": ["base-language", "hint-mode", "a2"]
+      "dimensions": [
+        "base-language",
+        "hint-mode",
+        "a2"
+      ]
     },
     {
       "id": "de-es-b1-correct-target",
@@ -40,9 +46,17 @@
       "expectedMistakes": false,
       "profileSummary": "Die lernende Person kocht gern.",
       "shortSummary": "Das Gespräch handelt von Alltagsplänen.",
-      "history": [{"role": "assistant", "content": "¿Qué hiciste ayer?"}],
-      "topic": null,
-      "dimensions": ["target-language", "correct-input", "b1"]
+      "history": [
+        {
+          "role": "assistant",
+          "content": "¿Qué hiciste ayer?"
+        }
+      ],
+      "dimensions": [
+        "target-language",
+        "correct-input",
+        "b1"
+      ]
     },
     {
       "id": "de-it-b2-mixed-language",
@@ -55,11 +69,14 @@
       "profileSummary": "Die lernende Person interessiert sich für Kunst.",
       "shortSummary": "Es geht um Pläne für morgen.",
       "history": [],
-      "topic": null,
-      "dimensions": ["mixed-language", "hint-mode", "b2"]
+      "dimensions": [
+        "mixed-language",
+        "hint-mode",
+        "b2"
+      ]
     },
     {
-      "id": "en-de-c1-pinned-topic",
+      "id": "en-de-c1-conversation-context",
       "botKey": "en-de",
       "level": "C1",
       "inputMode": "text",
@@ -68,16 +85,18 @@
       "expectedMistakes": false,
       "profileSummary": "The learner enjoys discussing urban policy.",
       "shortSummary": "The current thread compares transport policies.",
-      "history": [{"role": "assistant", "content": "Welche Verkehrsmittel sollten Vorrang haben?"}],
-      "topic": {
-        "topic_id": "city-transport",
-        "title_base": "City transport",
-        "goal_base": "Compare practical transport policies",
-        "allowed_base": ["cycling", "public transport", "pedestrian areas"],
-        "avoid_base": ["unrelated personal finance"],
-        "last_assistant_question": "Welche Verkehrsmittel sollten Vorrang haben?"
-      },
-      "dimensions": ["target-language", "correct-input", "pinned-topic", "c1"]
+      "history": [
+        {
+          "role": "assistant",
+          "content": "Welche Verkehrsmittel sollten Vorrang haben?"
+        }
+      ],
+      "dimensions": [
+        "target-language",
+        "correct-input",
+        "conversation-context",
+        "c1"
+      ]
     },
     {
       "id": "en-es-a1-voice-clean",
@@ -90,8 +109,11 @@
       "profileSummary": "The learner practises travel phrases.",
       "shortSummary": "The learner is ordering in a cafe.",
       "history": [],
-      "topic": null,
-      "dimensions": ["voice-like", "correct-input", "a1"]
+      "dimensions": [
+        "voice-like",
+        "correct-input",
+        "a1"
+      ]
     },
     {
       "id": "en-it-a2-target-mistake",
@@ -104,8 +126,11 @@
       "profileSummary": "The learner likes films.",
       "shortSummary": "The learner is talking about yesterday.",
       "history": [],
-      "topic": null,
-      "dimensions": ["target-language", "grammar", "a2"]
+      "dimensions": [
+        "target-language",
+        "grammar",
+        "a2"
+      ]
     },
     {
       "id": "hi-en-b1-base-language",
@@ -118,8 +143,12 @@
       "profileSummary": "उपयोगकर्ता काम के विषयों पर अभ्यास करना चाहता है।",
       "shortSummary": "नई नौकरी की चर्चा शुरू हुई है।",
       "history": [],
-      "topic": null,
-      "dimensions": ["base-language", "non-latin-script", "hint-mode", "b1"]
+      "dimensions": [
+        "base-language",
+        "non-latin-script",
+        "hint-mode",
+        "b1"
+      ]
     },
     {
       "id": "it-de-b2-target-mistake",
@@ -132,11 +161,14 @@
       "profileSummary": "La persona vuole migliorare i casi tedeschi.",
       "shortSummary": "Si parla del fine settimana.",
       "history": [],
-      "topic": null,
-      "dimensions": ["target-language", "case-agreement", "b2"]
+      "dimensions": [
+        "target-language",
+        "case-agreement",
+        "b2"
+      ]
     },
     {
-      "id": "it-en-c1-pinned-topic",
+      "id": "it-en-c1-conversation-context",
       "botKey": "it-en",
       "level": "C1",
       "inputMode": "text",
@@ -145,16 +177,18 @@
       "expectedMistakes": false,
       "profileSummary": "La persona lavora in un team distribuito.",
       "shortSummary": "La conversazione confronta modelli di lavoro.",
-      "history": [{"role": "assistant", "content": "Which part of remote work affects teams most?"}],
-      "topic": {
-        "topic_id": "future-of-work",
-        "title_base": "Il futuro del lavoro",
-        "goal_base": "Valutare vantaggi e svantaggi del lavoro remoto",
-        "allowed_base": ["autonomia", "collaborazione", "confini personali"],
-        "avoid_base": ["politica non collegata"],
-        "last_assistant_question": "Which part of remote work affects teams most?"
-      },
-      "dimensions": ["target-language", "correct-input", "pinned-topic", "c1"]
+      "history": [
+        {
+          "role": "assistant",
+          "content": "Which part of remote work affects teams most?"
+        }
+      ],
+      "dimensions": [
+        "target-language",
+        "correct-input",
+        "conversation-context",
+        "c1"
+      ]
     },
     {
       "id": "tr-en-a1-voice-imperfect",
@@ -167,8 +201,12 @@
       "profileSummary": "Kullanıcı spordan hoşlanıyor.",
       "shortSummary": "Kullanıcı hafta sonundan bahsediyor.",
       "history": [],
-      "topic": null,
-      "dimensions": ["voice-like", "imperfect-transcript", "false-positive-guard", "a1"]
+      "dimensions": [
+        "voice-like",
+        "imperfect-transcript",
+        "false-positive-guard",
+        "a1"
+      ]
     },
     {
       "id": "uk-de-a2-mixed-language",
@@ -181,8 +219,12 @@
       "profileSummary": "Користувач практикує ситуації в кафе.",
       "shortSummary": "Замовлення напою.",
       "history": [],
-      "topic": null,
-      "dimensions": ["mixed-language", "non-latin-script", "hint-mode", "a2"]
+      "dimensions": [
+        "mixed-language",
+        "non-latin-script",
+        "hint-mode",
+        "a2"
+      ]
     },
     {
       "id": "uk-en-b1-target-mistake",
@@ -195,8 +237,11 @@
       "profileSummary": "Користувач працює у сфері технологій.",
       "shortSummary": "Обговорюється робоче завдання.",
       "history": [],
-      "topic": null,
-      "dimensions": ["target-language", "verb-pattern", "b1"]
+      "dimensions": [
+        "target-language",
+        "verb-pattern",
+        "b1"
+      ]
     },
     {
       "id": "uk-es-b2-third-language",
@@ -209,15 +254,11 @@
       "profileSummary": "Користувач вивчає іспанську для подорожей.",
       "shortSummary": "Активна тема стосується подорожей.",
       "history": [],
-      "topic": {
-        "topic_id": "travel-planning",
-        "title_base": "Планування подорожі",
-        "goal_base": "Підготувати практичний план подорожі",
-        "allowed_base": ["транспорт", "житло", "маршрут"],
-        "avoid_base": ["непов'язані робочі теми"],
-        "last_assistant_question": "¿Cómo prefieres viajar?"
-      },
-      "dimensions": ["third-language", "pinned-topic", "b2"]
+      "dimensions": [
+        "third-language",
+        "conversation-context",
+        "b2"
+      ]
     },
     {
       "id": "uk-pl-c1-correct-target",
@@ -230,8 +271,11 @@
       "profileSummary": "Користувач любить обговорювати складні рішення.",
       "shortSummary": "Розмова про оцінювання пропозицій.",
       "history": [],
-      "topic": null,
-      "dimensions": ["target-language", "correct-input", "c1"]
+      "dimensions": [
+        "target-language",
+        "correct-input",
+        "c1"
+      ]
     }
   ]
 }

@@ -803,13 +803,12 @@ test('admin notifications metrics returns sent counts by bot and type', async ()
 
 test('admin reply keyboard click metrics return daily click counts', async () => {
   await withMockedQuery(async (source, params = []) => {
-    if (source.includes("reply_kbd_topic_click") && source.includes('GROUP BY d.day_utc')) {
+    if (source.includes("reply_kbd_level_click") && source.includes('GROUP BY d.day_utc')) {
       assert.equal(params[0], '2026-03-01T00:00:00.000Z');
       assert.equal(params[1], '2026-03-04T00:00:00.000Z');
       assert.equal(params[2], null);
       assert.equal(params[3], null);
       assert.deepEqual(params[4], [
-        'reply_kbd_topic_click',
         'reply_kbd_level_click',
         'reply_kbd_voice_click',
 
@@ -819,14 +818,12 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
         rows: [
           {
             day: '2026-03-01',
-            reply_kbd_topic_click: 4,
             reply_kbd_level_click: 2,
             reply_kbd_voice_click: 6,
             idiom_phrase_more_click: 3
           },
           {
             day: '2026-03-02',
-            reply_kbd_topic_click: 3,
             reply_kbd_level_click: 0,
             reply_kbd_voice_click: 5,
             idiom_phrase_more_click: 1
@@ -850,14 +847,12 @@ test('admin reply keyboard click metrics return daily click counts', async () =>
     assert.deepEqual(response.json.series, [
       {
         day: '2026-03-01',
-        reply_kbd_topic_click: 4,
         reply_kbd_level_click: 2,
         reply_kbd_voice_click: 6,
         idiom_phrase_more_click: 3
       },
       {
         day: '2026-03-02',
-        reply_kbd_topic_click: 3,
         reply_kbd_level_click: 0,
         reply_kbd_voice_click: 5,
         idiom_phrase_more_click: 1
@@ -874,7 +869,6 @@ test('admin reply keyboard click totals return clicks and unique users', async (
       assert.equal(params[2], null);
       assert.equal(params[3], null);
       assert.deepEqual(params[4], [
-        'reply_kbd_topic_click',
         'reply_kbd_level_click',
         'reply_kbd_voice_click',
 
@@ -883,38 +877,31 @@ test('admin reply keyboard click totals return clicks and unique users', async (
       return {
         rows: [
           {
-            action: 'reply_kbd_topic_click',
-            clicks: 7,
-            unique_users: 5,
-            total_clicks: 23,
-            summary_unique_users: 11
-          },
-          {
             action: 'reply_kbd_level_click',
             clicks: 2,
             unique_users: 2,
-            total_clicks: 23,
+            total_clicks: 16,
             summary_unique_users: 11
           },
           {
             action: 'reply_kbd_voice_click',
             clicks: 8,
             unique_users: 6,
-            total_clicks: 23,
+            total_clicks: 16,
             summary_unique_users: 11
           },
           {
             action: 'reply_kbd_xp_click',
             clicks: 2,
             unique_users: 2,
-            total_clicks: 23,
+            total_clicks: 16,
             summary_unique_users: 11
           },
           {
             action: 'idiom_phrase_more_click',
             clicks: 4,
             unique_users: 3,
-            total_clicks: 23,
+            total_clicks: 16,
             summary_unique_users: 11
           }
         ]
@@ -934,11 +921,10 @@ test('admin reply keyboard click totals return clicks and unique users', async (
     assert.equal(response.json.from, '2026-03-01T00:00:00.000Z');
     assert.equal(response.json.to, '2026-03-04T00:00:00.000Z');
     assert.deepEqual(response.json.summary, {
-      total_clicks: 23,
+      total_clicks: 16,
       unique_users: 11
     });
     assert.deepEqual(response.json.series, [
-      { action: 'reply_kbd_topic_click', clicks: 7, unique_users: 5 },
       { action: 'reply_kbd_level_click', clicks: 2, unique_users: 2 },
       { action: 'reply_kbd_voice_click', clicks: 8, unique_users: 6 },
       { action: 'reply_kbd_xp_click', clicks: 2, unique_users: 2 },
@@ -1611,167 +1597,6 @@ test('miniapp mutation endpoints validate input and persist profile changes', as
   });
 });
 
-test('internal topic menu renders all topics and marks pro topics for free users', async () => {
-  const sentMessages = [];
-
-  await withMockedFetch(async (_url, init) => {
-    sentMessages.push(JSON.parse(String(init?.body || '{}')));
-    return new Response(JSON.stringify({
-      ok: true,
-      result: { message_id: 991 }
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }, async () => {
-    await withMockedQuery(async (source, params = []) => {
-      if (source.includes('CASE') && source.includes('FROM users') && source.includes('effective_tier')) {
-        return { rows: [{ effective_tier: 'free' }] };
-      }
-
-      if (source.includes('FROM user_bots') && source.includes('topic_pack_json')) {
-        return { rows: [{ topic_enabled: false, topic_template_id: null, topic_pack_json: null }] };
-      }
-
-      if (source.includes('FROM bot_topic_catalog')) {
-        assert.equal(params[0], 'uk-de');
-        return {
-          rows: [
-            {
-              bot_key: 'uk-de',
-              topic_id: 'all-topic',
-              emoji: '🧩',
-              access_tier: 'all',
-              title_base: 'All Topic',
-              goal_base: 'All goal',
-              allowed_base: ['one', 'two'],
-              avoid_base: ['three', 'four'],
-              starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
-              recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
-              sort_order: 10,
-              created_at: null,
-              updated_at: null
-            },
-            {
-              bot_key: 'uk-de',
-              topic_id: 'free-topic',
-              emoji: '🌱',
-              access_tier: 'free',
-              title_base: 'Free Topic',
-              goal_base: 'Free goal',
-              allowed_base: ['one', 'two'],
-              avoid_base: ['three', 'four'],
-              starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
-              recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
-              sort_order: 20,
-              created_at: null,
-              updated_at: null
-            },
-            {
-              bot_key: 'uk-de',
-              topic_id: 'pro-topic',
-              emoji: '🔒',
-              access_tier: 'pro',
-              title_base: 'Pro Topic',
-              goal_base: 'Pro goal',
-              allowed_base: ['one', 'two'],
-              avoid_base: ['three', 'four'],
-              starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
-              recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
-              sort_order: 30,
-              created_at: null,
-              updated_at: null
-            }
-          ]
-        };
-      }
-
-      throw new Error(`Unexpected query in internal topics menu test: ${source.slice(0, 160)}`);
-    }, async () => {
-      const app = await createApp({ apiBoss: { publish: async () => null } });
-      const response = await request(app, {
-        method: 'POST',
-        path: '/internal/topics/menu',
-        headers: { 'X-Internal-Secret': 'internal-secret' },
-        body: { chat_id: 42, bot_key: 'uk-de' }
-      });
-
-      assert.equal(response.status, 200);
-      assert.equal(response.json.ok, true);
-      assert.equal(response.json.count, 3);
-      assert.equal(sentMessages.length, 1);
-      assert.deepEqual(
-        sentMessages[0].reply_markup.inline_keyboard.map((row) => row[0].callback_data),
-        ['topic:all-topic', 'topic:free-topic', 'topic:pro-topic', 'topic:clear']
-      );
-      assert.equal(sentMessages[0].reply_markup.inline_keyboard[2][0].text, '🔒 Pro Topic 🔒 PRO');
-    });
-  });
-});
-
-test('internal topic menu marks pro topics with an open lock for pro users', async () => {
-  const sentMessages = [];
-
-  await withMockedFetch(async (_url, init) => {
-    sentMessages.push(JSON.parse(String(init?.body || '{}')));
-    return new Response(JSON.stringify({
-      ok: true,
-      result: { message_id: 992 }
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }, async () => {
-    await withMockedQuery(async (source, params = []) => {
-      if (source.includes('CASE') && source.includes('FROM users') && source.includes('effective_tier')) {
-        return { rows: [{ effective_tier: 'pro' }] };
-      }
-
-      if (source.includes('FROM user_bots') && source.includes('topic_pack_json')) {
-        return { rows: [{ topic_enabled: false, topic_template_id: null, topic_pack_json: null }] };
-      }
-
-      if (source.includes('FROM bot_topic_catalog')) {
-        assert.equal(params[0], 'uk-de');
-        return {
-          rows: [
-            {
-              bot_key: 'uk-de',
-              topic_id: 'pro-topic',
-              emoji: '🔒',
-              access_tier: 'pro',
-              title_base: 'Pro Topic',
-              goal_base: 'Pro goal',
-              allowed_base: ['one', 'two'],
-              avoid_base: ['three', 'four'],
-              starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
-              recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
-              sort_order: 30,
-              created_at: null,
-              updated_at: null
-            }
-          ]
-        };
-      }
-
-      throw new Error(`Unexpected query in internal topics menu pro badge test: ${source.slice(0, 160)}`);
-    }, async () => {
-      const app = await createApp({ apiBoss: { publish: async () => null } });
-      const response = await request(app, {
-        method: 'POST',
-        path: '/internal/topics/menu',
-        headers: { 'X-Internal-Secret': 'internal-secret' },
-        body: { chat_id: 42, bot_key: 'uk-de' }
-      });
-
-      assert.equal(response.status, 200);
-      assert.equal(response.json.ok, true);
-      assert.equal(sentMessages.length, 1);
-      assert.equal(sentMessages[0].reply_markup.inline_keyboard[0][0].text, '🔒 Pro Topic ✅ PRO');
-    });
-  });
-});
-
 test('internal prepare update returns route and keyboard state without side effects', async () => {
   await withMockedQuery(async (source, params = []) => {
     if (source.includes('FROM user_bots ub') && source.includes('bot_onboarding_completion')) {
@@ -1781,10 +1606,6 @@ test('internal prepare update returns route and keyboard state without side effe
           level: 'b1',
           reply_mode: 'text',
           onboarding_complete_at: '2026-03-11T08:00:00.000Z',
-          topic_enabled: true,
-          topic_template_id: 'coffee',
-          topic_pack_json: { title_base: 'Coffee chat' },
-          topic_pinned_message_id: 777,
           xp_total: 640,
           xp_level: 4
         }]
@@ -1809,7 +1630,7 @@ test('internal prepare update returns route and keyboard state without side effe
           update_id: 987654,
           message: {
             message_id: 1234,
-            text: '· 🧩 Coffee chat',
+            text: '· 📚 B1',
             chat: { id: 42, type: 'private' },
             from: {
               id: 42,
@@ -1828,12 +1649,11 @@ test('internal prepare update returns route and keyboard state without side effe
     assert.equal(response.json.decisionId, 'v1:uk-de:987654');
     assert.equal(response.json.botKey, 'uk-de');
     assert.equal(response.json.updateId, 987654);
-    assert.equal(response.json.route, 'command.topic');
+    assert.equal(response.json.route, 'command.level');
     assert.equal(response.json.input.chatId, 42);
     assert.equal(response.json.routingFacts.intentSource, 'reply_keyboard');
-    assert.equal(response.json.routingFacts.keyboardIntent, 'topic');
+    assert.equal(response.json.routingFacts.keyboardIntent, 'level');
     assert.equal(response.json.routingFacts.pendingFeedback, false);
-    assert.equal(response.json.context.keyboard.topicButtonText, '· 🧩 Coffee chat');
     assert.equal(response.json.context.keyboard.levelButtonText, '· 📚 B1');
   });
 });
@@ -2019,165 +1839,28 @@ test('internal bot ingestion is dark by default and validates Contract v1', asyn
   });
 });
 
-test('admin topics list returns v2 topic fields', async () => {
-  await withMockedQuery(async (source, params = []) => {
-    if (source.includes('FROM bot_topic_catalog')) {
-      assert.equal(params[0], 'uk-de');
-      return {
-        rows: [
-          {
-            bot_key: 'uk-de',
-            topic_id: 'coffee',
-            emoji: '☕',
-            access_tier: 'all',
-            title_base: 'Coffee shop',
-            goal_base: 'Practice a short cafe order.',
-            allowed_base: ['ordering drinks', 'asking for milk'],
-            subareas_json: [
-              { id: 'drink-type', label_base: 'ordering drinks', keywords_target: ['coffee'], keywords_base: ['ordering drinks'] },
-              { id: 'milk', label_base: 'asking for milk', keywords_target: ['milk'], keywords_base: ['asking for milk'] }
-            ],
-            avoid_base: ['politics', 'weather'],
-            starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
-            recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
-            sort_order: 10,
-            created_at: null,
-            updated_at: null,
-            topic_mode: 'roleplay',
-            speech_acts_base: ['ordering', 'clarifying'],
-            lexical_anchors_target: ['latte', 'oat milk'],
-            grammar_targets_json: { tense: ['present simple'] },
-            starter_questions_by_level_target: { default: ['Q1?'], a1: ['A1 starter?'] },
-            recovery_questions_by_level_target: { default: ['R1?'] },
-            bridge_patterns_target: ['How about...'],
-            hard_block_base: ['politics'],
-            soft_redirect_base: ['weather'],
-            opening_prompt_target: 'Do you want a latte or cappuccino?'
-          }
-        ]
-      };
-    }
-
-    throw new Error(`Unexpected query in admin topics list test: ${source.slice(0, 160)}`);
+test('removed topic endpoints return 404 without database or Telegram side effects', async () => {
+  await withMockedQuery(async (source) => {
+    throw new Error(`Removed endpoint must not query the database: ${source.slice(0, 160)}`);
   }, async () => {
     const app = await createApp({ apiBoss: { publish: async () => null } });
-    const response = await request(app, {
-      method: 'GET',
-      path: '/admin/topics?bot_key=uk-de',
-      headers: { 'X-Admin-Password': 'secret-admin' }
-    });
-
-    assert.equal(response.status, 200);
-    assert.equal(response.json.selected_bot_key, 'uk-de');
-    assert.equal(response.json.items.length, 1);
-    assert.equal(response.json.items[0].topic_mode, 'roleplay');
-    assert.equal(response.json.items[0].subareas_json.length, 2);
-    assert.equal(response.json.items[0].opening_prompt_target, 'Do you want a latte or cappuccino?');
-    assert.deepEqual(response.json.items[0].lexical_anchors_target, ['latte', 'oat milk']);
-    assert.deepEqual(response.json.items[0].starter_questions_by_level_target, {
-      default: ['Q1?'],
-      a1: ['A1 starter?']
-    });
-  });
-});
-
-test('admin topic update preserves existing v2 fields when legacy form omits them', async () => {
-  const existingRow = {
-    bot_key: 'uk-de',
-    topic_id: 'coffee',
-    emoji: '☕',
-    access_tier: 'all',
-    title_base: 'Coffee shop',
-    goal_base: 'Practice a short cafe order.',
-    allowed_base: ['ordering drinks', 'asking for milk'],
-    subareas_json: [
-      { id: 'drink-type', label_base: 'ordering drinks', keywords_target: ['coffee'], keywords_base: ['ordering drinks'] },
-      { id: 'milk', label_base: 'asking for milk', keywords_target: ['milk'], keywords_base: ['asking for milk'] }
-    ],
-    avoid_base: ['politics', 'weather'],
-    starter_questions_target: ['Q1?', 'Q2?', 'Q3?', 'Q4?', 'Q5?', 'Q6?'],
-    recovery_questions_target: ['R1?', 'R2?', 'R3?', 'R4?', 'R5?', 'R6?'],
-    sort_order: 10,
-    created_at: null,
-    updated_at: null,
-    topic_mode: 'roleplay',
-    speech_acts_base: ['ordering', 'clarifying'],
-    lexical_anchors_target: ['latte', 'oat milk'],
-    grammar_targets_json: { tense: ['present simple'] },
-    starter_questions_by_level_target: { default: ['Q1?'], a1: ['A1 starter?'] },
-    recovery_questions_by_level_target: { default: ['R1?'] },
-    bridge_patterns_target: ['How about...'],
-    hard_block_base: ['politics'],
-    soft_redirect_base: ['weather'],
-    opening_prompt_target: 'Do you want a latte or cappuccino?'
-  };
-
-  await withMockedQuery(async (source, params = []) => {
-    if (source.includes('FROM bot_topic_catalog') && source.includes('LIMIT 1')) {
-      assert.deepEqual(params, ['uk-de', 'coffee']);
-      return { rows: [existingRow] };
+    for (const [method, path] of [
+      ['GET', '/admin/topics?bot_key=uk-de'],
+      ['POST', '/admin/topics'],
+      ['PUT', '/admin/topics/coffee'],
+      ['DELETE', '/admin/topics/coffee?bot_key=uk-de'],
+      ['POST', '/admin/topics/generate-draft'],
+      ['POST', '/admin/topics/assist-draft'],
+      ['POST', '/admin/topics/clone-to-bot'],
+      ['GET', '/admin/metrics/topics-by-day'],
+      ['POST', '/internal/topics/menu']
+    ]) {
+      const response = await request(app, {
+        method, path,
+        headers: { 'X-Admin-Password': 'secret-admin', 'X-Internal-Secret': 'internal-secret' },
+        ...(method === 'POST' || method === 'PUT' ? { body: { bot_key: 'uk-de', chat_id: 42 } } : {})
+      });
+      assert.equal(response.status, 404, `${method} ${path}`);
     }
-
-    if (source.includes('UPDATE bot_topic_catalog')) {
-      assert.equal(params[0], 'uk-de');
-      assert.equal(params[1], 'coffee');
-      assert.equal(params[2], 'coffee');
-      assert.equal(params[8], JSON.stringify(existingRow.subareas_json));
-      assert.equal(params[12], 'roleplay');
-      assert.equal(params[13], JSON.stringify(['ordering', 'clarifying']));
-      assert.equal(params[14], JSON.stringify(['latte', 'oat milk']));
-      assert.equal(params[15], JSON.stringify({ tense: ['present simple'] }));
-      assert.equal(params[16], JSON.stringify({ default: ['Q1?'], a1: ['A1 starter?'] }));
-      assert.equal(params[17], JSON.stringify({ default: ['R1?'] }));
-      assert.equal(params[18], JSON.stringify(['How about...']));
-      assert.equal(params[19], JSON.stringify(['politics']));
-      assert.equal(params[20], JSON.stringify(['weather']));
-      assert.equal(params[21], 'Do you want a latte or cappuccino?');
-      return {
-        rows: [
-          {
-            ...existingRow,
-            title_base: params[5],
-            goal_base: params[6],
-            allowed_base: JSON.parse(params[7]),
-            subareas_json: JSON.parse(params[8]),
-            avoid_base: JSON.parse(params[9]),
-            starter_questions_target: JSON.parse(params[10]),
-            recovery_questions_target: JSON.parse(params[11]),
-            sort_order: params[22]
-          }
-        ]
-      };
-    }
-
-    throw new Error(`Unexpected query in admin topic update test: ${source.slice(0, 160)}`);
-  }, async () => {
-    const app = await createApp({ apiBoss: { publish: async () => null } });
-    const response = await request(app, {
-      method: 'PUT',
-      path: '/admin/topics/coffee',
-      headers: { 'X-Admin-Password': 'secret-admin' },
-      body: {
-        bot_key: 'uk-de',
-        topic_id: 'coffee',
-        emoji: '☕',
-        access_tier: 'all',
-        title_base: 'Coffee shop updated',
-        goal_base: 'Practice updated cafe orders.',
-        allowed_base: ['ordering drinks', 'asking about desserts'],
-        avoid_base: ['politics', 'religion'],
-        starter_questions_target: ['New Q1?', 'New Q2?', 'New Q3?', 'New Q4?', 'New Q5?', 'New Q6?'],
-        recovery_questions_target: ['New R1?', 'New R2?', 'New R3?', 'New R4?', 'New R5?', 'New R6?'],
-        sort_order: 12
-      }
-    });
-
-    assert.equal(response.status, 200);
-    assert.equal(response.json.item.title_base, 'Coffee shop updated');
-    assert.equal(response.json.item.topic_mode, 'roleplay');
-    assert.equal(response.json.item.subareas_json.length, 2);
-    assert.equal(response.json.item.opening_prompt_target, 'Do you want a latte or cappuccino?');
-    assert.deepEqual(response.json.item.lexical_anchors_target, ['latte', 'oat milk']);
-    assert.deepEqual(response.json.item.bridge_patterns_target, ['How about...']);
   });
 });

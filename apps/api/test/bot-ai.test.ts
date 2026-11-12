@@ -154,12 +154,6 @@ test('bot AI normalizes HTML breaks and constrains pinned third-language example
     profileSummary: '',
     shortSummary: '',
     history: [],
-    topic: {
-      topic_id: 'travel-planning',
-      title_base: 'Планування подорожі',
-      goal_base: 'Підготувати практичний план подорожі',
-      allowed_base: ['транспорт', 'житло', 'маршрут']
-    }
   });
 
   assert.equal(
@@ -167,9 +161,8 @@ test('bot AI normalizes HTML breaks and constrains pinned third-language example
     '<b>Спробуй іспанською</b>\n<blockquote><code>Quiero planear la ruta.</code></blockquote>'
   );
   const input = calls[0].input as Array<{ content: string }>;
-  assert.match(input[0].content, /NEVER translate or paraphrase a request to change, leave, or replace the topic/);
-  assert.match(input[1].content, /PINNED TOPIC \(base language\): Планування подорожі/);
-  assert.match(input[1].content, /ALLOWED SUB-AREAS: транспорт; житло; маршрут/);
+  assert.ok(!input.some(message => /PINNED TOPIC|TOPIC STATE|\/topic/.test(message.content)));
+  assert.ok(input[1].content.includes('I would rather discuss a different subject today.'));
 });
 
 test('bot AI renders Hindi hint labels in the learner base language', async () => {
@@ -209,7 +202,6 @@ test('bot AI renders Hindi hint labels in the learner base language', async () =
     profileSummary: '',
     shortSummary: '',
     history: [],
-    topic: null
   });
 
   const input = calls[0].input as Array<{ content: string }>;

@@ -37,7 +37,7 @@ const recordLlmCall = createLlmCallRecorder(pool);
 
 const args = new Set(process.argv.slice(2));
 const shouldTranslate = !args.has('--skip-translate');
-const translationModel = (process.env.IDIOM_PRACTICE_OPENAI_MODEL || process.env.TOPIC_GENERATION_MODEL || 'gpt-6.1-terra')
+const translationModel = (process.env.IDIOM_PRACTICE_OPENAI_MODEL || 'gpt-6.1-terra')
   .toString()
   .trim() || 'gpt-6.1-terra';
 const translationReasoningEffort = parseModelReasoningEffort(

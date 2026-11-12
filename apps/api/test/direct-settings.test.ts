@@ -4,7 +4,6 @@ import type { Pool } from 'pg';
 import { createDirectSettingsHandler, saveDirectSettings } from '../src/bot-runtime/direct-settings.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { callbackUpdate } from './fixtures/telegram-updates.js';
-import { topicToken } from '../src/bot-runtime/settings-model.js';
 import http from 'node:http';
 import { once } from 'node:events';
 import express from 'express';
@@ -17,14 +16,14 @@ test('direct settings rejects invalid owners/values before DB access',async()=>{
   const handle=createDirectSettingsHandler({pool:{connect:()=>{throw new Error('must not access DB')}} as unknown as Pool,
     getBotLocale:()=>({}),telegramClient:{callTelegramApi:async(_b,m)=>{calls.push(m);}}});
   for(const raw of [callbackUpdate({data:'settings:r:level:c2'}),callbackUpdate({data:'settings:r:home',chatType:'group'}),
-    callbackUpdate({data:'settings:r:home',chatId:77}),callbackUpdate({data:'settings:r:home',senderIsBot:true}),callbackUpdate({data:'settings:w:level:b2'})]){
+    callbackUpdate({data:'settings:r:home',chatId:77}),callbackUpdate({data:'settings:r:home',senderIsBot:true}),callbackUpdate({data:'settings:w:level:b2'}),callbackUpdate({data:'settings:r:topic:free'}),callbackUpdate({data:'settings:r:page:0'})]){
     assert.equal(await handle('uk-en',normalizeTelegramUpdate(raw)),true);
   }
-  assert.deepEqual(calls,Array(5).fill('answerCallbackQuery'));
+  assert.deepEqual(calls,Array(7).fill('answerCallbackQuery'));
   assert.equal(await handle('uk-en',normalizeTelegramUpdate(callbackUpdate({data:'reply:text'}))),false);
 });
 
-test('Postgres: direct settings atomically persist, survive edit failures, serialize taps, and retain topic access checks',{
+test('Postgres: direct settings atomically persist, survive edit failures, serialize taps, and reject retired controls',{
   skip:process.env.BOT_RUNTIME_TEST_DATABASE_URL?false:'BOT_RUNTIME_TEST_DATABASE_URL is not configured'
 },async()=>{
   const {default:pg}=await import('pg');
@@ -33,13 +32,11 @@ test('Postgres: direct settings atomically persist, survive edit failures, seria
   let deleteFailure:unknown;
   let editGate:Promise<void>|undefined,editStarted:(()=>void)|undefined;
   const calls:Array<{method:string;body:Record<string,unknown>}>=[];const ids:string[]=[];
-  const catalog=[{topic_id:'direct-test-topic',title_base:'Test topic',access_tier:'all',starter_questions_by_level_target:{a1:['A1?'],b2:['B2?']}},
-    {topic_id:'pro-test-topic',title_base:'Pro',access_tier:'pro'}];
   const make=(data:string)=>{
     const raw=callbackUpdate({data,chatId,updateId:++id}) as Record<string,any>;raw.callback_query.from.id=chatId;
     ids.push(`v1:${botKey}:${id}`);return normalizeTelegramUpdate(raw);
   };
-  const handle=createDirectSettingsHandler({pool,getBotLocale:()=>({}),helpers:{fetchEffectiveTierForChat:async()=> 'free',fetchTopicCatalogRows:async()=>catalog} as never,
+  const handle=createDirectSettingsHandler({pool,getBotLocale:()=>({}),
     telegramClient:{callTelegramApi:async(_b,method,body)=>{
       calls.push({method,body});
       if(method==='deleteMessage' && deleteFailure){const error=deleteFailure;deleteFailure=undefined;throw error;}
@@ -73,18 +70,16 @@ test('Postgres: direct settings atomically persist, survive edit failures, seria
     const release=releaseEdit!;editGate=undefined;editStarted=undefined;releaseEdit=undefined;release();await Promise.all([a,b]);
     assert.equal((await state()).level,'b2');
     await handle(botKey,make('settings:r:reply:text'));assert.equal((await state()).reply_mode,'text');
-    const denied=make('settings:r:topic:'+topicToken('pro-test-topic'));
-    await handle(botKey,denied);assert.equal((await state()).topic_enabled,false);
-    assert.ok(calls.some(c=>c.method==='answerCallbackQuery'&&c.body.show_alert===true));
-    await pool.query('UPDATE user_bots SET topic_pinned_message_id=88 WHERE chat_id=$1 AND bot_key=$2',[chatId,botKey]);
-    const topic=make('settings:r:topic:'+topicToken('direct-test-topic'));
-    await handle(botKey,topic);await handle(botKey,topic);
-    assert.equal((await state()).topic_template_id,'direct-test-topic');
-    assert.equal((await state()).topic_pack_json.turns_in_topic,0);
-    assert.equal((await state()).topic_pinned_message_id,null);
-    assert.ok(calls.some(c=>c.method==='unpinChatMessage'&&c.body.message_id===88));
-    assert.equal((await pool.query("SELECT count(*)::int AS n FROM action_events WHERE chat_id=$1 AND action_type='topic_set'",[chatId])).rows[0].n,1);
-    await handle(botKey,make('settings:r:page:0'));
+    // Retired topic controls are acknowledged without changing data or recording effects.
+    const beforeRetired=await state();
+    for(const action of ['topic:free','topic:0123456789abcdef','page:0']){
+      const retired=make('settings:r:'+action);
+      const beforeCalls=calls.length;
+      await handle(botKey,retired);
+      assert.deepEqual(calls.slice(beforeCalls).map(c=>c.method),['answerCallbackQuery']);
+      assert.deepEqual(await state(),beforeRetired);
+      assert.equal((await pool.query('SELECT count(*)::int AS n FROM bot_update_executions WHERE decision_id=$1',[`v1:${botKey}:${retired.updateId}`])).rows[0].n,0);
+    }
     const close=make('settings:r:close');
     const beforeClose=await state(), beforeCloseCalls=calls.length;
     deleteFailure=new Error('timeout');await assert.rejects(handle(botKey,close));
@@ -94,15 +89,12 @@ test('Postgres: direct settings atomically persist, survive edit failures, seria
     assert.deepEqual(closeCalls,Array(2).fill({method:'deleteMessage',body:{chat_id:chatId,message_id:close.callbackQuery!.messageId}}));
     assert.equal((await pool.query('SELECT status FROM bot_update_executions WHERE decision_id=$1',[`v1:${botKey}:${close.updateId}`])).rows[0].status,'succeeded');
     const afterClose=await state();
-    for(const field of ['level','reply_mode','topic_pack_json','topic_template_id','topic_enabled'])assert.deepEqual(afterClose[field],beforeClose[field]);
+    for(const field of ['level','reply_mode'])assert.deepEqual(afterClose[field],beforeClose[field]);
     await handle(botKey,make('settings:r:home'));
-    await handle(botKey,make('settings:r:topic:free'));
-    assert.equal((await state()).topic_pack_json,null);
-    assert.equal((await state()).topic_enabled,false);
 
     // A database failure cannot commit a preference without its effect record.
     const invalid=make('settings:r:level:b1');
-    await assert.rejects(saveDirectSettings(pool,botKey,invalid,{variant:'r',kind:'level',value:'b1'},[],'invalid-uuid'));
+    await assert.rejects(saveDirectSettings(pool,botKey,invalid,{variant:'r',kind:'level',value:'b1'},'invalid-uuid'));
     assert.equal((await state()).level,'b2');
     assert.equal((await pool.query('SELECT count(*)::int AS n FROM bot_update_executions WHERE decision_id=$1',[`v1:${botKey}:${invalid.updateId}`])).rows[0].n,0);
 

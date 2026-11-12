@@ -34,7 +34,7 @@ function streamingClient(events: object[], previews: string[], requests: object[
     } } }) as never
   }).respond({
     botKey: 'uk-en', level: 'a1', inputMode: 'text', text: 'Hello',
-    profileSummary: '', shortSummary: '', history: [], topic: null,
+    profileSummary: '', shortSummary: '', history: [],
     onReplyText: (text) => { previews.push(text); }
   });
 }

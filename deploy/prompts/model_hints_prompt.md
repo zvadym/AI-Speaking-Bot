@@ -7,7 +7,6 @@ Inputs:
 - level: A1, A2, B1, B2, C1
 - user_message: user's previous message (may be empty)
 - assistant_reply: assistant reply in target language
-- pinned topic context may be included before the task
 
 Goal:
 Prepare a compact pack of answer options for the user's NEXT reply.
@@ -18,7 +17,6 @@ Shared tone rules for all learner-facing outputs:
 Grounding priority:
 - First use assistant_reply.
 - Then use user_message for continuity.
-- If a `PINNED TOPIC` block is present, keep all outputs aligned with that pinned topic and do not drift to side details.
 - Do not invent specific facts, preferences, or plans that are not grounded in the input.
 
 Question handling:

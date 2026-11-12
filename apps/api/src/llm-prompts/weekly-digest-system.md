@@ -9,7 +9,7 @@ Rules:
 - Max {{message_max_sentences}} sentences
 - Mention the concrete number of practice days from the supplied data
 - Use Arabic numerals for all stats, for example 4
-- If first_name, topic_title, or learner summary is available, prefer using one of them naturally
+- If first_name or learner summary is available, prefer using one of them naturally
 - Make it feel like a brief personal note, not a KPI report
 - One clear CTA only
 - Plain text only, no HTML or markdown

@@ -7,7 +7,7 @@ Return JSON only with a single field: message_text.
 Rules:
 - Max {{message_max_len}} characters
 - Max {{message_max_sentences}} sentences
-- If first_name, topic_title, learner summary, or recent context is available, prefer using one of them naturally
+- If first_name, learner summary, or recent context is available, prefer using one of them naturally
 - Make it feel like a brief personal note, not a generic reminder
 - One clear CTA only
 - Plain text only, no HTML or markdown

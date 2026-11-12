@@ -41,9 +41,6 @@
       <button class="tab-btn" :class="{ active: activeTab === 'billing' }" type="button" role="tab" @click="activeTab = 'billing'">
         Billing
       </button>
-      <button class="tab-btn" :class="{ active: activeTab === 'topics' }" type="button" role="tab" @click="activeTab = 'topics'">
-        Topics
-      </button>
       <button class="tab-btn" :class="{ active: activeTab === 'feedback' }" type="button" role="tab" @click="activeTab = 'feedback'">
         Feedback
       </button>
@@ -524,15 +521,6 @@
           x-labels="all"
           :data="actionEventsSeries"
           :series="actionSeriesConfig"
-        />
-
-        <AdminChart
-          title="Topic usage by day"
-          subtitle="Distinct users engaging with pinned topics, split by topic"
-          kind="bar"
-          x-labels="all"
-          :data="topicUsageSeries"
-          :series="topicUsageSeriesConfig"
         />
 
         <AdminChart
@@ -1172,17 +1160,6 @@
                     >
                       Add row
                     </button>
-                    <button class="btn" type="button" @click="applyBroadcastTopicsButtonPreset">
-                      Insert Topics menu
-                    </button>
-                    <button
-                      class="btn"
-                      type="button"
-                      :disabled="!canImportBroadcastTopics"
-                      @click="importBroadcastTopicButtons"
-                    >
-                      {{ broadcastTopicsImporting ? 'Importing…' : 'Import bot topics' }}
-                    </button>
                     <button class="btn danger" type="button" @click="clearBroadcastButtons">
                       Clear buttons
                     </button>
@@ -1275,7 +1252,7 @@
                               type="text"
                               autocomplete="off"
                               :maxlength="BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN"
-                              placeholder="Topics"
+                              placeholder="Open settings"
                             />
                           </label>
 
@@ -1294,7 +1271,7 @@
                               type="text"
                               autocomplete="off"
                               :maxlength="BROADCAST_INLINE_KEYBOARD_MAX_CALLBACK_DATA_LEN"
-                              placeholder="topic:menu"
+                              placeholder="settings:r:open"
                             />
                           </label>
 
@@ -1317,7 +1294,7 @@
 
                 <div v-else class="broadcast-builder-empty">
                   <strong>No buttons yet.</strong>
-                  <p>Start with an empty row, insert the Topics menu, or import the current bot’s full topic catalog.</p>
+                  <p>Add a row to create buttons for this message.</p>
                 </div>
 
                 <small class="hint">
@@ -1325,7 +1302,6 @@
                   <code>{{ BROADCAST_INLINE_KEYBOARD_MAX_ROWS }}</code> rows and
                   <code>{{ BROADCAST_INLINE_KEYBOARD_MAX_BUTTONS_PER_ROW }}</code> buttons per row.
                 </small>
-                <small v-if="broadcastTopicImportHint" class="hint">{{ broadcastTopicImportHint }}</small>
                 <small v-if="broadcastButtonsInfo" class="hint">{{ broadcastButtonsInfo }}</small>
                 <small v-if="broadcastButtonsLocalError" class="error">{{ broadcastButtonsLocalError }}</small>
 
@@ -1336,15 +1312,14 @@
                     <textarea
                       v-model="broadcast.inlineKeyboardJson"
                       rows="8"
-                      placeholder='[row][Topics][/row]'
+                      placeholder='[row][Open site|https://ai-language-school.online][/row]'
                     />
                     <small class="hint">
                       Valid edits sync back into the visual builder.
                       Row syntax examples:
-                      <code>[row][Topics][/row]</code>,
                       <code>[row][Open site|https://ai-language-school.online][/row]</code>,
-                      <code>[row][Topics|topic:menu][Help|https://t.me/your_support][/row]</code>.
-                      JSON is also supported: <code>[[{"text":"Topics","callback_data":"topic:menu"}]]</code>.
+                      <code>[row][Help|https://t.me/your_support][/row]</code>.
+                      JSON is also supported: <code>[[{"text":"Open site","url":"https://ai-language-school.online"}]]</code>.
                     </small>
                   </label>
                 </details>
@@ -1801,13 +1776,6 @@
       </div>
     </section>
 
-    <AdminTopicsPanel
-      v-else-if="activeTab === 'topics'"
-      :api-base="props.apiBase"
-      :password="password"
-      @stamp="topicsUpdatedAt = $event"
-    />
-
     <section class="card panel" v-else-if="activeTab === 'feedback'">
       <header class="panel-head">
         <div>
@@ -2061,7 +2029,6 @@
       <span v-else-if="activeTab === 'feedback' && feedbackUpdatedAt" class="stamp">Updated: {{ feedbackUpdatedAt }}</span>
       <span v-else-if="activeTab === 'messaging' && previewUpdatedAt" class="stamp">Updated: {{ previewUpdatedAt }}</span>
       <span v-else-if="activeTab === 'billing' && billingUpdatedAt" class="stamp">Updated: {{ billingUpdatedAt }}</span>
-      <span v-else-if="activeTab === 'topics' && topicsUpdatedAt" class="stamp">Updated: {{ topicsUpdatedAt }}</span>
     </footer>
   </div>
 </template>
@@ -2070,7 +2037,6 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { apiJson } from '../lib/api.js';
 import AdminChart from '../components/AdminChart.vue';
-import AdminTopicsPanel from '../components/AdminTopicsPanel.vue';
 
 const props = defineProps({
   apiBase: { type: String, required: true }
@@ -2175,7 +2141,6 @@ const feedbackLimit = 40;
 const feedbackLoading = ref(false);
 const feedbackError = ref('');
 const feedbackUpdatedAt = ref('');
-const topicsUpdatedAt = ref('');
 const feedbackReplyDraft = reactive({});
 const feedbackReplyOpenId = ref(null);
 const feedbackReplySendingId = ref(null);
@@ -2285,8 +2250,6 @@ const replyKeyboardSummary = ref({
   total_clicks: 0,
   unique_users: 0
 });
-const topicUsageSeries = ref([]);
-const topicUsageSeriesConfig = ref([]);
 const activeUsersSeries = ref([]);
 const totalUsersSeries = ref([]);
 const activeUsersByBotSeries = ref([]);
@@ -2411,15 +2374,11 @@ const actionSeriesConfig = [
   { key: 'onboarding_completed', label: 'onboarding_completed', color: 'rgba(92, 140, 86, 0.9)' },
   { key: 'onboarding_level_confirmed', label: 'onboarding_level_confirmed', color: 'rgba(124, 96, 163, 0.88)' },
   { key: 'onboarding_bonus_selected', label: 'onboarding_bonus_selected', color: 'rgba(176, 116, 41, 0.9)' },
-  { key: 'topic_set', label: 'topic_set', color: 'rgba(33, 124, 146, 0.88)' },
-  { key: 'topic_message_sent', label: 'topic_message_sent', color: 'rgba(117, 156, 56, 0.88)' },
-  { key: 'topic_clear', label: 'topic_clear', color: 'rgba(140, 87, 45, 0.88)' },
   { key: 'day1_return', label: 'day1_return', color: 'rgba(81, 102, 120, 0.88)' },
   { key: 'paywall_shown', label: 'paywall_shown', color: 'rgba(174, 43, 40, 0.86)' },
   { key: 'purchase_success', label: 'purchase_success', color: 'rgba(187, 64, 122, 0.88)' }
 ];
 const replyKeyboardActionMeta = {
-  reply_kbd_topic_click: { label: 'Topic', color: 'rgba(31, 107, 99, 0.88)', order: 0 },
   reply_kbd_level_click: { label: 'Level', color: 'rgba(199, 90, 36, 0.88)', order: 1 },
   reply_kbd_voice_click: { label: 'Voice', color: 'rgba(46, 88, 142, 0.88)', order: 2 },
   idiom_phrase_more_click: { label: 'Idiom More', color: 'rgba(177, 116, 41, 0.9)', order: 4 }
@@ -2464,26 +2423,6 @@ const actionFunnelComparisonChartSeries = [
     order: 2
   }
 ];
-const topicSeriesPalette = [
-  'rgba(31, 107, 99, 0.88)',
-  'rgba(199, 90, 36, 0.88)',
-  'rgba(46, 88, 142, 0.88)',
-  'rgba(103, 78, 167, 0.88)',
-  'rgba(33, 124, 146, 0.88)',
-  'rgba(174, 43, 40, 0.86)',
-  'rgba(117, 156, 56, 0.88)',
-  'rgba(140, 87, 45, 0.88)'
-];
-const topicSeriesColors = {
-  routine: topicSeriesPalette[0],
-  food: topicSeriesPalette[1],
-  travel: topicSeriesPalette[2],
-  coffee: topicSeriesPalette[3],
-  apartment: topicSeriesPalette[4],
-  interview: topicSeriesPalette[5],
-  office: topicSeriesPalette[6],
-  movies: topicSeriesPalette[7]
-};
 const usersRows = ref([]);
 const usersTotal = ref(0);
 const usersOffset = ref(0);
@@ -2605,7 +2544,6 @@ const activeStamp = computed(() => {
   if (activeTab.value === 'users') return usersUpdatedAt.value || '';
   if (activeTab.value === 'messaging') return previewUpdatedAt.value || '';
   if (activeTab.value === 'billing') return billingUpdatedAt.value || '';
-  if (activeTab.value === 'topics') return topicsUpdatedAt.value || '';
   if (activeTab.value === 'feedback') return feedbackUpdatedAt.value || '';
   return '';
 });
@@ -2911,7 +2849,6 @@ const broadcastDraggingButtonId = ref('');
 const broadcastDraggingButtonRowId = ref('');
 const broadcastButtonDropRowId = ref('');
 const broadcastButtonDropButtonId = ref('');
-const broadcastTopicsImporting = ref(false);
 const reminderTestUserSearch = ref('');
 const reminderTestSuggestions = ref([]);
 const reminderTestLookupError = ref('');
@@ -2986,8 +2923,7 @@ function parseInlineKeyboardRowSyntax(text) {
       let callbackData = '';
       let url = '';
       if (!actionRaw) {
-        if (textRaw.toLowerCase() === 'topics') callbackData = 'topic:menu';
-        else return { ok: false, error: 'Each button in row syntax needs an action after "|".' };
+        return { ok: false, error: 'Each button in row syntax needs an action after "|".' };
       } else if (/^https?:\/\//i.test(actionRaw)) {
         url = actionRaw;
       } else if (/^url:/i.test(actionRaw)) {
@@ -3163,14 +3099,6 @@ const broadcastInlineKeyboardSummary = computed(() => {
   if (!rowCount || !buttonCount) return 'No buttons configured.';
   return `${rowCount} row${rowCount === 1 ? '' : 's'} · ${buttonCount} button${buttonCount === 1 ? '' : 's'}`;
 });
-
-function applyBroadcastTopicsButtonPreset() {
-  broadcastButtonsInfo.value = 'Inserted a single Topics menu button.';
-  broadcastButtonsLocalError.value = '';
-  broadcastButtonRows.value = [
-    createBroadcastRowDraft([{ text: 'Topics', actionType: 'callback', callbackData: 'topic:menu' }])
-  ];
-}
 
 function clearBroadcastButtons() {
   broadcastButtonsInfo.value = '';
@@ -3421,62 +3349,6 @@ watch(
   { immediate: true }
 );
 
-function buildBroadcastImportedTopicLabel(topic) {
-  const emoji = String(topic?.emoji || '🧩').trim();
-  const title = String(topic?.title_base || topic?.topic_id || '').trim();
-  return `${emoji} ${title}`.trim().slice(0, BROADCAST_INLINE_KEYBOARD_MAX_BUTTON_TEXT_LEN);
-}
-
-async function importBroadcastTopicButtons() {
-  if (!canImportBroadcastTopics.value) return;
-
-  broadcastTopicsImporting.value = true;
-  broadcastButtonsInfo.value = '';
-  broadcastButtonsLocalError.value = '';
-
-  try {
-    const data = await apiJson(props.apiBase, '/admin/topics', {
-      headers: adminHeaders(),
-      query: { bot_key: broadcastTopicImportBotKey.value }
-    });
-
-    const sourceItems = Array.isArray(data?.items) ? data.items : [];
-    const importedTopics = sourceItems
-      .filter((topic) => {
-        const topicId = String(topic?.topic_id || '').trim().toLowerCase();
-        return Boolean(topicId);
-      })
-      .slice(0, BROADCAST_INLINE_KEYBOARD_MAX_ROWS);
-
-    if (!importedTopics.length) {
-      broadcastButtonsInfo.value = `No topics found for ${broadcastTopicImportBotLabel.value || 'the selected bot'}.`;
-      return;
-    }
-
-    broadcastButtonRows.value = importedTopics.map((topic) =>
-      createBroadcastRowDraft([
-        {
-          text: buildBroadcastImportedTopicLabel(topic),
-          actionType: 'callback',
-          callbackData: `topic:${String(topic.topic_id || '').trim().toLowerCase()}`
-        }
-      ])
-    );
-
-    if (sourceItems.length > importedTopics.length) {
-      broadcastButtonsInfo.value = `Imported ${importedTopics.length} of ${sourceItems.length} topics from ${broadcastTopicImportBotLabel.value}. Telegram supports up to ${BROADCAST_INLINE_KEYBOARD_MAX_ROWS} rows here.`;
-    } else {
-      broadcastButtonsInfo.value = `Imported ${importedTopics.length} topic button${importedTopics.length === 1 ? '' : 's'} from ${broadcastTopicImportBotLabel.value}.`;
-    }
-  } catch (err) {
-    console.error(err);
-    const msg = err?.payload?.detail || err?.payload?.error || err?.message || 'request_failed';
-    broadcastButtonsLocalError.value = `Topic import failed: ${msg}`;
-  } finally {
-    broadcastTopicsImporting.value = false;
-  }
-}
-
 const canUploadBroadcastMedia = computed(() => {
   if (!password.value) return false;
   if (broadcast.messageKind === 'text') return false;
@@ -3688,36 +3560,6 @@ const selectedBroadcastBaseLang = computed(() => {
   return (botStatsByKey.value.get(botKey)?.base_lang ?? '').toString().trim().toLowerCase();
 });
 
-const broadcastTopicImportBotKey = computed(() =>
-  selectedBroadcastBotKeys.value.length === 1 ? selectedBroadcastBotKeys.value[0] : ''
-);
-
-const broadcastTopicImportBotLabel = computed(() => {
-  const botKey = broadcastTopicImportBotKey.value;
-  if (!botKey) return '';
-  const bot = botStatsByKey.value.get(botKey);
-  if (!bot) return botKey;
-  const base = languageLabelForCode(bot.base_lang);
-  const target = languageLabelForCode(bot.target_lang);
-  return `${botKey} (${base} → ${target})`;
-});
-
-const canImportBroadcastTopics = computed(() =>
-  Boolean(password.value) &&
-  Boolean(broadcastTopicImportBotKey.value) &&
-  !broadcastTopicsImporting.value
-);
-
-const broadcastTopicImportHint = computed(() => {
-  if (broadcastTopicImportBotKey.value) {
-    return `Import will use ${broadcastTopicImportBotLabel.value} and create one topic button per row.`;
-  }
-  if (selectedBroadcastBotKeys.value.length > 1) {
-    return 'Select exactly one bot to import its topic catalog.';
-  }
-  return 'Pick one bot if you want to import its full topic catalog.';
-});
-
 const automatedMessageTestChatIdSet = computed(() =>
   new Set(
     (Array.isArray(automatedMessageTestChatIds.value) ? automatedMessageTestChatIds.value : [])
@@ -3914,10 +3756,6 @@ function transformByBotData(rows) {
   return { chartData, seriesConfig };
 }
 
-function colorForTopicSeries(safeKey, index) {
-  return topicSeriesColors[safeKey] || topicSeriesPalette[index % topicSeriesPalette.length];
-}
-
 function notificationSeriesKey(type) {
   return String(type || 'other').replace(/[^a-zA-Z0-9]+/g, '_');
 }
@@ -3932,41 +3770,6 @@ function notificationTypeLabel(type) {
 
 function colorForNotificationSeries(type, index) {
   return notificationTypeMeta[type]?.color || notificationSeriesPalette[index % notificationSeriesPalette.length];
-}
-
-function transformByTopicData(rows) {
-  const byDay = {};
-  const topicsSet = new Set();
-
-  for (const row of rows) {
-    const day = String(row?.day || '').trim();
-    const topicId = String(row?.topic_id || 'unknown').trim() || 'unknown';
-    const count = Number(row?.count || 0);
-    if (!day) continue;
-
-    topicsSet.add(topicId);
-
-    if (!byDay[day]) {
-      byDay[day] = { day };
-    }
-
-    const safeKey = topicId.replace(/-/g, '_');
-    byDay[day][safeKey] = count;
-  }
-
-  const chartData = Object.values(byDay).sort((a, b) => a.day.localeCompare(b.day));
-  const seriesConfig = Array.from(topicsSet)
-    .sort()
-    .map((topicId, index) => {
-      const safeKey = topicId.replace(/-/g, '_');
-      return {
-        key: safeKey,
-        label: topicLabel(topicId),
-        color: colorForTopicSeries(safeKey, index)
-      };
-    });
-
-  return { chartData, seriesConfig };
 }
 
 function transformNotificationData(rows, selectedBotKey = 'all') {
@@ -4643,10 +4446,6 @@ function applyFreeUsersInsightsData(freeUsersInsights) {
   freeUsersMessageBuckets.value = Array.isArray(freeUsersInsights?.message_buckets) ? freeUsersInsights.message_buckets : [];
 }
 
-function topicLabel(rawTopicId) {
-  return (rawTopicId || '').toString().trim().replaceAll('_', ' ');
-}
-
 function feedbackThreadName(thread) {
   if (thread?.username) return `@${thread.username}`;
   if (thread?.first_name) return thread.first_name;
@@ -5183,7 +4982,6 @@ async function refreshAnalytics() {
 
       actionFunnelLast30Days,
       actionFunnelLast7Days,
-      topicsByDay,
       activeUsers,
       totalUsers,
       activeUsersByBot,
@@ -5208,7 +5006,6 @@ async function refreshAnalytics() {
       apiJson(props.apiBase, '/admin/metrics/reply-keyboard-click-totals', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last30Days, headers }),
       apiJson(props.apiBase, '/admin/metrics/action-funnel', { query: funnelComparisonQueries.last7Days, headers }),
-      apiJson(props.apiBase, '/admin/metrics/topics-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/total-users-by-day', { query: q, headers }),
       apiJson(props.apiBase, '/admin/metrics/active-users-by-day-by-bot', { query: q, headers }),
@@ -5247,10 +5044,6 @@ async function refreshAnalytics() {
     replyKeyboardTotalsSeries.value = Array.isArray(replyKeyboardTotals?.series) ? replyKeyboardTotals.series : [];
     actionFunnelLast30DaysSeries.value = buildActionFunnelSeries(actionFunnelLast30Days?.series);
     actionFunnelLast7DaysSeries.value = buildActionFunnelSeries(actionFunnelLast7Days?.series);
-    const topicsByDayRawRows = Array.isArray(topicsByDay?.series) ? topicsByDay.series : [];
-    const { chartData: topicChartData, seriesConfig: topicChartConfig } = transformByTopicData(topicsByDayRawRows);
-    topicUsageSeries.value = topicChartData;
-    topicUsageSeriesConfig.value = topicChartConfig;
     activeUsersSeries.value = Array.isArray(activeUsers?.series) ? activeUsers.series : [];
     totalUsersSeries.value = Array.isArray(totalUsers?.series) ? totalUsers.series : [];
     inactiveUsersSeries.value = Array.isArray(inactiveUsers?.series) ? inactiveUsers.series : [];
@@ -5750,7 +5543,6 @@ function clearPassword() {
   feedbackOffset.value = 0;
   feedbackError.value = '';
   feedbackUpdatedAt.value = '';
-  topicsUpdatedAt.value = '';
   clearFeedbackReplyState();
   usersRows.value = [];
   usersTotal.value = 0;

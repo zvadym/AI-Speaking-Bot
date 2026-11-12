@@ -13,7 +13,6 @@ export interface ConversationEvalCase {
   profileSummary: string;
   shortSummary: string;
   history: Array<{ role: string; content: string }>;
-  topic: Record<string, unknown> | null;
   dimensions: string[];
 }
 
@@ -98,7 +97,7 @@ export function validateConversationEvalFixture(fixture: ConversationEvalFixture
   for (const inputMode of ['text', 'voice']) {
     if (!inputModes.has(inputMode)) errors.push(`fixture is missing input mode ${inputMode}`);
   }
-  for (const dimension of ['grammar', 'correct-input', 'mixed-language', 'pinned-topic', 'imperfect-transcript']) {
+  for (const dimension of ['grammar', 'correct-input', 'mixed-language', 'conversation-context', 'imperfect-transcript']) {
     if (!dimensions.has(dimension)) errors.push(`fixture is missing dimension ${dimension}`);
   }
   return errors;

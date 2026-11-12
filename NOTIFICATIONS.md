@@ -46,7 +46,7 @@ Reason:
 
 The repo already has most of the building blocks we need:
 
-- `user_bots.last_seen_at`, `is_active`, `level`, `reply_mode`, topic state, and nudge flags exist.
+- `user_bots.last_seen_at`, `is_active`, `level`, `reply_mode`, and nudge flags exist.
 - `user_progress` already stores `streak_current`, `streak_best`, `streak_last_day`, and XP totals.
 - `scheduled_task_dispatches` already exists and is currently used for onboarding completion, day1 return, free-limit, and win-back sends.
 - `broadcast_campaigns` and `broadcast_recipients` already support targeted sends with preview.
@@ -135,7 +135,7 @@ Notes:
   - sent once per `chat_id + bot_key`
   - anchored to `onboarding_complete.sent_at`
   - sent after roughly 22 hours without return activity
-  - personalized only by `reply_mode` and optional active topic title
+  - personalized by `reply_mode`
   - does not quote prior messages and does not mention the target language explicitly
 
 ### 2. Continue Conversation
@@ -338,7 +338,7 @@ All reminder copy should follow these rules:
 - Avoid guilt-heavy streak language.
 - Avoid repeating the same opening every time.
 - Prefer a direct practice prompt over abstract encouragement.
-- Mention level, topic, streak, XP, or plan only when it improves relevance.
+- Mention level, streak, XP, or plan only when it improves relevance.
 
 What good copy usually looks like:
 
@@ -374,12 +374,6 @@ Recommended structure:
         ],
         "voice_variants": [
           "Ready for a quick practice? Send a short voice note."
-        ],
-        "topic_text_variants": [
-          "Want a quick restart with {{topic_title}}? Write one short sentence."
-        ],
-        "topic_voice_variants": [
-          "Want a quick restart with {{topic_title}}? Send a short voice note."
         ]
       },
       "streak_saver": [
@@ -513,7 +507,7 @@ Broadcasts should still play an important role.
 Best uses for broadcast campaigns:
 
 - New feature announcement.
-- Teacher or topic launch.
+- Teacher launch or product update.
 - Plan or pricing changes.
 - One-off retention experiments on a narrow audience.
 - Re-engagement test before automating a sequence.

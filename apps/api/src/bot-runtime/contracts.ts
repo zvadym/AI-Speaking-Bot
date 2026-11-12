@@ -15,7 +15,6 @@ export const ROUTES = [
   'callback.lang',
   'callback.level',
   'callback.reply',
-  'callback.topic',
   'callback.onboarding',
   'callback.settings',
   'callback.unknown',
@@ -27,7 +26,6 @@ export const ROUTES = [
   'command.stats',
   'command.xp', // Legacy queued updates only.
   'command.progress', // Legacy queued updates only.
-  'command.topic',
   'command.feedback',
   'command.unknown',
   'reply_keyboard.voice_toggle',
@@ -41,7 +39,7 @@ export const ROUTES = [
 
 export type Route = (typeof ROUTES)[number];
 export type UpdateType = 'widget_query' | 'callback_query' | 'message' | 'unknown';
-export type KeyboardIntent = 'settings' | 'level' | 'topic' | 'voice' | 'retired';
+export type KeyboardIntent = 'settings' | 'level' | 'voice' | 'retired';
 export type ReplyMode = 'text' | 'voice';
 export type GuardReason = 'ignore' | 'private_only' | 'bot_sender';
 export type IntentSource = 'callback_query' | 'reply_keyboard' | 'command' | 'message';
@@ -116,12 +114,10 @@ export interface PersistentKeyboardState {
   enabled: boolean;
   buttonIntent: KeyboardIntent | null;
   levelValue: string;
-  topicValue: string;
   voiceValue: string;
   replyMode: ReplyMode;
   settingsButtonText?: string;
   levelButtonText: string;
-  topicButtonText: string;
   voiceButtonText: string;
 }
 
@@ -154,10 +150,6 @@ export interface KeyboardStateRow extends Record<string, unknown> {
   level?: unknown;
   reply_mode?: unknown;
   onboarding_complete_at?: unknown;
-  topic_enabled?: unknown;
-  topic_template_id?: unknown;
-  topic_pack_json?: unknown;
-  topic_pinned_message_id?: unknown;
 }
 
 export interface Queryable {

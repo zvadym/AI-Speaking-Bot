@@ -33,7 +33,6 @@ function prepareFixture(fixture: RouteFixture) {
     keyboardState: fixture.keyboardState,
     pendingFeedback: fixture.pendingFeedback,
     locale: {
-      keyboard_btn_topic_none: 'Free chat',
       keyboard_btn_voice_text: 'Text',
       keyboard_btn_voice_voice: 'Voice',
       keyboard_btn_xp_prefix: 'XP'
@@ -51,7 +50,6 @@ const callbackFixtures: RouteFixture[] = [
   ['lang', 'callback.lang'],
   ['level', 'callback.level'],
   ['reply', 'callback.reply'],
-  ['topic', 'callback.topic'],
   ['onb', 'callback.onboarding'],
   ['settings', 'callback.settings'],
   ['unknown_group', 'callback.unknown']
@@ -103,11 +101,6 @@ const routeFixtures: RouteFixture[] = [
     name: 'stats command',
     route: 'command.stats',
     update: messageUpdate({ updateId: 1105, text: '/stats' })
-  },
-  {
-    name: 'topic command',
-    route: 'command.topic',
-    update: messageUpdate({ updateId: 1107, text: '/topic' })
   },
   {
     name: 'feedback command with body',
@@ -355,13 +348,10 @@ test('persistent keyboard uses locale and requires completed onboarding', () => 
       level: 'a2',
       reply_mode: 'voice',
       onboarding_complete_at: '2026-03-11T08:00:00.000Z',
-      topic_enabled: true,
-      topic_pack_json: JSON.stringify({ title_base: 'Coffee chat' }),
       xp_total: 420,
       xp_level: 3
     },
     {
-      keyboard_btn_topic_none: 'Free chat',
       keyboard_btn_voice_text: 'Text',
       keyboard_btn_voice_voice: 'Voice',
       keyboard_btn_xp_prefix: 'XP'
@@ -372,7 +362,6 @@ test('persistent keyboard uses locale and requires completed onboarding', () => 
   assert.equal(keyboard.enabled, true);
   assert.equal(keyboard.buttonIntent, 'level');
   assert.equal(keyboard.levelButtonText, '· 📚 A2');
-  assert.equal(keyboard.topicButtonText, '· 🧩 Coffee chat');
   assert.equal(keyboard.voiceButtonText, '· 🎤 Voice');
   assert.equal('progressButtonText' in keyboard, false);
 
@@ -434,4 +423,15 @@ test('parseCommand distinguishes non-commands and malformed command text', () =>
     args: 'body',
     botUsername: null
   });
+});
+
+test('removed commands and stored keyboard buttons are unknown; retired callbacks cannot select anything', () => {
+  for (const text of ['/topic', '/topics', '/topic@TeacherBot', '· 🧩 Coffee chat']) {
+    const prepared = buildPreparedUpdate({botKey:'uk-en', input:normalizeTelegramUpdate(messageUpdate({text})), keyboardState:{onboarding_complete_at:'2026-01-01'}});
+    assert.equal(prepared.route, 'command.unknown', text);
+  }
+  for (const data of ['topic:travel', 'topic:clear']) {
+    const prepared = buildPreparedUpdate({botKey:'uk-en', input:normalizeTelegramUpdate(callbackUpdate({data}))});
+    assert.equal(prepared.route, 'callback.unknown');
+  }
 });

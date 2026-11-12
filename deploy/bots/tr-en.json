@@ -95,9 +95,7 @@
     "level_label_beginner": "Başlangıç (A1-A2)",
     "level_label_conversational": "Konuşma seviyesi (B1-B2)",
     "level_label_advanced": "İleri (C1+)",
-    "topic_btn_set_inline": "🧭 Konu belirle",
-    "topic_btn_manage_inline": "🎯 Konuyu değiştir/iptal et",
-    "onboarding_start_practice_text": "Güzel başlangıç ✨ Konu seçmek ister misin, yoksa serbest devam mı? İstediğin zaman sesli ya da yazılı mesaj gönderebilirsin.",
+    "onboarding_start_practice_text": "Sohbete devam edelim. İstediğin zaman sesli ya da yazılı mesaj gönderebilirsin.",
     "onboarding_btn_start_voice": "🎙️ Sesle başla",
     "onboarding_btn_start_text": "✍️ Metinle başla",
     "onboarding_btn_show_example": "👀 Örnek göster",
@@ -107,8 +105,6 @@
     "onboarding_showcase_no_mistakes_text": "Çok iyi, burada hata yok 👏\nHataları nasıl düzelttiğimi görmek istersen bilerek hatalı bir cümle yaz.\nÖrneğin:\n❌ Yesterday I go to work by bus.",
     "onboarding_complete_full_text": "Harika ilerleme — profilin hazır 🚀\n\nKısaca en önemli noktalar:\n• Başlangıç seviyen A1. Bunu istediğin zaman A1, A2, B1, B2 veya C1 olarak değiştirebilirsin.\n• Sohbetin altındaki butonlarla dil seviyeni ve cevap formatını istediğin zaman değiştirebilirsin: ses veya metin.\n• App içinde diğer ayarları açabilir, feedback gönderebilir ve başka seçenekleri yönetebilirsin.\n\nSerini sürdürmek için sonraki mesajını gönder 🔥\n\nTebrikler! Onboarding tamamlandı.",
     "keyboard_btn_level_prefix": "Seviye",
-    "keyboard_btn_topic_prefix": "Konu",
-    "keyboard_btn_topic_none": "Konu seç",
     "keyboard_btn_voice_prefix": "Yanıt türü",
     "keyboard_btn_voice_text": "Metin",
     "keyboard_btn_voice_voice": "Ses",
@@ -121,14 +117,6 @@
         "voice_variants": [
           "Kisa bir pratik yapmaya hazir misin? Kisa bir sesli mesaj gonder.",
           "Pratige geri donmek ister misin? Kisa bir sesli mesaj gonder."
-        ],
-        "topic_text_variants": [
-          "{{topic_title}} ile yeniden baslamak ister misin? Bir kisa cumle yaz.",
-          "{{topic_title}} konusuna hizli bir donus yapalim mi? Bir kisa cumle yaz."
-        ],
-        "topic_voice_variants": [
-          "{{topic_title}} ile yeniden baslamak ister misin? Kisa bir sesli mesaj gonder.",
-          "{{topic_title}} konusuna hizli bir donus yapalim mi? Kisa bir sesli mesaj gonder."
         ]
       },
       "winback": {
@@ -147,10 +135,6 @@
             "Baski yok. Istegin oldugunda sifirdan yeniden baslayabiliriz. {{reply_cta_label}}.",
             "Hazir oldugunda taze bir baslangic yapabiliriz. {{reply_cta_label}}."
           ],
-          "topic": [
-            "“{{topic_title}}” konusuna yeniden dönmek ister misin? Tek kısa bir cümle yaz — devam edelim.",
-            "“{{topic_title}}” konusuna geri gelmek ister misin? Tek kısa bir cümle yaz — devam edelim."
-          ],
           "streak": [
             "Bir zamanlar {{streak_best}} gunluk streak yapmistin. Tek kucuk adimla yeniden baslayabiliriz. {{reply_cta_label}}.",
             "En iyi streakin {{streak_best}} gundu. Donus sadece kisa bir mesajla baslayabilir. {{reply_cta_label}}."
@@ -162,7 +146,7 @@
         }
       },
       "free_limit_50": {
-        "message_html": "<b>Ücretsiz limitinin yarısına ulaştın ✨</b>\nDevam etmek istersen, PRO aylık 2 fincan kahveden daha ucuza geliyor.\n\nYeni konular, ton ayarları ve gelecekte gelecek daha fazla güncelleme gibi ekstra avantajların kilidini açar."
+        "message_html": "<b>Ücretsiz limitinin yarısına ulaştın ✨</b>\nDevam etmek istersen, PRO aylık 2 fincan kahveden daha ucuza geliyor.\n\nSohbet pratiği için daha fazla zaman sunar."
       }
     },
     "onboarding_v2": {
@@ -184,7 +168,7 @@
       },
       "buttons": {
         "use_text": "✍️ Metinle cevapla",
-        "change_scenario": "🔄 Başka konu",
+        "change_scenario": "🔄 Başka senaryo",
         "confirm_level": "✅ Evet, {suggested_level}",
         "choose_level": "🎚 Başka seviye",
         "retry": "🔁 Tekrar söyle",
@@ -211,11 +195,9 @@
     "settings": {
       "title": "Ayarlar",
       "level": "Seviye",
-      "topic": "Konu",
       "replies": "Bot yanıtları",
       "voice": "Ses",
       "text": "Metin",
-      "free": "Serbest sohbet",
       "done": "Bitti",
       "back": "Geri",
       "saved": "Değişiklikler kaydedildi",
@@ -247,10 +229,6 @@
       {
         "command": "stats",
         "description": "Abonelik durumunu kontrol et"
-      },
-      {
-        "command": "topic",
-        "description": "Konuşma konusu seç"
       },
       {
         "command": "feedback",

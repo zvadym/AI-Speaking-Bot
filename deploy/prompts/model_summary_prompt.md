@@ -34,7 +34,6 @@ Rules:
 - Do not invent facts.
 - Do not copy long dialogue verbatim.
 - Do not store pure control chatter unless it affects immediate context.
-- Do not store current topic state here if it should come from runtime state.
 - If a detail looks stable, put it in profile_summary.
 - If a detail looks recent/situational, put it in short_summary.
 - If unsure, prefer short_summary over profile_summary.

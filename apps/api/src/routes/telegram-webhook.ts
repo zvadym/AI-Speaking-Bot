@@ -13,7 +13,6 @@ import {
 } from '../bot-runtime/webhook-secret.js';
 import { isBotRuntimeRouteEnabled, type BotRuntimeRouteFlags } from '../bot-runtime/route-flags.js';
 import { createDirectSettingsHandler } from '../bot-runtime/direct-settings.js';
-import type { TopicMenuHelpers } from '../bot-runtime/handlers/topic-menu.js';
 import { buildPreparedUpdate } from '../bot-runtime/update-router.js';
 import { startImmediateTelegramAck } from '../bot-runtime/immediate-telegram-ack.js';
 
@@ -42,9 +41,9 @@ interface TelegramWebhookContext {
   getBotLocale(botKey: string): unknown;
 }
 
-export function createTelegramWebhookRouter(ctx: TelegramWebhookContext, helpers?: TopicMenuHelpers) {
+export function createTelegramWebhookRouter(ctx: TelegramWebhookContext) {
   const router = express.Router();
-  const handleSettings = createDirectSettingsHandler({...ctx,helpers,onboardingEnabledBotKeys:ctx.env.botOnboardingV2EnabledBotKeys});
+  const handleSettings = createDirectSettingsHandler({...ctx,onboardingEnabledBotKeys:ctx.env.botOnboardingV2EnabledBotKeys});
 
   router.post('/telegram/webhook/:botKey', async (req, res) => {
     const receivedAtMs = performance.now();

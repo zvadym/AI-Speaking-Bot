@@ -71,7 +71,6 @@ try {
     reportProgressError: (error, event, botKey) => captureException(error, {
       tags: { subsystem: 'progress-indicator', event, bot_key: botKey }
     }),
-    topicMenuHelpers: helpers,
     getBotConfig: (botKey) => runtime.botConfigs[botKey] || null,
     sendIdiomMore: sendIdiomPracticeMorePhrase,
     ai: botAi

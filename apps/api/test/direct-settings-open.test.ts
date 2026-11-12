@@ -69,14 +69,14 @@ test('Postgres: direct opening is durable without a queue, including duplicate, 
 
     // Simulate process loss after durable reservation, before acknowledgement.
     const interrupted=raw();
-    await saveDirectSettings(pool,botKey,normalizeTelegramUpdate(interrupted),{variant:'r',kind:'open',value:''},[],randomUUID());
+    await saveDirectSettings(pool,botKey,normalizeTelegramUpdate(interrupted),{variant:'r',kind:'open',value:''},randomUUID());
     const beforeResume=count('sendRichMessage');await run(interrupted);
     assert.equal(count('sendRichMessage'),beforeResume);
     assert.equal((await records(Number(interrupted.update_id)))[0].status,'unknown');
 
     // A legacy worker already delivered the card but did not finish its execution.
     const legacy=raw();
-    await saveDirectSettings(pool,botKey,normalizeTelegramUpdate(legacy),{variant:'r',kind:'open',value:''},[],randomUUID());
+    await saveDirectSettings(pool,botKey,normalizeTelegramUpdate(legacy),{variant:'r',kind:'open',value:''},randomUUID());
     await pool.query("UPDATE bot_update_deliveries SET status='delivered',telegram_message_id=999 WHERE decision_id=$1",[`v1:${botKey}:${legacy.update_id}`]);
     await run(legacy);assert.equal(count('sendRichMessage'),beforeResume);
 

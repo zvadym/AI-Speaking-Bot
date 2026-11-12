@@ -36,7 +36,7 @@ const {
 
 async function withMockedQuery(handler, run) {
   const originalQuery = pool.query.bind(pool);
-  pool.query = async (sql, params) => (() => { const source = typeof sql === 'string' ? sql : sql?.text || ''; assert.doesNotMatch(source, /\b(xp_events|user_progress|grant_xp)\b/); return handler(source, params); })();
+  pool.query = async (sql, params) => (() => { const source = typeof sql === 'string' ? sql : sql?.text || ''; assert.doesNotMatch(source, /\b(xp_events|user_progress|grant_xp|topic_enabled|topic_pack_json|bot_topic_catalog)\b/); return handler(source, params); })();
   try {
     await run();
   } finally {
@@ -90,7 +90,7 @@ function okTelegramResponse(messageId = 777) {
   );
 }
 
-test('admin day1 return reminder uses topic + voice variants without language mention', async () => {
+test('admin day1 return reminder uses voice variants without language mention', async () => {
   const queries = [];
   const telegramBodies = [];
 
@@ -108,8 +108,6 @@ test('admin day1 return reminder uses topic + voice variants without language me
           bot_key: 'en-de',
           is_active: true,
           reply_mode: 'voice',
-          topic_enabled: true,
-          topic_pack_json: { title: 'coffee chat' },
           last_seen_at: '2026-03-10T08:00:00.000Z',
           onboarding_sent_at: '2026-03-10T09:00:00.000Z'
         }]
@@ -146,7 +144,6 @@ test('admin day1 return reminder uses topic + voice variants without language me
       assert.equal(result.ok, true);
       assert.equal(result.reminder_type, 'day1_return');
       assert.equal(result.telegram_message_id, 901);
-      assert.match(result.message_text, /coffee chat/i);
       assert.match(result.message_text, /voice note/i);
       assert.doesNotMatch(result.message_text, /\bin german\b/i);
       assert.doesNotMatch(result.message_text, /\bin italian\b/i);
@@ -154,7 +151,6 @@ test('admin day1 return reminder uses topic + voice variants without language me
   });
 
   assert.equal(telegramBodies.length, 1);
-  assert.match(telegramBodies[0].text, /coffee chat/i);
   assert.match(telegramBodies[0].text, /voice note/i);
   assert.equal(queries.filter((sql) => sql.includes('INSERT INTO scheduled_task_dispatches')).length, 1);
 });
@@ -830,8 +826,6 @@ test('automated day1 return sends generic text after 22 hours of inactivity', as
           bot_key: 'en-de',
           is_active: true,
           reply_mode: 'text',
-          topic_enabled: false,
-          topic_pack_json: null,
           last_seen_at: '2026-03-09T08:00:00.000Z',
           onboarding_sent_at: new Date(Date.now() - (23 * 60 * 60 * 1000)).toISOString()
         }]
@@ -908,8 +902,6 @@ test('automated day1 return skips when user was active after onboarding', async 
           bot_key: 'en-de',
           is_active: true,
           reply_mode: 'text',
-          topic_enabled: false,
-          topic_pack_json: null,
           last_seen_at: '2026-03-10T12:00:00.000Z',
           onboarding_sent_at: '2026-03-10T09:00:00.000Z'
         }]
@@ -960,8 +952,6 @@ test('admin weekly digest reminder falls back to localized templates when LLM is
           is_active: true,
           level: 'a2',
           reply_mode: 'text',
-          topic_enabled: true,
-          topic_pack_json: { title: 'coffee chat' },
           last_seen_at: '2026-03-09T10:00:00.000Z',
 
           profile_summary: 'Enjoys travel topics',
@@ -1005,7 +995,6 @@ test('admin weekly digest reminder falls back to localized templates when LLM is
       assert.equal(result.telegram_message_id, 904);
       assert.doesNotMatch(result.message_text, /XP|118/);
       assert.match(result.message_text, /\b4\b/);
-      assert.match(result.message_text, /coffee chat/i);
     });
   });
 
@@ -1037,8 +1026,6 @@ test('automated weekly digest skips users active in the last 8 hours', async () 
           is_active: true,
           level: 'b1',
           reply_mode: 'text',
-          topic_enabled: false,
-          topic_pack_json: null,
           last_seen_at: new Date(Date.now() - (2 * 60 * 60 * 1000)).toISOString(),
 
           profile_summary: '',
@@ -1096,8 +1083,6 @@ test('admin weekly digest reads structured Responses API output when output_text
             is_active: true,
             level: 'a2',
             reply_mode: 'text',
-            topic_enabled: false,
-            topic_pack_json: null,
             last_seen_at: '2026-03-09T10:00:00.000Z',
 
             profile_summary: 'Likes short practical prompts',
@@ -1134,7 +1119,7 @@ test('admin weekly digest reads structured Responses API output when output_text
           const requestBody = JSON.parse(init.body);
           assert.equal(requestBody.model, env.reminderLlmModel);
           assert.deepEqual(requestBody.reasoning, { effort: env.reminderLlmReasoningEffort });
-          assert.doesNotMatch(JSON.stringify(requestBody.input), /weekly_xp|xp_total|streak_current|streak_best/);
+          assert.doesNotMatch(JSON.stringify(requestBody.input), /weekly_xp|xp_total|streak_current|streak_best|topic_enabled|topic_title|topic_pack_json/);
           return new Response(
             JSON.stringify({
               id: 'resp_test_1',

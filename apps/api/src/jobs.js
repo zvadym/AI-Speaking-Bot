@@ -340,23 +340,6 @@ function containsHtmlLikeTags(text) {
   return /<[^>]+>/.test(String(text ?? ''));
 }
 
-function extractTopicTitle(rawTopicPack) {
-  const topicPack = normalizeTopicPack(rawTopicPack);
-  if (!topicPack) return '';
-  const candidates = [
-    topicPack.title_base,
-    topicPack.title_learning,
-    topicPack.title,
-    topicPack.topic_title,
-    topicPack.name
-  ];
-  for (const candidate of candidates) {
-    const title = String(candidate ?? '').trim();
-    if (title) return title.slice(0, 120);
-  }
-  return '';
-}
-
 function languageLabelForCode(codeRaw) {
   const code = normalizeLanguageCode(codeRaw);
   if (!code) return 'Unknown';
@@ -386,10 +369,6 @@ const WINBACK_DEFAULT_LOCALE = {
       'No pressure. We can restart from zero anytime. {{reply_cta_label}} when you want.',
       'Whenever you are ready, we can start fresh. {{reply_cta_label}}.'
     ],
-    topic: [
-      'Want to come back to "{{topic_title}}"? Write one short sentence — and we will continue.',
-      'Want to return to "{{topic_title}}"? Write one short sentence — and we will continue.'
-    ],
     streak: [
       'You already built a {{streak_best}}-day streak once. We can start again with one small step. {{reply_cta_label}}.',
       'Your best streak was {{streak_best}} days. Restarting can be just one short message. {{reply_cta_label}}.'
@@ -402,7 +381,7 @@ const WINBACK_DEFAULT_LOCALE = {
 };
 
 const FREE_LIMIT_HALF_DEFAULT_LOCALE = {
-  message_html: '<b>You’re already halfway through your free limit ✨</b>\nIf you want to keep going, PRO costs less than 2 cups of coffee per month.\n\nIt unlocks extra features like new topics, tone settings, and more updates in the future.'
+  message_html: '<b>You’re already halfway through your free limit ✨</b>\nIf you want to keep going, PRO costs less than 2 cups of coffee per month.\n\nIt gives you more conversation practice.'
 };
 
 const DAY1_RETURN_DEFAULT_LOCALE = {
@@ -414,14 +393,6 @@ const DAY1_RETURN_DEFAULT_LOCALE = {
     'Ready for a quick practice? Send a short voice note.',
     'Want to get back into practice? Send a short voice note.'
   ],
-  topic_text_variants: [
-    'Want a quick restart with {{topic_title}}? Write one short sentence.',
-    'Ready to jump back into {{topic_title}}? Write one short sentence.'
-  ],
-  topic_voice_variants: [
-    'Want a quick restart with {{topic_title}}? Send a short voice note.',
-    'Ready to jump back into {{topic_title}}? Send a short voice note.'
-  ]
 };
 
 const WEEKLY_DIGEST_DEFAULT_LOCALE = {
@@ -430,10 +401,6 @@ const WEEKLY_DIGEST_DEFAULT_LOCALE = {
   default_variants: [
     'Last week: {{practice_days}} practice days. {{reply_cta_label}} and let’s keep it going.',
     'You practised on {{practice_days}} days last week. {{reply_cta_label}} for a quick next step.'
-  ],
-  topic_variants: [
-    'Last week: {{practice_days}} practice days. Quick challenge on {{topic_title}}: {{reply_cta_label}}.',
-    'You practised on {{practice_days}} days last week. Continue with {{topic_title}} by {{reply_cta_label}}.'
   ],
 };
 
@@ -576,8 +543,6 @@ function resolveDay1ReturnLocale(botKeyRaw) {
   return {
     text_variants: normalizeDay1ReturnVariantArray(raw.text_variants, DAY1_RETURN_DEFAULT_LOCALE.text_variants),
     voice_variants: normalizeDay1ReturnVariantArray(raw.voice_variants, DAY1_RETURN_DEFAULT_LOCALE.voice_variants),
-    topic_text_variants: normalizeDay1ReturnVariantArray(raw.topic_text_variants, DAY1_RETURN_DEFAULT_LOCALE.topic_text_variants),
-    topic_voice_variants: normalizeDay1ReturnVariantArray(raw.topic_voice_variants, DAY1_RETURN_DEFAULT_LOCALE.topic_voice_variants)
   };
 }
 
@@ -594,7 +559,6 @@ function resolveWeeklyDigestLocale(botKeyRaw) {
     reply_cta_text: String(raw.reply_cta_text || WEEKLY_DIGEST_DEFAULT_LOCALE.reply_cta_text).trim()
       || WEEKLY_DIGEST_DEFAULT_LOCALE.reply_cta_text,
     default_variants: normalizeWeeklyDigestVariantArray(raw.default_variants, WEEKLY_DIGEST_DEFAULT_LOCALE.default_variants),
-    topic_variants: normalizeWeeklyDigestVariantArray(raw.topic_variants, WEEKLY_DIGEST_DEFAULT_LOCALE.topic_variants),
   };
 }
 
@@ -611,7 +575,6 @@ function resolveWinbackLocale(botKeyRaw) {
     d7_fallback_variants: normalizeWinbackVariantArray(winback.d7_fallback_variants, WINBACK_DEFAULT_LOCALE.d7_fallback_variants),
     d14: {
       default: normalizeWinbackVariantArray(rawD14.default, WINBACK_DEFAULT_LOCALE.d14.default),
-      topic: normalizeWinbackVariantArray(rawD14.topic, WINBACK_DEFAULT_LOCALE.d14.topic),
       streak: normalizeWinbackVariantArray(rawD14.streak, WINBACK_DEFAULT_LOCALE.d14.streak),
       voice: normalizeWinbackVariantArray(rawD14.voice, WINBACK_DEFAULT_LOCALE.d14.voice)
     }
@@ -699,40 +662,9 @@ function buildSubscriptionWebAppUrl(botKeyRaw) {
   }
 }
 
-function normalizeTopicPack(raw) {
-  if (typeof raw === 'string' && raw.trim()) {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
-  }
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  return raw;
-}
-
-function buildOnboardingReplyMarkup(state, locale) {
-  const topicPack = normalizeTopicPack(state.topic_pack_json);
-  const topicTitle = state.topic_enabled && topicPack && typeof topicPack.title_base === 'string'
-    ? topicPack.title_base.trim()
-    : '';
-  const topicValue = topicTitle || String(locale.keyboard_btn_topic_none || 'Choose topic').trim() || 'Choose topic';
-  const replyMode = String(state.reply_mode || 'voice').trim().toLowerCase() === 'text' ? 'text' : 'voice';
-  const voiceValue = replyMode === 'voice'
-    ? String(locale.keyboard_btn_voice_voice || 'Voice').trim() || 'Voice'
-    : String(locale.keyboard_btn_voice_text || 'Text').trim() || 'Text';
-  const levelValue = String(state.level || 'a1').trim().toUpperCase() || 'A1';
-
+function buildOnboardingReplyMarkup(locale) {
   return {
-    keyboard: [
-      [
-        { text: `· 🧩 ${topicValue}` },
-        { text: `· 📚 ${levelValue}` }
-      ],
-      [
-        { text: `· 🎤 ${voiceValue}` }
-      ]
-    ],
+    keyboard: [[{ text: `· ⚙️ ${String(locale.settings?.title || 'Settings').trim() || 'Settings'}` }]],
     resize_keyboard: true,
     one_time_keyboard: false
   };
@@ -894,9 +826,7 @@ async function loadOnboardingState(chatId, botKey) {
   const { rows } = await pool.query(
     `SELECT
        ub.level,
-       ub.reply_mode,
-       COALESCE(ub.topic_enabled, false) AS topic_enabled,
-       ub.topic_pack_json
+       ub.reply_mode
      FROM user_bots ub
      WHERE ub.chat_id = $1
        AND ub.bot_key = $2
@@ -966,8 +896,6 @@ async function loadDay1ReturnContext(chatId, botKeyRaw, { origin = WINBACK_AUTOM
        ub.bot_key,
        COALESCE(ub.is_active, true) AS is_active,
        ub.reply_mode,
-       COALESCE(ub.topic_enabled, false) AS topic_enabled,
-       ub.topic_pack_json,
        ub.last_seen_at,
        onboarding.completed_at AS onboarding_sent_at
      FROM users u
@@ -995,9 +923,6 @@ async function loadDay1ReturnContext(chatId, botKeyRaw, { origin = WINBACK_AUTOM
     inactiveReason: normalizeOptionalText(row.inactive_reason, 80),
     isActive: row.is_active === true || row.is_active === 1 || row.is_active === 't',
     replyMode: normalizeReplyMode(row.reply_mode),
-    topicEnabled: row.topic_enabled === true || row.topic_enabled === 1 || row.topic_enabled === 't',
-    topicPackJson: normalizeTopicPack(row.topic_pack_json),
-    topicTitle: extractTopicTitle(row.topic_pack_json),
     lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : null,
     onboardingSentAt: origin === WINBACK_ADMIN_TEST_ORIGIN
       ? (row.onboarding_sent_at ? new Date(row.onboarding_sent_at) : null)
@@ -1007,12 +932,6 @@ async function loadDay1ReturnContext(chatId, botKeyRaw, { origin = WINBACK_AUTOM
 }
 
 function pickDay1ReturnVariants(context) {
-  if (context.topicEnabled && context.topicTitle) {
-    return context.replyMode === WINBACK_REPLY_MODE_VOICE
-      ? context.locale.topic_voice_variants
-      : context.locale.topic_text_variants;
-  }
-
   return context.replyMode === WINBACK_REPLY_MODE_VOICE
     ? context.locale.voice_variants
     : context.locale.text_variants;
@@ -1036,13 +955,12 @@ function buildDay1ReturnMessage(context, taskType) {
   }
 
   const variantIndex = stableVariantIndex(
-    `${context.chatId}:${context.botKey}:${taskType}:${context.replyMode}:${context.topicTitle || ''}`,
+    `${context.chatId}:${context.botKey}:${taskType}:${context.replyMode}`,
     safeVariants.length
   );
   const template = safeVariants[variantIndex] || safeVariants[0];
   const messageText = applyTemplateSlots(template, {
     first_name: context.firstName,
-    topic_title: context.topicTitle
   }).replace(/\s+/g, ' ').trim();
   const validation = validateDay1ReturnMessageText(messageText);
   if (!validation.ok) {
@@ -1053,9 +971,7 @@ function buildDay1ReturnMessage(context, taskType) {
     ok: true,
     messageText: validation.messageText,
     variantIndex,
-    variantFamily: context.topicEnabled && context.topicTitle
-      ? (context.replyMode === WINBACK_REPLY_MODE_VOICE ? 'topic_voice_variants' : 'topic_text_variants')
-      : (context.replyMode === WINBACK_REPLY_MODE_VOICE ? 'voice_variants' : 'text_variants')
+    variantFamily: context.replyMode === WINBACK_REPLY_MODE_VOICE ? 'voice_variants' : 'text_variants'
   };
 }
 
@@ -1151,8 +1067,6 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
        COALESCE(ub.is_active, true) AS is_active,
        ub.level,
        ub.reply_mode,
-       COALESCE(ub.topic_enabled, false) AS topic_enabled,
-       ub.topic_pack_json,
        ub.last_seen_at,
        COALESCE(us.profile_summary, '') AS profile_summary,
        COALESCE(us.short_summary, '') AS short_summary,
@@ -1206,9 +1120,6 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
     isActive: row.is_active === true || row.is_active === 1 || row.is_active === 't',
     level: normalizeOptionalText(row.level, 16) || 'a1',
     replyMode: normalizeReplyMode(row.reply_mode),
-    topicEnabled: row.topic_enabled === true || row.topic_enabled === 1 || row.topic_enabled === 't',
-    topicPackJson: normalizeTopicPack(row.topic_pack_json),
-    topicTitle: extractTopicTitle(row.topic_pack_json),
     lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : null,
     onboardingSentAt: row.onboarding_sent_at ? new Date(row.onboarding_sent_at) : null,
     profileSummary: normalizeOptionalText(row.profile_summary, 2000) || '',
@@ -1227,9 +1138,6 @@ async function loadWeeklyDigestContext(chatId, botKeyRaw, {
 }
 
 function pickWeeklyDigestFallbackFamily(context) {
-  if (context.topicEnabled && context.topicTitle) {
-    return { family: 'topic_variants', variants: context.weeklyDigestLocale.topic_variants };
-  }
   return { family: 'default_variants', variants: context.weeklyDigestLocale.default_variants };
 }
 
@@ -1263,7 +1171,6 @@ function buildWeeklyDigestFallbackMessage(context, taskType) {
   const template = safeVariants[variantIndex] || safeVariants[0];
   const messageText = applyTemplateSlots(template, {
     first_name: context.firstName,
-    topic_title: context.topicTitle,
     practice_days: context.practiceDays,
     reply_cta_label: context.replyCtaLabel
   }).replace(/\s+/g, ' ').trim();
@@ -1297,8 +1204,6 @@ function reportWeeklyDigestFallback(context, generationError, fallback, origin) 
       digest_schedule_key: context?.digestScheduleKey || null,
       practice_days: context?.practiceDays ?? null,
       reply_mode: context?.replyMode || null,
-      topic_enabled: Boolean(context?.topicEnabled),
-      topic_title: context?.topicTitle || null,
       fallback_message_text: fallback?.messageText || null
     },
     level: 'warning'
@@ -1436,8 +1341,6 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
       first_name: context.firstName || null,
       level: context.level,
       reply_mode: context.replyMode,
-      topic_enabled: context.topicEnabled,
-      topic_title: context.topicTitle || null,
       profile_summary: context.profileSummary || null,
       short_summary: context.shortSummary || null
     },
@@ -2975,8 +2878,6 @@ async function loadWinbackBaseState(chatId, botKeyRaw) {
        COALESCE(ub.is_active, true) AS is_active,
        ub.level,
        ub.reply_mode,
-       COALESCE(ub.topic_enabled, false) AS topic_enabled,
-       ub.topic_pack_json,
        ub.last_seen_at,
        COALESCE(us.profile_summary, '') AS profile_summary,
        COALESCE(us.short_summary, '') AS short_summary,
@@ -3035,9 +2936,6 @@ async function loadWinbackBaseState(chatId, botKeyRaw) {
     isActive: row.is_active === true || row.is_active === 1 || row.is_active === 't',
     level: normalizeOptionalText(row.level, 16) || 'a1',
     replyMode: normalizeReplyMode(row.reply_mode),
-    topicEnabled: row.topic_enabled === true || row.topic_enabled === 1 || row.topic_enabled === 't',
-    topicPackJson: normalizeTopicPack(row.topic_pack_json),
-    topicTitle: extractTopicTitle(row.topic_pack_json),
     lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at) : null,
     inactiveSinceAt,
     inactivityHours,
@@ -3839,9 +3737,6 @@ function pickWinbackFallbackFamily(context) {
   if (context.reminderType === 'd3') return { family: 'd3_fallback_variants', variants: context.winbackLocale.d3_fallback_variants };
   if (context.reminderType === 'd7') return { family: 'd7_fallback_variants', variants: context.winbackLocale.d7_fallback_variants };
 
-  if (context.topicEnabled && context.topicTitle) {
-    return { family: 'd14.topic', variants: context.winbackLocale.d14.topic };
-  }
   if (context.replyMode === WINBACK_REPLY_MODE_VOICE) {
     return { family: 'd14.voice', variants: context.winbackLocale.d14.voice };
   }
@@ -3865,7 +3760,6 @@ function buildWinbackFallbackMessage(context, taskType) {
   const template = safeVariants[variantIndex] || safeVariants[0];
   const messageText = applyTemplateSlots(template, {
     first_name: context.firstName,
-    topic_title: context.topicTitle,
     target_language_label: context.targetLanguageLabel,
     reply_cta_label: context.replyCtaLabel
   }).replace(/\s+/g, ' ').trim();
@@ -3929,8 +3823,6 @@ async function generateWinbackMessageWithLlm(context, taskType) {
       first_name: context.firstName || null,
       level: context.level,
       reply_mode: context.replyMode,
-      topic_enabled: context.topicEnabled,
-      topic_title: context.topicTitle || null,
       profile_summary: context.profileSummary || null,
       short_summary: context.shortSummary || null,
       inactivity_days: context.inactivityDays
@@ -4640,7 +4532,7 @@ async function handleOnboardingCompleteSend(jobs) {
     await markOnboardingAttemptStarted(chatId, botKey);
 
     try {
-      const replyMarkup = buildOnboardingReplyMarkup(state, locale);
+      const replyMarkup = buildOnboardingReplyMarkup(locale);
       const telegramResult = await sendTelegramTextMessage(chatId, sanitizeTelegramHtml(onboardingText), {
         botKey,
         parseMode: 'HTML',

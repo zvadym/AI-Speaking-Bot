@@ -10,7 +10,7 @@
 
 This document defines how product text should sound across the project.
 
-It is not a list of fixed phrases. It is a decision framework for writing tutor replies, onboarding copy, corrections, reminders, subscription text, topic flows, and other short product strings in a way that:
+It is not a list of fixed phrases. It is a decision framework for writing tutor replies, onboarding copy, corrections, reminders, subscription text, and other short product strings in a way that:
 
 - feels human, not synthetic
 - supports practice, not performance
@@ -340,7 +340,7 @@ Notifications should reopen the loop with low pressure.
 Prefer:
 
 - Ready for a quick practice? Send one short message.
-- Want to continue with {{topic_title}}? Write one sentence.
+- Want to continue our conversation? Write one sentence.
 
 Avoid:
 

@@ -158,7 +158,6 @@ Production currently relies on code defaults:
 | --- | --- |
 | Conversation response | `gpt-5.4` |
 | Translation, hints, vocabulary | `gpt-5.4` |
-| Topic generation | `gpt-5.4` |
 | Reminder text | `gpt-5-mini` |
 | Idiom translation | `gpt-5.4` fallback |
 | Transcription | `gpt-4o-transcribe` |
@@ -173,7 +172,6 @@ text task:
 | --- | --- | --- |
 | Conversation response | `gpt-5.6-luna` candidate | `none` latency baseline; compare `low` in eval |
 | Translation, hints, vocabulary | `gpt-5.4-mini` | `none` |
-| Topic generation/admin assist | `gpt-5.6-terra` | preserve quality; low volume |
 | Reminder text | keep `gpt-5-mini` | already inexpensive and bounded |
 | Idiom translation | `gpt-5.4-mini` | structured translation task |
 | Transcription | keep `gpt-4o-transcribe` | learner-error fidelity is quality-critical |
@@ -197,7 +195,7 @@ Sources:
 
 The API will keep `BOT_RUNTIME_MODEL` as the backward-compatible conversation
 model variable and add `BOT_SUPPORT_MODEL`. Existing variables continue to own
-topic, reminder, idiom, transcription, and TTS models. Defaults change only
+reminder, idiom, transcription, and TTS models. Defaults change only
 after the corresponding evaluation gate passes.
 
 The bot AI client receives explicit models per operation. It never infers a
@@ -231,7 +229,7 @@ representative multilingual set. The set must cover:
 - correct target-language input;
 - grammatical mistakes;
 - base-language and mixed-language input;
-- pinned-topic and unpinned conversations;
+- ongoing conversations and natural subject changes;
 - short text and voice-like imperfect transcripts.
 
 `gpt-5.4` is the baseline. `gpt-5.6-luna` with `none` and `low` reasoning are

@@ -95,9 +95,7 @@
     "level_label_beginner": "Beginner (A1-A2)",
     "level_label_conversational": "Conversational (B1-B2)",
     "level_label_advanced": "Advanced (C1+)",
-    "topic_btn_set_inline": "🧭 Set topic",
-    "topic_btn_manage_inline": "🎯 Change/cancel topic",
-    "onboarding_start_practice_text": "You can choose a topic or continue freely. Send a voice or text message anytime.",
+    "onboarding_start_practice_text": "Let’s keep talking. Send a voice or text message anytime.",
     "onboarding_btn_start_voice": "🎙️ Start with voice",
     "onboarding_btn_start_text": "✍️ Start with text",
     "onboarding_btn_show_example": "👀 Show example",
@@ -107,8 +105,6 @@
     "onboarding_showcase_no_mistakes_text": "No mistakes here 👏\nIf you want to see how I correct things, send a sentence with an intentional mistake.\nFor example:\n❌ Yesterday I go to work by bus.",
     "onboarding_complete_full_text": "Your profile is ready 🚀\n\nA few quick notes:\n• Your starting level is A1. You can change it anytime to A1, A2, B1, B2, or C1.\n• Use the buttons below the chat to change your level and reply type: voice or text.\n• The mini-app has more settings, feedback, and account options.\n\nSend your next message to continue practicing 🔥\n\nOnboarding is finished.",
     "keyboard_btn_level_prefix": "Level",
-    "keyboard_btn_topic_prefix": "Topic",
-    "keyboard_btn_topic_none": "Choose topic",
     "keyboard_btn_voice_prefix": "Response type",
     "keyboard_btn_voice_text": "Text",
     "keyboard_btn_voice_voice": "Voice",
@@ -121,14 +117,6 @@
         "voice_variants": [
           "Have a minute for practice? Send a short voice note.",
           "Want to get back into practice? Send a short voice note."
-        ],
-        "topic_text_variants": [
-          "Want to return to {{topic_title}}? Write one short sentence.",
-          "Ready to pick up {{topic_title}} again? Write one short sentence."
-        ],
-        "topic_voice_variants": [
-          "Want to return to {{topic_title}}? Send a short voice note.",
-          "Ready to pick up {{topic_title}} again? Send a short voice note."
         ]
       },
       "winback": {
@@ -147,10 +135,6 @@
             "No pressure. We can start again anytime. {{reply_cta_label}} when you want.",
             "Whenever you’re ready, we can start again. {{reply_cta_label}}."
           ],
-          "topic": [
-            "Want to come back to “{{topic_title}}”? Write one short sentence, and we’ll continue.",
-            "Want to return to “{{topic_title}}”? Write one short sentence, and we’ll continue."
-          ],
           "streak": [
             "You already built a {{streak_best}}-day streak once. We can start again with one small step. {{reply_cta_label}}.",
             "Your best streak was {{streak_best}} days. Restarting can be just one short message. {{reply_cta_label}}."
@@ -162,7 +146,7 @@
         }
       },
       "free_limit_50": {
-        "message_html": "<b>You’re already halfway through your free limit.</b>\nIf you want to keep going without pauses, PRO is available in the mini-app.\n\nIt unlocks more practice, new topics, and extra settings."
+        "message_html": "<b>You’re already halfway through your free limit.</b>\nIf you want to keep going without pauses, PRO is available in the mini-app.\n\nIt gives you more conversation practice."
       }
     },
     "onboarding_v2": {
@@ -184,7 +168,7 @@
       },
       "buttons": {
         "use_text": "✍️ Answer with text",
-        "change_scenario": "🔄 Change topic",
+        "change_scenario": "🔄 Change scenario",
         "confirm_level": "✅ Yes, {suggested_level}",
         "choose_level": "🎚 Choose another",
         "retry": "🔁 Say it again",
@@ -211,11 +195,9 @@
     "settings": {
       "title": "Settings",
       "level": "Level",
-      "topic": "Topic",
       "replies": "Bot replies",
       "voice": "Voice",
       "text": "Text",
-      "free": "Free conversation",
       "done": "Done",
       "back": "Back",
       "saved": "Changes saved",
@@ -247,10 +229,6 @@
       {
         "command": "stats",
         "description": "Check subscription status"
-      },
-      {
-        "command": "topic",
-        "description": "Choose a conversation topic"
       },
       {
         "command": "feedback",

@@ -52,8 +52,6 @@ interface AssistantContext extends Record<string, unknown> {
   follow_up_hints: string;
   user_content: string;
   level: string;
-  topic_pack_json: unknown;
-  topic_enabled: boolean;
 }
 
 function localeRecord(value: unknown): Locale {
@@ -116,16 +114,6 @@ function parseHints(raw: unknown): FollowUpHints | null {
     : null;
 }
 
-function topicValue(raw: unknown, enabled: unknown): Record<string, unknown> | null {
-  if (!enabled) return null;
-  if (typeof raw === 'string') {
-    try { raw = JSON.parse(raw); } catch { return null; }
-  }
-  return raw && typeof raw === 'object' && !Array.isArray(raw)
-    ? raw as Record<string, unknown>
-    : null;
-}
-
 async function fetchAssistant(
   client: PoolClient | Pool,
   update: PreparedUpdate,
@@ -137,9 +125,7 @@ async function fetchAssistant(
        m.translation_base,
        m.follow_up_hints,
        COALESCE(prev.content, '') AS user_content,
-       ub.level,
-       ub.topic_pack_json,
-       ub.topic_enabled
+       ub.level
      FROM messages m
      JOIN user_bots ub
        ON ub.chat_id = m.chat_id AND ub.bot_key = m.bot_key
@@ -401,7 +387,6 @@ export function createSupportCallbackHandlers({
               level: String(row.level || 'a1'),
               userMessage: String(row.user_content || ''),
               assistantReply: String(row.content || ''),
-              topic: topicValue(row.topic_pack_json, row.topic_enabled),
               trace: {
                 decisionId: update.decisionId,
                 chatId,

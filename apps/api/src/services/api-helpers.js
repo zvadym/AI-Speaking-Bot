@@ -4,15 +4,6 @@ import {
   getBillingCurrencyDetails
 } from '../billing-currencies.js';
 import {
-  normalizeEffectiveTopicAccessTier,
-  normalizeTopicAccessTier,
-  normalizeTopicEmoji,
-  normalizeTopicId,
-  normalizeTopicPayload,
-  normalizeTopicRow,
-  topicIsVisibleForTier
-} from '../topic-catalog.js';
-import {
   clampInteger,
   clampNumber,
   normalizeBillingInterval,
@@ -63,56 +54,6 @@ const PLAN_CHANGED_TEXT_BY_LANGUAGE = {
 const billingCurrencyDetailsByCode = getBillingCurrencyDetails();
 const supportedBillingCurrencyCodes = new Set(Object.keys(billingCurrencyDetailsByCode));
 
-function makeHttpError(status, code, detail = '') {
-  const err = new Error(detail || code);
-  err.status = status;
-  err.code = code;
-  err.detail = detail || code;
-  return err;
-}
-
-function normalizeTopicSeedList(raw, { maxItems = 6, maxItemLen = 80 } = {}) {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((value) => String(value || '').trim())
-    .filter(Boolean)
-    .slice(0, maxItems)
-    .map((value) => value.slice(0, maxItemLen));
-}
-
-function normalizeTopicAssistDraft(raw) {
-  if (raw == null) return null;
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    throw makeHttpError(400, 'bad_draft', 'draft must be an object');
-  }
-  return normalizeTopicPayload(raw, { requireAll: true });
-}
-
-function normalizeTopicBaseTemplate(raw, fallbackTopicName = '') {
-  if (raw == null) return null;
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    throw makeHttpError(400, 'bad_base_template', 'base_template must be an object');
-  }
-
-  const topicId = normalizeTopicId(raw.topic_id ?? fallbackTopicName);
-  return {
-    topic_id: topicId,
-    emoji: normalizeTopicEmoji(raw.emoji, topicId),
-    access_tier: normalizeTopicAccessTier(raw.access_tier ?? 'all'),
-    title_base:
-      normalizeOptionalText(raw.title_base ?? raw.title, 120) ||
-      normalizeOptionalText(fallbackTopicName, 120) ||
-      topicId,
-    goal_base:
-      normalizeOptionalText(raw.goal_base ?? raw.goal, 280) ||
-      normalizeOptionalText(fallbackTopicName, 280) ||
-      topicId,
-    allowed_base: normalizeTopicSeedList(raw.allowed_base ?? raw.allowed),
-    avoid_base: normalizeTopicSeedList(raw.avoid_base ?? raw.avoid),
-    sort_order: Number.isInteger(Number(raw.sort_order)) ? Number(raw.sort_order) : 0
-  };
-}
-
 export function createApiHelpers(ctx) {
   const {
     env,
@@ -135,15 +76,6 @@ export function createApiHelpers(ctx) {
   } = telegramClient;
   const { updateUserDeliveryState } = deliveryState;
 
-  function adminTopicBots() {
-    return publicBotCatalog.map((bot) => ({
-      bot_key: bot.bot_key,
-      base_language: bot.base_language || null,
-      learning_language: bot.learning_language || null,
-      bot_name: bot.bot_name || null
-    }));
-  }
-
   async function queueDiscordEventNotification(event, { singletonKey } = {}) {
     if (!apiBoss || !env.discordEventsWebhookUrl) return null;
     try {
@@ -160,177 +92,6 @@ export function createApiHelpers(ctx) {
       });
       return null;
     }
-  }
-
-  function requireTopicBotMeta(botKeyRaw) {
-    const botKey = normalizeBotKey(botKeyRaw);
-    if (!botKey) throw makeHttpError(400, 'bad_bot_key', 'bot_key is required');
-    const meta = publicBotMetaForKey(botKey);
-    if (!meta) throw makeHttpError(404, 'bot_not_found', `Unknown bot_key: ${botKey}`);
-    return meta;
-  }
-
-  function serializeTopicRow(row) {
-    return normalizeTopicRow(row);
-  }
-
-  async function fetchTopicCatalogItem(botKey, topicId) {
-    const { rows } = await pool.query(
-      `SELECT
-         bot_key,
-         topic_id,
-         emoji,
-         access_tier,
-         title_base,
-         goal_base,
-         allowed_base,
-         subareas_json,
-         avoid_base,
-         starter_questions_target,
-         recovery_questions_target,
-         sort_order,
-         created_at,
-         updated_at,
-         topic_mode,
-         speech_acts_base,
-         lexical_anchors_target,
-         grammar_targets_json,
-         starter_questions_by_level_target,
-         recovery_questions_by_level_target,
-         bridge_patterns_target,
-         hard_block_base,
-         soft_redirect_base,
-         opening_prompt_target
-       FROM bot_topic_catalog
-       WHERE bot_key = $1
-         AND topic_id = $2
-       LIMIT 1`,
-      [botKey, topicId]
-    );
-    return serializeTopicRow(rows[0]);
-  }
-
-  async function fetchTopicCatalogRows(botKey, { userTier = null } = {}) {
-    const { rows } = await pool.query(
-      `SELECT
-         bot_key,
-         topic_id,
-         emoji,
-         access_tier,
-         title_base,
-         goal_base,
-         allowed_base,
-         subareas_json,
-         avoid_base,
-         starter_questions_target,
-         recovery_questions_target,
-         sort_order,
-         created_at,
-         updated_at,
-         topic_mode,
-         speech_acts_base,
-         lexical_anchors_target,
-         grammar_targets_json,
-         starter_questions_by_level_target,
-         recovery_questions_by_level_target,
-         bridge_patterns_target,
-         hard_block_base,
-         soft_redirect_base,
-         opening_prompt_target
-       FROM bot_topic_catalog
-       WHERE bot_key = $1
-       ORDER BY sort_order ASC, topic_id ASC`,
-      [botKey]
-    );
-    const items = rows.map(serializeTopicRow).filter(Boolean);
-    if (!userTier) return items;
-    return items.filter((row) => topicIsVisibleForTier(row, userTier));
-  }
-
-  function normalizeTopicRequestBody(body, { existingTopic = null } = {}) {
-    const payload = normalizeTopicPayload(body || {}, { existingTopic });
-    return {
-      ...payload,
-      access_tier_value: payload.access_tier,
-      allowed_base_json: JSON.stringify(payload.allowed_base),
-      subareas_json_json: JSON.stringify(payload.subareas_json),
-      avoid_base_json: JSON.stringify(payload.avoid_base),
-      starter_questions_target_json: JSON.stringify(payload.starter_questions_target),
-      recovery_questions_target_json: JSON.stringify(payload.recovery_questions_target),
-      speech_acts_base_json: JSON.stringify(payload.speech_acts_base),
-      lexical_anchors_target_json: JSON.stringify(payload.lexical_anchors_target),
-      grammar_targets_json_value: JSON.stringify(payload.grammar_targets_json),
-      starter_questions_by_level_target_json: JSON.stringify(payload.starter_questions_by_level_target),
-      recovery_questions_by_level_target_json: JSON.stringify(payload.recovery_questions_by_level_target),
-      bridge_patterns_target_json: JSON.stringify(payload.bridge_patterns_target),
-      hard_block_base_json: JSON.stringify(payload.hard_block_base),
-      soft_redirect_base_json: JSON.stringify(payload.soft_redirect_base),
-      opening_prompt_target_value: payload.opening_prompt_target,
-      topic_mode_value: payload.topic_mode
-    };
-  }
-
-  async function fetchEffectiveTierForChat(chatIdRaw) {
-    const chatId = Number(chatIdRaw);
-    if (!Number.isFinite(chatId) || chatId <= 0) return 'free';
-    const { rows } = await pool.query(
-      `SELECT
-         CASE
-           WHEN override_plan_tier IS NOT NULL AND override_expires_at IS NOT NULL AND NOW() < override_expires_at
-             THEN override_plan_tier
-           WHEN plan_expires_at IS NOT NULL AND NOW() < plan_expires_at
-             THEN plan_tier
-           ELSE 'free'
-         END AS effective_tier
-       FROM users
-       WHERE chat_id = $1
-       LIMIT 1`,
-      [chatId]
-    );
-    return normalizeEffectiveTopicAccessTier(rows[0]?.effective_tier || 'free');
-  }
-
-  function normalizeTopicPackValue(raw) {
-    if (typeof raw === 'string' && raw.trim()) {
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return null;
-      }
-    }
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-    return raw;
-  }
-
-  function formatTopicMenuLabel(item = {}, locale = {}, { userTier = null } = {}) {
-    const emoji = String(item.emoji || '🧩').trim();
-    const title = String(item.title_base || item.topic_id || '').trim();
-    if (!emoji && !title) return '';
-    const base = `${emoji} ${title}`.trim();
-    const accessTier = String(item.access_tier || 'all').trim().toLowerCase();
-    if (accessTier !== 'pro') return base;
-    const effectiveTier = userTier == null ? null : normalizeEffectiveTopicAccessTier(userTier);
-    const fallbackSuffix = effectiveTier === 'pro' ? '✅ PRO' : '🔒 PRO';
-    const suffix = String(locale.topic_menu_pro_suffix || fallbackSuffix).trim() || fallbackSuffix;
-    return `${base} ${suffix}`.trim();
-  }
-
-  function buildTopicMenuReplyMarkup(items = [], locale = {}, { userTier = null } = {}) {
-    const keyboard = items.map((item) => ({
-      text: formatTopicMenuLabel(item, locale, { userTier }),
-      callback_data: `topic:${String(item.topic_id || '').trim().toLowerCase()}`
-    }))
-      .filter((button) => button.text && button.callback_data !== 'topic:')
-      .map((button) => [button]);
-
-    keyboard.push([
-      {
-        text: `🧹 ${String(locale.topic_btn_clear || 'Clear topic').trim()}`.trim(),
-        callback_data: 'topic:clear'
-      }
-    ]);
-
-    return { inline_keyboard: keyboard };
   }
 
   function getAllowedBillingCurrencies(baseLanguageRaw) {
@@ -2385,21 +2146,15 @@ export function createApiHelpers(ctx) {
     MINIAPP_FEEDBACK_MESSAGE_MAX_LEN,
     billingCurrencyDetailsByCode,
     supportedBillingCurrencyCodes,
-    adminTopicBots,
     archiveStripePriceSafely,
     assertManagedStripePrice,
     botKeyFromTargetLang,
     buildBillingPriceKey,
     buildBillingCurrencyCatalog: (options) => buildBillingCurrencyCatalog(publicBotCatalog, options),
     buildPlanCatalogResponse,
-    buildTopicMenuReplyMarkup,
-    formatTopicMenuLabel,
     classifyPermanentTelegramFailure,
     clampInteger,
     compareBillingRows,
-    fetchEffectiveTierForChat,
-    fetchTopicCatalogItem,
-    fetchTopicCatalogRows,
     getAllowedBillingCurrencies,
     getBotLocale,
     getBroadcastAudiencePreview,
@@ -2422,10 +2177,6 @@ export function createApiHelpers(ctx) {
     normalizeBroadcastFilters,
     normalizeBroadcastMediaFileIds,
     normalizeBroadcastReplyMarkup,
-    normalizeTopicAssistDraft,
-    normalizeTopicBaseTemplate,
-    normalizeTopicPackValue,
-    normalizeTopicRequestBody,
     parseAdminChatIdTarget,
     parseAdminFeedbackThreadTarget,
     parseAdminRange,
@@ -2436,13 +2187,11 @@ export function createApiHelpers(ctx) {
     publicBotMetaForKey,
     recordActionEventSafe,
     requestedBotKeyFromReq,
-    requireTopicBotMeta,
     resolvePlanCurrencySelection,
     resolveTierByPrice,
     resolveUserBotKey,
     sanitizeErrorText,
     sendTelegramTextMessage,
-    serializeTopicRow,
     summarizeBillingEntry,
     targetLangFromBotKey,
     updateUserDeliveryState,

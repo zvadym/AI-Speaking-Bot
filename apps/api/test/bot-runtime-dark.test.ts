@@ -23,10 +23,6 @@ import { createSupportCallbackHandlers } from '../src/bot-runtime/handlers/suppo
 import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
 import { createVoiceConversationHandler } from '../src/bot-runtime/handlers/voice.js';
 import type { BotAiClient } from '../src/bot-runtime/bot-ai.js';
-import {
-  createTopicActionHandler,
-  createTopicMenuHandler
-} from '../src/bot-runtime/handlers/topic-menu.js';
 import { buildStaticRouteMessage } from '../src/bot-runtime/handlers/static-routes.js';
 import { processBotUpdateJob } from '../src/bot-runtime/register-worker.js';
 import type { BotPipelineContext } from '../src/bot-runtime/pipeline.js';
@@ -60,15 +56,6 @@ function preparedReplyCallback(updateId = 9101): PreparedUpdate & { route: 'call
   });
   assert.equal(prepared.route, 'callback.reply');
   return prepared as PreparedUpdate & { route: 'callback.reply' };
-}
-
-function preparedTopic(updateId = 9201): PreparedUpdate & { route: 'command.topic' } {
-  const prepared = buildPreparedUpdate({
-    botKey: 'uk-en',
-    input: normalizeTelegramUpdate(messageUpdate({ updateId, text: '/topic' }))
-  });
-  assert.equal(prepared.route, 'command.topic');
-  return prepared as PreparedUpdate & { route: 'command.topic' };
 }
 
 function preparedFeedback(updateId = 9301): PreparedUpdate & { route: 'command.feedback' } {
@@ -340,7 +327,6 @@ test('preference callbacks reuse the persisted effect result and confirm once', 
       callback_saved: 'Saved',
       reply_mode_saved_prefix: 'Mode: ',
       reply_mode_text: 'text',
-      keyboard_btn_topic_none: 'Free chat',
       keyboard_btn_voice_text: 'Text',
       keyboard_btn_voice_voice: 'Voice',
       keyboard_btn_xp_prefix: 'XP'
@@ -364,7 +350,6 @@ test('preference callbacks reuse the persisted effect result and confirm once', 
       level: 'b1',
       reply_mode: 'text',
       onboarding_complete_at: new Date(),
-      topic_enabled: false,
       xp_total: 25,
       xp_level: 1
     }),
@@ -386,64 +371,6 @@ test('preference callbacks reuse the persisted effect result and confirm once', 
   assert.equal(deliveries.length, 1);
   assert.equal(deliveries[0].text, 'Mode: text');
   assert.equal(deliveries[0].stepKey, 'callback.reply:confirmation:v1');
-});
-
-test('topic menu reloads current tier and state before formatting', async () => {
-  const update = preparedTopic();
-  const deliveries: Array<Record<string, unknown>> = [];
-  const pool = {
-    async query() {
-      return {
-        rows: [{
-          topic_enabled: true,
-          topic_template_id: 'travel',
-          topic_pack_json: { title_base: 'My trip' }
-        }]
-      };
-    }
-  } as unknown as Pool;
-  const handler = createTopicMenuHandler({
-    pool,
-    getBotLocale: () => ({
-      topic_menu_title: 'Topics',
-      topic_menu_current_prefix: 'Current: ',
-      topic_menu_current_none: 'None'
-    }),
-    telegramClient: {
-      async sendTelegramTextMessage() { return { message_id: 1 }; }
-    },
-    helpers: {
-      async fetchEffectiveTierForChat() { return 'pro'; },
-      async fetchTopicCatalogRows() {
-        return [{ topic_id: 'travel', title_base: 'Travel' }];
-      },
-      async fetchTopicCatalogItem() {
-        return { topic_id: 'travel', title_base: 'Travel' };
-      },
-      normalizeTopicPackValue(value) {
-        return value as Record<string, unknown>;
-      },
-      formatTopicMenuLabel(topic, _locale, options) {
-        assert.equal(options.userTier, 'pro');
-        return String(topic.title_base);
-      },
-      buildTopicMenuReplyMarkup(_catalog, _locale, options) {
-        assert.equal(options.userTier, 'pro');
-        return { inline_keyboard: [[{ text: 'Travel', callback_data: 'topic:travel' }]] };
-      }
-    },
-    textDeliverer: async (input) => {
-      deliveries.push(input as unknown as Record<string, unknown>);
-      return { status: 'delivered', telegramMessageId: 44 };
-    }
-  });
-
-  assert.deepEqual(await handler.execute(update), {
-    status: 'delivered',
-    telegramMessageId: 44
-  });
-  assert.equal(deliveries[0].text, 'Topics\n\nCurrent: My trip');
-  assert.equal(deliveries[0].stepKey, 'command.topic:menu:v1');
 });
 
 test('static callback actions acknowledge once and use durable text delivery', async () => {
@@ -475,51 +402,6 @@ test('static callback actions acknowledge once and use durable text delivery', a
   assert.deepEqual(acknowledgements, ['Saved']);
   assert.equal(deliveries[0].stepKey, 'callback.lang:message:v1');
   assert.match(String(deliveries[0].text), /EN/);
-});
-
-test('topic clear reuses effect state and restores the persistent keyboard', async () => {
-  const update = preparedCallback('callback.topic', 'topic:clear', 9402);
-  const telegramMethods: string[] = [];
-  const deliveries: Array<Record<string, unknown>> = [];
-  const handler = createTopicActionHandler({
-    pool: unusedPool,
-    getBotLocale: () => ({ topic_clear_done: 'Cleared' }),
-    telegramClient: {
-      async sendTelegramTextMessage() { return { message_id: 1 }; },
-      async answerTelegramCallbackQuery() {},
-      async callTelegramApi(_botKey, method) {
-        telegramMethods.push(method);
-        return {};
-      }
-    },
-    helpers: {
-      async fetchEffectiveTierForChat() { return 'free'; },
-      async fetchTopicCatalogRows() { return []; },
-      async fetchTopicCatalogItem() { return null; },
-      normalizeTopicPackValue() { return null; },
-      formatTopicMenuLabel() { return ''; },
-      buildTopicMenuReplyMarkup() { return {}; }
-    },
-    effectRunner: async <T extends Record<string, unknown>>() => ({
-      duplicate: true,
-      result: { pinnedMessageId: 123 } as unknown as T
-    }),
-    keyboardStateLoader: async () => ({
-      onboarding_complete_at: '2026-01-01T00:00:00Z',
-      reply_mode: 'text'
-    }),
-    textDeliverer: async (input) => {
-      deliveries.push(input as unknown as Record<string, unknown>);
-      return { status: 'delivered', telegramMessageId: 72 };
-    }
-  });
-  assert.deepEqual(await handler.execute(update), {
-    status: 'delivered',
-    telegramMessageId: 72
-  });
-  assert.deepEqual(telegramMethods, ['unpinChatMessage']);
-  assert.equal(deliveries[0].stepKey, 'callback.topic:cleared-message:v1');
-  assert.ok(deliveries[0].replyMarkup);
 });
 
 test('support translation callback reuses cached AI effect and edits the source message', async () => {

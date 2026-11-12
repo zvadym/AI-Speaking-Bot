@@ -95,9 +95,7 @@
     "level_label_beginner": "शुरुआती (A1-A2)",
     "level_label_conversational": "संवादी (B1-B2)",
     "level_label_advanced": "उन्नत (C1+)",
-    "topic_btn_set_inline": "🧭 विषय चुनें",
-    "topic_btn_manage_inline": "🎯 विषय बदलें/रद्द करें",
-    "onboarding_start_practice_text": "शानदार शुरुआत ✨ क्या आप कोई topic चुनना चाहेंगे या फ्री में जारी रखें? आप कभी भी voice या text भेज सकते हैं।",
+    "onboarding_start_practice_text": "बातचीत जारी रखें। आप कभी भी आवाज़ या टेक्स्ट संदेश भेज सकते हैं।",
     "onboarding_btn_start_voice": "🎙️ वॉइस से शुरू करें",
     "onboarding_btn_start_text": "✍️ टेक्स्ट से शुरू करें",
     "onboarding_btn_show_example": "👀 उदाहरण देखें",
@@ -107,8 +105,6 @@
     "onboarding_showcase_no_mistakes_text": "बहुत बढ़िया, इसमें कोई गलती नहीं है 👏\nअगर आप देखना चाहते हैं कि मैं गलतियाँ कैसे ठीक करता हूँ, तो जानबूझकर गलत वाक्य लिखें।\nउदाहरण:\n❌ Yesterday I go to work by bus.",
     "onboarding_complete_full_text": "बहुत बढ़िया प्रोग्रेस — आपका प्रोफाइल तैयार है 🚀\n\nमुख्य बातें:\n• आपका शुरुआती level A1 है। आप इसे कभी भी A1, A2, B1, B2 या C1 में बदल सकते हैं।\n• चैट के नीचे वाले buttons से आप कभी भी अपना language level और reply format बदल सकते हैं: voice या text।\n• App में आप दूसरे settings खोल सकते हैं, feedback भेज सकते हैं और बाकी options manage कर सकते हैं।\n\nअपनी streak जारी रखने के लिए अगला message भेजें 🔥\n\nबधाई हो! Onboarding पूरा हो गया है।",
     "keyboard_btn_level_prefix": "लेवल",
-    "keyboard_btn_topic_prefix": "टॉपिक",
-    "keyboard_btn_topic_none": "विषय चुनें",
     "keyboard_btn_voice_prefix": "प्रतिक्रिया प्रकार",
     "keyboard_btn_voice_text": "टेक्स्ट",
     "keyboard_btn_voice_voice": "वॉइस",
@@ -121,14 +117,6 @@
         "voice_variants": [
           "Quick practice ke liye ready ho? Ek chhota voice note bhejo.",
           "Practice me wapas aana hai? Ek chhota voice note bhejo."
-        ],
-        "topic_text_variants": [
-          "{{topic_title}} par wapas aana hai? Ek chhota sentence likho.",
-          "{{topic_title}} ko phir se shuru karein? Ek chhota sentence likho."
-        ],
-        "topic_voice_variants": [
-          "{{topic_title}} par wapas aana hai? Ek chhota voice note bhejo.",
-          "{{topic_title}} ko phir se shuru karein? Ek chhota voice note bhejo."
         ]
       },
       "winback": {
@@ -147,10 +135,6 @@
             "Bilkul pressure nahi. Jab chaho zero se restart kar sakte hain. {{reply_cta_label}}.",
             "Jab ready ho, fresh start karte hain. {{reply_cta_label}}."
           ],
-          "topic": [
-            "क्या तुम फिर से “{{topic_title}}” विषय पर लौटना चाहोगे? एक छोटा-सा वाक्य लिखो — और आगे बढ़ते हैं।",
-            "क्या तुम “{{topic_title}}” विषय पर वापस आना चाहोगे? एक छोटा-सा वाक्य लिखो — और आगे बढ़ते हैं।"
-          ],
           "streak": [
             "Tum pehle {{streak_best}} din ki streak bana chuke ho. Ek chhote step se phir se shuru kar sakte hain. {{reply_cta_label}}.",
             "Tumhari best streak {{streak_best}} din ki thi. Wapas aana sirf ek chhote message se shuru ho sakta hai. {{reply_cta_label}}."
@@ -162,7 +146,7 @@
         }
       },
       "free_limit_50": {
-        "message_html": "<b>आप अपने फ्री लिमिट का आधा पहले ही इस्तेमाल कर चुके हैं ✨</b>\nअगर आप जारी रखना चाहते हैं, तो PRO की कीमत महीने में 2 कप कॉफी से भी कम है।\n\nइससे नए विषय, टोन सेटिंग्स और आगे आने वाले अपडेट जैसी अतिरिक्त सुविधाएँ मिलती हैं।"
+        "message_html": "<b>आप अपने फ्री लिमिट का आधा पहले ही इस्तेमाल कर चुके हैं ✨</b>\nअगर आप जारी रखना चाहते हैं, तो PRO की कीमत महीने में 2 कप कॉफी से भी कम है।\n\nइससे आपको बातचीत का अभ्यास करने के लिए ज़्यादा समय मिलता है।"
       }
     },
     "onboarding_v2": {
@@ -184,7 +168,7 @@
       },
       "buttons": {
         "use_text": "✍️ टेक्स्ट में जवाब",
-        "change_scenario": "🔄 दूसरा विषय",
+        "change_scenario": "🔄 दूसरा परिदृश्य",
         "confirm_level": "✅ हाँ, {suggested_level}",
         "choose_level": "🎚 दूसरा स्तर",
         "retry": "🔁 फिर से बोलें",
@@ -211,11 +195,9 @@
     "settings": {
       "title": "सेटिंग्स",
       "level": "स्तर",
-      "topic": "विषय",
       "replies": "बॉट के जवाब",
       "voice": "आवाज़",
       "text": "टेक्स्ट",
-      "free": "खुली बातचीत",
       "done": "हो गया",
       "back": "वापस",
       "saved": "बदलाव सेव हो गए",
@@ -247,10 +229,6 @@
       {
         "command": "stats",
         "description": "सदस्यता स्थिति देखें"
-      },
-      {
-        "command": "topic",
-        "description": "बातचीत का विषय चुनें"
       },
       {
         "command": "feedback",

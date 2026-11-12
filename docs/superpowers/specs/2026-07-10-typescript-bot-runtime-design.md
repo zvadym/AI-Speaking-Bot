@@ -9,7 +9,7 @@ Date: 2026-07-10
 The main Telegram workflow currently contains 230 nodes, including 56 `If` nodes,
 24 Code nodes, and no Switch node. Only the ingress routing chains should be
 collapsed into route-based dispatch. Local decisions such as cache hits, usage
-limits, TTS mode, topic access, and retry eligibility remain local to their
+limits, TTS mode, and retry eligibility remain local to their
 handlers.
 
 The first extraction already exists in local commit `adff30e`:
@@ -154,7 +154,6 @@ type Route =
   | 'callback.lang'
   | 'callback.level'
   | 'callback.reply'
-  | 'callback.topic'
   | 'callback.onboarding'
   | 'callback.unknown'
   | 'command.start'
@@ -163,7 +162,6 @@ type Route =
   | 'command.level'
   | 'command.stats'
   | 'command.xp'
-  | 'command.topic'
   | 'command.feedback'
   | 'command.unknown'
   | 'reply_keyboard.voice_toggle'
@@ -226,7 +224,7 @@ A handler is composed from explicit functions with these conceptual stages:
 
 The route, normalized input, contract version, handler version, decision ID, and
 route-critical facts are frozen after acceptance. Plan tier, usage, preferences,
-topic state, conversation history, and other mutable records are reloaded by the
+conversation history and other mutable records are reloaded by the
 worker.
 
 A generic pipeline builder may be introduced only after at least three migrated
@@ -419,7 +417,7 @@ Promote routes in this order, with a separate deploy and promotion gate for each
 route or tightly coupled route pair:
 
 1. read-only commands and menus
-2. level, reply mode, feedback, and topic state transitions
+2. level, reply mode, and feedback state transitions
 3. callbacks
 4. text conversation
 5. voice conversation, STT, and TTS

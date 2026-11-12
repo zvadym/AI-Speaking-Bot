@@ -13,11 +13,7 @@ export async function fetchKeyboardState(
     `SELECT
        ub.level,
        ub.reply_mode,
-       onboarding.completed_at AS onboarding_complete_at,
-       COALESCE(ub.topic_enabled, false) AS topic_enabled,
-       ub.topic_template_id,
-       ub.topic_pack_json,
-       ub.topic_pinned_message_id
+       onboarding.completed_at AS onboarding_complete_at
      FROM user_bots ub
      LEFT JOIN bot_onboarding_completion onboarding
        ON onboarding.chat_id = ub.chat_id

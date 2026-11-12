@@ -41,7 +41,7 @@ test('settings ingestion and workers use an independent durable queue while othe
   assert.deepEqual(sent,['bot-settings-process','bot-settings-process','bot-update-process']);
   await registerBotRuntimeWorker(boss,{
     pool,getBotLocale:()=>({}),telegramClient:{} as never,webappUrl:'https://example.test',
-    progressEnabledBotKeys:new Set(),topicMenuHelpers:{} as never,getBotConfig:()=>null,
+    progressEnabledBotKeys:new Set(),getBotConfig:()=>null,
     sendIdiomMore:async()=>({}),ai:{} as never
   });
   assert.deepEqual(workers.map(w=>w.name),['bot-update-process','bot-settings-process']);

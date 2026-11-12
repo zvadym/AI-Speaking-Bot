@@ -233,9 +233,9 @@ Score each anonymous output independently from 1 (unacceptable) to 5 (excellent)
 - correction_accuracy: mistakes are detected accurately, corrections preserve intent, and voice-like ASR is not over-corrected;
 - level_fit: wording and correction depth fit the learner CEFR level;
 - conversational_usefulness: the reply directly responds, is natural, concise, and advances the conversation without parroting;
-- instruction_compliance: correction vs hint mode, pinned topic, base-language explanation, and formatting rules are respected.
+- instruction_compliance: correction vs hint mode, base-language explanation, and formatting rules are respected.
 
-Set critical_failure=true only for a wrong routing/language decision, a materially wrong or invented correction, failure to answer a direct question, or a serious pinned-topic violation. A small style preference is not critical.
+Set critical_failure=true only for a wrong routing/language decision, a materially wrong or invented correction, failure to answer a direct question. A small style preference is not critical.
 
 Production contract semantics:
 - is_target_language=true means the turn remains processable as language practice; it does not claim that detected_language equals the target language.
@@ -268,7 +268,6 @@ async function runVariant(
       profileSummary: testCase.profileSummary,
       shortSummary: testCase.shortSummary,
       history: testCase.history,
-      topic: testCase.topic,
       trace: { botKey: testCase.botKey, route: `eval.${testCase.id}` }
     });
     const usage = event || {} as LlmCallEvent;
@@ -337,8 +336,7 @@ async function judgeCase(
       input_mode: testCase.inputMode,
       learner_message: testCase.text,
       expected_route: testCase.expectedRoute,
-      expected_mistakes: testCase.expectedMistakes,
-      pinned_topic: testCase.topic
+      expected_mistakes: testCase.expectedMistakes
     },
     anonymous_outputs: Object.fromEntries(
       labels.map((label) => [label, outputByVariant[labelToVariant[label]]])
