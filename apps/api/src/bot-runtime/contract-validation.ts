@@ -64,6 +64,9 @@ export function parsePreparedUpdateContract(value: unknown): PreparedUpdate {
 
   const message = asRecord(input.message);
   if (!isSafeIntegerOrNull(message.id)) invalidContract();
+  if (message.replyToMessageBotUsername !== undefined && !isStringOrNull(message.replyToMessageBotUsername,64)) invalidContract();
+  if (message.replyToMessageText !== undefined && !isStringOrNull(message.replyToMessageText,4096)) invalidContract();
+  if (message.replyToMessageId !== undefined && !isSafeIntegerOrNull(message.replyToMessageId)) invalidContract();
   if (typeof message.text !== 'string' || message.text.length > 20_000) invalidContract();
   if (
     typeof message.hasText !== 'boolean' ||

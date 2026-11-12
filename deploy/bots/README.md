@@ -39,14 +39,7 @@ Example:
     "name": "Emma",
     "description": "Practice German with Emma.",
     "short_description": "Practice German daily.",
-    "commands": [
-      { "command": "start", "description": "Start the bot" },
-      { "command": "level", "description": "Set your language level" },
-      { "command": "voice", "description": "Choose voice or text replies" },
-      { "command": "stats", "description": "Check subscription status" },
-      { "command": "feedback", "description": "Send feedback" },
-      { "command": "lang", "description": "Show fixed learning language" }
-    ],
+    "commands": [],
     "menu_button": {
       "text": "Open app",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=en-de"
@@ -63,22 +56,22 @@ The field contract lives in:
 
 - `deploy/bot-presentation.template.yaml`
 
-It defines required fields, length limits, regex, and Telegram method mapping.
+It defines required fields, length limits and Telegram method mapping. `commands`
+must be an empty array. The Mini App menu button is independent of the command list.
 
-## Locale Keys For Bottom Keyboard
+## Settings and feedback locale
 
-The TypeScript bot runtime reads these `locale` keys to build the persistent bottom keyboard labels:
+The bottom reply keyboard has one localized settings button. Its rich card uses
+`locale.settings` for level/reply controls, statistics, feedback and closing labels.
+The command list is intentionally empty; `/start` is only a technical first-contact
+entry. Provisioning rejects nonempty command arrays so retired commands cannot
+return through defaults or `sync`.
 
-- `keyboard_btn_level_prefix`
-- `keyboard_btn_voice_prefix`
-- `keyboard_btn_voice_text`
-- `keyboard_btn_voice_voice`
-
-They should be localized in the bot's base language and kept short because Telegram reply-keyboard buttons have limited horizontal space.
-
-The bottom keyboard opens settings for language level and reply format.
-`/progress` and `/xp` are not registered commands. Old reply-keyboard buttons and
-already queued jobs receive the standard unknown-command reply with the current keyboard.
+Feedback copy lives in `locale.msg_feedback_*`: the prompt asks for a text or voice
+reply to that message; cancellation, expiration, unsupported media and input
+placeholder are localized separately. `choose_level_text`, `level_saved_prefix`
+and `callback_saved` still support onboarding. `lang_label_*` remains shared
+notification language data, without a language command.
 
 The API automated notifications also read these locale keys when present:
 
@@ -167,7 +160,7 @@ python3 scripts/provision-bots.py apply --all --bots-dir deploy/bots-dev
 - `setMyName`
 - `setMyDescription`
 - `setMyShortDescription`
-- `setMyCommands`
+- `deleteMyCommands` + `getMyCommands` verification for default/private menus and known localized overrides
 - `setChatMenuButton`
 - `setMyProfilePhoto` (when `profile_photo_path` exists or `--profile-photo` is passed)
 

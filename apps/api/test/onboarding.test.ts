@@ -90,7 +90,7 @@ test('onboarding rollout config supports dark, canary, and all-bot activation', 
   );
 });
 
-test('enabled /start creates or atomically restarts onboarding for an existing user', async () => {
+test('enabled /start can create a missing onboarding session but never resets an existing one', async () => {
   const calls = await runBootstrap({
     text: '/start',
     updateId: 9801,
@@ -100,11 +100,10 @@ test('enabled /start creates or atomically restarts onboarding for an existing u
   const reset = calls.find((call) => call.source.includes('INSERT INTO bot_onboarding_sessions'));
   assert.ok(reset);
   assert.deepEqual(reset.params, [42, 'uk-en', 9801]);
-  assert.match(reset.source, /ON CONFLICT \(chat_id, bot_key\) DO UPDATE/);
-  assert.match(reset.source, /state = 'choose_scenario'/);
-  assert.match(reset.source, /scenario = NULL/);
-  assert.match(reset.source, /completed_at = NULL/);
-  assert.match(reset.source, /last_start_update_id < EXCLUDED\.last_start_update_id/);
+  assert.match(reset.source, /ON CONFLICT \(chat_id, bot_key\) DO NOTHING/);
+  assert.match(reset.source, /WHERE NOT EXISTS/);
+  assert.match(reset.source, /FROM bot_onboarding_completion/);
+  assert.doesNotMatch(reset.source, /DO UPDATE|scenario = NULL|completed_at = NULL/);
 });
 
 test('onboarding bootstrap keeps non-start and disabled-bot behavior scoped', async () => {

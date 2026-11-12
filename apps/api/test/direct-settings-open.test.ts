@@ -11,7 +11,7 @@ import { createTelegramWebhookRouter } from '../src/routes/telegram-webhook.js';
 import { parseBotRuntimeRouteFlags } from '../src/bot-runtime/route-flags.js';
 import { deriveTelegramWebhookSecret } from '../src/bot-runtime/webhook-secret.js';
 
-test('Postgres: direct opening is durable without a queue, including duplicate, partial and ambiguous sends',{
+test('Postgres: direct opening is durable without a queue, including duplicates, rejected and ambiguous sends',{
   skip:process.env.BOT_RUNTIME_TEST_DATABASE_URL?false:'BOT_RUNTIME_TEST_DATABASE_URL is not configured'
 },async()=>{
   const {default:pg}=await import('pg');
@@ -46,17 +46,17 @@ test('Postgres: direct opening is durable without a queue, including duplicate, 
     await Promise.all([run(first),run(first)]);assert.equal(count('sendRichMessage'),1);
     // Independent taps are distinct requests and may each open a new card.
     await run(raw());assert.equal(count('sendRichMessage'),2);
-    const slash=raw('/settings');await run(slash);await run(slash);
-    assert.equal(count('sendRichMessage'),3);assert.equal(count('sendMessage'),1);
-    assert.ok(calls.find(c=>c.method==='sendMessage')!.body.reply_markup);
-    assert.equal((await records(Number(slash.update_id))).length,2);
-    await run(raw('settings:w:open',true));assert.equal(count('sendRichMessage'),4);
+    const slash=raw('/settings');assert.equal(await run(slash),false);assert.equal(await run(slash),false);
+    assert.equal(count('sendRichMessage'),2);assert.equal(count('sendMessage'),0);
+    assert.deepEqual(await records(Number(slash.update_id)),[]);
+    await run(raw('settings:w:open',true));assert.equal(count('sendRichMessage'),3);
 
-    // One acknowledged rejection can retry without resending the other message.
-    const partial=raw('/settings');failure=Object.assign(new Error('retry later'),{telegramStatus:429});failMethod='sendMessage';
-    await assert.rejects(run(partial));const cards=count('sendRichMessage');
-    await run(partial);assert.equal(count('sendRichMessage'),cards);
-    assert.ok((await records(Number(partial.update_id))).every(r=>r.status==='delivered'));
+    // A definite Telegram rejection can retry the reserved card; no keyboard header is sent.
+    const limited=raw();failure=Object.assign(new Error('retry later'),{telegramStatus:429});failMethod='sendRichMessage';
+    await assert.rejects(run(limited));const cards=count('sendRichMessage');
+    await run(limited);assert.equal(count('sendRichMessage'),cards+1);assert.equal(count('sendMessage'),0);
+    assert.equal((await records(Number(limited.update_id)))[0].attempts,2);
+    assert.equal((await records(Number(limited.update_id)))[0].status,'delivered');
     const rejected=raw();failure=Object.assign(new Error('unavailable'),{telegramStatus:503});failMethod='sendRichMessage';
     await assert.rejects(run(rejected));await run(rejected);
     assert.equal((await records(Number(rejected.update_id)))[0].attempts,2);
@@ -80,7 +80,7 @@ test('Postgres: direct opening is durable without a queue, including duplicate, 
     await pool.query("UPDATE bot_update_deliveries SET status='delivered',telegram_message_id=999 WHERE decision_id=$1",[`v1:${botKey}:${legacy.update_id}`]);
     await run(legacy);assert.equal(count('sendRichMessage'),beforeResume);
 
-    // HTTP ingress checks command.flags independently of callback.flags.
+    // HTTP ingress checks settings.open independently of callback.settings.
     let enqueued=0;
     const botToken='token',signingSecret='secret';
     const ctx={pool,telegramClient,getBotLocale:()=>({}),publicBotMetaForKey:()=>({bot_key:botKey}),
@@ -96,7 +96,7 @@ test('Postgres: direct opening is durable without a queue, including duplicate, 
       const sentBefore=count('sendRichMessage');
       assert.equal((await post('wrong')).status,401);assert.equal(count('sendRichMessage'),sentBefore);
       assert.equal((await post(secret)).status,503);assert.equal(count('sendRichMessage'),sentBefore);
-      ctx.env.botRuntimeRouteFlags=parseBotRuntimeRouteFlags('{"uk-en":["command.settings"]}',[botKey]);
+      ctx.env.botRuntimeRouteFlags=parseBotRuntimeRouteFlags('{"uk-en":["settings.open"]}',[botKey]);
       assert.equal((await post(secret)).status,200);assert.equal((await post(secret)).status,200);
       assert.equal(count('sendRichMessage'),sentBefore+1);assert.equal(enqueued,0);
     }finally{server.close();await once(server,'close');}

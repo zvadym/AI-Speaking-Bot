@@ -49,9 +49,6 @@
     "hints_empty": "I don’t have suggestions for this message yet. Try the next reply.",
     "choose_level_text": "Choose your level 👇",
     "hi_message_text": "Hi! Let’s start with a short check 👋\nSend one short voice or text message (1-2 sentences), and I’ll reply with:\n✅ transcript\n✅ corrections + short explanation\n✅ what to say next",
-    "choose_voice_mode_text": "How would you like to receive my replies: voice or text? 🎧💬",
-    "voice_mode_text": "💬 Text",
-    "voice_mode_voice": "🎧 Voice",
     "voice_reply_prefix": "📝 ",
     "msg_too_long": "This voice message is too long 🙂 Please send a recording of up to 90 seconds.",
     "msg_voice_length_tip": "For more focused practice, try to keep each voice message to 30–45 seconds 🙂",
@@ -59,12 +56,8 @@
     "msg_error_command": "I don’t know that command yet.",
     "level_saved_prefix": "Level saved: ",
     "msg_next_step": "Now send a short voice message (1-2 sentences) 🎙️ I’ll correct 1-2 important things and explain them briefly.",
-    "lang_saved_prefix": "We’re practicing ",
     "lang_label_de": "Italian 🇮🇹",
     "lang_label_en": "English 🇬🇧",
-    "reply_mode_saved_prefix": "I’ll reply ",
-    "reply_mode_voice": "🎧 with voice",
-    "reply_mode_text": "💬 in text",
     "stats_title": "<b>💎 Subscription</b>",
     "stats_plan_prefix": "Plan: ",
     "tier_pro": "PRO 🚀",
@@ -82,15 +75,15 @@
     "pending_change_suffix": " at period end",
     "stats_footer": "Subscription details and management are in the mini-app below.",
     "btn_open_miniapp": "Open mini-app",
-    "msg_limit_reached": "You’ve already used the free practice limit.\nTo continue, open the subscription in the mini-app with the button below.",
-    "msg_tts_limit_reached": "You’ve reached the weekly limit for voice replies. Check /stats.",
+    "msg_limit_reached": "Your practice limit has been reached. Open the subscription in the mini-app below to continue.",
+    "msg_tts_limit_reached": "The limit for voice replies has been reached. Open Settings → Statistics to check your subscription.",
     "btn_open_subscription": "💎 Open subscription",
     "msg_too_short": "I couldn’t hear enough. Try a slightly longer voice message.",
     "user_text_prefix_multiline": "📝 Your text:\\n",
     "user_text_preview": "📝 Your text: ...",
-    "msg_feedback_prompt": "Thanks. Please send feedback as text or a voice message 🎙️",
+    "msg_feedback_prompt": "Reply to this message with your feedback as text or a voice note.",
     "msg_feedback_thanks": "Thanks, I received your feedback.",
-    "msg_feedback_needs_text_or_voice": "Please send feedback as text or voice message 🎙️",
+    "msg_feedback_needs_text_or_voice": "Please reply with text or a voice note.",
     "msg_needs_text_or_voice": "Please send a text or voice message only 🎙️",
     "level_label_beginner": "Beginner (A1-A2)",
     "level_label_conversational": "Conversational (B1-B2)",
@@ -103,11 +96,7 @@
     "onboarding_voice_cta_text": "Okay. Send a short voice message (1-2 sentences) 🎙️",
     "onboarding_text_cta_text": "Okay. Send a short text message (1-2 sentences) ✍️",
     "onboarding_showcase_no_mistakes_text": "No mistakes here 👏\nIf you want to see how I correct things, send a sentence with an intentional mistake.\nFor example:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Your profile is ready 🚀\n\nA few quick notes:\n• Your starting level is A1. You can change it anytime to A1, A2, B1, B2, or C1.\n• Use the buttons below the chat to change your level and reply type: voice or text.\n• The mini-app has more settings, feedback, and account options.\n\nSend your next message to continue practicing 🔥\n\nOnboarding is finished.",
-    "keyboard_btn_level_prefix": "Level",
-    "keyboard_btn_voice_prefix": "Response type",
-    "keyboard_btn_voice_text": "Text",
-    "keyboard_btn_voice_voice": "Voice",
+    "onboarding_complete_full_text": "Your profile is ready. Open Settings to change your level or reply format, view statistics, or send feedback. Send your next text or voice message to keep practising.",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -202,43 +191,28 @@
       "back": "Back",
       "saved": "Changes saved",
       "error": "Could not save. Please try again.",
-      "autosave": "Changes are saved automatically"
+      "autosave": "Changes are saved automatically",
+      "stats": "Statistics",
+      "feedback": "Send feedback",
+      "cancel": "Cancel",
+      "feedback_waiting": "Waiting for your feedback. Reply to the message below with text or a voice note.",
+      "used": "Used (min:sec)",
+      "remaining": "Remaining (min:sec)"
     },
     "vocab_column_original": "Original",
     "vocab_column_translation": "Translation",
     "vocab_column_transcription": "Transcription",
-    "vocab_empty": "No vocabulary items found."
+    "vocab_empty": "No vocabulary items found.",
+    "msg_feedback_cancelled": "Feedback cancelled. We can continue our conversation.",
+    "msg_feedback_expired": "This feedback request has expired. Open Settings to send a new one.",
+    "msg_feedback_unsupported": "Please reply with text or a voice note.",
+    "msg_feedback_placeholder": "Your feedback: text or voice"
   },
   "telegram_presentation": {
     "name": "Romi 🇮🇹 | Your language tutor",
     "description": "Send one message in Italian. I’ll correct the key mistakes and help with your next reply.\nhttps://ai-language-school.online/en",
     "short_description": "Send one message in Italian. I’ll correct the key mistakes and help with your next reply.",
-    "commands": [
-      {
-        "command": "start",
-        "description": "Start the bot"
-      },
-      {
-        "command": "level",
-        "description": "Set your language level"
-      },
-      {
-        "command": "voice",
-        "description": "Set voice/text reply mode"
-      },
-      {
-        "command": "stats",
-        "description": "Check subscription status"
-      },
-      {
-        "command": "feedback",
-        "description": "Send feedback"
-      },
-      {
-        "command": "lang",
-        "description": "Show fixed learning language"
-      }
-    ],
+    "commands": [],
     "menu_button": {
       "text": "Mini-app",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=en-it"

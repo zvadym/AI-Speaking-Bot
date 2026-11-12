@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { createRequireAuth } from '../auth.js';
-import { enqueueDiscordEventNotificationJob } from '../jobs.js';
+import { randomUUID } from 'node:crypto';
+import { saveFeedback } from '../feedback-service.js';
+import { wakeFeedbackNotifications } from '../feedback-notifications.js';
 import {
   normalizeBotKey,
   normalizeFeedbackCategory
@@ -127,64 +129,20 @@ export function createMeRouter(ctx, helpers) {
     const user = await helpers.getMeUserRow(chatId, botKey);
     if (!user) return res.status(404).json({ error: 'user_not_found' });
 
-    const { rows } = await ctx.pool.query(
-      `INSERT INTO feedback (
-         chat_id,
-         username,
-         first_name,
-         kind,
-         feedback_text,
-         bot_key,
-         category,
-         source
-       )
-       VALUES ($1, $2, $3, 'text', $4, $5, $6, 'miniapp')
-       RETURNING id, created_at, feedback_text, category`,
-      [
-        chatId,
-        user.username || null,
-        user.first_name || null,
-        message,
-        botKey,
-        category
-      ]
-    );
-
-    await ctx.pool.query(
-      `INSERT INTO feedback_threads (
-         chat_id,
-         bot_key,
-         archived_at,
-         archived_by,
-         user_last_read_at
-       )
-       VALUES ($1, $2, NULL, NULL, NOW())
-       ON CONFLICT (chat_id, bot_key) DO UPDATE
-         SET archived_at = NULL,
-             archived_by = NULL,
-             user_last_read_at = NOW()`,
-      [chatId, botKey]
-    );
-
-    const feedbackRow = rows[0] || null;
-
-    if (feedbackRow && ctx.apiBoss && ctx.env.discordEventsWebhookUrl) {
-      await enqueueDiscordEventNotificationJob(
-        ctx.apiBoss,
-        {
-          type: 'user_feedback',
-          feedback_id: Number(feedbackRow.id || 0) || null,
-          chat_id: chatId,
-          username: user.username || null,
-          first_name: user.first_name || null,
-          bot_key: botKey,
-          category: feedbackRow.category || category,
-          feedback_text: feedbackRow.feedback_text || message,
-          kind: 'text',
-          source: 'miniapp'
-        }
-      );
+    const requestKey = String(req.get('idempotency-key') || '').trim();
+    if (requestKey && !/^[A-Za-z0-9_-]{1,100}$/.test(requestKey)) {
+      return res.status(400).json({ error: 'bad_idempotency_key' });
     }
+    const saved = await saveFeedback(ctx.pool, {
+      chatId, botKey, username: user.username, firstName: user.first_name,
+      kind: 'text', feedbackText: message, source: 'miniapp', category,
+      idempotencyKey: `miniapp:${chatId}:${botKey}:${requestKey || randomUUID()}`
+    });
+    const { rows } = await ctx.pool.query(
+      'SELECT id, created_at, feedback_text, category FROM feedback WHERE id = $1', [saved.id]
+    );
+    const feedbackRow = rows[0] || null;
+    await wakeFeedbackNotifications(ctx.apiBoss);
 
     const feedbackSummary = await helpers.getUserFeedbackSummary(chatId, botKey);
 

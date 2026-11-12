@@ -103,6 +103,7 @@ async function withMockedFetch(handler, run) {
 }
 
 function createMiniappQueryHandler() {
+  let lastFeedback = null;
   const baseUserRow = {
     chat_id: 42,
     username: 'alice',
@@ -249,14 +250,13 @@ function createMiniappQueryHandler() {
     }
 
     if (source.includes('INSERT INTO feedback (')) {
-      return {
-        rows: [{
-          id: 77,
-          created_at: '2026-03-11T09:00:00.000Z',
-          feedback_text: params[3],
-          category: params[5]
-        }]
-      };
+      lastFeedback = {id:77, created_at:'2026-03-11T09:00:00.000Z', feedback_text:params[5], category:params[10]};
+      assert.ok(source.includes('INSERT INTO feedback_notifications'));
+      assert.ok(source.includes('INSERT INTO feedback_threads'));
+      return {rows:[{id:'77',duplicate:false}]};
+    }
+    if (source.startsWith('SELECT id, created_at, feedback_text, category FROM feedback')) {
+      return {rows:lastFeedback?[lastFeedback]:[]};
     }
 
     if (source.includes('INSERT INTO feedback_threads')) {
@@ -1571,11 +1571,8 @@ test('miniapp mutation endpoints validate input and persist profile changes', as
     assert.equal(feedback.json.item.category, 'idea');
     assert.equal(feedback.json.item.text, 'Need more drills');
     assert.equal(bossCalls.length, 1);
-    assert.equal(bossCalls[0][0], 'discord-event-send');
-    assert.equal(bossCalls[0][1].type, 'user_feedback');
-    assert.equal(bossCalls[0][1].feedback_id, 77);
-    assert.equal(bossCalls[0][1].category, 'idea');
-    assert.equal(bossCalls[0][1].feedback_text, 'Need more drills');
+    assert.equal(bossCalls[0][0], 'feedback-notification-scan');
+    assert.deepEqual(bossCalls[0][1], {}); // Payload lives durably in the shared outbox, not in a second notification producer.
 
     const badLevel = await request(app, {
       method: 'POST',
@@ -1649,12 +1646,12 @@ test('internal prepare update returns route and keyboard state without side effe
     assert.equal(response.json.decisionId, 'v1:uk-de:987654');
     assert.equal(response.json.botKey, 'uk-de');
     assert.equal(response.json.updateId, 987654);
-    assert.equal(response.json.route, 'command.level');
+    assert.equal(response.json.route, 'command.unknown');
     assert.equal(response.json.input.chatId, 42);
     assert.equal(response.json.routingFacts.intentSource, 'reply_keyboard');
-    assert.equal(response.json.routingFacts.keyboardIntent, 'level');
+    assert.equal(response.json.routingFacts.keyboardIntent, 'retired');
     assert.equal(response.json.routingFacts.pendingFeedback, false);
-    assert.equal(response.json.context.keyboard.levelButtonText, '· 📚 B1');
+    assert.match(response.json.context.keyboard.settingsButtonText, /⚙️/);
   });
 });
 
@@ -1816,7 +1813,7 @@ test('internal bot ingestion is dark by default and validates Contract v1', asyn
       }
     });
     assert.equal(prepared.status, 200);
-    assert.equal(prepared.json.route, 'command.stats');
+    assert.equal(prepared.json.route, 'command.unknown');
 
     const dark = await request(app, {
       method: 'POST',

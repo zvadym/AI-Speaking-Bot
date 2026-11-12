@@ -1,3 +1,5 @@
+import { prepareSettingsScreen } from './settings-screens.js';
+import { BotRuntimeHandlerError } from './handler-registry.js';
 import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import type { KeyboardStateRow, NormalizedTelegramUpdate } from './contracts.js';
@@ -7,7 +9,6 @@ import { renderSettingsRich, settingsLabels } from './settings-views.js';
 import { deleteSettingsMessage } from './settings-message.js';
 import { classifyTelegramDeliveryError } from './telegram-text-delivery.js';
 import { buildPreparedUpdate } from './update-router.js';
-import { buildPersistentReplyMarkup } from './keyboard-state.js';
 import { bootstrapTelegramUser } from './user-bootstrap.js';
 import { sendReservedSettingsMessages, type ReservedSettingsDelivery, type SettingsDeliveryResult } from './direct-settings-open.js';
 
@@ -19,9 +20,9 @@ interface TelegramApi {
 // either both persist or neither does. No transaction spans a Telegram request.
 // Reuse the worker's ledger/step key so pre-rollout queued deliveries remain safe.
 export async function saveDirectSettings(pool: Pool, botKey: string, input: NormalizedTelegramUpdate,
-  action: SettingsAction, requestId: string, refreshKeyboard = false) {
+  action: SettingsAction, requestId: string) {
   const result = await pool.query<{
-    state: KeyboardStateRow; render: boolean; deliveries: ReservedSettingsDelivery[];
+    state: KeyboardStateRow; render: boolean; feedback_active?: boolean; deliveries: ReservedSettingsDelivery[];
   }>(`WITH current AS MATERIALIZED (
       SELECT * FROM user_bots WHERE chat_id=$1 AND bot_key=$2
     ), execution AS (
@@ -37,7 +38,6 @@ export async function saveDirectSettings(pool: Pool, botKey: string, input: Norm
       RETURNING decision_id
     ), desired_delivery AS (
       SELECT 'settings:open:r:v1'::text AS step_key,'sendRichMessage'::text AS telegram_method WHERE $6='open'
-      UNION ALL SELECT 'settings:keyboard:v1','sendMessage' WHERE $6='open' AND $11::boolean
     ), reserved_delivery AS (
       INSERT INTO bot_update_deliveries(decision_id,step_key,telegram_method,status,attempts)
       SELECT e.decision_id,d.step_key,d.telegram_method,'pending',1 FROM execution e CROSS JOIN desired_delivery d
@@ -64,6 +64,7 @@ export async function saveDirectSettings(pool: Pool, botKey: string, input: Norm
       FROM profile WHERE ub.chat_id=profile.chat_id AND ub.bot_key=$2 RETURNING ub.*
     ) SELECT COALESCE((SELECT row_to_json(c) FROM changed c),row_to_json(current)) AS state,
       EXISTS(SELECT 1 FROM execution) AS render,
+      EXISTS(SELECT 1 FROM pending_feedback WHERE chat_id=$1 AND bot_key=$2 AND status='awaiting') AS feedback_active,
       COALESCE((SELECT jsonb_agg(to_jsonb(d)) FROM (
         SELECT * FROM reserved_delivery
         UNION ALL
@@ -72,19 +73,19 @@ export async function saveDirectSettings(pool: Pool, botKey: string, input: Norm
         WHERE d.decision_id=$3 AND NOT EXISTS(SELECT 1 FROM reserved_delivery r WHERE r.id=d.id::text)
       ) d),'[]'::jsonb) AS deliveries
     FROM current`, [input.chatId,botKey,`v1:${botKey}:${input.updateId}`,input.updateId,requestId,
-    action.kind,action.value,input.sender.username,input.sender.firstName,input.updateType==='message'?'command.settings':'callback.settings',refreshKeyboard]);
+    action.kind,action.value,input.sender.username,input.sender.firstName,input.updateType==='message'?'settings.open':'callback.settings']);
   return result.rows[0] || null;
 }
 
-export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,onboardingEnabledBotKeys}: {
-  pool:Pool;telegramClient:TelegramApi;getBotLocale(key:string):unknown;onboardingEnabledBotKeys?:ReadonlySet<string>;
+export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,onboardingEnabledBotKeys,webappUrl}: {
+  pool:Pool;telegramClient:TelegramApi;getBotLocale(key:string):unknown;webappUrl?:string;onboardingEnabledBotKeys?:ReadonlySet<string>;
 }) {
   const pending=new Map<string,Promise<boolean>>();
   return async (botKey:string,input:NormalizedTelegramUpdate):Promise<boolean> => {
     const started=performance.now();
     const cb=input.callbackQuery;
     const prepared=buildPreparedUpdate({botKey,input,locale:getBotLocale(botKey)});
-    const command=prepared.route==='command.settings' && input.updateType==='message';
+    const command=prepared.route==='settings.open' && input.updateType==='message';
     if(!command&&(input.updateType!=='callback_query'||!cb?.data.startsWith('settings:')))return false;
     const labels=settingsLabels(getBotLocale(botKey));
     const api=(method:string,body:Record<string,unknown>)=>telegramClient.callTelegramApi(botKey,method,body,{signal:AbortSignal.timeout(method.startsWith('send')?10000:3000)});
@@ -101,30 +102,33 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,on
     const key=`settings:${botKey}:${input.chatId}`;
     const run=async()=>withSettingsLock(pool,key,async()=>{
       const requestId=randomUUID(),decisionId=`v1:${botKey}:${input.updateId}`;
-      const refreshKeyboard=command && prepared.context.keyboard.buttonIntent!=='settings';
-      let saved=await saveDirectSettings(pool,botKey,input,action,requestId,refreshKeyboard);
+      let saved=await saveDirectSettings(pool,botKey,input,action,requestId);
       if(!saved && action.kind==='open'){
         await bootstrapTelegramUser(pool,{botKey,input,onboardingEnabledBotKeys});
-        saved=await saveDirectSettings(pool,botKey,input,action,requestId,refreshKeyboard);
+        saved=await saveDirectSettings(pool,botKey,input,action,requestId);
         if(!saved)throw new Error('settings_profile_unavailable');
       }
       if(!saved)return false; // Compatibility fallback for a callback without a profile.
       if(!saved.render){await answer();return true;}
-      const view=settingsView(saved.state);
+      const view=settingsView(saved.state);view.botKey=botKey;view.webappUrl=webappUrl;
       let status='succeeded',errorCode:string|null=null;
       let deliveries:SettingsDeliveryResult[]=[];
+      try {
+      if(['stats','feedback','cancel'].includes(action.kind)||saved.feedback_active)
+        await prepareSettingsScreen({pool,update:prepared,action,view,locale:getBotLocale(botKey),api});
       if(action.kind==='open'){
         const sent=await sendReservedSettingsMessages({deliveries:saved.deliveries,chatId:input.chatId!,
-          richMessage:renderSettingsRich(view,labels),title:'⚙️ '+labels.title,
-          replyMarkup:buildPersistentReplyMarkup(prepared.context.keyboard),api});
+          richMessage:renderSettingsRich(view,labels),api});
         status=sent.status;errorCode=sent.errorCode;deliveries=sent.deliveries;
-      }else try{
-        if(action.kind==='close')await deleteSettingsMessage(api,input.chatId!,cb!.messageId!);
+      }else {
+        if(action.kind==='close'&&view.screen!=='feedback')await deleteSettingsMessage(api,input.chatId!,cb!.messageId!);
         else await api('editMessageText',{chat_id:input.chatId,message_id:cb!.messageId,rich_message:renderSettingsRich(view,labels)});
+      }
       }catch(error){
         if(!String((error as Error).message).includes('message is not modified')){
-          const failure=classifyTelegramDeliveryError(error);
-          status=failure.kind==='permanent'?'permanent_failed':'retryable_failed';errorCode=failure.errorCode;
+          if(error instanceof BotRuntimeHandlerError){status=error.retryable?'retryable_failed':'permanent_failed';errorCode=error.code;}
+          else { const failure=classifyTelegramDeliveryError(error);
+          status=failure.kind==='permanent'?'permanent_failed':'retryable_failed';errorCode=failure.errorCode; }
         }
       }
       const editedMs=Math.round(performance.now()-started);

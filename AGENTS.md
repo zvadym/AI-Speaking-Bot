@@ -111,7 +111,9 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - The API validates the per-bot webhook secret, persists ingestion state, and enqueues a pg-boss job.
 - `apps/api/src/bot-runtime` owns route preparation, typed handlers, AI calls, durable effects, and Telegram delivery.
 - Settings UI uses `settings-model.ts`, `settings-views.ts`, and `handlers/settings.ts`;
-  `/settings` and the reply button open a rich card directly. Changes save immediately;
+  the reply button opens a rich card directly. Level/reply changes save immediately;
+  Stats and feedback actions live in the same card. Slash menus are empty; only
+  technical `/start` remains for first contact and deep links, without resetting onboarding.
   Done deletes the card message. Retired widget queries are acknowledged without mutations
   for queued-update compatibility; do not subscribe to `widget_query` in webhooks.
 - Settings UI labels live in `deploy/bots/*.json` under `locale.settings`.
@@ -127,6 +129,11 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Immediate Telegram typing acknowledgements are enabled per bot with
   `BOT_IMMEDIATE_ACK_ENABLED_BOT_KEYS`; they remain best-effort and never own
   durable ingestion state.
+- Feedback replies bind to a 10-minute request by chat/bot/prompt ID in `pending_feedback`;
+  cancelled/completed requests remain identifiable so old replies never reach tutor AI.
+  `feedback-service.ts` saves feedback/thread/outbox atomically; `feedback-notifications.ts`
+  delivers text or original audio plus transcript to Discord outside DB transactions.
+  Unknown Discord sends require inspection and are never blindly retried.
 - Conversation history is scoped by `chat_id + bot_key`; settings contain level and reply mode.
 - `apps/api/src/bot-runtime/entitlement-context.ts` is the single source of truth for effective plan and practice quota; usage is global by `chat_id` across all bots.
 - `deploy/prompts/*.md` and `shared/llm-prompts/*.md` are loaded directly by the API and worker.

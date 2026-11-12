@@ -49,9 +49,6 @@
     "hints_empty": "इस संदेश के लिए अभी सुझाव नहीं हैं। अगली प्रतिक्रिया के साथ फिर कोशिश करें।",
     "choose_level_text": "अपना स्तर चुनें 👇",
     "hi_message_text": "नमस्ते! चलो 30-सेकंड का speaking test करते हैं 👋\n1–2 वाक्यों का छोटा वॉइस या टेक्स्ट मैसेज भेजें, और मैं जवाब दूँगा:\n✅ ट्रांसक्रिप्ट\n✅ सुधार + छोटा explanation\n✅ आगे क्या कहना है",
-    "choose_voice_mode_text": "आप मेरी प्रतिक्रियाएँ कैसे पाना चाहेंगे: आवाज़ या टेक्स्ट? 🎧💬",
-    "voice_mode_text": "💬 टेक्स्ट",
-    "voice_mode_voice": "🎧 आवाज़",
     "voice_reply_prefix": "📝 ",
     "msg_too_long": "यह वॉइस मैसेज बहुत लंबा है 🙂 कृपया 90 सेकंड तक की रिकॉर्डिंग भेजें।",
     "msg_voice_length_tip": "बेहतर अभ्यास के लिए हर वॉइस मैसेज को 30–45 सेकंड के बीच रखने की कोशिश करें 🙂",
@@ -59,12 +56,8 @@
     "msg_error_command": "उफ़, मुझे यह कमांड अभी नहीं पता 🙈",
     "level_saved_prefix": "बहुत बढ़िया! आपका स्तर है ",
     "msg_next_step": "अब 1-2 वाक्यों का छोटा वॉइस मैसेज भेजें 🎙️ मैं गलतियाँ सुधारकर साफ़ समझाऊँगी 🙂",
-    "lang_saved_prefix": "परफेक्ट! हम अब अभ्यास कर रहे हैं ",
     "lang_label_de": "हिंदी 🇮🇳",
     "lang_label_en": "अंग्रेज़ी 🇬🇧",
-    "reply_mode_saved_prefix": "परफेक्ट! मैं जवाब दूँगी ",
-    "reply_mode_voice": "🎧 आवाज़ में",
-    "reply_mode_text": "💬 टेक्स्ट में",
     "stats_title": "<b>💎 सदस्यता</b>",
     "stats_plan_prefix": "प्लान: ",
     "tier_pro": "PRO 🚀",
@@ -82,15 +75,15 @@
     "pending_change_suffix": " अवधि के अंत में",
     "stats_footer": "विवरण और सदस्यता प्रबंधन नीचे मिनी-ऐप में उपलब्ध है।",
     "btn_open_miniapp": "मिनी-ऐप खोलें",
-    "msg_limit_reached": "मैं आपके साथ अभ्यास जारी रखना चाहती हूँ, लेकिन आपकी साप्ताहिक सीमा पूरी हो गई है 😔\\nजारी रखने के लिए नीचे दिए बटन से मिनी-ऐप में सदस्यता खोलें ✨\\nआप /stats से सदस्यता स्थिति देख सकते हैं।",
-    "msg_tts_limit_reached": "मेरे वॉइस जवाबों की साप्ताहिक सीमा पूरी हो गई है 😔 /stats देखें।",
+    "msg_limit_reached": "आपकी अभ्यास सीमा पूरी हो गई है। जारी रखने के लिए नीचे दिए बटन से मिनी-ऐप में सदस्यता खोलें।",
+    "msg_tts_limit_reached": "वॉइस जवाबों की सीमा पूरी हो गई है। सेटिंग्स → आँकड़े में अपनी सदस्यता देखें।",
     "btn_open_subscription": "💎 सदस्यता खोलें",
     "msg_too_short": "मुझे कुछ सुनाई नहीं दिया 😭 कृपया थोड़ा लंबा वॉइस मैसेज भेजें।",
     "user_text_prefix_multiline": "📝 आपका टेक्स्ट:\\n",
     "user_text_preview": "📝 आपका टेक्स्ट: ...",
-    "msg_feedback_prompt": "धन्यवाद! कृपया अपना फीडबैक टेक्स्ट या वॉइस मैसेज में भेजें 🎙️",
+    "msg_feedback_prompt": "इस संदेश का जवाब अपनी प्रतिक्रिया के साथ टेक्स्ट या वॉइस संदेश में दें।",
     "msg_feedback_thanks": "धन्यवाद! आपका फीडबैक मिल गया 💛",
-    "msg_feedback_needs_text_or_voice": "कृपया फीडबैक टेक्स्ट या वॉइस मैसेज के रूप में भेजें 🎙️",
+    "msg_feedback_needs_text_or_voice": "कृपया टेक्स्ट या वॉइस संदेश से जवाब दें।",
     "msg_needs_text_or_voice": "कृपया केवल टेक्स्ट या वॉइस मैसेज भेजें 🎙️",
     "level_label_beginner": "शुरुआती (A1-A2)",
     "level_label_conversational": "संवादी (B1-B2)",
@@ -103,11 +96,7 @@
     "onboarding_voice_cta_text": "बहुत बढ़िया। 1 छोटा वॉइस मैसेज भेजें (1–2 वाक्य) 🎙️",
     "onboarding_text_cta_text": "बहुत बढ़िया। 1 छोटा टेक्स्ट मैसेज भेजें (1–2 वाक्य) ✍️",
     "onboarding_showcase_no_mistakes_text": "बहुत बढ़िया, इसमें कोई गलती नहीं है 👏\nअगर आप देखना चाहते हैं कि मैं गलतियाँ कैसे ठीक करता हूँ, तो जानबूझकर गलत वाक्य लिखें।\nउदाहरण:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "बहुत बढ़िया प्रोग्रेस — आपका प्रोफाइल तैयार है 🚀\n\nमुख्य बातें:\n• आपका शुरुआती level A1 है। आप इसे कभी भी A1, A2, B1, B2 या C1 में बदल सकते हैं।\n• चैट के नीचे वाले buttons से आप कभी भी अपना language level और reply format बदल सकते हैं: voice या text।\n• App में आप दूसरे settings खोल सकते हैं, feedback भेज सकते हैं और बाकी options manage कर सकते हैं।\n\nअपनी streak जारी रखने के लिए अगला message भेजें 🔥\n\nबधाई हो! Onboarding पूरा हो गया है।",
-    "keyboard_btn_level_prefix": "लेवल",
-    "keyboard_btn_voice_prefix": "प्रतिक्रिया प्रकार",
-    "keyboard_btn_voice_text": "टेक्स्ट",
-    "keyboard_btn_voice_voice": "वॉइस",
+    "onboarding_complete_full_text": "आपकी प्रोफ़ाइल तैयार है। सेटिंग्स में स्तर और जवाब का प्रकार बदलें, आँकड़े देखें या प्रतिक्रिया भेजें। अभ्यास जारी रखने के लिए अगला टेक्स्ट या वॉइस संदेश भेजें।",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -202,43 +191,28 @@
       "back": "वापस",
       "saved": "बदलाव सेव हो गए",
       "error": "सेव नहीं हुआ। फिर कोशिश करें।",
-      "autosave": "बदलाव अपने आप सेव हो जाते हैं"
+      "autosave": "बदलाव अपने आप सेव हो जाते हैं",
+      "stats": "आँकड़े",
+      "feedback": "प्रतिक्रिया भेजें",
+      "cancel": "रद्द करें",
+      "feedback_waiting": "आपकी प्रतिक्रिया का इंतज़ार है। नीचे दिए संदेश का जवाब टेक्स्ट या वॉइस संदेश से दें।",
+      "used": "इस्तेमाल (मिनट:सेकंड)",
+      "remaining": "बाकी (मिनट:सेकंड)"
     },
     "vocab_column_original": "मूल शब्द",
     "vocab_column_translation": "अनुवाद",
     "vocab_column_transcription": "ध्वन्यात्मक लिप्यंतरण",
-    "vocab_empty": "कोई शब्द नहीं मिला।"
+    "vocab_empty": "कोई शब्द नहीं मिला।",
+    "msg_feedback_cancelled": "प्रतिक्रिया रद्द कर दी गई। हम बातचीत जारी रख सकते हैं।",
+    "msg_feedback_expired": "इस प्रतिक्रिया अनुरोध का समय समाप्त हो गया है। नया अनुरोध भेजने के लिए सेटिंग्स खोलें।",
+    "msg_feedback_unsupported": "कृपया टेक्स्ट या वॉइस संदेश से जवाब दें।",
+    "msg_feedback_placeholder": "आपकी प्रतिक्रिया: टेक्स्ट या वॉइस"
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | आपकी भाषा ट्यूटर",
     "description": "अंग्रेज़ी में एक संदेश भेजें। मैं मुख्य गलतियाँ ठीक करूँगी और अगले जवाब में मदद करूँगी।\nhttps://ai-language-school.online/hi",
     "short_description": "अंग्रेज़ी में एक संदेश भेजें। मैं मुख्य गलतियाँ ठीक करूँगी और अगले जवाब में मदद करूँगी।",
-    "commands": [
-      {
-        "command": "start",
-        "description": "बॉट शुरू करें"
-      },
-      {
-        "command": "level",
-        "description": "भाषा स्तर सेट करें"
-      },
-      {
-        "command": "voice",
-        "description": "वॉइस या टेक्स्ट मोड चुनें"
-      },
-      {
-        "command": "stats",
-        "description": "सदस्यता स्थिति देखें"
-      },
-      {
-        "command": "feedback",
-        "description": "फीडबैक भेजें"
-      },
-      {
-        "command": "lang",
-        "description": "स्थिर सीखने की भाषा दिखाएँ"
-      }
-    ],
+    "commands": [],
     "menu_button": {
       "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=hi-en"

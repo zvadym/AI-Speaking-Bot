@@ -25,6 +25,7 @@ interface TelegramWebhookContext {
     botRuntimeRouteFlags: BotRuntimeRouteFlags;
     botImmediateAckEnabledBotKeys: ReadonlySet<string>;
     botOnboardingV2EnabledBotKeys?: ReadonlySet<string>;
+    webappUrl?: string;
     internalApiSecret: string;
     jwtSecret: string;
     telegramBotTokensByBotKey: Record<string, string>;
@@ -43,7 +44,7 @@ interface TelegramWebhookContext {
 
 export function createTelegramWebhookRouter(ctx: TelegramWebhookContext) {
   const router = express.Router();
-  const handleSettings = createDirectSettingsHandler({...ctx,onboardingEnabledBotKeys:ctx.env.botOnboardingV2EnabledBotKeys});
+  const handleSettings = createDirectSettingsHandler({...ctx,webappUrl:ctx.env.webappUrl,onboardingEnabledBotKeys:ctx.env.botOnboardingV2EnabledBotKeys});
 
   router.post('/telegram/webhook/:botKey', async (req, res) => {
     const receivedAtMs = performance.now();
@@ -71,7 +72,7 @@ export function createTelegramWebhookRouter(ctx: TelegramWebhookContext) {
       const input = normalizeTelegramUpdate(req.body);
       updateId = input.updateId;
       const directRoute=buildPreparedUpdate({botKey,input,locale:ctx.getBotLocale(botKey)}).route;
-      if ((directRoute==='command.settings'||directRoute==='callback.settings') &&
+      if ((directRoute==='settings.open'||directRoute==='callback.settings') &&
           isBotRuntimeRouteEnabled(ctx.env.botRuntimeRouteFlags, botKey, directRoute) &&
           await handleSettings(botKey,input)) {
         return res.status(200).json({ok:true});

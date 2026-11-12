@@ -11,9 +11,7 @@ import { createMeRouter } from '../src/routes/me.js';
 import { signSession } from '../src/auth.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
-import { parsePreparedUpdateContract } from '../src/bot-runtime/contract-validation.js';
-import { claimBotUpdateExecution } from '../src/bot-runtime/execution-repository.js';
-import { createRetiredCommandHandlers } from '../src/bot-runtime/handlers/retired-commands.js';
+import { processBotUpdateJob } from '../src/bot-runtime/register-worker.js';
 import { messageUpdate } from './fixtures/telegram-updates.js';
 
 const connectionString = process.env.BOT_RUNTIME_TEST_DATABASE_URL;
@@ -68,22 +66,11 @@ test('XP-free dashboard/admin SQL and queued legacy delivery work against Postgr
       const legacy = buildPreparedUpdate({ botKey: 'uk-en', input: normalizeTelegramUpdate(messageUpdate({ updateId: chatId + index, chatId, text: '/xp' })) });
       legacy.route = route;
       Object.assign(legacy.context.keyboard, { xpTotal: 340, xpLevel: 2, xpButtonText: '· XP: 340 • L2' });
-      const parsed = parsePreparedUpdateContract(JSON.parse(JSON.stringify(legacy)));
-      await claimBotUpdateExecution(pool, { contract: parsed, handlerVersion: 1, jobId: '00000000-0000-4000-8000-000000000077' });
-      let sends = 0;
-      const handler = createRetiredCommandHandlers({
-        pool, getBotLocale: ctx.getBotLocale,
-        telegramClient: { async sendTelegramTextMessage(_chatId, text, options) {
-          sends += 1;
-          assert.equal(text, ctx.getBotLocale('uk-en').msg_error_command);
-          assert.equal(options.replyMarkup.keyboard.flat().length, 1);
-          assert.doesNotMatch(JSON.stringify(options.replyMarkup), /XP/);
-          return { message_id: 77 };
-        } }
-      }).find((item) => item.route === route);
-      assert.equal((await handler.execute(parsed)).status, 'delivered');
-      assert.equal((await handler.execute(parsed)).status, 'duplicate');
-      assert.equal(sends, 1);
+      const result = await processBotUpdateJob({id:'legacy',data:{contract:legacy,handlerVersion:1}}, {
+        pool,registry:{get(){throw new Error('No retired handler may run');}}
+      });
+      assert.equal(result,'retired_job');
+      assert.equal((await pool.query('SELECT count(*)::int AS n FROM bot_update_executions WHERE decision_id=$1',[legacy.decisionId])).rows[0].n,0);
     }
   } finally {
     server.close();

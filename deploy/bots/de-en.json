@@ -49,9 +49,6 @@
     "hints_empty": "Für diese Nachricht habe ich noch keine Vorschläge vorbereitet. Versuch es mit der nächsten Antwort.",
     "choose_level_text": "Wähle dein Niveau 👇",
     "hi_message_text": "Hi! Lass uns einen 30-Sekunden-Sprechtest machen 👋\nSchick eine kurze Sprach- oder Textnachricht (1–2 Sätze), und ich antworte mit:\n✅ Transkript\n✅ Korrekturen + kurzer Erklärung\n✅ was du als Nächstes sagen kannst",
-    "choose_voice_mode_text": "Wie möchtest du meine Antworten erhalten: Sprache oder Text? 🎧💬",
-    "voice_mode_text": "💬 Text",
-    "voice_mode_voice": "🎧 Stimme",
     "voice_reply_prefix": "📝 ",
     "msg_too_long": "Diese Sprachnachricht ist zu lang 🙂 Bitte sende eine Aufnahme von höchstens 90 Sekunden.",
     "msg_voice_length_tip": "Für eine gezieltere Übung sind 30–45 Sekunden pro Sprachnachricht am besten 🙂",
@@ -59,12 +56,8 @@
     "msg_error_command": "Ups, diesen Befehl kenne ich noch nicht 🙈",
     "level_saved_prefix": "Super! Dein Niveau ist ",
     "msg_next_step": "Schick mir jetzt eine kurze Sprachnachricht (1–2 Sätze) 🎙️ Ich korrigiere und erkläre alles klar und freundlich 🙂",
-    "lang_saved_prefix": "Perfekt! Wir üben ",
     "lang_label_de": "Deutsch 🇩🇪",
     "lang_label_en": "Englisch 🇬🇧",
-    "reply_mode_saved_prefix": "Alles klar! Ich antworte ",
-    "reply_mode_voice": "🎧 als Sprachnachricht",
-    "reply_mode_text": "💬 als Text",
     "stats_title": "<b>💎 Abo</b>",
     "stats_plan_prefix": "Plan: ",
     "tier_pro": "PRO 🚀",
@@ -82,15 +75,15 @@
     "pending_change_suffix": " am Ende des Zeitraums",
     "stats_footer": "Details und Abo-Verwaltung findest du in der Mini-App unten.",
     "btn_open_miniapp": "Mini-App öffnen",
-    "msg_limit_reached": "Ich würde gern weiter mit dir üben, aber dein Wochenlimit ist schon erreicht 😔\\nWenn du weitermachen willst, öffne das Abo in der Mini-App mit dem Button unten ✨\\nDeinen Abo-Status siehst du mit /stats.",
-    "msg_tts_limit_reached": "Du hast das Wochenlimit für meine Sprachantworten erreicht 😔 Prüfe /stats.",
+    "msg_limit_reached": "Dein Übungslimit ist erreicht. Öffne das Abo in der Mini-App über den Button unten, um weiterzumachen.",
+    "msg_tts_limit_reached": "Das Limit für Sprachantworten ist erreicht. Prüfe dein Abo unter Einstellungen → Statistik.",
     "btn_open_subscription": "💎 Abo öffnen",
     "msg_too_short": "Ich habe leider nichts gehört 😭 Versuch bitte eine etwas längere Sprachnachricht.",
     "user_text_prefix_multiline": "📝 Dein Text:\\n",
     "user_text_preview": "📝 Dein Text: ...",
-    "msg_feedback_prompt": "Danke! Schreib mir dein Feedback als Text oder sende eine Sprachnachricht 🎙️",
+    "msg_feedback_prompt": "Antworte auf diese Nachricht mit deinem Feedback als Text oder Sprachnachricht.",
     "msg_feedback_thanks": "Danke! Ich habe dein Feedback erhalten 💛",
-    "msg_feedback_needs_text_or_voice": "Bitte sende dein Feedback als Text oder Sprachnachricht 🎙️",
+    "msg_feedback_needs_text_or_voice": "Bitte antworte mit Text oder einer Sprachnachricht.",
     "msg_needs_text_or_voice": "Bitte sende nur eine Text- oder Sprachnachricht 🎙️",
     "level_label_beginner": "Anfänger (A1-A2)",
     "level_label_conversational": "Mittelstufe (B1-B2)",
@@ -103,11 +96,7 @@
     "onboarding_voice_cta_text": "Super. Sende jetzt eine kurze Sprachnachricht (1–2 Sätze) 🎙️",
     "onboarding_text_cta_text": "Super. Sende jetzt eine kurze Textnachricht (1–2 Sätze) ✍️",
     "onboarding_showcase_no_mistakes_text": "Sehr gut, hier sind keine Fehler 👏\nWenn du sehen willst, wie ich korrigiere, schreibe absichtlich einen falschen Satz.\nZum Beispiel:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Starker Fortschritt — dein Profil ist bereit 🚀\n\nKurz das Wichtigste:\n• Dein Startniveau ist A1. Du kannst es jederzeit auf A1, A2, B1, B2 oder C1 ändern.\n• Mit den Buttons unter dem Chat kannst du jederzeit dein Sprachniveau und das Antwortformat wechseln: Sprache oder Text.\n• In der App kannst du weitere Einstellungen öffnen, Feedback senden und andere Optionen verwalten.\n\nSende jetzt deine nächste Nachricht, um deinen Streak fortzusetzen 🔥\n\nGlückwunsch! Onboarding ist abgeschlossen.",
-    "keyboard_btn_level_prefix": "Level",
-    "keyboard_btn_voice_prefix": "Antworttyp",
-    "keyboard_btn_voice_text": "Text",
-    "keyboard_btn_voice_voice": "Stimme",
+    "onboarding_complete_full_text": "Dein Profil ist bereit. In den Einstellungen kannst du Niveau und Antwortformat ändern, Statistiken ansehen und Feedback senden. Schick deine nächste Text- oder Sprachnachricht, um weiterzuüben.",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -202,43 +191,28 @@
       "back": "Zurück",
       "saved": "Änderungen gespeichert",
       "error": "Speichern fehlgeschlagen. Bitte versuche es erneut.",
-      "autosave": "Änderungen werden automatisch gespeichert"
+      "autosave": "Änderungen werden automatisch gespeichert",
+      "stats": "Statistik",
+      "feedback": "Feedback senden",
+      "cancel": "Abbrechen",
+      "feedback_waiting": "Ich warte auf dein Feedback. Antworte unten mit Text oder einer Sprachnachricht.",
+      "used": "Genutzt (Min:Sek)",
+      "remaining": "Übrig (Min:Sek)"
     },
     "vocab_column_original": "Original",
     "vocab_column_translation": "Übersetzung",
     "vocab_column_transcription": "Lautschrift",
-    "vocab_empty": "Keine Wörter gefunden."
+    "vocab_empty": "Keine Wörter gefunden.",
+    "msg_feedback_cancelled": "Feedback abgebrochen. Wir können unser Gespräch fortsetzen.",
+    "msg_feedback_expired": "Diese Feedback-Anfrage ist abgelaufen. Öffne die Einstellungen für eine neue Anfrage.",
+    "msg_feedback_unsupported": "Bitte antworte mit Text oder einer Sprachnachricht.",
+    "msg_feedback_placeholder": "Dein Feedback als Text oder Sprachnachricht"
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | Deine Sprachtrainerin",
     "description": "Schick eine Nachricht auf Englisch. Ich korrigiere die wichtigsten Fehler und helfe dir bei der nächsten Antwort.\nhttps://ai-language-school.online/de",
     "short_description": "Schick eine Nachricht auf Englisch. Ich korrigiere die wichtigsten Fehler und helfe dir bei der nächsten Antwort.",
-    "commands": [
-      {
-        "command": "start",
-        "description": "Bot starten"
-      },
-      {
-        "command": "level",
-        "description": "Sprachniveau festlegen"
-      },
-      {
-        "command": "voice",
-        "description": "Antwortmodus Stimme/Text"
-      },
-      {
-        "command": "stats",
-        "description": "Abo-Status prüfen"
-      },
-      {
-        "command": "feedback",
-        "description": "Feedback senden"
-      },
-      {
-        "command": "lang",
-        "description": "Feste Lernsprache anzeigen"
-      }
-    ],
+    "commands": [],
     "menu_button": {
       "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=de-en"

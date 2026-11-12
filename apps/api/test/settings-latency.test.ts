@@ -33,15 +33,15 @@ test('settings ingestion and workers use an independent durable queue while othe
   };
   const pool={query:async()=>({rows:[]})} as unknown as Pool;
   const ctx={pool,publicBotMetaForKey:()=>({bot_key:'uk-en'}),getBotLocale:()=>({})};
-  const env={botRuntimeRouteFlags:parseBotRuntimeRouteFlags('{"uk-en":["command.settings","callback.settings","command.stats"]}',['uk-en'])};
-  for(const telegramUpdate of [messageUpdate({text:'/settings'}),callbackUpdate({data:'settings:r:home'}),messageUpdate({text:'/stats'})]){
+  const env={botRuntimeRouteFlags:parseBotRuntimeRouteFlags('{"uk-en":["settings.open","callback.settings","command.unknown"]}',['uk-en'])};
+  for(const telegramUpdate of [messageUpdate({text:'· ⚙️ Settings'}),callbackUpdate({data:'settings:r:home'}),messageUpdate({text:'/stats'})]){
     const update=await prepareBotUpdate(ctx,{botKey:'uk-en',telegramUpdate});
     await ingestBotUpdate({...ctx,apiBoss:boss,env},update);
   }
   assert.deepEqual(sent,['bot-settings-process','bot-settings-process','bot-update-process']);
   await registerBotRuntimeWorker(boss,{
     pool,getBotLocale:()=>({}),telegramClient:{} as never,webappUrl:'https://example.test',
-    progressEnabledBotKeys:new Set(),getBotConfig:()=>null,
+    progressEnabledBotKeys:new Set(),
     sendIdiomMore:async()=>({}),ai:{} as never
   });
   assert.deepEqual(workers.map(w=>w.name),['bot-update-process','bot-settings-process']);

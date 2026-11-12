@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
 import type { NormalizedTelegramUpdate } from './contracts.js';
-import { parseStartPayload, parseCallbackData } from './telegram-update.js';
+import { parseStartPayload, parseCallbackData, parseCommand } from './telegram-update.js';
 
 async function rollbackQuietly(client: PoolClient): Promise<void> {
   try { await client.query('ROLLBACK'); } catch { /* Preserve the original failure. */ }
@@ -49,8 +49,9 @@ export async function bootstrapTelegramUser(
     );
     if (refreshed.rowCount) return;
   }
-  const startPayload = parseStartPayload(input.message.text);
-  const isStart = input.message.text.trim().toLowerCase().startsWith('/start');
+  const startCommand = parseCommand(input.message.text);
+  const isStart = !input.message.replyToMessageId && startCommand?.name === '/start' && (startCommand.args === '' || /^[A-Za-z0-9_-]{1,64}$/.test(startCommand.args));
+  const startPayload = isStart ? parseStartPayload(input.message.text) : '';
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -99,23 +100,11 @@ export async function bootstrapTelegramUser(
       await client.query(
         `INSERT INTO bot_onboarding_sessions (
            chat_id, bot_key, version, state, last_start_update_id, started_at, updated_at
-         ) VALUES ($1, $2, 2, 'choose_scenario', $3, NOW(), NOW())
-         ON CONFLICT (chat_id, bot_key) DO UPDATE SET
-           version = 2,
-           state = 'choose_scenario',
-           scenario = NULL,
-           first_input_mode = NULL,
-           suggested_level = NULL,
-           completion_decision_id = NULL,
-           last_start_update_id = EXCLUDED.last_start_update_id,
-           started_at = NOW(),
-           updated_at = NOW(),
-           completed_at = NULL
-         WHERE EXCLUDED.last_start_update_id IS NOT NULL
-           AND (
-             bot_onboarding_sessions.last_start_update_id IS NULL
-             OR bot_onboarding_sessions.last_start_update_id < EXCLUDED.last_start_update_id
-           )`,
+         ) SELECT $1, $2, 2, 'choose_scenario', $3, NOW(), NOW()
+           WHERE NOT EXISTS (
+             SELECT 1 FROM bot_onboarding_completion WHERE chat_id = $1 AND bot_key = $2
+           )
+         ON CONFLICT (chat_id, bot_key) DO NOTHING`,
         [chatId, botKey, isStart ? input.updateId : null]
       );
     }

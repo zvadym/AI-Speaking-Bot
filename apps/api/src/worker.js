@@ -3,7 +3,7 @@ import { registerWorkerHandlers, sendIdiomPracticeMorePhrase } from './jobs.js';
 import { registerBotRuntimeWorker } from './bot-runtime/register-worker.js';
 import { startWorkerBoss, stopWorkerBoss } from './queue.js';
 import { createRuntimeDeps } from './runtime.js';
-import { createApiHelpers } from './services/api-helpers.js';
+import { registerFeedbackNotifications } from './feedback-notifications.js';
 import { createBotAiClient } from './bot-runtime/bot-ai.js';
 import { createLlmCallRecorder } from './bot-runtime/llm-telemetry.js';
 import { captureException, flushSentry } from './sentry.js';
@@ -47,7 +47,6 @@ try {
   const boss = await startWorkerBoss();
   await registerWorkerHandlers(boss);
   const runtime = createRuntimeDeps({ apiBoss: boss });
-  const helpers = createApiHelpers(runtime);
   const recordLlmCall = createLlmCallRecorder(runtime.pool);
   const botAi = createBotAiClient({
     apiKey: runtime.env.openaiApiKey,
@@ -71,10 +70,10 @@ try {
     reportProgressError: (error, event, botKey) => captureException(error, {
       tags: { subsystem: 'progress-indicator', event, bot_key: botKey }
     }),
-    getBotConfig: (botKey) => runtime.botConfigs[botKey] || null,
     sendIdiomMore: sendIdiomPracticeMorePhrase,
     ai: botAi
   });
+  await registerFeedbackNotifications(boss,{pool:runtime.pool,webhookUrl:runtime.env.discordEventsWebhookUrl,telegramClient:runtime.telegramClient,ai:botAi,botMetaForKey:runtime.publicBotMetaForKey});
   console.log('Worker started');
 } catch (error) {
   console.error('Worker startup failed', error);

@@ -91,6 +91,10 @@ export function normalizeTelegramUpdate(rawUpdate: unknown): NormalizedTelegramU
     sender,
     message: {
       id: effectiveMessageId,
+      replyToMessageId: finiteNumber(asObject(rawMessage?.reply_to_message).message_id),
+      replyToMessageBotUsername: asObject(asObject(rawMessage?.reply_to_message).from).is_bot
+        ? trimString(asObject(asObject(rawMessage?.reply_to_message).from).username).slice(0,64)||null : null,
+      replyToMessageText: trimString(asObject(rawMessage?.reply_to_message).text).slice(0,4096)||null,
       text,
       hasText: Boolean(text),
       hasVoice: Boolean(rawVoice),

@@ -12,12 +12,7 @@ import {
   BotUpdateIngestionError,
   ingestBotUpdate
 } from '../src/bot-runtime/ingestion-service.js';
-import {
-  classifyTelegramDeliveryError,
-  createStatsHandler
-} from '../src/bot-runtime/handlers/stats.js';
-import { createPreferenceHandlers } from '../src/bot-runtime/handlers/preferences.js';
-import { createFeedbackHandlers } from '../src/bot-runtime/handlers/feedback.js';
+import { classifyTelegramDeliveryError, deliverTelegramText } from '../src/bot-runtime/telegram-text-delivery.js';
 import { createCallbackActionHandlers } from '../src/bot-runtime/handlers/callback-actions.js';
 import { createSupportCallbackHandlers } from '../src/bot-runtime/handlers/support-callbacks.js';
 import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
@@ -35,39 +30,17 @@ import type { StatsContext } from '../src/bot-runtime/stats-context.js';
 import { buildStatsMessage } from '../src/bot-runtime/stats-message.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
-import { buildRetiredCommandMessage } from '../src/bot-runtime/handlers/retired-commands.js';
 import { callbackUpdate, messageUpdate, voice } from './fixtures/telegram-updates.js';
 
 const unusedPool = null as unknown as Pool;
 
-function preparedStats(updateId = 9001): PreparedUpdate & { route: 'command.stats' } {
+function preparedStats(updateId = 9001): PreparedUpdate & { route: 'command.unknown' } {
   const prepared = buildPreparedUpdate({
     botKey: 'uk-en',
-    input: normalizeTelegramUpdate(messageUpdate({ updateId, text: '/stats' }))
+    input: normalizeTelegramUpdate(messageUpdate({ updateId, text: '/not-a-command' }))
   });
-  assert.equal(prepared.route, 'command.stats');
-  return prepared as PreparedUpdate & { route: 'command.stats' };
-}
-
-function preparedReplyCallback(updateId = 9101): PreparedUpdate & { route: 'callback.reply' } {
-  const prepared = buildPreparedUpdate({
-    botKey: 'uk-en',
-    input: normalizeTelegramUpdate(callbackUpdate({ updateId, data: 'reply:text' }))
-  });
-  assert.equal(prepared.route, 'callback.reply');
-  return prepared as PreparedUpdate & { route: 'callback.reply' };
-}
-
-function preparedFeedback(updateId = 9301): PreparedUpdate & { route: 'command.feedback' } {
-  const prepared = buildPreparedUpdate({
-    botKey: 'uk-en',
-    input: normalizeTelegramUpdate(messageUpdate({
-      updateId,
-      text: '/feedback Useful bot'
-    }))
-  });
-  assert.equal(prepared.route, 'command.feedback');
-  return prepared as PreparedUpdate & { route: 'command.feedback' };
+  assert.equal(prepared.route, 'command.unknown');
+  return prepared as PreparedUpdate & { route: 'command.unknown' };
 }
 
 function preparedText(updateId = 9351): PreparedUpdate & { route: 'message.text' } {
@@ -144,16 +117,12 @@ const statsLocale = {
 
 test('route flags are dark by default and reject unsafe configuration', () => {
   assert.equal(parseBotRuntimeRouteFlags('', ['uk-en']).size, 0);
-  const enabled = parseBotRuntimeRouteFlags('{"uk-en":["command.stats"]}', ['uk-en']);
-  assert.equal(enabled.get('uk-en')?.has('command.stats'), true);
-  const easyRoutes = parseBotRuntimeRouteFlags(
-    '{"uk-en":["command.xp","command.level","command.voice"]}',
-    ['uk-en']
-  );
-  assert.equal(easyRoutes.get('uk-en')?.has('command.xp'), true);
+  const enabled = parseBotRuntimeRouteFlags('{"uk-en":["command.unknown"]}', ['uk-en']);
+  assert.equal(enabled.get('uk-en')?.has('command.unknown'), true);
+  assert.throws(()=>parseBotRuntimeRouteFlags('{\"uk-en\":[\"command.level\"]}',['uk-en']), /unknown route/);
 
   assert.throws(
-    () => parseBotRuntimeRouteFlags('{"missing":["command.stats"]}', ['uk-en']),
+    () => parseBotRuntimeRouteFlags('{"missing":["command.unknown"]}', ['uk-en']),
     /unknown bot key/
   );
   assert.throws(
@@ -161,7 +130,7 @@ test('route flags are dark by default and reject unsafe configuration', () => {
     /unknown route/
   );
   assert.throws(
-    () => parseBotRuntimeRouteFlags('{"uk-en":"command.stats"}', ['uk-en']),
+    () => parseBotRuntimeRouteFlags('{"uk-en":"command.unknown"}', ['uk-en']),
     /must map to an array/
   );
 });
@@ -198,7 +167,7 @@ test('ingestion is disabled by default without touching pg-boss', async () => {
 
 test('ingestion publishes a versioned singleton job and accepts singleton conflicts', async () => {
   const calls: unknown[][] = [];
-  const flags = parseBotRuntimeRouteFlags('{"uk-en":["command.stats"]}', ['uk-en']);
+  const flags = parseBotRuntimeRouteFlags('{"uk-en":["command.unknown"]}', ['uk-en']);
   const contract = preparedStats(9002);
   const context = {
     apiBoss: {
@@ -278,130 +247,10 @@ test('stats formatter preserves the legacy free and paid layouts', () => {
 
 test('retired command reply preserves language controls without progress', () => {
   const update = preparedStats();
-  const message = buildRetiredCommandMessage(update, { msg_error_command: 'Unknown command' });
-  assert.equal(message.text, 'Unknown command');
-  assert.deepEqual(message.replyMarkup.keyboard, [[{ text: update.context.keyboard.settingsButtonText }]]);
+  const message = buildStaticRouteMessage('command.unknown', update, { msg_error_command: 'Unknown command' });
+  assert.equal(message!.text, 'Unknown command');
+  assert.deepEqual((message!.replyMarkup as {keyboard:unknown}).keyboard, [[{ text: update.context.keyboard.settingsButtonText }]]);
   assert.doesNotMatch(JSON.stringify(message), /XP/);
-});
-
-test('static command formatters preserve legacy menu callback payloads', () => {
-  const update = preparedStats();
-  const level = buildStaticRouteMessage('command.level', update, {
-    choose_level_text: 'Choose level'
-  });
-  assert.equal(level?.text, 'Choose level');
-  assert.deepEqual(level?.replyMarkup, {
-    inline_keyboard: [
-      [
-        { text: 'A1', callback_data: 'level:a1' },
-        { text: 'A2', callback_data: 'level:a2' },
-        { text: 'B1', callback_data: 'level:b1' }
-      ],
-      [
-        { text: 'B2', callback_data: 'level:b2' },
-        { text: 'C1', callback_data: 'level:c1' }
-      ]
-    ]
-  });
-
-  const voice = buildStaticRouteMessage('command.voice', update, {
-    choose_voice_mode_text: 'Choose mode',
-    voice_mode_text: 'Text',
-    voice_mode_voice: 'Voice'
-  });
-  assert.deepEqual(voice?.replyMarkup, {
-    inline_keyboard: [[
-      { text: 'Text', callback_data: 'reply:text' },
-      { text: 'Voice', callback_data: 'reply:voice' }
-    ]]
-  });
-});
-
-test('preference callbacks reuse the persisted effect result and confirm once', async () => {
-  const update = preparedReplyCallback();
-  const callbackCalls: string[] = [];
-  const deliveries: Array<Record<string, unknown>> = [];
-  const handler = createPreferenceHandlers({
-    pool: unusedPool,
-    getBotLocale: () => ({
-      callback_saved: 'Saved',
-      reply_mode_saved_prefix: 'Mode: ',
-      reply_mode_text: 'text',
-      keyboard_btn_voice_text: 'Text',
-      keyboard_btn_voice_voice: 'Voice',
-      keyboard_btn_xp_prefix: 'XP'
-    }),
-    telegramClient: {
-      async sendTelegramTextMessage() { return { message_id: 1 }; },
-      async answerTelegramCallbackQuery(callbackId) {
-        callbackCalls.push(`answer:${callbackId}`);
-        return true;
-      },
-      async deleteTelegramMessage(_chatId, messageId) {
-        callbackCalls.push(`delete:${messageId}`);
-        return true;
-      }
-    },
-    effectRunner: async <T extends Record<string, unknown>>() => ({
-      duplicate: true,
-      result: { replyMode: 'text' } as unknown as T
-    }),
-    keyboardStateLoader: async () => ({
-      level: 'b1',
-      reply_mode: 'text',
-      onboarding_complete_at: new Date(),
-      xp_total: 25,
-      xp_level: 1
-    }),
-    textDeliverer: async (input) => {
-      deliveries.push(input as unknown as Record<string, unknown>);
-      return { status: 'delivered', telegramMessageId: 22 };
-    }
-  }).find((candidate) => candidate.route === 'callback.reply');
-  assert.ok(handler);
-
-  assert.deepEqual(await handler.execute(update), {
-    status: 'delivered',
-    telegramMessageId: 22
-  });
-  assert.deepEqual(callbackCalls, [
-    `answer:${update.input.callbackQuery?.id}`,
-    `delete:${update.input.callbackQuery?.messageId}`
-  ]);
-  assert.equal(deliveries.length, 1);
-  assert.equal(deliveries[0].text, 'Mode: text');
-  assert.equal(deliveries[0].stepKey, 'callback.reply:confirmation:v1');
-});
-
-test('static callback actions acknowledge once and use durable text delivery', async () => {
-  const update = preparedCallback('callback.lang', 'lang:en');
-  const acknowledgements: string[] = [];
-  const deliveries: Array<Record<string, unknown>> = [];
-  const handlers = createCallbackActionHandlers({
-    pool: unusedPool,
-    getBotLocale: () => ({ callback_saved: 'Saved' }),
-    getBotConfig: () => ({ learning_language: 'en' }),
-    telegramClient: {
-      async sendTelegramTextMessage() { return { message_id: 1 }; },
-      async answerTelegramCallbackQuery(_id, text) {
-        acknowledgements.push(String(text));
-      }
-    },
-    async sendIdiomMore() { return {}; },
-    textDeliverer: async (input) => {
-      deliveries.push(input as unknown as Record<string, unknown>);
-      return { status: 'delivered', telegramMessageId: 71 };
-    }
-  });
-  const handler = handlers.find((item) => item.route === 'callback.lang');
-  assert.ok(handler);
-  assert.deepEqual(await handler.execute(update), {
-    status: 'delivered',
-    telegramMessageId: 71
-  });
-  assert.deepEqual(acknowledgements, ['Saved']);
-  assert.equal(deliveries[0].stepKey, 'callback.lang:message:v1');
-  assert.match(String(deliveries[0].text), /EN/);
 });
 
 test('support translation callback reuses cached AI effect and edits the source message', async () => {
@@ -741,106 +590,6 @@ test('voice conversation skips TTS when inbound usage consumes final quota', asy
   ]);
 });
 
-test('feedback command uses one effect and a durable confirmation delivery', async () => {
-  const update = preparedFeedback();
-  const effectSteps: string[] = [];
-  const deliveries: Array<Record<string, unknown>> = [];
-  const handler = createFeedbackHandlers({
-    pool: unusedPool,
-    getBotLocale: () => ({ msg_feedback_thanks: 'Received' }),
-    telegramClient: {
-      async sendTelegramTextMessage() { return { message_id: 1 }; }
-    },
-    effectRunner: async <T extends Record<string, unknown>>(
-      _pool: Pool,
-      input: {
-        decisionId: string;
-        stepKey: string;
-        execute(client: PoolClient): Promise<T>;
-      }
-    ) => {
-      effectSteps.push(input.stepKey);
-      return {
-        duplicate: false,
-        result: { outcome: 'saved' } as unknown as T
-      };
-    },
-    textDeliverer: async (input) => {
-      deliveries.push(input as unknown as Record<string, unknown>);
-      return { status: 'delivered', telegramMessageId: 55 };
-    }
-  }).find((candidate) => candidate.route === 'command.feedback');
-  assert.ok(handler);
-
-  assert.deepEqual(await handler.execute(update), {
-    status: 'delivered',
-    telegramMessageId: 55
-  });
-  assert.deepEqual(effectSteps, ['command.feedback:state:v1']);
-  assert.equal(deliveries[0].text, 'Received');
-  assert.equal(deliveries[0].stepKey, 'command.feedback:saved:v1');
-});
-
-test('stats handler returns delivered records without sending again', async () => {
-  let sendCount = 0;
-  const handler = createStatsHandler({
-    pool: unusedPool,
-    getBotLocale: () => statsLocale,
-    telegramClient: {
-      async sendTelegramTextMessage() {
-        sendCount += 1;
-        return { message_id: 99 };
-      }
-    },
-    webappUrl: 'https://example.test',
-    statsContextLoader: async () => statsContext(),
-    deliveryRepository: {
-      begin: async () => ({ action: 'delivered', deliveryId: '1', telegramMessageId: 77 }),
-      markDelivered: async () => {},
-      markFailed: async () => {},
-      markUnknown: async () => {}
-    }
-  });
-
-  assert.deepEqual(await handler.execute(preparedStats()), {
-    status: 'duplicate',
-    telegramMessageId: 77
-  });
-  assert.equal(sendCount, 0);
-});
-
-test('stats handler sends HTML once and records the Telegram message ID', async () => {
-  const transitions: Array<{ status: string; messageId?: number | null }> = [];
-  const handler = createStatsHandler({
-    pool: unusedPool,
-    getBotLocale: () => statsLocale,
-    telegramClient: {
-      async sendTelegramTextMessage(chatId, text, options) {
-        assert.equal(chatId, 42);
-        assert.match(text, /<code>\[■■■□□□\]<\/code>/);
-        assert.equal(options.parseMode, 'HTML');
-        return { message_id: 99 };
-      }
-    },
-    webappUrl: 'https://example.test',
-    statsContextLoader: async () => statsContext(),
-    deliveryRepository: {
-      begin: async () => ({ action: 'send', deliveryId: '1', attempts: 1 }),
-      markDelivered: async (_pool, _deliveryId, messageId) => {
-        transitions.push({ status: 'delivered', messageId });
-      },
-      markFailed: async () => { transitions.push({ status: 'failed' }); },
-      markUnknown: async () => { transitions.push({ status: 'unknown' }); }
-    }
-  });
-
-  assert.deepEqual(await handler.execute(preparedStats()), {
-    status: 'delivered',
-    telegramMessageId: 99
-  });
-  assert.deepEqual(transitions, [{ status: 'delivered', messageId: 99 }]);
-});
-
 test('ambiguous Telegram timeout becomes unknown and is never retryable', async () => {
   const classified = classifyTelegramDeliveryError(
     Object.assign(new Error('request timed out'), { code: 'ETIMEDOUT' })
@@ -848,26 +597,15 @@ test('ambiguous Telegram timeout becomes unknown and is never retryable', async 
   assert.equal(classified.kind, 'unknown');
 
   const transitions: string[] = [];
-  const handler = createStatsHandler({
-    pool: unusedPool,
-    getBotLocale: () => statsLocale,
-    telegramClient: {
-      async sendTelegramTextMessage() {
-        throw Object.assign(new Error('request timed out'), { code: 'ETIMEDOUT' });
-      }
-    },
-    webappUrl: 'https://example.test',
-    statsContextLoader: async () => statsContext(),
-    deliveryRepository: {
-      begin: async () => ({ action: 'send', deliveryId: '1', attempts: 1 }),
-      markDelivered: async () => { transitions.push('delivered'); },
-      markFailed: async () => { transitions.push('failed'); },
-      markUnknown: async () => { transitions.push('unknown'); }
-    }
+  const execute = () => deliverTelegramText({
+    pool: unusedPool, update: preparedStats(), stepKey:'test:timeout', text:'Test',
+    telegramClient:{async sendTelegramTextMessage(){throw Object.assign(new Error('request timed out'),{code:'ETIMEDOUT'});}},
+    deliveryRepository:{begin:async()=>({action:'send',deliveryId:'1',attempts:1}),
+      markDelivered:async()=>{transitions.push('delivered');},markFailed:async()=>{transitions.push('failed');},markUnknown:async()=>{transitions.push('unknown');}}
   });
 
   await assert.rejects(
-    () => handler.execute(preparedStats()),
+    execute,
     (error: unknown) =>
       error instanceof BotRuntimeHandlerError &&
       error.code === 'telegram_delivery_timeout' &&
@@ -880,8 +618,8 @@ test('worker records retryable and permanent handler outcomes', async () => {
   const contract = preparedStats(9003);
   const failures: Array<{ retryable: boolean; errorCode: string }> = [];
   let mode: 'retryable' | 'permanent' = 'retryable';
-  const handler: BotHandler<'command.stats'> = {
-    route: 'command.stats',
+  const handler: BotHandler<'command.unknown'> = {
+    route: 'command.unknown',
     version: 1,
     async execute() {
       throw new BotRuntimeHandlerError(
@@ -927,4 +665,15 @@ test('worker records retryable and permanent handler outcomes', async () => {
     retryable: false,
     errorCode: 'invalid_stats_state'
   });
+});
+
+test('pre-rollout command and preference jobs are retired without database writes or Telegram calls', async () => {
+  for (const route of ['command.settings','command.level','command.voice','command.lang','command.stats','command.feedback','command.xp','command.progress','callback.level','callback.reply','callback.lang','reply_keyboard.voice_toggle']) {
+    const contract = {...preparedStats(),route};
+    const result=await processBotUpdateJob({id:'legacy',data:{contract,handlerVersion:1}}, {
+      pool:{} as Pool,registry:{get(){throw new Error('retired jobs must not reach handlers');}},
+      executionRepository:{claim:async()=>{throw new Error('retired jobs must not claim or mutate');},markSucceeded:async()=>{throw new Error('unexpected');},markFailed:async()=>{throw new Error('unexpected');}}
+    });
+    assert.equal(result,'retired_job',route);
+  }
 });

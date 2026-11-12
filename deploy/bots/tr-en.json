@@ -49,9 +49,6 @@
     "hints_empty": "Bu mesaj için henüz önerim yok. Bir sonraki yanıtta tekrar dene.",
     "choose_level_text": "Seviyeni seç 👇",
     "hi_message_text": "Merhaba! 30 saniyelik bir konuşma testi yapalım 👋\n1–2 cümlelik kısa bir sesli ya da yazılı mesaj gönder, ben de şunlarla cevap vereyim:\n✅ transkript\n✅ düzeltmeler + kısa açıklama\n✅ sırada ne söyleyebileceğin",
-    "choose_voice_mode_text": "Yanıtlarımı nasıl almak istersin: sesli mi metin mi? 🎧💬",
-    "voice_mode_text": "💬 Metin",
-    "voice_mode_voice": "🎧 Ses",
     "voice_reply_prefix": "📝 ",
     "msg_too_long": "Bu sesli mesaj çok uzun 🙂 Lütfen en fazla 90 saniyelik bir kayıt gönder.",
     "msg_voice_length_tip": "Daha verimli pratik için her sesli mesajı 30–45 saniye arasında tutmaya çalış 🙂",
@@ -59,12 +56,8 @@
     "msg_error_command": "Ups, bu komutu henüz bilmiyorum 🙈",
     "level_saved_prefix": "Harika! Seviyen ",
     "msg_next_step": "Şimdi bana kısa bir sesli mesaj gönder (1-2 cümle) 🎙️ Hataları düzelteceğim ve net şekilde açıklayacağım 🙂",
-    "lang_saved_prefix": "Süper! Artık ",
     "lang_label_de": "Türkçe 🇹🇷",
     "lang_label_en": "İngilizce 🇬🇧",
-    "reply_mode_saved_prefix": "Süper! Sana ",
-    "reply_mode_voice": "🎧 sesli",
-    "reply_mode_text": "💬 metin olarak",
     "stats_title": "<b>💎 Abonelik</b>",
     "stats_plan_prefix": "Plan: ",
     "tier_pro": "PRO 🚀",
@@ -82,15 +75,15 @@
     "pending_change_suffix": " dönem sonunda",
     "stats_footer": "Detaylar ve abonelik yönetimi aşağıdaki mini uygulamada mevcut.",
     "btn_open_miniapp": "Mini uygulamayı aç",
-    "msg_limit_reached": "Seninle pratik yapmaya devam etmek isterdim, ama haftalık limitin doldu 😔\\nDevam etmek için aşağıdaki butonla mini uygulamada aboneliği aç ✨\\nAbonelik durumunu /stats ile kontrol edebilirsin.",
-    "msg_tts_limit_reached": "Sesli yanıtlarım için haftalık limite ulaştın 😔 /stats ile kontrol et.",
+    "msg_limit_reached": "Pratik limitine ulaştın. Devam etmek için aşağıdaki düğmeden mini uygulamada aboneliği aç.",
+    "msg_tts_limit_reached": "Sesli yanıt limitine ulaştın. Ayarlar → İstatistikler bölümünden aboneliğini kontrol et.",
     "btn_open_subscription": "💎 Aboneliği aç",
     "msg_too_short": "Hiçbir şey duyamadım 😭 Lütfen biraz daha uzun bir sesli mesaj gönder.",
     "user_text_prefix_multiline": "📝 Senin metnin:\\n",
     "user_text_preview": "📝 Senin metnin: ...",
-    "msg_feedback_prompt": "Teşekkürler! Geri bildirimi metin ya da sesli mesaj olarak gönder 🎙️",
+    "msg_feedback_prompt": "Bu mesajı geri bildiriminle metin veya sesli mesaj olarak yanıtla.",
     "msg_feedback_thanks": "Teşekkürler! Geri bildirimini aldım 💛",
-    "msg_feedback_needs_text_or_voice": "Lütfen geri bildirimi metin veya sesli mesaj olarak gönder 🎙️",
+    "msg_feedback_needs_text_or_voice": "Lütfen metin veya sesli mesajla yanıtla.",
     "msg_needs_text_or_voice": "Lütfen sadece metin veya sesli mesaj gönder 🎙️",
     "level_label_beginner": "Başlangıç (A1-A2)",
     "level_label_conversational": "Konuşma seviyesi (B1-B2)",
@@ -103,11 +96,7 @@
     "onboarding_voice_cta_text": "Harika. Kısa bir sesli mesaj gönder (1–2 cümle) 🎙️",
     "onboarding_text_cta_text": "Harika. Kısa bir metin gönder (1–2 cümle) ✍️",
     "onboarding_showcase_no_mistakes_text": "Çok iyi, burada hata yok 👏\nHataları nasıl düzelttiğimi görmek istersen bilerek hatalı bir cümle yaz.\nÖrneğin:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "Harika ilerleme — profilin hazır 🚀\n\nKısaca en önemli noktalar:\n• Başlangıç seviyen A1. Bunu istediğin zaman A1, A2, B1, B2 veya C1 olarak değiştirebilirsin.\n• Sohbetin altındaki butonlarla dil seviyeni ve cevap formatını istediğin zaman değiştirebilirsin: ses veya metin.\n• App içinde diğer ayarları açabilir, feedback gönderebilir ve başka seçenekleri yönetebilirsin.\n\nSerini sürdürmek için sonraki mesajını gönder 🔥\n\nTebrikler! Onboarding tamamlandı.",
-    "keyboard_btn_level_prefix": "Seviye",
-    "keyboard_btn_voice_prefix": "Yanıt türü",
-    "keyboard_btn_voice_text": "Metin",
-    "keyboard_btn_voice_voice": "Ses",
+    "onboarding_complete_full_text": "Profilin hazır. Ayarlarda seviyeni ve yanıt biçimini değiştirebilir, istatistikleri görebilir ve geri bildirim gönderebilirsin. Pratiğe devam etmek için sonraki metin veya sesli mesajını gönder.",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -202,43 +191,28 @@
       "back": "Geri",
       "saved": "Değişiklikler kaydedildi",
       "error": "Kaydedilemedi. Lütfen tekrar dene.",
-      "autosave": "Değişiklikler otomatik kaydedilir"
+      "autosave": "Değişiklikler otomatik kaydedilir",
+      "stats": "İstatistikler",
+      "feedback": "Geri bildirim gönder",
+      "cancel": "İptal",
+      "feedback_waiting": "Geri bildirimini bekliyorum. Aşağıdaki mesajı metin veya sesli mesajla yanıtla.",
+      "used": "Kullanılan (dk:sn)",
+      "remaining": "Kalan (dk:sn)"
     },
     "vocab_column_original": "Orijinal",
     "vocab_column_translation": "Çeviri",
     "vocab_column_transcription": "Fonetik yazım",
-    "vocab_empty": "Kelime bulunamadı."
+    "vocab_empty": "Kelime bulunamadı.",
+    "msg_feedback_cancelled": "Geri bildirim iptal edildi. Sohbete devam edebiliriz.",
+    "msg_feedback_expired": "Bu geri bildirim isteğinin süresi doldu. Yeni bir istek için ayarları aç.",
+    "msg_feedback_unsupported": "Lütfen metin veya sesli mesajla yanıtla.",
+    "msg_feedback_placeholder": "Geri bildirimin: metin veya ses"
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | Dil öğretmenin",
     "description": "İngilizce bir mesaj gönder. Ana hataları düzelteyim ve sonraki cevabını birlikte kuralım.\nhttps://ai-language-school.online/tr",
     "short_description": "İngilizce bir mesaj gönder. Ana hataları düzelteyim ve sonraki cevabını birlikte kuralım.",
-    "commands": [
-      {
-        "command": "start",
-        "description": "Botu başlat"
-      },
-      {
-        "command": "level",
-        "description": "Dil seviyeni ayarla"
-      },
-      {
-        "command": "voice",
-        "description": "Ses veya metin modunu sec"
-      },
-      {
-        "command": "stats",
-        "description": "Abonelik durumunu kontrol et"
-      },
-      {
-        "command": "feedback",
-        "description": "Geri bildirim gönder"
-      },
-      {
-        "command": "lang",
-        "description": "Sabit öğrenme dilini göster"
-      }
-    ],
+    "commands": [],
     "menu_button": {
       "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=tr-en"

@@ -1,3 +1,4 @@
+import { createFeedbackMessageHandler } from './feedback.js';
 import type { Pool } from 'pg';
 import { sanitizeTelegramHtml } from '../../shared/telegram-delivery.js';
 import type { BotAiClient } from '../bot-ai.js';
@@ -272,90 +273,6 @@ export function createVoiceConversationHandler({
   };
 }
 
-export function createVoiceFeedbackHandler({
-  pool,
-  getBotLocale,
-  telegramClient,
-  ai,
-  effectRunner = runBotUpdateEffect,
-  textDeliverer = deliverTelegramText
-}: {
-  pool: Pool;
-  getBotLocale(botKey: string): unknown;
-  telegramClient: VoiceTelegramClient;
-  ai: BotAiClient;
-  effectRunner?: typeof runBotUpdateEffect;
-  textDeliverer?: typeof deliverTelegramText;
-}): BotHandler<'pending_feedback.voice'> {
-  return {
-    route: 'pending_feedback.voice',
-    version: BOT_RUNTIME_HANDLER_VERSIONS['pending_feedback.voice'],
-    async execute(update: PreparedUpdate & { route: 'pending_feedback.voice' }) {
-      const chatId = update.input.chatId;
-      const fileId = String(update.input.message.voiceFileId || '').trim();
-      if (chatId === null || !Number.isSafeInteger(chatId) || chatId <= 0 || !fileId) {
-        throw new BotRuntimeHandlerError('invalid_voice_feedback', { retryable: false });
-      }
-      let audio: Buffer;
-      try {
-        audio = await telegramClient.downloadTelegramFile(fileId, { botKey: update.botKey });
-      } catch (error) {
-        throw new BotRuntimeHandlerError('feedback_voice_download_failed', {
-          retryable: true,
-          cause: error
-        });
-      }
-      try {
-        await effectRunner(pool, {
-          decisionId: update.decisionId,
-          stepKey: 'pending_feedback.voice:state:v1',
-          execute: async (client) => {
-            const transcript = await ai.transcribe(update.botKey, audio, {
-              baseLanguage: true,
-              trace: {
-                decisionId: update.decisionId,
-                chatId,
-                botKey: update.botKey,
-                route: update.route
-              }
-            });
-            if (!transcript) throw new Error('feedback_transcript_empty');
-            await client.query(
-              `INSERT INTO feedback (
-                 chat_id, username, first_name, message_id, kind,
-                 feedback_text, transcript, telegram_file_id, bot_key
-               ) VALUES ($1, $2, $3, $4, 'voice', NULL, $5, $6, $7)`,
-              [
-                chatId,
-                update.input.sender.username,
-                update.input.sender.firstName,
-                update.input.message.id,
-                transcript,
-                fileId,
-                update.botKey
-              ]
-            );
-            await client.query(
-              `DELETE FROM pending_feedback WHERE chat_id = $1 AND bot_key = $2`,
-              [chatId, update.botKey]
-            );
-            return { transcriptLength: transcript.length };
-          }
-        });
-      } catch (error) {
-        throw new BotRuntimeHandlerError('feedback_voice_save_failed', {
-          retryable: true,
-          cause: error
-        });
-      }
-      const locale = localeRecord(getBotLocale(update.botKey));
-      return textDeliverer({
-        pool,
-        update,
-        telegramClient,
-        stepKey: 'pending_feedback.voice:thanks:v1',
-        text: localeText(locale, 'msg_feedback_thanks', 'Thanks, I received your feedback.')
-      });
-    }
-  };
+export function createVoiceFeedbackHandler(deps: Parameters<typeof createFeedbackMessageHandler>[1]) {
+  return createFeedbackMessageHandler('pending_feedback.voice',deps);
 }

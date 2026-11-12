@@ -14,11 +14,8 @@ import {
   normalizeBotRuntimeHandlerError,
   type BotHandlerRegistry
 } from './handler-registry.js';
-import {
-  createPreferenceHandlers,
-  type PreferenceTelegramClient
-} from './handlers/preferences.js';
 import { createFeedbackHandlers } from './handlers/feedback.js';
+import { wakeFeedbackNotifications } from '../feedback-notifications.js';
 import {
   createCallbackActionHandlers,
   type IdiomMoreSender
@@ -28,7 +25,6 @@ import {
   createOnboardingCallbackHandler,
   createOnboardingStartHandler
 } from './handlers/onboarding.js';
-import { createStatsHandler } from './handlers/stats.js';
 import {
   createSupportCallbackHandlers,
   type SupportTelegramClient
@@ -40,9 +36,8 @@ import {
   type BotPipelineRunner
 } from './pipeline.js';
 import { createProgressIndicatorMiddleware } from './progress-middleware.js';
-import { createProgressService } from './progress-service.js';
+import { createProgressService, type ProgressTelegramClient } from './progress-service.js';
 import { createMessagePresentationService, type PresentationClient } from './message-presentation.js';
-import { createRetiredCommandHandlers } from './handlers/retired-commands.js';
 import {
   createTextConversationHandler,
   type ConversationTelegramClient
@@ -99,7 +94,8 @@ export type BotRuntimeJobOutcome =
   | 'duplicate_in_progress'
   | 'duplicate_permanent_failed'
   | 'execution_conflict'
-  | 'invalid_job';
+  | 'invalid_job'
+  | 'retired_job';
 
 const defaultExecutionRepository: ExecutionRepository = {
   claim: claimBotUpdateExecution,
@@ -124,6 +120,9 @@ export async function processBotUpdateJob(
 ): Promise<BotRuntimeJobOutcome> {
   const data = asRecord(job.data);
   const handlerVersion = Number(data?.handlerVersion);
+  // Pre-rollout jobs must never re-enable removed controls or reset onboarding.
+  const retired = new Set(['command.settings','command.level','command.voice','command.lang','command.stats','command.feedback','command.xp','command.progress','callback.level','callback.reply','callback.lang','reply_keyboard.voice_toggle']);
+  if (retired.has(String(asRecord(data?.contract)?.route || ''))) return 'retired_job';
   let contract;
   try {
     if (!Number.isInteger(handlerVersion) || handlerVersion <= 0) {
@@ -233,17 +232,15 @@ export async function registerBotRuntimeWorker(
     webappUrl,
     progressEnabledBotKeys,
     reportProgressError = () => {},
-    getBotConfig,
     sendIdiomMore,
     ai
   }: {
     pool: Pool;
     getBotLocale(botKey: string): unknown;
-    telegramClient: PreferenceTelegramClient & SupportTelegramClient & ConversationTelegramClient & VoiceTelegramClient & PresentationClient;
+    telegramClient: ProgressTelegramClient & SupportTelegramClient & ConversationTelegramClient & VoiceTelegramClient & PresentationClient;
     webappUrl: string;
     progressEnabledBotKeys: ReadonlySet<string>;
     reportProgressError?: (error: unknown, event: string, botKey: string) => void;
-    getBotConfig(botKey: string): Record<string, unknown> | null;
     sendIdiomMore: IdiomMoreSender;
     ai: BotAiClient;
   }
@@ -262,14 +259,12 @@ export async function registerBotRuntimeWorker(
     ...createStaticRouteHandlers({ pool, getBotLocale, telegramClient }),
     createOnboardingStartHandler({ pool, getBotLocale, telegramClient }),
     createOnboardingCallbackHandler({ pool, getBotLocale, telegramClient }),
-    ...createPreferenceHandlers({ pool, getBotLocale, telegramClient }),
-    ...createSettingsHandlers({ pool, getBotLocale, telegramClient }),
-    ...createFeedbackHandlers({ pool, getBotLocale, telegramClient }),
+    ...createSettingsHandlers({ pool, getBotLocale, telegramClient, webappUrl }),
+    ...createFeedbackHandlers({ pool, getBotLocale, telegramClient, wakeNotifications:()=>wakeFeedbackNotifications(boss) }),
     ...createCallbackActionHandlers({
       pool,
       getBotLocale,
-      getBotConfig,
-      telegramClient,
+        telegramClient,
       sendIdiomMore
     }),
     ...createSupportCallbackHandlers({
@@ -299,10 +294,8 @@ export async function registerBotRuntimeWorker(
       pool,
       getBotLocale,
       telegramClient,
-      ai
+      wakeNotifications:()=>wakeFeedbackNotifications(boss)
     }),
-    createStatsHandler({ pool, getBotLocale, telegramClient, webappUrl }),
-    ...createRetiredCommandHandlers({ pool, getBotLocale, telegramClient }),
   ]);
 
   // Keep the general worker able to drain settings jobs queued before rollout.

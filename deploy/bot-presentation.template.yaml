@@ -14,11 +14,7 @@ limits:
   description_max: 512
   short_description_max: 120
   menu_button_text_max: 14
-  commands_max: 100
-  command_description_max: 256
-
-patterns:
-  command: "^[a-z0-9_]{1,32}$"
+  commands_max: 0
 
 mappings:
   name:
@@ -31,8 +27,7 @@ mappings:
     telegram_method: setMyShortDescription
     telegram_field: short_description
   commands:
-    telegram_method: setMyCommands
-    telegram_field: commands
+    telegram_method: deleteMyCommands
   menu_button.text:
     telegram_method: setChatMenuButton
     telegram_field: menu_button.text

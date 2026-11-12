@@ -1,9 +1,9 @@
+import { prepareSettingsScreen } from '../settings-screens.js';
 import type { Pool } from 'pg';
 import type { PreparedUpdate } from '../contracts.js';
 import { fetchKeyboardState } from '../context-loader.js';
 import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler, type BotHandlerOutcome } from '../handler-registry.js';
-import { buildPersistentReplyMarkup } from '../keyboard-state.js';
 import { deliverTelegramText, classifyTelegramDeliveryError } from '../telegram-text-delivery.js';
 import { applySettingsAction, parseSettingsAction, SettingsInputError, settingsView, type SettingsAction } from '../settings-model.js';
 import { renderSettingsRich, settingsLabels } from '../settings-views.js';
@@ -32,12 +32,12 @@ export async function withSettingsLock<T>(pool: Pool, key: string, work: () => P
     client.release(releaseError);
   }
 }
-export function createSettingsHandlers({ pool, getBotLocale, telegramClient,
+export function createSettingsHandlers({ pool, getBotLocale, telegramClient, webappUrl,
   effectRunner = runBotUpdateEffect, stateLoader = fetchKeyboardState,
-  textDeliverer = deliverTelegramText, lock = withSettingsLock
-}: { pool: Pool; getBotLocale(key: string): unknown; telegramClient: SettingsTelegramClient;
+  textDeliverer = deliverTelegramText, lock = withSettingsLock, screenPreparer = prepareSettingsScreen
+}: { pool: Pool; getBotLocale(key: string): unknown; telegramClient: SettingsTelegramClient; webappUrl?: string;
   effectRunner?: typeof runBotUpdateEffect; stateLoader?: typeof fetchKeyboardState;
-  textDeliverer?: typeof deliverTelegramText; lock?: typeof withSettingsLock;
+  textDeliverer?: typeof deliverTelegramText; lock?: typeof withSettingsLock; screenPreparer?: typeof prepareSettingsScreen;
 }): BotHandler[] {
   const execute = async (update: PreparedUpdate): Promise<BotHandlerOutcome> => {
     const chatId = update.input.chatId;
@@ -57,15 +57,9 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient,
     };
     // Retired widgets may still have queued queries. Never apply their mutations.
     if (widget) { await answer(true); return {status:'noop'}; }
-    if (update.route === 'command.settings' && update.context.keyboard.buttonIntent !== 'settings') {
-      // Telegram cannot edit a message carrying a reply keyboard. Refresh legacy
-      // keyboards separately on /settings; the reply button itself needs one card.
-      await textDeliverer({pool,update,telegramClient,stepKey:'settings:keyboard:v1',text:'⚙️ '+l.title,
-        replyMarkup:buildPersistentReplyMarkup(update.context.keyboard)});
-    }
     let action: SettingsAction;
     try {
-      action = update.route === 'command.settings'
+      action = update.route === 'settings.open'
         ? {variant:'r',kind:'open',value:''}
         : parseSettingsAction(cb?.data || '');
       // Buttons in previously sent choosers now open the remaining card.
@@ -81,8 +75,9 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient,
           } catch(error) { if(error instanceof SettingsInputError) inputError=true; else throw error; }
         }
         const row = await stateLoader(pool,chatId,update.botKey);
-        const view = settingsView(row);
+        const view = settingsView(row);view.botKey=update.botKey;view.webappUrl=webappUrl;
         if(inputError) view.e='unavailable';
+        await screenPreparer({pool,update,action,view,locale:getBotLocale(update.botKey),api});
         if (action.kind === 'open') {
           const outcome = await textDeliverer({pool,update,stepKey:'settings:open:r:v1',text:l.title,telegramMethod:'sendRichMessage',
             telegramClient:{sendTelegramTextMessage:async()=>api('sendRichMessage',{
@@ -91,7 +86,7 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient,
           await answer();return outcome;
         }
         try {
-          if(action.kind==='close')await deleteSettingsMessage(api,chatId,cb!.messageId!);
+          if(action.kind==='close'&&view.screen!=='feedback')await deleteSettingsMessage(api,chatId,cb!.messageId!);
           else await api('editMessageText',{chat_id:chatId,message_id:cb!.messageId,rich_message:renderSettingsRich(view,l)});
         } catch(error) { if(!String((error as Error).message).includes('message is not modified')) throw error; }
         await answer(inputError);
@@ -105,5 +100,5 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient,
       }
     });
   };
-  return ['command.settings','callback.settings'].map(route=>({route,version:1,execute})) as BotHandler[];
+  return ['settings.open','callback.settings'].map(route=>({route,version:1,execute})) as BotHandler[];
 }

@@ -78,7 +78,7 @@ export async function ingestBotUpdate(
   let jobId: string | null;
   try {
     jobId = await ctx.apiBoss.send(
-      contract.route === 'command.settings' || contract.route === 'callback.settings'
+      contract.route === 'settings.open' || contract.route === 'callback.settings'
         ? BOT_SETTINGS_QUEUE_NAME : BOT_UPDATE_QUEUE_NAME,
       jobData,
       {

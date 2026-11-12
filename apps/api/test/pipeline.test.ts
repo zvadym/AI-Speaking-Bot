@@ -57,11 +57,6 @@ function preparedText(): PreparedUpdate & { route: 'message.text' } {
       keyboard: {
         enabled: false,
         buttonIntent: null,
-        levelValue: 'a1',
-        voiceValue: 'text',
-        replyMode: 'text',
-        levelButtonText: '',
-        voiceButtonText: ''
       }
     }
   };

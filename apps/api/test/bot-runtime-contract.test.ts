@@ -24,6 +24,7 @@ type RouteFixture = {
   update: Record<string, unknown>;
   keyboardState?: KeyboardStateRow;
   pendingFeedback?: boolean;
+  feedbackExpired?: boolean;
 };
 
 function prepareFixture(fixture: RouteFixture) {
@@ -32,6 +33,7 @@ function prepareFixture(fixture: RouteFixture) {
     input: normalizeTelegramUpdate(fixture.update),
     keyboardState: fixture.keyboardState,
     pendingFeedback: fixture.pendingFeedback,
+    feedbackExpired: fixture.feedbackExpired,
     locale: {
       keyboard_btn_voice_text: 'Text',
       keyboard_btn_voice_voice: 'Voice',
@@ -47,9 +49,6 @@ const callbackFixtures: RouteFixture[] = [
   ['tr', 'callback.translate'],
   ['hint', 'callback.hints'],
   ['voc', 'callback.vocab'],
-  ['lang', 'callback.lang'],
-  ['level', 'callback.level'],
-  ['reply', 'callback.reply'],
   ['onb', 'callback.onboarding'],
   ['settings', 'callback.settings'],
   ['unknown_group', 'callback.unknown']
@@ -60,7 +59,7 @@ const callbackFixtures: RouteFixture[] = [
 }));
 
 const routeFixtures: RouteFixture[] = [
-  { name: 'settings command', route: 'command.settings', update: messageUpdate({text:'/settings'}) },
+  { name: 'settings reply button', route: 'settings.open', update: messageUpdate({text:'· ⚙️ Settings'}) },
   {
     name: 'pinned service update',
     route: 'ignore',
@@ -83,43 +82,9 @@ const routeFixtures: RouteFixture[] = [
     update: messageUpdate({ updateId: 1101, text: '/start source_1' })
   },
   {
-    name: 'voice command',
-    route: 'command.voice',
-    update: messageUpdate({ updateId: 1102, text: '/voice' })
-  },
-  {
-    name: 'language command',
-    route: 'command.lang',
-    update: messageUpdate({ updateId: 1103, text: '/lang' })
-  },
-  {
-    name: 'level command',
-    route: 'command.level',
-    update: messageUpdate({ updateId: 1104, text: '/level' })
-  },
-  {
-    name: 'stats command',
-    route: 'command.stats',
-    update: messageUpdate({ updateId: 1105, text: '/stats' })
-  },
-  {
-    name: 'feedback command with body',
-    route: 'command.feedback',
-    update: messageUpdate({ updateId: 1108, text: '/feedback The feedback body' })
-  },
-  {
     name: 'unknown command',
     route: 'command.unknown',
     update: messageUpdate({ updateId: 1109, text: '/not-a-command' })
-  },
-  {
-    name: 'reply keyboard voice toggle',
-    route: 'reply_keyboard.voice_toggle',
-    update: messageUpdate({ updateId: 1201, text: '· 🎤 Voice' }),
-    keyboardState: {
-      reply_mode: 'voice',
-      onboarding_complete_at: '2026-03-11T08:00:00.000Z'
-    }
   },
   {
     name: 'pending feedback voice',
@@ -139,6 +104,7 @@ const routeFixtures: RouteFixture[] = [
     update: messageUpdate({ updateId: 1303, extraMessage: { photo: [{ file_id: 'photo-1' }] } }),
     pendingFeedback: true
   },
+  { name:'expired feedback reply',route:'feedback.expired',update:messageUpdate({text:'Old feedback'}),feedbackExpired:true },
   {
     name: 'voice message',
     route: 'message.voice',
@@ -159,7 +125,7 @@ const routeFixtures: RouteFixture[] = [
 test('route fixture matrix covers every current route exactly once; retired commands stay parser-only', () => {
   assert.deepEqual(
     routeFixtures.map((fixture) => fixture.route).sort(),
-    ROUTES.filter((route) => route !== 'command.xp' && route !== 'command.progress').sort()
+    [...ROUTES].sort()
   );
 });
 
@@ -209,7 +175,7 @@ test('Contract v1 is camelCase and excludes the raw Telegram update', () => {
   assertCamelCaseKeys(prepared);
 });
 
-test('routing precedence is guard, callback, command, keyboard, pending feedback, then message', () => {
+test('routing precedence is guard, callback, settings, bound feedback, commands, then message', () => {
   const pinnedGroupBot = prepareFixture({
     name: 'pinned group bot update',
     route: 'ignore',
@@ -260,15 +226,15 @@ test('routing precedence is guard, callback, command, keyboard, pending feedback
 
   const pendingCommand = prepareFixture({
     name: 'pending command',
-    route: 'command.stats',
+    route: 'command.unknown',
     update: messageUpdate({ text: '/stats' }),
     pendingFeedback: true
   });
-  assert.equal(pendingCommand.route, 'command.stats');
+  assert.equal(pendingCommand.route, 'pending_feedback.text');
 
   const pendingKeyboard = prepareFixture({
     name: 'pending keyboard',
-    route: 'reply_keyboard.voice_toggle',
+    route: 'command.unknown',
     update: messageUpdate({ text: '· 🎤 Voice' }),
     keyboardState: {
       reply_mode: 'voice',
@@ -276,7 +242,7 @@ test('routing precedence is guard, callback, command, keyboard, pending feedback
     },
     pendingFeedback: true
   });
-  assert.equal(pendingKeyboard.route, 'reply_keyboard.voice_toggle');
+  assert.equal(pendingKeyboard.route, 'pending_feedback.text');
 });
 
 test('all known non-private chat types use the private-only guard', () => {
@@ -298,10 +264,10 @@ test('all known non-private chat types use the private-only guard', () => {
 test('command parsing supports bot qualification and only documented arguments', () => {
   const qualifiedStats = prepareFixture({
     name: 'qualified stats',
-    route: 'command.stats',
+    route: 'command.unknown',
     update: messageUpdate({ updateId: 3001, text: '/stats@language_bot' })
   });
-  assert.equal(qualifiedStats.route, 'command.stats');
+  assert.equal(qualifiedStats.route, 'command.unknown');
   assert.deepEqual(qualifiedStats.routingFacts.command, {
     name: '/stats',
     args: '',
@@ -330,9 +296,9 @@ test('command parsing supports bot qualification and only documented arguments',
 
   assert.equal(prepareFixture({
     name: 'feedback body',
-    route: 'command.feedback',
+    route: 'command.unknown',
     update: messageUpdate({ updateId: 3005, text: '/feedback body text' })
-  }).route, 'command.feedback');
+  }).route, 'command.unknown');
 
   assert.equal(prepareFixture({
     name: 'feedback prefix collision',
@@ -360,14 +326,13 @@ test('persistent keyboard uses locale and requires completed onboarding', () => 
   );
 
   assert.equal(keyboard.enabled, true);
-  assert.equal(keyboard.buttonIntent, 'level');
-  assert.equal(keyboard.levelButtonText, '· 📚 A2');
-  assert.equal(keyboard.voiceButtonText, '· 🎤 Voice');
+  assert.equal(keyboard.buttonIntent, 'retired');
+  assert.equal(keyboard.settingsButtonText, '· ⚙️ Settings');
   assert.equal('progressButtonText' in keyboard, false);
 
   const disabled = buildPersistentKeyboardState({ level: 'a2' }, {}, input);
   assert.equal(disabled.enabled, false);
-  assert.equal(disabled.buttonIntent, null);
+  assert.equal(disabled.buttonIntent, 'retired');
 });
 
 test('empty callback data is an explicit unknown callback', () => {
@@ -426,11 +391,11 @@ test('parseCommand distinguishes non-commands and malformed command text', () =>
 });
 
 test('removed commands and stored keyboard buttons are unknown; retired callbacks cannot select anything', () => {
-  for (const keyboardState of [{},{onboarding_complete_at:'2026-01-01'}]) for (const text of ['/topic', '/topics', '/topic@TeacherBot', '· 🧩 Coffee chat']) {
+  for (const keyboardState of [{},{onboarding_complete_at:'2026-01-01'}]) for (const text of ['/topic','/topics','/topic@TeacherBot','/settings','/level','/voice','/lang','/stats','/feedback body','/xp','/progress','· 🧩 Coffee chat','· 📚 A1','· 🎤 Voice']) {
     const prepared = buildPreparedUpdate({botKey:'uk-en', input:normalizeTelegramUpdate(messageUpdate({text})), keyboardState});
     assert.equal(prepared.route, 'command.unknown', text);
   }
-  for (const data of ['topic:travel', 'topic:clear']) {
+  for (const data of ['topic:travel','topic:clear','level:b2','reply:text','lang:en']) {
     const prepared = buildPreparedUpdate({botKey:'uk-en', input:normalizeTelegramUpdate(callbackUpdate({data}))});
     assert.equal(prepared.route, 'callback.unknown');
   }

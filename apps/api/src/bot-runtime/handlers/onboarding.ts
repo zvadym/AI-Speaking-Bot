@@ -45,13 +45,13 @@ function levelPicker() {
   return {
     inline_keyboard: [
       [
-        { text: 'A1', callback_data: 'level:a1' },
-        { text: 'A2', callback_data: 'level:a2' },
-        { text: 'B1', callback_data: 'level:b1' }
+        { text: 'A1', callback_data: 'onb:level:a1' },
+        { text: 'A2', callback_data: 'onb:level:a2' },
+        { text: 'B1', callback_data: 'onb:level:b1' }
       ],
       [
-        { text: 'B2', callback_data: 'level:b2' },
-        { text: 'C1', callback_data: 'level:c1' }
+        { text: 'B2', callback_data: 'onb:level:b2' },
+        { text: 'C1', callback_data: 'onb:level:c1' }
       ]
     ]
   };
@@ -79,6 +79,14 @@ export function createOnboardingStartHandler({
       const localeRaw = getBotLocale(update.botKey);
       const locale = getOnboardingLocale(localeRaw);
       const session = locale ? await loadOnboardingSession(pool, chatId, update.botKey) : null;
+      if (!session) {
+        const completion = await pool.query('SELECT 1 FROM bot_onboarding_completion WHERE chat_id = $1 AND bot_key = $2 LIMIT 1', [chatId, update.botKey]);
+        if (completion.rows.length) {
+          const keyboard = buildPersistentReplyMarkup(buildPersistentKeyboardState(await fetchKeyboardState(pool, chatId, update.botKey), localeRaw, update.input));
+          return textDeliverer({pool,update,telegramClient,stepKey:'command.start:already-onboarded:v1',
+            text: locale?.already_completed || String((localeRaw as Record<string, unknown>)?.msg_start_completed || 'You are ready. Send a text or voice message to continue.'),replyMarkup:keyboard});
+        }
+      }
       if (!locale || !session) {
         const fallback = buildStaticRouteMessage('command.start', update, localeRaw);
         if (!fallback) return { status: 'noop' };
@@ -100,7 +108,7 @@ export function createOnboardingStartHandler({
           telegramClient,
           stepKey: 'command.start:onboarding-completed:v2',
           text: locale.already_completed,
-          replyMarkup: buildOnboardingCompletionMarkup(locale, session.suggested_level)
+          replyMarkup: buildPersistentReplyMarkup(buildPersistentKeyboardState(await fetchKeyboardState(pool, chatId, update.botKey), localeRaw, update.input))
         });
       }
 

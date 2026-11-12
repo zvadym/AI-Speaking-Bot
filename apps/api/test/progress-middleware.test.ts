@@ -7,7 +7,7 @@ import { parseProgressEnabledBotKeys } from '../src/bot-runtime/progress-config.
 import { createProgressIndicatorMiddleware } from '../src/bot-runtime/progress-middleware.js';
 import type { ProgressService } from '../src/bot-runtime/progress-service.js';
 
-function update(route: 'message.text' | 'message.voice' | 'command.stats' = 'message.text') {
+function update(route: 'message.text' | 'message.voice' | 'command.unknown' = 'message.text') {
   return {
     contractVersion: 1,
     decisionId: 'v1:uk-de:8101',
@@ -49,7 +49,7 @@ function harness(options: { startError?: Error; stopError?: Error } = {}) {
 
 function stageHandler(
   events: string[],
-  route: 'message.text' | 'message.voice' | 'command.stats' = 'message.text',
+  route: 'message.text' | 'message.voice' | 'command.unknown' = 'message.text',
   stage = 'conversation.generate',
   operationError: Error | null = null
 ): BotHandler {
@@ -134,8 +134,8 @@ test('progress start and stop failures remain best-effort', async () => {
 test('progress middleware ignores commands, unrelated stages, and disabled bots', async () => {
   const command = harness();
   await createBotPipelineRunner([command.middleware]).execute({
-    handler: stageHandler(command.events, 'command.stats'),
-    update: update('command.stats'),
+    handler: stageHandler(command.events, 'command.unknown'),
+    update: update('command.unknown'),
     jobId: '00000000-0000-4000-8000-000000000005',
     attempt: 1
   });

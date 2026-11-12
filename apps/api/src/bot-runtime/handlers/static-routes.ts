@@ -53,61 +53,10 @@ export function buildStaticRouteMessage(
           }]]
         }
       };
-    case 'command.level':
-      return {
-        text: localeText(locale, 'choose_level_text', 'Choose your level 👇'),
-        replyMarkup: {
-          inline_keyboard: [
-            [
-              { text: 'A1', callback_data: 'level:a1' },
-              { text: 'A2', callback_data: 'level:a2' },
-              { text: 'B1', callback_data: 'level:b1' }
-            ],
-            [
-              { text: 'B2', callback_data: 'level:b2' },
-              { text: 'C1', callback_data: 'level:c1' }
-            ]
-          ]
-        }
-      };
-    case 'command.voice':
-      return {
-        text: localeText(locale, 'choose_voice_mode_text', 'Choose voice or text replies.'),
-        replyMarkup: {
-          inline_keyboard: [[
-            {
-              text: localeText(locale, 'voice_mode_text', '💬 Text'),
-              callback_data: 'reply:text'
-            },
-            {
-              text: localeText(locale, 'voice_mode_voice', '🎧 Voice'),
-              callback_data: 'reply:voice'
-            }
-          ]]
-        }
-      };
-    case 'command.lang': {
-      const learningLanguage = update.botKey.split('-')[1] || '';
-      const label = learningLanguage === 'en'
-        ? localeText(locale, 'lang_label_en', 'English')
-        : localeText(locale, 'lang_label_de', learningLanguage.toUpperCase());
-      return {
-        text: localeText(locale, 'lang_saved_prefix', 'We are practicing ') + label
-      };
-    }
     case 'command.unknown':
       return {
         text: localeText(locale, 'msg_error_command', 'I do not know that command yet.'),
-        replyMarkup: update.context.keyboard.enabled || update.context.keyboard.buttonIntent === 'retired'
-          ? buildPersistentReplyMarkup(update.context.keyboard) : null
-      };
-    case 'pending_feedback.unsupported':
-      return {
-        text: localeText(
-          locale,
-          'msg_feedback_needs_text_or_voice',
-          'Please send feedback as text or a voice message.'
-        )
+        replyMarkup: buildPersistentReplyMarkup(update.context.keyboard)
       };
     case 'message.unsupported':
       return {
@@ -153,11 +102,7 @@ const STATIC_ROUTES = [
   'ignore',
   'guard.private_only',
   'guard.bot_sender',
-  'command.voice',
-  'command.lang',
-  'command.level',
   'command.unknown',
-  'pending_feedback.unsupported',
   'message.unsupported'
 ] as const satisfies readonly ImplementedBotRuntimeRoute[];
 

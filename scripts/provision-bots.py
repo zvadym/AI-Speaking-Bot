@@ -32,41 +32,6 @@ DEFAULT_MENU_TEXT_BY_BASE = {
     "de": "App",
 }
 
-DEFAULT_COMMANDS_BY_BASE = {
-    "en": [
-        {"command": "start", "description": "Start the bot"},
-        {"command": "level", "description": "Set your language level"},
-        {"command": "voice", "description": "Choose voice or text replies"},
-        {"command": "stats", "description": "Check subscription status"},
-        {"command": "feedback", "description": "Send feedback"},
-        {"command": "lang", "description": "Show fixed learning language"},
-    ],
-    "uk": [
-        {"command": "start", "description": "Запустити бота"},
-        {"command": "level", "description": "Встановити рівень мови"},
-        {"command": "voice", "description": "Обрати голосовий або текстовий режим"},
-        {"command": "stats", "description": "Перевірити статус підписки"},
-        {"command": "feedback", "description": "Надіслати фідбек"},
-        {"command": "lang", "description": "Показати фіксовану мову навчання"},
-    ],
-    "it": [
-        {"command": "start", "description": "Avvia il bot"},
-        {"command": "level", "description": "Imposta il tuo livello"},
-        {"command": "voice", "description": "Scegli risposte vocali o testuali"},
-        {"command": "stats", "description": "Controlla stato abbonamento"},
-        {"command": "feedback", "description": "Invia feedback"},
-        {"command": "lang", "description": "Mostra lingua di studio fissa"},
-    ],
-    "de": [
-        {"command": "start", "description": "Bot starten"},
-        {"command": "level", "description": "Sprachniveau festlegen"},
-        {"command": "voice", "description": "Sprach- oder Textantworten wählen"},
-        {"command": "stats", "description": "Abo-Status prüfen"},
-        {"command": "feedback", "description": "Feedback senden"},
-        {"command": "lang", "description": "Feste Lernsprache anzeigen"},
-    ],
-}
-
 LANGUAGE_FLAG_BY_CODE = {
     "ar": "🇸🇦",
     "de": "🇩🇪",
@@ -345,10 +310,9 @@ def load_contract(path: Path) -> Dict[str, Any]:
             "description_max": 512,
             "short_description_max": 120,
             "menu_button_text_max": 14,
-            "commands_max": 100,
-            "command_description_max": 256,
+            "commands_max": 0,
         },
-        "patterns": {"command": r"^[a-z0-9_]{1,32}$"},
+        "patterns": {},
     }
 
     merged = copy.deepcopy(defaults)
@@ -439,11 +403,6 @@ def with_website_url(description: str, base_language: str) -> str:
     if not cleaned:
         return website_url_for_base(base_language)
     return f"{cleaned}\n{website_url_for_base(base_language)}"
-
-
-def localized_commands(base_language: str) -> List[Dict[str, str]]:
-    source = DEFAULT_COMMANDS_BY_BASE.get(base_language, DEFAULT_COMMANDS_BY_BASE["en"])
-    return copy.deepcopy(source)
 
 
 def localized_practice_language(base_language: str, learning_language: str) -> str:
@@ -553,7 +512,6 @@ def validate_presentation_section(
 
     required_fields: List[str] = contract["required_fields"]
     limits: Dict[str, Any] = contract["limits"]
-    pattern = re.compile(str(contract["patterns"]["command"]))
 
     for key in required_fields:
         if key == "username" and fallback_username:
@@ -616,35 +574,11 @@ def validate_presentation_section(
                 raise BotProvisioningError("Bot username must match Telegram username format")
 
     commands = normalized.get("commands")
-    if not isinstance(commands, list) or not commands:
-        raise BotProvisioningError(f"{PRESENTATION_SECTION}.commands must be a non-empty array")
-    if len(commands) > int(limits["commands_max"]):
+    if not isinstance(commands, list) or commands:
         raise BotProvisioningError(
-            f"{PRESENTATION_SECTION}.commands length must be <= {limits['commands_max']}"
+            f"{PRESENTATION_SECTION}.commands must be an empty array; use the settings card"
         )
-
-    validated_commands: List[Dict[str, str]] = []
-    for idx, cmd in enumerate(commands):
-        if not isinstance(cmd, dict):
-            raise BotProvisioningError(
-                f"{PRESENTATION_SECTION}.commands[{idx}] must be an object with command/description"
-            )
-        name_value = str(cmd.get("command") or "").strip()
-        desc_value = str(cmd.get("description") or "").strip()
-        if not pattern.fullmatch(name_value):
-            raise BotProvisioningError(
-                f"{PRESENTATION_SECTION}.commands[{idx}].command invalid: {name_value}"
-            )
-        if not desc_value:
-            raise BotProvisioningError(
-                f"{PRESENTATION_SECTION}.commands[{idx}].description is required"
-            )
-        if len(desc_value) > int(limits["command_description_max"]):
-            raise BotProvisioningError(
-                f"{PRESENTATION_SECTION}.commands[{idx}].description length must be <= {limits['command_description_max']}"
-            )
-        validated_commands.append({"command": name_value, "description": desc_value})
-    normalized["commands"] = validated_commands
+    normalized["commands"] = []
 
     menu_button = normalized.get("menu_button")
     if not isinstance(menu_button, dict):
@@ -849,6 +783,40 @@ class TelegramBotClient:
         return self._request("setMyProfilePhoto", data=payload, headers=headers)
 
 
+# Bot API cannot enumerate language overrides. These are the languages used by
+# configured bots and historical menus; explicit overrides are checked exactly.
+COMMAND_LANGUAGE_CODES = ("ar", "de", "en", "es", "fr", "hi", "it", "pl", "pt", "ru", "tr", "uk")
+
+
+def clear_bot_commands(client) -> List[str]:
+    steps: List[str] = []
+
+    def get_commands(payload):
+        commands = client.call_json("getMyCommands", payload).get("result")
+        if not isinstance(commands, list):
+            raise TelegramApiError("Invalid getMyCommands response")
+        return commands
+
+    for scope_type in ("default", "all_private_chats"):
+        scope = {"type": scope_type}
+        client.call_json("deleteMyCommands", {"scope": scope})
+        if get_commands({"scope": scope}):
+            raise TelegramApiError(f"Command menu was not cleared for scope {scope_type}")
+        steps.append(f"deleteMyCommands(scope={scope_type})")
+        for language in COMMAND_LANGUAGE_CODES:
+            payload = {"scope": scope, "language_code": language}
+            commands = get_commands(payload)
+            if not commands:
+                continue
+            client.call_json("deleteMyCommands", payload)
+            if get_commands(payload):
+                raise TelegramApiError(
+                    f"Localized command menu was not cleared for scope {scope_type}/{language}"
+                )
+            steps.append(f"deleteMyCommands(scope={scope_type},language={language})")
+    return steps
+
+
 def configure_bot_via_api(
     *,
     bot_key: str,
@@ -867,7 +835,8 @@ def configure_bot_via_api(
                 "DRY-RUN: setMyName",
                 "DRY-RUN: setMyDescription",
                 "DRY-RUN: setMyShortDescription",
-                "DRY-RUN: setMyCommands(scope=all_private_chats)",
+                "DRY-RUN: deleteMyCommands(scopes=default,all_private_chats)",
+                "DRY-RUN: clear and verify existing localized command overrides",
                 "DRY-RUN: setChatMenuButton",
             ]
         )
@@ -898,14 +867,7 @@ def configure_bot_via_api(
     )
     steps.append("setMyShortDescription")
 
-    client.call_json(
-        "setMyCommands",
-        {
-            "scope": {"type": "all_private_chats"},
-            "commands": presentation["commands"],
-        },
-    )
-    steps.append("setMyCommands(scope=all_private_chats)")
+    steps.extend(clear_bot_commands(client))
 
     client.call_json(
         "setChatMenuButton",
@@ -1075,7 +1037,7 @@ def build_bot_config(template: Dict[str, Any], intake: Dict[str, Any], miniapp_u
         ),
         "description": clamp(description_with_link, 512),
         "short_description": clamp(description, 120),
-        "commands": localized_commands(base),
+        "commands": [],
         "menu_button": {
             "text": clamp(menu_text, 14),
             "web_app_url": f"{miniapp_url_base.rstrip('/')}/?bot-key={intake['bot_key']}",

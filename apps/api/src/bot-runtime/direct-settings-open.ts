@@ -18,25 +18,20 @@ export interface SettingsDeliveryResult {
 
 // Only explicitly reserved attempts may send. Pending/unknown attempts from a
 // previous request may already exist in Telegram, so replay must not resend them.
-export async function sendReservedSettingsMessages({ deliveries, chatId, richMessage, title, replyMarkup, api }: {
+export async function sendReservedSettingsMessages({ deliveries, chatId, richMessage, api }: {
   deliveries: ReservedSettingsDelivery[];
   chatId: number;
   richMessage: object;
-  title: string;
-  replyMarkup: object;
   api(method: string, body: Record<string, unknown>): Promise<unknown>;
 }) {
   const outcomes = await Promise.all(deliveries.map(async delivery => {
     const base = {id:delivery.id,message_id:delivery.telegram_message_id};
     if (delivery.status === 'delivered') return {...base,status:'delivered',error_code:null,retryable:false};
-    const card = delivery.step_key === 'settings:open:r:v1';
-    if (!delivery.send || delivery.telegram_method !== (card ? 'sendRichMessage' : 'sendMessage')) {
+    if (!delivery.send || delivery.telegram_method !== 'sendRichMessage') {
       return {...base,status:'unknown',error_code:'previous_attempt_incomplete',retryable:false};
     }
     try {
-      const result = await api(delivery.telegram_method, card
-        ? {chat_id:chatId,rich_message:richMessage}
-        : {chat_id:chatId,text:title,reply_markup:replyMarkup}) as {message_id?:unknown} | null;
+      const result = await api('sendRichMessage',{chat_id:chatId,rich_message:richMessage}) as {message_id?:unknown} | null;
       const messageId = Number(result?.message_id);
       if (!Number.isSafeInteger(messageId) || messageId <= 0) {
         return {...base,status:'unknown',error_code:'telegram_delivery_response_unknown',retryable:false};

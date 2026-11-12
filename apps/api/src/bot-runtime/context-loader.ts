@@ -1,9 +1,5 @@
 import type { KeyboardStateRow, Queryable } from './contracts.js';
 
-interface PendingFeedbackRow extends Record<string, unknown> {
-  pending?: unknown;
-}
-
 export async function fetchKeyboardState(
   pool: Queryable,
   chatId: number,
@@ -26,20 +22,26 @@ export async function fetchKeyboardState(
   return rows[0] || {};
 }
 
-export async function fetchPendingFeedbackState(
-  pool: Queryable,
-  chatId: number,
-  botKey: string
-): Promise<boolean> {
-  const { rows } = await pool.query<PendingFeedbackRow>(
-    `SELECT EXISTS (
-       SELECT 1
-       FROM pending_feedback
-       WHERE chat_id = $1::bigint
-         AND bot_key = $2
-         AND expires_at > NOW()
-     ) AS pending`,
-    [chatId, botKey]
+export type FeedbackReplyState = 'pending' | 'expired' | null;
+
+export async function fetchFeedbackReplyState(
+  pool: Queryable, chatId: number, botKey: string, replyToMessageId?: number | null
+): Promise<FeedbackReplyState> {
+  if (!Number.isSafeInteger(replyToMessageId) || Number(replyToMessageId) <= 0) return null;
+  const { rows } = await pool.query<{ pending: boolean }>(
+    `SELECT (pf.status = 'awaiting' AND pf.expires_at > NOW()) AS pending
+       FROM pending_feedback pf
+       LEFT JOIN bot_update_deliveries d ON d.decision_id=pf.session_id
+         AND d.step_key='settings:feedback-prompt:v1' AND d.status='delivered'
+      WHERE pf.chat_id = $1::bigint AND pf.bot_key = $2 AND COALESCE(pf.prompt_message_id,d.telegram_message_id) = $3::bigint
+      ORDER BY pf.created_at DESC LIMIT 1`,
+    [chatId, botKey, replyToMessageId]
   );
-  return Boolean(rows[0]?.pending);
+  return rows[0] ? (rows[0].pending ? 'pending' : 'expired') : null;
+}
+
+export async function fetchPendingFeedbackState(
+  pool: Queryable, chatId: number, botKey: string, replyToMessageId?: number | null
+): Promise<boolean> {
+  return (await fetchFeedbackReplyState(pool, chatId, botKey, replyToMessageId)) === 'pending';
 }

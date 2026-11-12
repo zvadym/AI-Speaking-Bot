@@ -21,9 +21,6 @@ const CALLBACK_ROUTES: Readonly<Record<string, Route>> = {
   tr: 'callback.translate',
   hint: 'callback.hints',
   voc: 'callback.vocab',
-  lang: 'callback.lang',
-  level: 'callback.level',
-  reply: 'callback.reply',
   onb: 'callback.onboarding'
 };
 
@@ -31,10 +28,6 @@ function isStartCommand(command: ParsedCommand): boolean {
   return command.name === '/start' && (
     command.args === '' || /^[A-Za-z0-9_-]{1,64}$/.test(command.args)
   );
-}
-
-function hasNoArgs(command: ParsedCommand, name: string): boolean {
-  return command.name === name && command.args === '';
 }
 
 function resolveGuard(route: Route): GuardReason | null {
@@ -61,13 +54,15 @@ export function resolvePreparedRoute({
   callback,
   command,
   keyboard,
-  pendingFeedback = false
+  pendingFeedback = false,
+  feedbackExpired = false
 }: {
   input: NormalizedTelegramUpdate;
   callback: ParsedCallbackData | null;
   command: ParsedCommand | null;
   keyboard: PersistentKeyboardState;
   pendingFeedback?: boolean;
+  feedbackExpired?: boolean;
 }): Route {
   if (input.message.isPinnedServiceUpdate) return 'ignore';
   if (!input.isPrivate && input.chatType) return 'guard.private_only';
@@ -80,19 +75,13 @@ export function resolvePreparedRoute({
     return callback ? CALLBACK_ROUTES[callback.group] || 'callback.unknown' : 'callback.unknown';
   }
 
-  if ((command && hasNoArgs(command, '/settings')) || keyboard.buttonIntent === 'settings') return 'command.settings';
-  if (command && isStartCommand(command)) return 'command.start';
-  if (keyboard.buttonIntent === 'voice') return 'reply_keyboard.voice_toggle';
-  if (command && hasNoArgs(command, '/voice')) return 'command.voice';
-  if (command && hasNoArgs(command, '/lang')) return 'command.lang';
-  if ((command && hasNoArgs(command, '/level')) || keyboard.buttonIntent === 'level') return 'command.level';
-  if (command && hasNoArgs(command, '/stats')) return 'command.stats';
-  if (keyboard.buttonIntent === 'retired') return 'command.unknown';
-  if (command?.name === '/feedback') return 'command.feedback';
-  if (command) return 'command.unknown';
+  if (keyboard.buttonIntent === 'settings') return 'settings.open';
+  if (feedbackExpired) return 'feedback.expired';
   if (pendingFeedback && input.message.hasVoice) return 'pending_feedback.voice';
   if (pendingFeedback && input.message.hasText) return 'pending_feedback.text';
   if (pendingFeedback) return 'pending_feedback.unsupported';
+  if (command && isStartCommand(command)) return 'command.start';
+  if (keyboard.buttonIntent === 'retired' || command) return 'command.unknown';
   if (input.message.hasVoice) return 'message.voice';
   if (input.message.hasText) return 'message.text';
   return 'message.unsupported';
@@ -103,18 +92,20 @@ export function buildPreparedUpdate({
   input,
   keyboardState = {},
   locale = {},
-  pendingFeedback = false
+  pendingFeedback = false,
+  feedbackExpired = false
 }: {
   botKey: string;
   input: NormalizedTelegramUpdate;
   keyboardState?: KeyboardStateRow;
   locale?: unknown;
   pendingFeedback?: boolean;
+  feedbackExpired?: boolean;
 }): PreparedUpdate {
   const callback = parseCallbackData(input.callbackQuery);
   const command = parseCommand(input.message.text);
   const keyboard = buildPersistentKeyboardState(keyboardState, locale, input);
-  const route = resolvePreparedRoute({ input, callback, command, keyboard, pendingFeedback });
+  const route = resolvePreparedRoute({ input, callback, command, keyboard, pendingFeedback, feedbackExpired });
 
   return {
     contractVersion: PREPARED_UPDATE_CONTRACT_VERSION,

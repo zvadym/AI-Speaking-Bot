@@ -49,9 +49,6 @@
     "hints_empty": "لا توجد لدي اقتراحات لهذه الرسالة بعد. جرّب مع الرد التالي.",
     "choose_level_text": "اختر مستواك 👇",
     "hi_message_text": "مرحبًا! لنقم باختبار محادثة لمدة 30 ثانية 👋\nأرسل رسالة صوتية أو نصية قصيرة (1–2 جملة)، وسأرد بـ:\n✅ تفريغ النص\n✅ تصحيحات + شرح قصير\n✅ ماذا تقول بعد ذلك",
-    "choose_voice_mode_text": "كيف تفضّل أن تصلك ردودي: صوتية أم نصية؟ 🎧💬",
-    "voice_mode_text": "💬 نص",
-    "voice_mode_voice": "🎧 صوت",
     "voice_reply_prefix": "📝 ",
     "msg_too_long": "هذه الرسالة الصوتية طويلة جدًا 🙂 أرسل تسجيلًا لا يتجاوز 90 ثانية من فضلك.",
     "msg_voice_length_tip": "لتدريب أفضل، حاول أن تكون مدة كل رسالة صوتية بين 30 و45 ثانية 🙂",
@@ -59,12 +56,8 @@
     "msg_error_command": "عذرًا، لا أعرف هذا الأمر بعد 🙈",
     "level_saved_prefix": "رائع! مستواك هو ",
     "msg_next_step": "الآن أرسل رسالة صوتية قصيرة (1-2 جملة) 🎙️ وسأصحح الأخطاء وأشرح بوضوح 🙂",
-    "lang_saved_prefix": "ممتاز! نحن نتدرّب على ",
     "lang_label_de": "العربية 🇸🇦",
     "lang_label_en": "الإنجليزية 🇬🇧",
-    "reply_mode_saved_prefix": "ممتاز! سأرد ",
-    "reply_mode_voice": "🎧 صوتيًا",
-    "reply_mode_text": "💬 نصيًا",
     "stats_title": "<b>💎 الاشتراك</b>",
     "stats_plan_prefix": "الخطة: ",
     "tier_pro": "PRO 🚀",
@@ -82,15 +75,15 @@
     "pending_change_suffix": " عند نهاية الفترة",
     "stats_footer": "تفاصيل الاشتراك وإدارته متاحة في التطبيق المصغّر أدناه.",
     "btn_open_miniapp": "فتح التطبيق المصغّر",
-    "msg_limit_reached": "أرغب بمتابعة التدريب معك، لكنك وصلت إلى الحد الأسبوعي 😔\\nللمتابعة، افتح الاشتراك في التطبيق المصغّر عبر الزر أدناه ✨\\nيمكنك التحقق من حالة اشتراكك عبر /stats.",
-    "msg_tts_limit_reached": "وصلت إلى الحد الأسبوعي للردود الصوتية 😔 راجع /stats.",
+    "msg_limit_reached": "وصلت إلى حد التدريب المتاح. للمتابعة، افتح الاشتراك في التطبيق المصغّر عبر الزر أدناه.",
+    "msg_tts_limit_reached": "وصلت إلى حد الردود الصوتية. راجع اشتراكك في الإعدادات ← الإحصاءات.",
     "btn_open_subscription": "💎 فتح الاشتراك",
     "msg_too_short": "لم أسمع شيئًا 😭 حاول إرسال رسالة صوتية أطول قليلًا.",
     "user_text_prefix_multiline": "📝 نصك:\\n",
     "user_text_preview": "📝 نصك: ...",
-    "msg_feedback_prompt": "شكرًا! أرسل ملاحظاتك كنص أو رسالة صوتية 🎙️",
+    "msg_feedback_prompt": "ردّ على هذه الرسالة بملاحظاتك نصيًا أو برسالة صوتية.",
     "msg_feedback_thanks": "شكرًا! استلمت ملاحظاتك 💛",
-    "msg_feedback_needs_text_or_voice": "يرجى إرسال الملاحظات كنص أو رسالة صوتية 🎙️",
+    "msg_feedback_needs_text_or_voice": "يرجى الرد بنص أو رسالة صوتية.",
     "msg_needs_text_or_voice": "يرجى إرسال رسالة نصية أو صوتية فقط 🎙️",
     "level_label_beginner": "مبتدئ (A1-A2)",
     "level_label_conversational": "مستوى محادثة (B1-B2)",
@@ -103,11 +96,7 @@
     "onboarding_voice_cta_text": "ممتاز. أرسل رسالة صوتية قصيرة (1–2 جملة) 🎙️",
     "onboarding_text_cta_text": "ممتاز. أرسل رسالة نصية قصيرة (1–2 جملة) ✍️",
     "onboarding_showcase_no_mistakes_text": "ممتاز، لا توجد أخطاء هنا 👏\nإذا أردت أن ترى كيف أصحّح الأخطاء، اكتب جملة خاطئة عمدًا.\nمثال:\n❌ Yesterday I go to work by bus.",
-    "onboarding_complete_full_text": "تقدم رائع — ملفك جاهز 🚀\n\nأهم النقاط بسرعة:\n• مستواك الابتدائي هو A1. يمكنك تغييره في أي وقت إلى A1 أو A2 أو B1 أو B2 أو C1.\n• استخدم الأزرار أسفل الدردشة لتبديل مستوى اللغة وطريقة الرد في أي وقت: صوت أو نص.\n• في App يمكنك فتح المزيد من الإعدادات وإرسال feedback وإدارة خيارات أخرى.\n\nأرسل رسالتك التالية للحفاظ على السلسلة 🔥\n\nتهانينا! اكتمل الاونبوردينغ.",
-    "keyboard_btn_level_prefix": "المستوى",
-    "keyboard_btn_voice_prefix": "نوع الاستجابة",
-    "keyboard_btn_voice_text": "نص",
-    "keyboard_btn_voice_voice": "صوت",
+    "onboarding_complete_full_text": "ملفك جاهز. يمكنك تغيير المستوى ونوع الردود وعرض الإحصاءات وإرسال الملاحظات من الإعدادات. أرسل رسالتك النصية أو الصوتية التالية لمتابعة التدريب.",
     "notifications": {
       "day1_return": {
         "text_variants": [
@@ -202,43 +191,28 @@
       "back": "رجوع",
       "saved": "تم حفظ التغييرات",
       "error": "تعذر الحفظ. حاول مجددًا.",
-      "autosave": "تُحفظ التغييرات تلقائيًا"
+      "autosave": "تُحفظ التغييرات تلقائيًا",
+      "stats": "الإحصاءات",
+      "feedback": "إرسال ملاحظات",
+      "cancel": "إلغاء",
+      "feedback_waiting": "بانتظار ملاحظاتك. ردّ على الرسالة أدناه بنص أو رسالة صوتية.",
+      "used": "المستخدم (دقيقة:ثانية)",
+      "remaining": "المتبقي (دقيقة:ثانية)"
     },
     "vocab_column_original": "الأصل",
     "vocab_column_translation": "الترجمة",
     "vocab_column_transcription": "النطق الصوتي",
-    "vocab_empty": "لم يتم العثور على كلمات."
+    "vocab_empty": "لم يتم العثور على كلمات.",
+    "msg_feedback_cancelled": "تم إلغاء الملاحظات. يمكننا متابعة المحادثة.",
+    "msg_feedback_expired": "انتهت مهلة هذا الطلب. افتح الإعدادات لإرسال ملاحظات جديدة.",
+    "msg_feedback_unsupported": "يرجى الرد بنص أو رسالة صوتية.",
+    "msg_feedback_placeholder": "ملاحظاتك: نص أو رسالة صوتية"
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | معلّمتك اللغوية",
     "description": "أرسل رسالة واحدة بالإنجليزية. سأصحح الأخطاء الأساسية وأساعدك في الرد التالي.\nhttps://ai-language-school.online/ar",
     "short_description": "أرسل رسالة واحدة بالإنجليزية. سأصحح الأخطاء الأساسية وأساعدك في الرد التالي.",
-    "commands": [
-      {
-        "command": "start",
-        "description": "بدء البوت"
-      },
-      {
-        "command": "level",
-        "description": "تحديد مستوى اللغة"
-      },
-      {
-        "command": "voice",
-        "description": "اختر وضع الصوت او النص"
-      },
-      {
-        "command": "stats",
-        "description": "عرض حالة الاشتراك"
-      },
-      {
-        "command": "feedback",
-        "description": "إرسال الملاحظات"
-      },
-      {
-        "command": "lang",
-        "description": "عرض لغة التعلّم الثابتة"
-      }
-    ],
+    "commands": [],
     "menu_button": {
       "text": "App",
       "web_app_url": "https://learn-language-app.notarobot.dev/?bot-key=ar-en"

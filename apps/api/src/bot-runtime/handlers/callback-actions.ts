@@ -11,7 +11,6 @@ type Locale = Record<string, unknown>;
 type CallbackRoute =
   | 'callback.busy'
   | 'callback.idiom_more'
-  | 'callback.lang'
   | 'callback.unknown';
 
 interface CallbackTelegramClient extends TelegramTextClient {
@@ -66,14 +65,12 @@ async function answerCallback(
 export function createCallbackActionHandlers({
   pool,
   getBotLocale,
-  getBotConfig,
   telegramClient,
   sendIdiomMore,
   textDeliverer = deliverTelegramText
 }: {
   pool: Pool;
   getBotLocale(botKey: string): unknown;
-  getBotConfig(botKey: string): Record<string, unknown> | null;
   telegramClient: CallbackTelegramClient;
   sendIdiomMore: IdiomMoreSender;
   textDeliverer?: typeof deliverTelegramText;
@@ -81,7 +78,6 @@ export function createCallbackActionHandlers({
   const routes: CallbackRoute[] = [
     'callback.busy',
     'callback.idiom_more',
-    'callback.lang',
     'callback.unknown'
   ];
 
@@ -134,29 +130,6 @@ export function createCallbackActionHandlers({
         return { status: 'noop' };
       }
 
-      await answerCallback(
-        telegramClient,
-        update,
-        localeText(locale, 'callback_saved', 'Saved')
-      );
-
-      if (route === 'callback.lang') {
-        const config = getBotConfig(update.botKey) || {};
-        const learningLanguage = String(config.learning_language || update.botKey.split('-')[1] || '')
-          .trim()
-          .toUpperCase();
-        return textDeliverer({
-          pool,
-          update,
-          telegramClient,
-          stepKey: 'callback.lang:message:v1',
-          text: localeText(
-            locale,
-            'lang_fixed_message',
-            `This bot has a fixed learning language: ${learningLanguage}. Use /level to change your level.`
-          )
-        });
-      }
       return { status: 'noop' };
     }
   }));

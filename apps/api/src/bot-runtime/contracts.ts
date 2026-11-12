@@ -12,26 +12,16 @@ export const ROUTES = [
   'callback.translate',
   'callback.hints',
   'callback.vocab',
-  'callback.lang',
-  'callback.level',
-  'callback.reply',
   'callback.onboarding',
   'callback.settings',
   'callback.unknown',
-  'command.settings',
+  'settings.open',
   'command.start',
-  'command.voice',
-  'command.lang',
-  'command.level',
-  'command.stats',
-  'command.xp', // Legacy queued updates only.
-  'command.progress', // Legacy queued updates only.
-  'command.feedback',
   'command.unknown',
-  'reply_keyboard.voice_toggle',
   'pending_feedback.voice',
   'pending_feedback.text',
   'pending_feedback.unsupported',
+  'feedback.expired',
   'message.voice',
   'message.text',
   'message.unsupported'
@@ -39,7 +29,7 @@ export const ROUTES = [
 
 export type Route = (typeof ROUTES)[number];
 export type UpdateType = 'widget_query' | 'callback_query' | 'message' | 'unknown';
-export type KeyboardIntent = 'settings' | 'level' | 'voice' | 'retired';
+export type KeyboardIntent = 'settings' | 'retired';
 export type ReplyMode = 'text' | 'voice';
 export type GuardReason = 'ignore' | 'private_only' | 'bot_sender';
 export type IntentSource = 'callback_query' | 'reply_keyboard' | 'command' | 'message';
@@ -72,6 +62,10 @@ export interface NormalizedMessage {
   voiceFileId: string | null;
   voiceDuration: number | null;
   isPinnedServiceUpdate: boolean;
+  // Optional so contracts queued before prompt-bound feedback remain valid.
+  replyToMessageId?: number | null;
+  replyToMessageBotUsername?: string | null;
+  replyToMessageText?: string | null;
 }
 
 export interface NormalizedCallbackQuery {
@@ -113,12 +107,7 @@ export interface ParsedCommand {
 export interface PersistentKeyboardState {
   enabled: boolean;
   buttonIntent: KeyboardIntent | null;
-  levelValue: string;
-  voiceValue: string;
-  replyMode: ReplyMode;
   settingsButtonText?: string;
-  levelButtonText: string;
-  voiceButtonText: string;
 }
 
 export interface RoutingFacts {

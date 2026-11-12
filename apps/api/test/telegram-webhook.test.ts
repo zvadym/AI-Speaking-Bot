@@ -74,7 +74,7 @@ test('direct Telegram webhook validates its secret and durably enqueues prepared
     },
     env: {
       botRuntimeRouteFlags: parseBotRuntimeRouteFlags(
-        '{"uk-de":["command.stats"]}',
+        '{"uk-de":["command.unknown"]}',
         ['uk-de']
       ),
       botImmediateAckEnabledBotKeys: new Set<string>(),
@@ -156,7 +156,7 @@ test('immediate acknowledgement starts before bootstrap and never blocks durable
     },
     env: {
       botRuntimeRouteFlags: parseBotRuntimeRouteFlags(
-        '{"uk-de":["command.stats"]}',
+        '{"uk-de":["command.unknown"]}',
         ['uk-de']
       ),
       botImmediateAckEnabledBotKeys: new Set(['uk-de']),

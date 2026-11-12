@@ -22,17 +22,18 @@ test('widget envelopes preserve transport and route only settings data; old queu
   assert.equal(prepared('level:b2',true).route,'ignore');
   const unsupported=rawWidget('settings:w:home');unsupported.widget_query.type.type='sent_transaction';
   assert.equal(buildPreparedUpdate({botKey:'uk-en',input:normalizeTelegramUpdate(unsupported)}).route,'ignore');
-  assert.equal(parsePreparedUpdateContract(prepared('level:a2')).route,'callback.level');
-  const command=buildPreparedUpdate({botKey:'uk-en',input:normalizeTelegramUpdate(messageUpdate({text:'/settings'}))});assert.equal(command.route,'command.settings');
+  assert.equal(parsePreparedUpdateContract(prepared('level:a2')).route,'callback.unknown');
+  const button=buildPreparedUpdate({botKey:'uk-en',input:normalizeTelegramUpdate(messageUpdate({text:'· ⚙️ Settings'}))});assert.equal(button.route,'settings.open');
+  for(const text of ['/settings','/stats'])assert.equal(buildPreparedUpdate({botKey:'uk-en',input:normalizeTelegramUpdate(messageUpdate({text}))}).route,'command.unknown');
 });
-test('reject invalid and retired controls; cards expose only level and reply settings',()=>{
+test('reject invalid and retired controls; cards expose settings, statistics and feedback',()=>{
   for(const data of ['settings:w:level:c2','settings:r:reply:audio','settings:w:page:-1','settings:r:page:0','settings:w:home:extra','settings:r:topic:free','settings:r:topic:0123456789abcdef','settings:x:home']) assert.throws(()=>parseSettingsAction(data));
   const view=settingsView({level:'b1',reply_mode:'text'});
   assert.equal(view.l,'b1');assert.equal(view.r,'text');
   const controls=(renderSettingsRich(view,labels).blocks as Array<{buttons?:Array<{callback_data:string}>}>).flatMap(block=>block.buttons||[]);
   assert.deepEqual(controls.map(b=>b.callback_data),[
     'settings:r:level:a1','settings:r:level:a2','settings:r:level:b1','settings:r:level:b2','settings:r:level:c1',
-    'settings:r:reply:voice','settings:r:reply:text','settings:r:close'
+    'settings:r:reply:voice','settings:r:reply:text','settings:r:stats','settings:r:feedback','settings:r:close'
   ]);
   for(const b of controls)assert.ok(Buffer.byteLength(b.callback_data)<=64);
 });
@@ -65,7 +66,7 @@ function harness() {
   const cache=new Map<string,unknown>();
   const handlers=createSettingsHandlers({pool:{} as Pool,getBotLocale:()=>({}),
     telegramClient:{sendTelegramTextMessage:async()=>({message_id:90}),answerTelegramCallbackQuery:async()=>{},callTelegramApi:async(_bot,method,body)=>{calls.push({method,body});if(failEdit&&method.startsWith('edit')){failEdit=false;throw new Error('timeout')}return {message_id:90}}},
-    stateLoader:async()=>state,lock:async(_p,_k,work)=>work(),
+    screenPreparer:async()=>{},stateLoader:async()=>state,lock:async(_p,_k,work)=>work(),
     effectRunner:async(_p,input)=>{let result=cache.get(input.decisionId);if(!result){result=await input.execute(client);cache.set(input.decisionId,result);mutations++}return {result} as never},
     textDeliverer:async(args)=>{deliveries.push(args);if(args.telegramMethod)await args.telegramClient.sendTelegramTextMessage(42,args.text,{botKey:'uk-en'});return {status:'delivered',telegramMessageId:90}}
   });
@@ -86,18 +87,17 @@ test('retired topic and paging controls cannot read or mutate settings',async()=
     assert.deepEqual(h.state,{level:'a1',reply_mode:'voice'});
   }
 });
-test('commands and reply keyboard open one card directly; old chooser buttons redirect to it',async()=>{
-  for(const text of ['/settings','· ⚙️ Налаштування'])for(const keyboardState of [{},{onboarding_complete_at:'2026-01-01'}]){
+test('reply keyboard opens one editable card; retired slash entries stay unknown and chooser buttons redirect',async()=>{
+  for(const text of ['· ⚙️ Налаштування'])for(const keyboardState of [{},{onboarding_complete_at:'2026-01-01'}]){
     const h=harness();
     const u=buildPreparedUpdate({botKey:'uk-en',input:normalizeTelegramUpdate(messageUpdate({text})),keyboardState});
-    assert.equal(u.route,'command.settings');
+    assert.equal(u.route,'settings.open');
     await h.handlers.find(x=>x.route===u.route)!.execute(u);
     assert.equal(h.calls.length,1);
     assert.equal(h.calls[0].method,'sendRichMessage');
     assert.ok(h.calls[0].body.rich_message);
     assert.equal(h.calls[0].body.reply_markup,undefined); // Keep the card editable in Telegram.
-    assert.equal(h.deliveries.length,text==='/settings'?2:1);
-    if(text==='/settings')assert.deepEqual(h.deliveries[0].replyMarkup,{keyboard:[[{text:u.context.keyboard.settingsButtonText}]],resize_keyboard:true,one_time_keyboard:false});
+    assert.equal(h.deliveries.length,1);
     assert.ok(!JSON.stringify(h.calls).includes('settings:w:'));
   }
   for(const variant of ['r','w']){
@@ -165,7 +165,7 @@ test('Postgres: real settings effects and delivery records survive retries for d
     failEdit=true;await assert.rejects(run(change));await run(change);
     const saved=await pool.query('SELECT * FROM user_bots WHERE chat_id=$1 AND bot_key=$2',[chatId,botKey]);
     assert.equal(saved.rows[0].level,'c1');assert.equal(saved.rows[0].reply_mode,'text');
-    assert.equal((await pool.query("SELECT count(*)::int AS n FROM bot_update_effects WHERE decision_id=$1",[change.decisionId])).rows[0].n,1);
+    assert.equal((await pool.query("SELECT count(*)::int AS n FROM bot_update_effects WHERE decision_id=$1 AND step_key='settings:mutation:v1'",[change.decisionId])).rows[0].n,1);
     const deliveries=await pool.query('SELECT telegram_method FROM bot_update_deliveries WHERE decision_id=ANY($1::text[]) ORDER BY telegram_method',[decisions]);
     assert.deepEqual(deliveries.rows.map(x=>x.telegram_method),['sendRichMessage','sendRichMessage']);
   }finally{
