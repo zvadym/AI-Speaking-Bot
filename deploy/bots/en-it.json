@@ -221,7 +221,11 @@
       "saved": "Changes saved",
       "error": "Could not save. Please try again.",
       "autosave": "Changes are saved automatically"
-    }
+    },
+    "vocab_column_original": "Original",
+    "vocab_column_translation": "Translation",
+    "vocab_column_transcription": "Transcription",
+    "vocab_empty": "No vocabulary items found."
   },
   "telegram_presentation": {
     "name": "Romi 🇮🇹 | Your language tutor",

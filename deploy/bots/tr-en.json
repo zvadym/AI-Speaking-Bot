@@ -221,7 +221,11 @@
       "saved": "Değişiklikler kaydedildi",
       "error": "Kaydedilemedi. Lütfen tekrar dene.",
       "autosave": "Değişiklikler otomatik kaydedilir"
-    }
+    },
+    "vocab_column_original": "Orijinal",
+    "vocab_column_translation": "Çeviri",
+    "vocab_column_transcription": "Fonetik yazım",
+    "vocab_empty": "Kelime bulunamadı."
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | Dil öğretmenin",

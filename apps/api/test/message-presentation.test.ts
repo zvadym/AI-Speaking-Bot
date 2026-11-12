@@ -86,6 +86,7 @@ test('voice attachment and stale translation/hints/vocabulary callbacks preserve
       ai: {} as BotAiClient, effectRunner: effects,
       telegramClient: {
         ...telegram,
+        async callTelegramApi() { throw new Error('unexpected direct API call'); },
         async sendTelegramTextMessage() { throw new Error('unexpected direct send'); },
         async answerTelegramCallbackQuery() {}
       },

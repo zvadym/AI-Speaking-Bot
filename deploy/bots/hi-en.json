@@ -221,7 +221,11 @@
       "saved": "बदलाव सेव हो गए",
       "error": "सेव नहीं हुआ। फिर कोशिश करें।",
       "autosave": "बदलाव अपने आप सेव हो जाते हैं"
-    }
+    },
+    "vocab_column_original": "मूल शब्द",
+    "vocab_column_translation": "अनुवाद",
+    "vocab_column_transcription": "ध्वन्यात्मक लिप्यंतरण",
+    "vocab_empty": "कोई शब्द नहीं मिला।"
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | आपकी भाषा ट्यूटर",

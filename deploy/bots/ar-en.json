@@ -221,7 +221,11 @@
       "saved": "تم حفظ التغييرات",
       "error": "تعذر الحفظ. حاول مجددًا.",
       "autosave": "تُحفظ التغييرات تلقائيًا"
-    }
+    },
+    "vocab_column_original": "الأصل",
+    "vocab_column_translation": "الترجمة",
+    "vocab_column_transcription": "النطق الصوتي",
+    "vocab_empty": "لم يتم العثور على كلمات."
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | معلّمتك اللغوية",

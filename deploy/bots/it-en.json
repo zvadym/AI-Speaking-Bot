@@ -221,7 +221,11 @@
       "saved": "Modifiche salvate",
       "error": "Salvataggio non riuscito. Riprova.",
       "autosave": "Le modifiche vengono salvate automaticamente"
-    }
+    },
+    "vocab_column_original": "Originale",
+    "vocab_column_translation": "Traduzione",
+    "vocab_column_transcription": "Trascrizione",
+    "vocab_empty": "Nessuna parola trovata."
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | La tua tutor di lingua",

@@ -529,6 +529,7 @@ test('support translation callback reuses cached AI effect and edits the source 
     pool: unusedPool,
     getBotLocale: () => ({ translation_header: 'Translation:' }),
     telegramClient: {
+      async callTelegramApi() { throw new Error('unexpected API call'); },
       async sendTelegramTextMessage() { return { message_id: 1 }; },
       async answerTelegramCallbackQuery() {},
       async editTelegramMessageText(chatId, sourceMessageId, text, options) {

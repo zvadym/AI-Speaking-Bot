@@ -221,7 +221,11 @@
       "saved": "Änderungen gespeichert",
       "error": "Speichern fehlgeschlagen. Bitte versuche es erneut.",
       "autosave": "Änderungen werden automatisch gespeichert"
-    }
+    },
+    "vocab_column_original": "Original",
+    "vocab_column_translation": "Übersetzung",
+    "vocab_column_transcription": "Lautschrift",
+    "vocab_empty": "Keine Wörter gefunden."
   },
   "telegram_presentation": {
     "name": "Romi 🇪🇸 | Deine Sprachtrainerin",

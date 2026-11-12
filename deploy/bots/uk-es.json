@@ -221,7 +221,11 @@
       "saved": "Зміни збережено",
       "error": "Не вдалося зберегти. Спробуй ще раз.",
       "autosave": "Зміни зберігаються автоматично"
-    }
+    },
+    "vocab_column_original": "Оригінал",
+    "vocab_column_translation": "Переклад",
+    "vocab_column_transcription": "Транскрипція",
+    "vocab_empty": "Слів не знайдено."
   },
   "telegram_presentation": {
     "name": "Romi 🇪🇸 | Твоя репетиторка з мови",

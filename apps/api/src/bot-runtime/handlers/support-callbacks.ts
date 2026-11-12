@@ -24,6 +24,7 @@ type SupportRoute =
   | 'callback.vocab';
 
 export interface SupportTelegramClient extends TelegramTextClient {
+  callTelegramApi(botKey: string, method: string, body: Record<string, unknown>): Promise<unknown>;
   editTelegramMessageReplyMarkup?(
     chatId: number, messageId: number, replyMarkup: object,
     options: { botKey: string }
@@ -197,17 +198,25 @@ function formatHints(hints: FollowUpHints, locale: Locale): string {
   return blocks.join('\n\n').slice(0, 3900);
 }
 
-function formatVocabulary(items: VocabularyItem[]): string {
-  if (!items.length) return 'No vocabulary items found.';
-  return items.slice(0, 15).map((item) => {
-    const display = item.pos === 'noun'
-      ? [item.article, item.lemma || item.surface].filter(Boolean).join(' ')
-      : item.pos === 'verb'
-        ? item.infinitive || item.lemma || item.surface
-        : item.lemma || item.surface;
-    const ipa = item.transcription ? ` [${escapeTelegramHtmlText(item.transcription)}]` : '';
-    return `• <b>${escapeTelegramHtmlText(display)}</b>${ipa} — ${escapeTelegramHtmlText(item.translation_base)}`;
-  }).join('\n').slice(0, 3900);
+export function formatVocabulary(items: VocabularyItem[], locale: Locale) {
+  if (!items.length) return {blocks: [{type: 'paragraph', text: localeText(locale, 'vocab_empty', 'No vocabulary items found.')} ]};
+  const headers = [
+    localeText(locale, 'vocab_column_original', 'Original'),
+    localeText(locale, 'vocab_column_translation', 'Translation'),
+    localeText(locale, 'vocab_column_transcription', 'Transcription')
+  ];
+  const cells = [headers.map(text => ({text, is_header: true, align: 'left', valign: 'top'})),
+    ...items.slice(0, 15).map(item => {
+      const display = item.pos === 'noun'
+        ? [item.article, item.lemma || item.surface].filter(Boolean).join(' ')
+        : item.pos === 'verb'
+          ? item.infinitive || item.lemma || item.surface
+          : item.lemma || item.surface;
+      return [display, item.translation_base, item.transcription ? `[${item.transcription}]` : '—']
+        .map(text => ({text, align: 'left', valign: 'top'}));
+    })];
+  // Structured plain-text cells preserve IPA and literal markup without HTML parsing.
+  return {blocks: [{type: 'table', is_compact: true, is_striped: true, cells}]};
 }
 
 function translatedMessage(base: string, translation: string, locale: Locale): string {
@@ -440,10 +449,15 @@ export function createSupportCallbackHandlers({
       const outcome = await textDeliverer({
         pool,
         update,
-        telegramClient,
+        telegramClient: {sendTelegramTextMessage: async (chatId) => telegramClient.callTelegramApi(
+          update.botKey, 'sendRichMessage', {
+            chat_id: chatId,
+            rich_message: formatVocabulary(effect.result.items as VocabularyItem[], locale)
+          }
+        ) as Promise<{message_id?: unknown}>},
         stepKey: 'callback.vocab:message:v1',
-        text: formatVocabulary(effect.result.items as VocabularyItem[]),
-        parseMode: 'HTML'
+        telegramMethod: 'sendRichMessage',
+        text: ''
       });
       await markUsed('voc', 2);
       return outcome;
