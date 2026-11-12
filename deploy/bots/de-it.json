@@ -197,7 +197,18 @@
       "cancel": "Abbrechen",
       "feedback_waiting": "Ich warte auf dein Feedback. Antworte unten mit Text oder einer Sprachnachricht.",
       "used": "Genutzt (Min:Sek)",
-      "remaining": "Übrig (Min:Sek)"
+      "remaining": "Übrig (Min:Sek)",
+      "level_descriptions": {
+        "a1": "Kurze Antworten im Praesens. Meist nur 1 wichtige Korrektur.",
+        "a2": "Einfache Vergangenheit und Zukunft. Bis zu 2 grundlegende Grammatik-Fixes.",
+        "b1": "Offenere Antworten. Nuetzliche Korrekturen bei Zeitformen, Artikeln und Praepositionen.",
+        "b2": "Natuerlichere Formulierungen und Kollokationen. 2-4 wertvolle Korrekturen.",
+        "c1": "Nuancierte Antworten. Nur 1-2 fortgeschrittene Korrekturen zu Register oder subtiler Grammatik."
+      },
+      "reply_descriptions": {
+        "text": "Textantworten im Chat. Praktisch, wenn du Korrekturen schnell lesen willst.",
+        "voice": "Sprachantworten, wenn verfuegbar. Besser fuer Hoerrhythmus und Sprechfluss."
+      }
     },
     "vocab_column_original": "Original",
     "vocab_column_translation": "Übersetzung",

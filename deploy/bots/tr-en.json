@@ -197,7 +197,18 @@
       "cancel": "İptal",
       "feedback_waiting": "Geri bildirimini bekliyorum. Aşağıdaki mesajı metin veya sesli mesajla yanıtla.",
       "used": "Kullanılan (dk:sn)",
-      "remaining": "Kalan (dk:sn)"
+      "remaining": "Kalan (dk:sn)",
+      "level_descriptions": {
+        "a1": "Kısa, şimdiki zaman odaklı yanıtlar. Genelde sadece 1 temel düzeltme.",
+        "a2": "Basit geçmiş ve gelecek. En fazla 2 temel dilbilgisi düzeltmesi.",
+        "b1": "Daha açık yanıtlar. Zamanlar, artikeller ve edatlar için faydalı düzeltmeler.",
+        "b2": "Doğal ifade ve kalıp kullanımları. 2-4 yüksek değerli düzeltme.",
+        "c1": "Nüanslı yanıtlar. Üslup ya da ince dilbilgisi için yalnızca 1-2 ileri düzey düzeltme."
+      },
+      "reply_descriptions": {
+        "text": "Sohbette yazılı yanıtlar. Düzeltmeleri hızlıca okumak istediğinde daha iyi.",
+        "voice": "Mümkün olduğunda sesli yanıtlar. Dinleme ritmi ve konuşma akışı için daha iyi."
+      }
     },
     "vocab_column_original": "Orijinal",
     "vocab_column_translation": "Çeviri",

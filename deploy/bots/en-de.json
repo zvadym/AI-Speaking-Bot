@@ -197,7 +197,18 @@
       "cancel": "Cancel",
       "feedback_waiting": "Waiting for your feedback. Reply to the message below with text or a voice note.",
       "used": "Used (min:sec)",
-      "remaining": "Remaining (min:sec)"
+      "remaining": "Remaining (min:sec)",
+      "level_descriptions": {
+        "a1": "Short present-tense replies. Usually 1 key correction only.",
+        "a2": "Simple past and future. Up to 2 basic grammar fixes.",
+        "b1": "More open replies. Useful fixes for tense, articles, and prepositions.",
+        "b2": "Natural phrasing and collocations. 2-4 higher-value corrections.",
+        "c1": "Nuanced replies. Only 1-2 advanced fixes for register or subtle grammar."
+      },
+      "reply_descriptions": {
+        "text": "Text replies in chat. Better when you want to read corrections quickly.",
+        "voice": "Voice replies when available. Better for listening rhythm and speaking flow."
+      }
     },
     "vocab_column_original": "Original",
     "vocab_column_translation": "Translation",

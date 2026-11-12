@@ -117,6 +117,8 @@ This file orients automated agents working in this repo. Keep it accurate as the
   Done deletes the card message. Retired widget queries are acknowledged without mutations
   for queued-update compatibility; do not subscribe to `widget_query` in webhooks.
 - Settings UI labels live in `deploy/bots/*.json` under `locale.settings`.
+  `level_descriptions` and `reply_descriptions` provide the per-option explanations;
+  keep them outside button labels because Telegram truncates multiline button text.
 - Settings cards open and update directly in the authenticated webhook through
   `direct-settings.ts`; keep preference/effect writes and send reservations atomic,
   and serialize rendering with the shared settings lock. Do not retry ambiguous

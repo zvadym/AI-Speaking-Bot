@@ -197,7 +197,18 @@
       "cancel": "Annulla",
       "feedback_waiting": "Aspetto il tuo feedback. Rispondi al messaggio qui sotto con un testo o un messaggio vocale.",
       "used": "Usato (min:sec)",
-      "remaining": "Rimanente (min:sec)"
+      "remaining": "Rimanente (min:sec)",
+      "level_descriptions": {
+        "a1": "Risposte brevi al presente. Di solito solo 1 correzione chiave.",
+        "a2": "Passato e futuro semplici. Fino a 2 correzioni grammaticali di base.",
+        "b1": "Risposte piu aperte. Correzioni utili su tempi, articoli e preposizioni.",
+        "b2": "Frasi piu naturali e collocazioni. 2-4 correzioni di valore.",
+        "c1": "Risposte sfumate. Solo 1-2 correzioni avanzate su registro o grammatica sottile."
+      },
+      "reply_descriptions": {
+        "text": "Risposte testuali in chat. Meglio se vuoi leggere subito le correzioni.",
+        "voice": "Risposte vocali quando disponibili. Meglio per ascolto, ritmo e fluidita."
+      }
     },
     "vocab_column_original": "Originale",
     "vocab_column_translation": "Traduzione",

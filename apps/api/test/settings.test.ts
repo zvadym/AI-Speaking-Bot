@@ -45,8 +45,11 @@ test('all production cards separate the closing action and explain autosave',()=
     const l=settingsLabels(bot.locale);
     const view=settingsView({});
     const blocks=renderSettingsRich(view,l).blocks;
-    assert.deepEqual(blocks.slice(-3),[
-      {type:'divider'},{type:'footer',text:l.autosave},
+    assert.deepEqual(blocks.slice(-5),[
+      {type:'divider'},
+      {type:'buttons',buttons:[{text:'📊 '+l.stats,callback_data:'settings:r:stats'}]},
+      {type:'buttons',buttons:[{text:'✉️ '+l.feedback,callback_data:'settings:r:feedback'}]},
+      {type:'divider'},
       {type:'buttons',buttons:[{text:l.done,callback_data:'settings:r:close'}]}
     ]);
     assert.ok(bot.locale.settings.autosave,file);
@@ -126,7 +129,9 @@ test('done deletes the card for every production bot; historical back buttons st
   }
   const h=harness();
   h.state.level='b2';await h.run('settings:r:home');
-  assert.ok(JSON.stringify(h.calls.at(-1)!.body.rich_message).includes('✓ B2'));
+  const rich=h.calls.at(-1)!.body.rich_message as {blocks:Array<{buttons?:Array<{text:string;style?:string;callback_data:string}>}>};
+  const selected=rich.blocks.flatMap(b=>b.buttons||[]).find(b=>b.callback_data==='settings:r:level:b2');
+  assert.equal(selected?.text,'B2');assert.equal(selected?.style,'primary');
   assert.equal(h.mutations(),0);
 });
 test('contended settings locks release the connection immediately instead of starving the pool',async()=>{
