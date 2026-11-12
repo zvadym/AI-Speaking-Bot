@@ -1,5 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
 import type { PreparedUpdate } from './contracts.js';
+import { buildPersistentReplyMarkup } from './keyboard-state.js';
 
 export interface FeedbackRequest extends Record<string, unknown> {
   session_id: string;
@@ -33,7 +34,15 @@ export async function cancelFeedbackRequests(client: PoolClient, update: Prepare
        AND ($3::bigint IS NULL OR card_message_id=$3) AND created_at<=(SELECT created_at FROM bot_update_executions WHERE decision_id=$4)
      RETURNING prompt_message_id::text`,
     [update.input.chatId,update.botKey,update.route==='settings.open'?null:update.input.callbackQuery?.messageId||null,update.decisionId]);
-  return {cancelledPromptIds:result.rows.map(r=>Number(r.prompt_message_id)).filter(Boolean)};
+  return {cancelledCount:result.rows.length,cancelledPromptIds:result.rows.map(r=>Number(r.prompt_message_id)).filter(Boolean)};
+}
+
+// Call under the shared settings lock. An old reply/retry must not replace the
+// ForceReply interface belonging to a newer request, even on another card.
+export async function feedbackExitReplyMarkup(pool: Pool, update: PreparedUpdate) {
+  const active=await pool.query(`SELECT 1 FROM pending_feedback WHERE chat_id=$1 AND bot_key=$2
+    AND status='awaiting' AND expires_at>NOW() LIMIT 1`,[update.input.chatId,update.botKey]);
+  return active.rows.length ? null : buildPersistentReplyMarkup(update.context.keyboard);
 }
 
 export async function loadFeedbackRequest(pool: Pool, sessionId: string) {

@@ -5,7 +5,7 @@ import { runBotUpdateEffect } from '../effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
 import { BOT_RUNTIME_HANDLER_VERSIONS } from '../route-flags.js';
 import { deliverTelegramText, type TelegramTextClient } from '../telegram-text-delivery.js';
-import { lockFeedbackReply } from '../feedback-session.js';
+import { lockFeedbackReply,feedbackExitReplyMarkup } from '../feedback-session.js';
 import { withSettingsLock } from './settings.js';
 import { fetchKeyboardState } from '../context-loader.js';
 import { settingsView } from '../settings-model.js';
@@ -34,8 +34,9 @@ export function createFeedbackMessageHandler(route:FeedbackRoute,{
     const locale=getBotLocale(update.botKey);
     if(route==='feedback.expired'||route==='pending_feedback.unsupported'){
       const key=route==='feedback.expired'?'msg_feedback_expired':'msg_feedback_unsupported';
-      return textDeliverer({pool,update,telegramClient,stepKey:`${route}:notice:v1`,
-        text:text(locale,key,route==='feedback.expired'?'This feedback request has ended. Open Settings to send a new one.':'Please reply with text or a voice note.')});
+      return lock(pool,`settings:${update.botKey}:${chatId}`,async()=>textDeliverer({pool,update,telegramClient,stepKey:`${route}:notice:v1`,
+        replyMarkup:route==='feedback.expired'?await feedbackExitReplyMarkup(pool,update):null,
+        text:text(locale,key,route==='feedback.expired'?'This feedback request has ended. Open Settings to send a new one.':'Please reply with text or a voice note.')}));
     }
     return lock(pool,`settings:${update.botKey}:${chatId}`,async()=>{
       const effect=await effectRunner(pool,{decisionId:update.decisionId,stepKey:`${route}:state:v2`,execute:async client=>{
@@ -64,6 +65,7 @@ export function createFeedbackMessageHandler(route:FeedbackRoute,{
         }
       }
       return textDeliverer({pool,update,telegramClient,stepKey:`${route}:${effect.result.outcome}:v2`,
+        replyMarkup:await feedbackExitReplyMarkup(pool,update),
         text:effect.result.outcome==='saved'?text(locale,'msg_feedback_thanks','Thanks, your feedback was received.')
           :text(locale,'msg_feedback_expired','This feedback request has ended. Open Settings to send a new one.')});
     });

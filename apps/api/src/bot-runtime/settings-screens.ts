@@ -1,7 +1,8 @@
 import type { Pool } from 'pg';
 import type { PreparedUpdate } from './contracts.js';
 import { runBotUpdateEffect } from './effect-repository.js';
-import { startFeedbackRequest,cancelFeedbackRequests,loadFeedbackRequest } from './feedback-session.js';
+import { startFeedbackRequest,cancelFeedbackRequests,loadFeedbackRequest,feedbackExitReplyMarkup } from './feedback-session.js';
+import { settingsLabels } from './settings-views.js';
 import { deliverTelegramText } from './telegram-text-delivery.js';
 import { loadStatsContext } from './stats-context.js';
 import type { SettingsAction, SettingsView } from './settings-model.js';
@@ -39,6 +40,14 @@ export async function prepareSettingsScreen({pool,update,action,view,locale,api}
     execute:client=>cancelFeedbackRequests(client,update)});
   await deletePrompts(api,update.input.chatId!,effect.result.cancelledPromptIds);
   if(await keepActiveFeedbackView(pool,update,view))return;
+  if(effect.result.cancelledCount||effect.result.cancelledPromptIds.length){
+    const replyMarkup=await feedbackExitReplyMarkup(pool,update);
+    if(replyMarkup)await deliverTelegramText({pool,update,stepKey:'settings:feedback-keyboard:v1',
+      text:settingsLabels(locale).title,replyMarkup,
+      telegramClient:{sendTelegramTextMessage:async(chatId,text,options)=>api('sendMessage',{
+        chat_id:chatId,text,reply_markup:options.replyMarkup
+      }) as Promise<{message_id?:unknown}>}});
+  }
   if(action.kind==='stats'){
     view.screen='stats';
     view.stats=await loadStatsContext(pool,update.input.chatId!);

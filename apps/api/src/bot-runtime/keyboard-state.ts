@@ -46,6 +46,7 @@ export function buildPersistentKeyboardState(
 export function buildPersistentReplyMarkup(keyboard: PersistentKeyboardState) {
   return {
     keyboard: [[{ text: keyboard.settingsButtonText || '· ⚙️ Settings' }]],
+    is_persistent: true,
     resize_keyboard: true,
     one_time_keyboard: false
   };

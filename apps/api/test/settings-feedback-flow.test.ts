@@ -71,6 +71,14 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
   assert.equal((await message('Wrong reply',Number(request.prompt_message_id)+100)).route,'message.text');
   const reply=await message('/start is broken',Number(request.prompt_message_id));assert.equal(reply.route,'pending_feedback.text');
   await run(reply);await run(reply);
+  const keyboardRestorations=()=>calls.filter(c=>c.method==='sendMessage'&&(c.body.replyMarkup||c.body.reply_markup)?.keyboard);
+  const assertSettingsKeyboard=()=>{
+   const markup=keyboardRestorations().at(-1)?.body;
+   assert.deepEqual((markup?.replyMarkup||markup?.reply_markup)?.keyboard,[[{text:'· ⚙️ Налаштування'}]]);
+   assert.equal((markup?.replyMarkup||markup?.reply_markup)?.is_persistent,true);
+  };
+  assert.equal(keyboardRestorations().length,1,'text acknowledgement restores the settings keyboard once');
+  assertSettingsKeyboard();
   assert.equal(await feedbackCount(),1);assert.equal(wakes,2); // Replays may wake an already durable scanner safely.
   const saved=(await pool.query('SELECT * FROM feedback WHERE chat_id=$1',[chatId])).rows[0];
   assert.equal(saved.feedback_text,'/start is broken');
@@ -82,6 +90,8 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
   const gap=await active();await pool.query('UPDATE pending_feedback SET prompt_message_id=NULL WHERE session_id=$1',[gap.session_id]);
   const voice=await message('',Number(gap.prompt_message_id),true);assert.equal(voice.route,'pending_feedback.voice');
   await run(voice);assert.equal(await feedbackCount(),2);
+  assert.equal(keyboardRestorations().length,2,'voice acknowledgement restores the settings keyboard');
+  assertSettingsKeyboard();
   const audio=(await pool.query("SELECT * FROM feedback WHERE chat_id=$1 AND kind='voice'",[chatId])).rows[0];
   assert.equal(audio.telegram_file_id,'original-voice-id');assert.equal(audio.transcript,null);
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM voice_usage_events WHERE chat_id=$1',[chatId])).rows[0].n,0);
@@ -94,6 +104,8 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
   assert.equal((await active()).session_id,protectedRequest.session_id);
   assert.equal(calls.filter(c=>c.method==='deleteMessage').length,deletesBefore);
   await direct(botKey,callback('settings:r:cancel'));
+  assert.equal(keyboardRestorations().length,3,'Cancel restores the settings keyboard');
+  assertSettingsKeyboard();
 
   // Old failed preference rendering must neither cancel nor hide a newer request.
   const old=callback('settings:r:level:b2');failEdit=true;await assert.rejects(direct(botKey,old));
@@ -107,12 +119,19 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
   const edits=calls.filter(c=>c.method==='editMessageText');
   assert.ok(JSON.stringify(edits.at(-1)!.body.rich_message).includes('settings:r:cancel'));
   assert.equal((await message('Old request',Number(oldPrompt.prompt_message_id))).route,'feedback.expired');
+  const oldReply=await message('Old cancelled request',Number(oldPrompt.prompt_message_id));
+  const restoredBefore=keyboardRestorations().length;
+  await run(oldReply);
+  assert.equal(keyboardRestorations().length,restoredBefore,'an old reply must not replace a newer ForceReply');
+  assert.equal(calls.at(-1)!.body.replyMarkup,null);
   await direct(botKey,callback('settings:r:cancel'));assert.equal(await active(),undefined);
   assert.equal((await message('Cancelled',Number(newer.prompt_message_id))).route,'feedback.expired');
 
   await direct(botKey,callback('settings:r:feedback'));const expired=await active();
   await pool.query("UPDATE pending_feedback SET expires_at=NOW()-INTERVAL '1 second' WHERE session_id=$1",[expired.session_id]);
   const late=await message('Expired reply',Number(expired.prompt_message_id));assert.equal(late.route,'feedback.expired');await run(late);
+  assertSettingsKeyboard();
+  assert.equal(calls.at(-1)!.body.replyMarkup?.is_persistent,true,'expired notice restores the keyboard');
   assert.equal(await feedbackCount(),2);
   // Opening settings explicitly exits a pending feedback request.
   await direct(botKey,callback('settings:r:feedback'));await direct(botKey,button());assert.equal(await active(),undefined);
