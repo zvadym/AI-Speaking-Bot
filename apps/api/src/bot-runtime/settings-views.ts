@@ -9,10 +9,10 @@ export function settingsLabels(locale: unknown): SettingsLabels {
 export function renderSettingsRich(s: SettingsView, l: SettingsLabels): { blocks: object[] } {
   const blocks: object[] = [];
   const heading = (text: string) => blocks.push({type:'paragraph',text:{type:'bold',text}});
-  const row = (buttons: Array<[string,string,boolean?]>) => blocks.push({type:'buttons',buttons:buttons.map(([text,action,selected]) => ({text,callback_data:'settings:r:'+action,...(selected?{style:'primary'}:{})}))});
+  const button = (text:string,action:string,selected?:boolean) => ({text,callback_data:'settings:r:'+action,...(selected?{style:'primary'}:{})});
+  const row = (buttons: Array<[string,string,boolean?]>) => blocks.push({type:'buttons',buttons:buttons.map(([text,action,selected]) => button(text,action,selected))});
   const choice = (title:string,description:string|undefined,action:string,selected:boolean) => {
-    row([[title,action,selected]]);
-    if(description)blocks.push({type:'footer',text:description});
+    blocks.push({type:'paragraph',text:[{type:'button',button:button(title,action,selected)},...(description?[' '+description]:[])]});
   };
   heading('⚙️ '+l.title);
   if (s.e) blocks.push({type:'paragraph',text:l.error});

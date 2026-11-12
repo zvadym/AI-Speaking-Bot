@@ -14,6 +14,12 @@ import { callbackUpdate, messageUpdate } from './fixtures/telegram-updates.js';
 const rawWidget = (data: string) => ({update_id:901,widget_query:{id:'w1',from:{id:42,is_bot:false},chat:{id:42,type:'private'},message_id:80,type:{type:'data'},data}});
 function prepared(data: string, widget=false) {return buildPreparedUpdate({botKey:'uk-en',input:normalizeTelegramUpdate(widget?rawWidget(data):callbackUpdate({data})),keyboardState:{onboarding_complete_at:'2026-01-01'}})}
 const labels = settingsLabels({});
+function richButtons(value:unknown):Array<{text:string;style?:string;callback_data:string}> {
+  if(Array.isArray(value))return value.flatMap(richButtons);
+  if(!value||typeof value!=='object')return [];
+  if('callback_data' in value)return [value as {text:string;style?:string;callback_data:string}];
+  return Object.values(value).flatMap(richButtons);
+}
 
 test('widget envelopes preserve transport and route only settings data; old queued contracts still parse',()=>{
   const update = prepared('settings:w:level:b2',true);
@@ -30,7 +36,7 @@ test('reject invalid and retired controls; cards expose settings, statistics and
   for(const data of ['settings:w:level:c2','settings:r:reply:audio','settings:w:page:-1','settings:r:page:0','settings:w:home:extra','settings:r:topic:free','settings:r:topic:0123456789abcdef','settings:x:home']) assert.throws(()=>parseSettingsAction(data));
   const view=settingsView({level:'b1',reply_mode:'text'});
   assert.equal(view.l,'b1');assert.equal(view.r,'text');
-  const controls=(renderSettingsRich(view,labels).blocks as Array<{buttons?:Array<{callback_data:string}>}>).flatMap(block=>block.buttons||[]);
+  const controls=richButtons(renderSettingsRich(view,labels));
   assert.deepEqual(controls.map(b=>b.callback_data),[
     'settings:r:level:a1','settings:r:level:a2','settings:r:level:b1','settings:r:level:b2','settings:r:level:c1',
     'settings:r:reply:voice','settings:r:reply:text','settings:r:stats','settings:r:feedback','settings:r:close'
@@ -129,8 +135,7 @@ test('done deletes the card for every production bot; historical back buttons st
   }
   const h=harness();
   h.state.level='b2';await h.run('settings:r:home');
-  const rich=h.calls.at(-1)!.body.rich_message as {blocks:Array<{buttons?:Array<{text:string;style?:string;callback_data:string}>}>};
-  const selected=rich.blocks.flatMap(b=>b.buttons||[]).find(b=>b.callback_data==='settings:r:level:b2');
+  const selected=richButtons(h.calls.at(-1)!.body.rich_message).find(b=>b.callback_data==='settings:r:level:b2');
   assert.equal(selected?.text,'B2');assert.equal(selected?.style,'primary');
   assert.equal(h.mutations(),0);
 });
