@@ -1,3 +1,6 @@
+import { judgeCase } from '../scripts/evaluate-conversation-models.js';
+import { structuredResponseFetch } from './fixtures/openai-http.js';
+import { renderLlmPrompt } from '../src/ai/prompts/index.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -52,4 +55,27 @@ test('conversation eval hard checks distinguish valid routes', () => {
 test('percentile uses nearest-rank selection', () => {
   assert.equal(percentile([5, 1, 3, 2, 4], 0.5), 3);
   assert.equal(percentile([5, 1, 3, 2, 4], 0.95), 5);
+});
+
+test('evaluation judge keeps strict schema, blind labels, prompt and usage cost through LangChain', async (t) => {
+  const requests: Array<Record<string, any>> = [];
+  const judgment = { case_id: fixture.cases[0].id, assessments: [], comparisons: [] };
+  t.mock.method(globalThis, 'fetch', structuredResponseFetch(async body => {
+    requests.push(body);
+    return { output_text: JSON.stringify(judgment), usage: {
+      input_tokens: 100, input_tokens_details: { cached_tokens: 20 }, output_tokens: 10, total_tokens: 110
+    } };
+  }));
+  const result = await judgeCase('test-key', fixture.cases[0], [], 0);
+  assert.deepEqual(result.result, judgment);
+  assert.deepEqual(Object.values(result.labelToVariant), ['luna_none', 'luna_low', 'baseline']);
+  assert.equal(result.estimatedCostUsd, (80 * 2.5 + 20 * 0.25 + 10 * 15) / 1_000_000);
+  assert.equal(requests.length, 1);
+  const request = requests[0];
+  assert.equal(request.reasoning.effort, 'low');
+  assert.equal(request.text.format.name, 'conversation_model_eval_judgment');
+  assert.equal(request.text.format.strict, true);
+  assert.equal(request.input[0].content, renderLlmPrompt('evaluation/judge-system'));
+  assert.match(request.input[1].content, /comparisons_requested/);
+  assert.doesNotMatch(request.input[1].content, /luna_none|luna_low|baseline|gpt-/);
 });

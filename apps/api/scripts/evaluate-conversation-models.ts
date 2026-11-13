@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import '../src/private-env.js';
-import OpenAI from 'openai';
+import { requestStructuredResponse } from '../src/ai/models/structured-response.js';
+import { renderLlmPrompt } from '../src/ai/prompts/index.js';
 import { loadBotConfigs } from '../src/bot-configs.js';
 import { createBotAiClient, type ConversationAiResult } from '../src/bot-runtime/bot-ai.js';
 import type { LlmCallEvent } from '../src/bot-runtime/llm-telemetry.js';
@@ -109,21 +110,6 @@ const judgeRates = {
   outputUsd: 15.00
 };
 
-function parseResponseText(response: unknown): string {
-  const payload = response as Record<string, unknown>;
-  if (typeof payload.output_text === 'string' && payload.output_text.trim()) {
-    return payload.output_text.trim();
-  }
-  for (const itemRaw of Array.isArray(payload.output) ? payload.output : []) {
-    const item = itemRaw as Record<string, unknown>;
-    for (const partRaw of Array.isArray(item.content) ? item.content : []) {
-      const part = partRaw as Record<string, unknown>;
-      if (typeof part.text === 'string' && part.text.trim()) return part.text.trim();
-    }
-  }
-  throw new Error('judge_empty_output');
-}
-
 function finiteToken(value: number | null | undefined): number {
   return Number.isSafeInteger(value) && Number(value) >= 0 ? Number(value) : 0;
 }
@@ -227,23 +213,6 @@ const JUDGE_SCHEMA = {
   }
 };
 
-const JUDGE_SYSTEM_PROMPT = `You are evaluating a production language-learning tutor.
-Score each anonymous output independently from 1 (unacceptable) to 5 (excellent):
-- target_language_fidelity: reply language and language-routing behavior are correct;
-- correction_accuracy: mistakes are detected accurately, corrections preserve intent, and voice-like ASR is not over-corrected;
-- level_fit: wording and correction depth fit the learner CEFR level;
-- conversational_usefulness: the reply directly responds, is natural, concise, and advances the conversation without parroting;
-- instruction_compliance: correction vs hint mode, base-language explanation, and formatting rules are respected.
-
-Set critical_failure=true only for a wrong routing/language decision, a materially wrong or invented correction, failure to answer a direct question. A small style preference is not critical.
-
-Production contract semantics:
-- is_target_language=true means the turn remains processable as language practice; it does not claim that detected_language equals the target language.
-- For expected_route=base_mixed, is_target_language=true is required even when detected_language is the base language or mixed.
-- For expected_route=third, is_target_language=false and an empty reply_text are required.
-
-For each requested anonymous pair, choose the materially better output or tie. Do not infer model identity. Evaluate only the supplied case and output. Return exactly the requested JSON schema.`;
-
 async function runVariant(
   variant: ModelVariant,
   testCase: ConversationEvalCase,
@@ -304,8 +273,8 @@ async function runVariant(
   }
 }
 
-async function judgeCase(
-  client: OpenAI,
+export async function judgeCase(
+  apiKey: string,
   testCase: ConversationEvalCase,
   runs: VariantRun[],
   caseIndex: number
@@ -345,24 +314,19 @@ async function judgeCase(
   };
 
   const startedAt = performance.now();
-  const response = await client.responses.create({
+  const response = await requestStructuredResponse<JudgeResult>({
+    apiKey,
     model: judgeModel,
-    reasoning: { effort: 'low' },
-    input: [
-      { role: 'system', content: JUDGE_SYSTEM_PROMPT },
-      { role: 'user', content: JSON.stringify(judgeInput) }
-    ],
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'conversation_model_eval_judgment',
-        strict: true,
-        schema: JUDGE_SCHEMA
-      }
-    }
-  } as never);
+    reasoningEffort: 'low',
+    system: renderLlmPrompt('evaluation/judge-system'),
+    user: JSON.stringify(judgeInput),
+    name: 'conversation_model_eval_judgment',
+    strict: true,
+    schema: JUDGE_SCHEMA,
+    maxRetries: 2
+  });
   const durationMs = Math.round(performance.now() - startedAt);
-  const result = JSON.parse(parseResponseText(response)) as JudgeResult;
+  const result = response.value;
   const usage = response.usage as unknown as {
     input_tokens?: number;
     input_tokens_details?: { cached_tokens?: number };
@@ -496,8 +460,15 @@ async function main() {
   if (dryRun) return;
   if (!process.env.OPENAI_API_KEY?.trim()) throw new Error('missing_openai_api_key');
 
-  const judgeClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const evaluatedCases = [];
+  const judgeApiKey = process.env.OPENAI_API_KEY || '';
+  const evaluatedCases: Array<{
+    case: ConversationEvalCase;
+    runs: VariantRun[];
+    judgment: JudgeResult;
+    labelToVariant: Record<BlindLabel, VariantId>;
+    judgeDurationMs: number;
+    judgeEstimatedCostUsd: number;
+  }> = [];
   let judgeCostUsd = 0;
   let judgeDurationMs = 0;
 
@@ -508,7 +479,7 @@ async function main() {
       runs.push(await runVariant(variant, testCase, botConfigs));
     }
     console.log(`[${caseIndex + 1}/${fixture.cases.length}] ${testCase.id}: judge`);
-    const judgment = await judgeCase(judgeClient, testCase, runs, caseIndex);
+    const judgment = await judgeCase(judgeApiKey, testCase, runs, caseIndex);
     judgeCostUsd += judgment.estimatedCostUsd;
     judgeDurationMs += judgment.durationMs;
     evaluatedCases.push({
@@ -559,7 +530,9 @@ async function main() {
   console.log(`Wrote ${path.relative(rootDir, reportJsonPath)}`);
 }
 
-main().catch((error) => {
-  console.error(sanitizeError(error));
-  process.exitCode = 1;
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(sanitizeError(error));
+    process.exitCode = 1;
+  });
+}

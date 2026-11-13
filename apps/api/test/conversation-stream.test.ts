@@ -1,3 +1,4 @@
+import { requestBody, responsePayload, sseResponse } from './fixtures/openai-http.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { partialConversationReply } from '../src/bot-runtime/conversation-stream.js';
@@ -28,10 +29,10 @@ function streamingClient(events: object[], previews: string[], requests: object[
   return createBotAiClient({
     apiKey: 'test-key', model: 'test-model', supportModel: 'test-model',
     getBotConfig: () => ({ bot_key: 'uk-en', learning_language: 'en', base_language: 'uk' }),
-    createClient: () => ({ responses: { async create(request: object) {
-      requests.push(request);
-      return (async function* () { for (const event of events) yield event; })();
-    } } }) as never
+    fetchImpl: async (input, init) => {
+      requests.push(await requestBody(input, init));
+      return sseResponse(events);
+    }
   }).respond({
     botKey: 'uk-en', level: 'a1', inputMode: 'text', text: 'Hello',
     profileSummary: '', shortSummary: '', history: [],
@@ -39,27 +40,35 @@ function streamingClient(events: object[], previews: string[], requests: object[
   });
 }
 
-test('AI streaming returns the validated final result and produces incremental reply previews', async () => {
-  const value = { detected_language: 'en', is_target_language: true, has_mistakes: false,
-    reply_text: 'Hello there!', explanation_html: '' };
-  const source = JSON.stringify(value);
-  const previews: string[] = [];
-  const requests: Array<{ stream?: boolean }> = [];
-  const result = await streamingClient([
-    ...[...source].map((delta) => ({ type: 'response.output_text.delta', delta })),
-    { type: 'response.completed', response: { output_text: source, usage: { input_tokens: 10, output_tokens: 20 } } }
-  ], previews, requests);
-  assert.equal(requests[0].stream, true);
-  assert.equal(result.reply_text, value.reply_text);
-  assert.ok(previews.length > 2);
-  assert.equal(previews.at(-1), value.reply_text);
-});
+for (const isTargetLanguage of [true, false]) {
+  test(`AI streaming validates final output and gates previews for target language ${isTargetLanguage}`, async () => {
+    const value = { detected_language: 'en', is_target_language: isTargetLanguage, has_mistakes: false,
+      reply_text: 'Hello there!', explanation_html: '' };
+    const source = JSON.stringify(value);
+    const previews: string[] = [];
+    const requests: Array<{ stream?: boolean }> = [];
+    const result = await streamingClient([
+      { type: 'response.created', response: responsePayload({ output: [] }) },
+      { type: 'response.output_item.added', output_index: 0, item: { id: 'msg_fixture', type: 'message', role: 'assistant', content: [] } },
+      ...[...source].map((delta) => ({ type: 'response.output_text.delta', item_id: 'msg_fixture', output_index: 0, content_index: 0, delta })),
+      { type: 'response.completed', response: responsePayload({ output_text: source, usage: { input_tokens: 10, output_tokens: 20 } }) }
+    ], previews, requests);
+    assert.equal(requests[0].stream, true);
+    assert.equal(result.reply_text, value.reply_text);
+    if (isTargetLanguage) {
+      assert.ok(previews.length > 2);
+      assert.equal(previews.at(-1), value.reply_text);
+    } else {
+      assert.deepEqual(previews, []);
+    }
+  });
+}
 
 for (const terminal of ['none', 'response.failed', 'response.incomplete', 'error']) {
   test(`AI stream ${terminal} cannot be committed as a completed reply`, async () => {
     const previews: string[] = [];
     const events: object[] = [{ type: 'response.output_text.delta', delta: '{"is_target_language":true,"reply_text":"Hi' }];
-    if (terminal !== 'none') events.push({ type: terminal });
+    if (terminal !== 'none') events.push({ type: terminal, response: responsePayload({ status: 'incomplete', output: [], incomplete_details: { reason: 'max_output_tokens' } }) });
     await assert.rejects(streamingClient(events, previews, []), /openai_stream_/);
   });
 }

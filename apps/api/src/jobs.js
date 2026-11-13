@@ -3,6 +3,7 @@ import { env } from './env.js';
 import { pool } from './db.js';
 import { loadBotConfigs } from './bot-configs.js';
 import { renderLlmPrompt } from './ai/prompts/index.js';
+import { requestStructuredResponse } from './ai/models/structured-response.js';
 import { captureMessage } from './sentry.js';
 import { sendDiscordEventNotification } from './discord-events.js';
 import { createPublicBotCatalogLookup } from './shared/bot-catalog.js';
@@ -1210,75 +1211,7 @@ function reportWeeklyDigestFallback(context, generationError, fallback, origin) 
   });
 }
 
-function extractResponseJsonSchemaCandidate(payloadJson) {
-  if (!payloadJson || typeof payloadJson !== 'object') {
-    return { text: '', source: 'none' };
-  }
-
-  const directOutputText = String(payloadJson.output_text || '').trim();
-  if (directOutputText) {
-    return { text: directOutputText, source: 'output_text' };
-  }
-
-  if (payloadJson.output_parsed && typeof payloadJson.output_parsed === 'object') {
-    return {
-      text: JSON.stringify(payloadJson.output_parsed),
-      source: 'output_parsed'
-    };
-  }
-
-  const outputItems = Array.isArray(payloadJson.output) ? payloadJson.output : [];
-  for (const item of outputItems) {
-    if (item?.parsed && typeof item.parsed === 'object') {
-      return {
-        text: JSON.stringify(item.parsed),
-        source: 'output_item.parsed'
-      };
-    }
-
-    const contentItems = Array.isArray(item?.content) ? item.content : [];
-    for (const content of contentItems) {
-      if (content?.parsed && typeof content.parsed === 'object') {
-        return {
-          text: JSON.stringify(content.parsed),
-          source: `output_content.${String(content.type || 'parsed')}.parsed`
-        };
-      }
-
-      const blockText = String(content?.text || content?.output_text || content?.value || '').trim();
-      if (blockText) {
-        return {
-          text: blockText,
-          source: `output_content.${String(content.type || 'text')}`
-        };
-      }
-    }
-  }
-
-  return { text: '', source: 'empty' };
-}
-
-function parseResponseJsonSchemaPayload(payloadJson) {
-  const candidate = extractResponseJsonSchemaCandidate(payloadJson);
-  const outputText = String(candidate.text || '').trim();
-  if (!outputText) {
-    throw createAppError('openai_empty_output', 502, `openai_empty_output:${candidate.source}`, { retryable: false });
-  }
-
-  let parsed = null;
-  try {
-    parsed = JSON.parse(outputText);
-  } catch {
-    throw createAppError('openai_invalid_json', 502, `openai_invalid_json:${candidate.source}`, { retryable: false });
-  }
-
-  return {
-    parsed,
-    outputSource: candidate.source
-  };
-}
-
-async function requestReminderResponse({ context, operation, body }) {
+async function requestReminderResponse({ context, operation, system, user, name, schema }) {
   return observeLlmCall({
     trace: {
       chatId: context.chatId,
@@ -1290,29 +1223,26 @@ async function requestReminderResponse({ context, operation, body }) {
     reasoningEffort: env.reminderLlmReasoningEffort,
     record: recordLlmCall,
     call: async () => {
-      const response = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.openaiApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ...body, reasoning: { effort: env.reminderLlmReasoningEffort } })
-      });
-
-      let payloadJson = null;
       try {
-        payloadJson = await response.json();
-      } catch {
-        payloadJson = null;
+        return await requestStructuredResponse({
+          apiKey: env.openaiApiKey,
+          model: env.reminderLlmModel,
+          reasoningEffort: env.reminderLlmReasoningEffort,
+          system, user, name, schema,
+          strict: true,
+          maxRetries: 0
+        });
+      } catch (error) {
+        if (typeof error?.status === 'number') {
+          const detail = sanitizeErrorText(error?.error?.message || `openai_http_${error.status}`)
+            || `openai_http_${error.status}`;
+          throw createAppError('openai_request_failed', 502, detail, { retryable: error.status >= 500 });
+        }
+        if (error instanceof SyntaxError || error?.message === 'openai_invalid_structured_output') {
+          throw createAppError('openai_invalid_json', 502, 'openai_invalid_json', { retryable: false });
+        }
+        throw error;
       }
-
-      if (!response.ok) {
-        const detail = sanitizeErrorText(payloadJson?.error?.message || `openai_http_${response.status}`)
-          || `openai_http_${response.status}`;
-        throw createAppError('openai_request_failed', 502, detail, { retryable: response.status >= 500 });
-      }
-
-      return payloadJson;
     }
   });
 }
@@ -1358,35 +1288,20 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
   const payloadJson = await requestReminderResponse({
     context,
     operation: 'reminder.weekly_digest',
-    body: {
-      model: env.reminderLlmModel,
-      input: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'weekly_digest_message',
-          strict: true,
-          schema: {
-            type: 'object',
-            properties: {
-              message_text: {
-                type: 'string',
-                minLength: 1,
-                maxLength: WEEKLY_DIGEST_MESSAGE_MAX_LEN
-              }
-            },
-            required: ['message_text'],
-            additionalProperties: false
-          }
-        }
-      }
+    system: systemPrompt,
+    user: userPrompt,
+    name: 'weekly_digest_message',
+    schema: {
+      type: 'object',
+      properties: {
+        message_text: { type: 'string', minLength: 1, maxLength: WEEKLY_DIGEST_MESSAGE_MAX_LEN }
+      },
+      required: ['message_text'],
+      additionalProperties: false
     }
   });
 
-  const { parsed, outputSource } = parseResponseJsonSchemaPayload(payloadJson);
+  const parsed = payloadJson.value;
 
   const validation = validateWeeklyDigestMessageText(String(parsed?.message_text || '').trim(), context);
   if (!validation.ok) {
@@ -1396,9 +1311,9 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
   return {
     messageText: validation.messageText,
     source: 'llm',
-    outputSource,
+    outputSource: 'output_content.output_text',
     model: String(payloadJson?.model || env.reminderLlmModel || '').trim() || env.reminderLlmModel,
-    responseId: String(payloadJson?.id || '').trim() || null,
+    responseId: payloadJson.responseId,
     usage: payloadJson?.usage || null,
     taskType
   };
@@ -3840,42 +3755,27 @@ async function generateWinbackMessageWithLlm(context, taskType) {
   const payloadJson = await requestReminderResponse({
     context,
     operation: 'reminder.winback',
-    body: {
-      model: env.reminderLlmModel,
-      input: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'winback_message',
-          strict: true,
-          schema: {
-            type: 'object',
-            properties: {
-              message_text: {
-                type: 'string',
-                minLength: 1,
-                maxLength: WINBACK_MESSAGE_MAX_LEN
-              }
-            },
-            required: ['message_text'],
-            additionalProperties: false
-          }
-        }
-      }
+    system: systemPrompt,
+    user: userPrompt,
+    name: 'winback_message',
+    schema: {
+      type: 'object',
+      properties: {
+        message_text: { type: 'string', minLength: 1, maxLength: WINBACK_MESSAGE_MAX_LEN }
+      },
+      required: ['message_text'],
+      additionalProperties: false
     }
   });
 
-  const { parsed, outputSource } = parseResponseJsonSchemaPayload(payloadJson);
+  const parsed = payloadJson.value;
 
   return {
     messageText: String(parsed?.message_text || '').trim(),
     source: 'llm',
-    outputSource,
+    outputSource: 'output_content.output_text',
     model: String(payloadJson?.model || env.reminderLlmModel || '').trim() || env.reminderLlmModel,
-    responseId: String(payloadJson?.id || '').trim() || null,
+    responseId: payloadJson.responseId,
     usage: payloadJson?.usage || null,
     taskType
   };

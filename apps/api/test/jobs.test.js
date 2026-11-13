@@ -1,3 +1,4 @@
+import { requestBody } from './fixtures/openai-http.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -1063,116 +1064,140 @@ test('automated weekly digest skips users active in the last 8 hours', async () 
   assert.equal(telegramCalled, false);
 });
 
-test('admin weekly digest reads structured Responses API output when output_text is empty', async () => {
-  const originalOpenAiKey = env.openaiApiKey;
-  const telegramBodies = [];
-  env.openaiApiKey = 'test-openai-key';
+for (const providerCase of ['success', 'rate_limit', 'server_error', 'malformed']) {
+  test(`admin weekly digest handles provider ${providerCase} without retries or duplicate sends`, async () => {
+    const originalOpenAiKey = env.openaiApiKey;
+    const telegramBodies = [];
+    let providerRequests = 0;
+    const telemetryRows = [];
+    env.openaiApiKey = 'test-openai-key';
 
-  try {
-    await withMockedQuery(async (source, params = []) => {
-      if (source.includes('COALESCE(week_stats.practice_days, 0)::int AS practice_days')) {
-        assert.equal(params[0], 56);
-        assert.equal(params[1], 'en-de');
-        return {
-          rows: [{
-            chat_id: 56,
-            first_name: 'Mira',
-            username: 'mira',
-            inactive_reason: null,
-            bot_key: 'en-de',
-            is_active: true,
-            level: 'a2',
-            reply_mode: 'text',
-            last_seen_at: '2026-03-09T10:00:00.000Z',
+    try {
+      await withMockedQuery(async (source, params = []) => {
+        if (source.includes('COALESCE(week_stats.practice_days, 0)::int AS practice_days')) {
+          assert.equal(params[0], 56);
+          assert.equal(params[1], 'en-de');
+          return {
+            rows: [{
+              chat_id: 56,
+              first_name: 'Mira',
+              username: 'mira',
+              inactive_reason: null,
+              bot_key: 'en-de',
+              is_active: true,
+              level: 'a2',
+              reply_mode: 'text',
+              last_seen_at: '2026-03-09T10:00:00.000Z',
 
-            profile_summary: 'Likes short practical prompts',
-            short_summary: 'Consistent learner',
-            onboarding_sent_at: '2026-03-01T09:00:00.000Z',
+              profile_summary: 'Likes short practical prompts',
+              short_summary: 'Consistent learner',
+              onboarding_sent_at: '2026-03-01T09:00:00.000Z',
 
-            practice_days: 4
-          }]
-        };
-      }
+              practice_days: 4
+            }]
+          };
+        }
 
-      if (source.includes('INSERT INTO scheduled_task_dispatches (')) {
-        return { rowCount: 1, rows: [] };
-      }
+        if (source.includes('INSERT INTO scheduled_task_dispatches (')) {
+          return { rowCount: 1, rows: [] };
+        }
 
-      if (source.includes('UPDATE scheduled_task_dispatches')) {
-        return { rowCount: 1, rows: [] };
-      }
+        if (source.includes('UPDATE scheduled_task_dispatches')) {
+          return { rowCount: 1, rows: [] };
+        }
 
-      if (source.includes('UPDATE user_bots')) {
-        return { rowCount: 1, rows: [] };
-      }
+        if (source.includes('UPDATE user_bots')) {
+          return { rowCount: 1, rows: [] };
+        }
 
-      if (source.includes('UPDATE users')) {
-        return { rowCount: 1, rows: [] };
-      }
+        if (source.includes('UPDATE users')) {
+          return { rowCount: 1, rows: [] };
+        }
 
-      throw new Error(`Unexpected query in structured weekly digest test: ${source.slice(0, 200)}`);
-    }, async () => {
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = async (input, init) => {
-        const url = typeof input === 'string' ? input : input?.url || '';
-        if (typeof url === 'string' && url.startsWith('https://api.openai.com/')) {
-          const requestBody = JSON.parse(init.body);
-          assert.equal(requestBody.model, env.reminderLlmModel);
-          assert.deepEqual(requestBody.reasoning, { effort: env.reminderLlmReasoningEffort });
-          assert.doesNotMatch(JSON.stringify(requestBody.input), /weekly_xp|xp_total|streak_current|streak_best|topic_enabled|topic_title|topic_pack_json/);
-          return new Response(
-            JSON.stringify({
-              id: 'resp_test_1',
-              model: 'gpt-5-mini',
-              output: [
-                {
-                  type: 'message',
-                  content: [
-                    {
-                      type: 'output_text',
-                      text: JSON.stringify({
-                        message_text: 'Last week: 4 practice days. Write one short sentence and let\'s continue.'
-                      })
-                    }
-                  ]
-                }
-              ]
-            }),
-            {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
+        if (source.includes('INSERT INTO llm_call_events')) {
+          telemetryRows.push(params);
+          return { rowCount: 1, rows: [] };
+        }
+        throw new Error(`Unexpected query in structured weekly digest test: ${source.slice(0, 200)}`);
+      }, async () => {
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async (input, init) => {
+          const url = typeof input === 'string' ? input : input?.url || '';
+          if (typeof url === 'string' && url.startsWith('https://api.openai.com/')) {
+            providerRequests++;
+            const body = await requestBody(input, init);
+            assert.equal(body.model, env.reminderLlmModel);
+            assert.deepEqual(body.reasoning, { effort: env.reminderLlmReasoningEffort });
+            assert.equal(body.text.format.strict, true);
+            if (providerCase === 'rate_limit' || providerCase === 'server_error') {
+              return new Response(JSON.stringify({ error: { message: 'fixture provider failure' } }), {
+                status: providerCase === 'rate_limit' ? 429 : 500, headers: { 'content-type': 'application/json' }
+              });
             }
-          );
+            if (providerCase === 'malformed') {
+              return new Response(JSON.stringify({ output: [{ type: 'message', content: [{
+                type: 'output_text', text: '{broken', annotations: []
+              }] }] }), { headers: { 'content-type': 'application/json' } });
+            }
+            assert.doesNotMatch(JSON.stringify(body.input), /weekly_xp|xp_total|streak_current|streak_best|topic_enabled|topic_title|topic_pack_json/);
+            return new Response(
+              JSON.stringify({
+                id: 'resp_test_1',
+                model: 'gpt-5-mini',
+                output: [
+                  {
+                    type: 'message',
+                    content: [
+                      {
+                        type: 'output_text',
+                        annotations: [],
+                        text: JSON.stringify({
+                          message_text: 'Last week: 4 practice days. Write one short sentence and let\'s continue.'
+                        })
+                      }
+                    ]
+                  }
+                ]
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              }
+            );
+          }
+          if (typeof url === 'string' && url.startsWith('https://api.telegram.org/')) {
+            telegramBodies.push(JSON.parse(init.body));
+            return okTelegramResponse(906);
+          }
+          return originalFetch(input, init);
+        };
+
+        try {
+          const result = await sendAdminTestWeeklyDigestReminder({
+            chatId: 56,
+            botKey: 'en-de'
+          });
+
+          assert.equal(result.ok, true);
+          assert.equal(result.telegram_message_id, 906);
+          assert.equal(result.message_source, providerCase === 'success' ? 'llm' : 'fallback_template', result.generation_error);
+          assert.equal(result.generation_error, providerCase === 'success' ? null
+            : providerCase === 'malformed' ? 'openai_invalid_json' : 'fixture provider failure');
+          if (providerCase === 'success') assert.equal(result.llm_response_id, 'resp_test_1');
+          assert.doesNotMatch(result.message_text, /XP|118/);
+          assert.match(result.message_text, /\b4\b/);
+        } finally {
+          globalThis.fetch = originalFetch;
         }
-        if (typeof url === 'string' && url.startsWith('https://api.telegram.org/')) {
-          telegramBodies.push(JSON.parse(init.body));
-          return okTelegramResponse(906);
-        }
-        return originalFetch(input, init);
-      };
+      });
 
-      try {
-        const result = await sendAdminTestWeeklyDigestReminder({
-          chatId: 56,
-          botKey: 'en-de'
-        });
-
-        assert.equal(result.ok, true);
-        assert.equal(result.telegram_message_id, 906);
-        assert.equal(result.message_source, 'llm', result.generation_error);
-        assert.equal(result.generation_error, null);
-        assert.equal(result.llm_response_id, 'resp_test_1');
-        assert.doesNotMatch(result.message_text, /XP|118/);
-        assert.match(result.message_text, /\b4\b/);
-      } finally {
-        globalThis.fetch = originalFetch;
-      }
-    });
-
-    assert.equal(telegramBodies.length, 1);
-    assert.doesNotMatch(telegramBodies[0].text, /XP|118/);
-    assert.match(telegramBodies[0].text, /\b4\b/);
-  } finally {
-    env.openaiApiKey = originalOpenAiKey;
-  }
-});
+      assert.equal(providerRequests, 1);
+      assert.equal(telemetryRows.length, 1);
+      assert.equal(telegramBodies.length, 1);
+      assert.doesNotMatch(telegramBodies[0].text, /XP|118/);
+      assert.match(telegramBodies[0].text, /\b4\b/);
+    } finally {
+      env.openaiApiKey = originalOpenAiKey;
+    }
+  });
+}

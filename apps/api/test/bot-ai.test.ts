@@ -1,3 +1,4 @@
+import { structuredResponseFetch } from './fixtures/openai-http.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
@@ -12,7 +13,7 @@ test('bot AI renders configured prompts and parses structured Responses output',
   const client = createBotAiClient({
     apiKey: 'test-key',
     model: 'test-model',
-    supportModel: 'test-support-model',
+    supportModel: 'gpt-5-mini-test-support',
     supportReasoningEffort: 'none',
     recordLlmCall: async (event) => { telemetry.push(event); },
     getBotConfig: () => ({
@@ -21,29 +22,25 @@ test('bot AI renders configured prompts and parses structured Responses output',
       base_language: 'uk',
       learning_language: 'en'
     }),
-    createClient: () => ({
-      responses: {
-        async create(input: Record<string, unknown>) {
-          calls.push(input);
-          return {
-            output: [{
-              type: 'message',
-              content: [{
-                type: 'output_text',
-                text: JSON.stringify({ translation_base: 'Привіт' })
-              }]
-            }],
-            usage: {
-              input_tokens: 100,
-              input_tokens_details: { cached_tokens: 20 },
-              output_tokens: 10,
-              output_tokens_details: { reasoning_tokens: 2 },
-              total_tokens: 110
-            }
-          };
+    fetchImpl: structuredResponseFetch(async (input) => {
+      calls.push(input);
+      return {
+        output: [{
+          type: 'message',
+          content: [{
+            type: 'output_text',
+            text: JSON.stringify({ translation_base: 'Привіт' })
+          }]
+        }],
+        usage: {
+          input_tokens: 100,
+          input_tokens_details: { cached_tokens: 20 },
+          output_tokens: 10,
+          output_tokens_details: { reasoning_tokens: 2 },
+          total_tokens: 110
         }
-      }
-    } as never)
+      };
+    })
   });
 
   assert.equal(await client.translate('uk-en', 'Hello', {
@@ -53,7 +50,7 @@ test('bot AI renders configured prompts and parses structured Responses output',
     route: 'callback.translate'
   }), 'Привіт');
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].model, 'test-support-model');
+  assert.equal(calls[0].model, 'gpt-5-mini-test-support');
   assert.deepEqual(calls[0].reasoning, { effort: 'none' });
   const input = calls[0].input as Array<{ content: string }>;
   assert.match(input[0].content, /Teacher/);
@@ -73,7 +70,7 @@ test('bot AI renders configured prompts and parses structured Responses output',
     success: telemetry[0].success
   }, {
     operation: 'support.translate',
-    model: 'test-support-model',
+    model: 'gpt-5-mini-test-support',
     reasoningEffort: 'none',
     decisionId: 'v1:uk-en:1',
     inputTokens: 100,
@@ -92,28 +89,24 @@ test('bot AI applies model policy only to the selected bot key', async () => {
     model: 'default-conversation',
     supportModel: 'default-support',
     getModelPolicy: (botKey) => botKey === 'uk-de'
-      ? { supportModel: 'canary-support', supportReasoningEffort: 'low' }
+      ? { supportModel: 'gpt-5-mini-canary-support', supportReasoningEffort: 'low' }
       : undefined,
     getBotConfig: (botKey) => ({
       bot_key: botKey,
       base_language: botKey.split('-')[0],
       learning_language: botKey.split('-')[1]
     }),
-    createClient: () => ({
-      responses: {
-        async create(input: Record<string, unknown>) {
-          calls.push(input);
-          return { output_text: JSON.stringify({ translation_base: 'ok' }) };
-        }
-      }
-    } as never)
+    fetchImpl: structuredResponseFetch(async (input) => {
+      calls.push(input);
+      return { output_text: JSON.stringify({ translation_base: 'ok' }) };
+    })
   });
 
   await client.translate('uk-en', 'Hello');
   await client.translate('uk-de', 'Hallo');
   assert.deepEqual(calls.map((call) => ({ model: call.model, reasoning: call.reasoning })), [
     { model: 'default-support', reasoning: undefined },
-    { model: 'canary-support', reasoning: { effort: 'low' } }
+    { model: 'gpt-5-mini-canary-support', reasoning: { effort: 'low' } }
   ]);
 });
 
@@ -128,22 +121,18 @@ test('bot AI normalizes HTML breaks and constrains pinned third-language example
       base_language: 'uk',
       learning_language: 'es'
     }),
-    createClient: () => ({
-      responses: {
-        async create(input: Record<string, unknown>) {
-          calls.push(input);
-          return {
-            output_text: JSON.stringify({
-              detected_language: 'en',
-              is_target_language: false,
-              has_mistakes: false,
-              reply_text: '',
-              explanation_html: '<b>Спробуй іспанською</b><BR /><blockquote><code>Quiero planear la ruta.</code></blockquote>'
-            })
-          };
-        }
-      }
-    } as never)
+    fetchImpl: structuredResponseFetch(async (input) => {
+      calls.push(input);
+      return {
+        output_text: JSON.stringify({
+          detected_language: 'en',
+          is_target_language: false,
+          has_mistakes: false,
+          reply_text: '',
+          explanation_html: '<b>Спробуй іспанською</b><BR /><blockquote><code>Quiero planear la ruta.</code></blockquote>'
+        })
+      };
+    })
   });
 
   const result = await client.respond({
@@ -176,22 +165,18 @@ test('bot AI renders Hindi hint labels in the learner base language', async () =
       base_language: 'hi',
       learning_language: 'en'
     }),
-    createClient: () => ({
-      responses: {
-        async create(input: Record<string, unknown>) {
-          calls.push(input);
-          return {
-            output_text: JSON.stringify({
-              detected_language: 'hi',
-              is_target_language: true,
-              has_mistakes: true,
-              reply_text: 'What kind of work will you be doing?',
-              explanation_html: '<b>संकेत</b><blockquote>आप इसे इस तरह कह सकते हैं: <code>I am starting a new job next month.</code></blockquote>'
-            })
-          };
-        }
-      }
-    } as never)
+    fetchImpl: structuredResponseFetch(async (input) => {
+      calls.push(input);
+      return {
+        output_text: JSON.stringify({
+          detected_language: 'hi',
+          is_target_language: true,
+          has_mistakes: true,
+          reply_text: 'What kind of work will you be doing?',
+          explanation_html: '<b>संकेत</b><blockquote>आप इसे इस तरह कह सकते हैं: <code>I am starting a new job next month.</code></blockquote>'
+        })
+      };
+    })
   });
 
   await client.respond({
@@ -331,4 +316,39 @@ test('bot AI supports explicit rollback to whisper-1', async () => {
 
   assert.equal(await client.transcribe('uk-en', Buffer.from('voice')), 'verbatim transcript');
   assert.equal(calls[0].model, 'whisper-1');
+});
+
+test('bot AI preserves support operations and limits onboarding history to the last 20 messages', async () => {
+  const calls: Array<Record<string, any>> = [];
+  const events: LlmCallEvent[] = [];
+  const hints = { question: 'Next?', useful_phrases: [] };
+  const item = { surface: 'book', pos: 'noun', translation_base: 'книга' };
+  const client = createBotAiClient({
+    apiKey: 'test-key', model: 'gpt-5-mini-conversation', supportModel: 'gpt-5-mini-support',
+    conversationReasoningEffort: 'low', supportReasoningEffort: 'none',
+    getBotConfig: () => ({ base_language: 'uk', learning_language: 'en' }),
+    recordLlmCall: async event => { events.push(event); },
+    fetchImpl: structuredResponseFetch(async body => {
+      calls.push(body);
+      const name = body.text.format.name;
+      return { output_text: JSON.stringify(name === 'follow_up_hints_schema' ? hints
+        : name === 'vocab_schema' ? { items: [item] }
+        : { is_target_language: true, reply_text: 'Hi', explanation_html: '', suggested_level: 'a2' }) };
+    })
+  });
+  assert.deepEqual(await client.hints({ botKey: 'uk-en', level: 'a2', userMessage: 'Hi', assistantReply: 'Hello' }), hints);
+  assert.deepEqual(await client.vocabulary('uk-en', 'A book'), [item]);
+  await client.respond({
+    botKey: 'uk-en', level: 'a2', inputMode: 'text', text: 'Hello', profileSummary: '', shortSummary: '',
+    history: Array.from({ length: 25 }, (_, index) => ({ role: 'user', content: `history-${index}-end` })),
+    onboarding: { scenario: 'greeting', prompt: 'Hello', example: 'Hi' }
+  });
+  assert.deepEqual(events.map(event => event.operation), ['support.hints', 'support.vocabulary', 'conversation.respond']);
+  assert.deepEqual(calls.map(body => body.text.format.name), ['follow_up_hints_schema', 'vocab_schema', 'response_onboarding']);
+  assert.deepEqual(calls.map(body => body.reasoning.effort), ['none', 'none', 'low']);
+  assert.ok(calls.every(body => body.text.verbosity === 'low' && body.text.format.strict === undefined));
+  const conversationInput = JSON.stringify(calls[2].input);
+  assert.doesNotMatch(conversationInput, /history-[0-4]-end/);
+  assert.match(conversationInput, /history-5-end/);
+  assert.match(conversationInput, /history-24-end/);
 });

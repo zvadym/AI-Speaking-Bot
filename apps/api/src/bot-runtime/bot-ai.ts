@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { ResponseCreateParamsStreaming } from 'openai/resources/responses/responses.js';
+import { requestStructuredResponse } from '../ai/models/structured-response.js';
 import {
   observeLlmCall,
   type LlmCallRecorder,
@@ -98,23 +98,6 @@ export interface BotAiClient {
   speech(botKey: string, text: string, trace?: LlmTraceContext): Promise<Buffer>;
 }
 
-function responseText(response: unknown): string {
-  const payload = response as UnknownRecord;
-  const direct = String(payload.output_text || '').trim();
-  if (direct) return direct;
-  const output = Array.isArray(payload.output) ? payload.output : [];
-  for (const itemRaw of output) {
-    const item = itemRaw as UnknownRecord;
-    const content = Array.isArray(item.content) ? item.content : [];
-    for (const partRaw of content) {
-      const part = partRaw as UnknownRecord;
-      const text = String(part.text || '').trim();
-      if (text) return text;
-    }
-  }
-  throw new Error('openai_empty_output');
-}
-
 function normalizeConversationHtml(value: unknown): string {
   return String(value || '')
     .replace(/<\s*br\s*\/?\s*>/giu, '\n')
@@ -154,10 +137,10 @@ export function createBotAiClient({
   recordLlmCall?: LlmCallRecorder;
   getModelPolicy?(botKey: string): BotModelPolicyOverride | undefined;
   getBotConfig(botKey: string): UnknownRecord | null;
-  createClient?: (apiKey: string) => Pick<OpenAI, 'responses' | 'audio'>;
+  createClient?: (apiKey: string) => Pick<OpenAI, 'audio'>;
   fetchImpl?: typeof fetch;
 }): BotAiClient {
-  let client: Pick<OpenAI, 'responses' | 'audio'> | null = null;
+  let client: Pick<OpenAI, 'audio'> | null = null;
   const openai = () => {
     if (!apiKey) throw new Error('missing_openai_api_key');
     client ||= createClient(apiKey);
@@ -186,50 +169,27 @@ export function createBotAiClient({
       reasoningEffort,
       record: recordLlmCall,
       call: async () => {
-        const request = {
+        if (!apiKey) throw new Error('missing_openai_api_key');
+        let preview = '';
+        return requestStructuredResponse<UnknownRecord>({
+          apiKey,
           model: selectedModel,
-          ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}),
-          input: [
-            { role: 'system', content: system },
-            { role: 'user', content: user }
-          ],
-          text: {
-            format: {
-              type: 'json_schema',
-              name,
-              schema,
-              verbosity: 'low'
+          reasoningEffort,
+          system,
+          user,
+          name,
+          schema,
+          verbosity: 'low',
+          maxRetries: 2,
+          fetchImpl,
+          ...(onReplyText ? { onText(source: string) {
+            const next = partialConversationReply(source);
+            if (next && next !== preview) {
+              preview = next;
+              onReplyText(next);
             }
-          }
-        };
-        let response;
-        if (onReplyText) {
-          const stream = await openai().responses.create({ ...request, stream: true } as ResponseCreateParamsStreaming);
-          let source = '';
-          let preview = '';
-          for await (const event of stream) {
-            if (event.type === 'response.output_text.delta') {
-              source += event.delta;
-              const next = partialConversationReply(source);
-              if (next && next !== preview) {
-                preview = next;
-                try { onReplyText(next); } catch { /* Preview must not fail inference. */ }
-              }
-            } else if (event.type === 'response.completed') {
-              response = event.response;
-            } else if (event.type === 'response.failed' || event.type === 'response.incomplete' || event.type === 'error') {
-              throw new Error('openai_stream_failed');
-            }
-          }
-          if (!response) throw new Error('openai_stream_incomplete');
-        } else {
-          response = await openai().responses.create(request as never);
-        }
-        const parsed = JSON.parse(responseText(response));
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-          throw new Error('openai_invalid_structured_output');
-        }
-        return { value: parsed as UnknownRecord, usage: response.usage };
+          } } : {})
+        });
       }
     });
     return observed.value;

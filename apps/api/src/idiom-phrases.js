@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createHash } from 'crypto';
-import OpenAI from 'openai';
+import { requestStructuredResponse } from './ai/models/structured-response.js';
 import { renderLlmPrompt } from './ai/prompts/index.js';
 import { normalizeLanguageCode } from './shared/normalization.js';
 import { observeLlmCall } from './bot-runtime/llm-telemetry.js';
@@ -33,21 +33,6 @@ const TRANSLATION_SCHEMA = {
     example_translation: { type: 'string' }
   }
 };
-
-function getClient(apiKey) {
-  return new OpenAI({ apiKey });
-}
-
-function parseResponseOutput(response) {
-  const chunks = [];
-  for (const item of response?.output || []) {
-    for (const content of item?.content || []) {
-      const text = (content?.text || '').toString().trim();
-      if (text) chunks.push(text);
-    }
-  }
-  return chunks.join('\n').trim();
-}
 
 function normalizeTranslationText(value, fallback = '') {
   const text = String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -201,7 +186,8 @@ export async function translateIdiomPhraseEntry({
   baseLanguage,
   entry,
   recordLlmCall,
-  trace
+  trace,
+  fetchImpl = fetch
 }) {
   const normalizedTarget = normalizeLanguageCode(targetLanguage);
   const normalizedBase = normalizeLanguageCode(baseLanguage);
@@ -221,47 +207,33 @@ export async function translateIdiomPhraseEntry({
 
   if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
 
-  const client = getClient(apiKey);
   const response = await observeLlmCall({
     trace: trace || { botKey: 'idiom-catalog', route: 'catalog.idiom.translate' },
     operation: 'idiom.translate',
     model,
     reasoningEffort,
     record: recordLlmCall,
-    call: () => client.responses.create({
+    call: () => requestStructuredResponse({
+      apiKey,
       model,
-      reasoning: { effort: reasoningEffort },
-      input: [
-        {
-          role: 'system',
-          content: renderLlmPrompt('idioms/idiom-translation-system')
-        },
-        {
-          role: 'user',
-          content: JSON.stringify({
-            target_language_code: normalizedTarget,
-            base_language_code: normalizedBase,
-            phrase: entry.phraseText,
-            meaning: entry.meaningText,
-            tone: entry.toneText,
-            example: entry.exampleText
-          })
-        }
-      ],
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'idiom_phrase_translation',
-          schema: TRANSLATION_SCHEMA,
-          verbosity: 'low'
-        }
-      }
+      reasoningEffort,
+      system: renderLlmPrompt('idioms/idiom-translation-system'),
+      user: JSON.stringify({
+        target_language_code: normalizedTarget,
+        base_language_code: normalizedBase,
+        phrase: entry.phraseText,
+        meaning: entry.meaningText,
+        tone: entry.toneText,
+        example: entry.exampleText
+      }),
+      name: 'idiom_phrase_translation',
+      schema: TRANSLATION_SCHEMA,
+      verbosity: 'low',
+      maxRetries: 2,
+      fetchImpl
     })
   });
-
-  const rawText = parseResponseOutput(response);
-  if (!rawText) throw new Error('OpenAI idiom phrase translation returned no text output');
-  const parsed = JSON.parse(rawText);
+  const parsed = response.value;
   return {
     phrase_translation: normalizeTranslationText(parsed?.phrase_translation, entry.phraseText),
     meaning_translation: normalizeTranslationText(parsed?.meaning_translation, entry.meaningText),
