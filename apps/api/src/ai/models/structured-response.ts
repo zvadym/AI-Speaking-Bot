@@ -73,25 +73,31 @@ export async function requestStructuredResponse<T>(input: StructuredResponseInpu
   let message;
   let hasUsage = true;
   if (input.onText) {
-    const stream = model.streamEvents(messages, options);
-    let source = '';
-    let completed = false;
-    for await (const event of stream) {
-      if (event.event === 'content-block-delta' && event.delta.type === 'text-delta') {
-        source += event.delta.text;
-        try { input.onText(source); } catch { /* Preview observers must not fail inference. */ }
-      } else if (event.event === 'provider' && (event.name === 'response.failed' || event.name === 'error')) {
-        throw new Error('openai_stream_failed');
-      } else if (event.event === 'message-finish') {
-        // LangChain also emits message-finish at EOF without a provider terminal event.
-        if (event.reason === 'length' || event.responseMetadata?.status === 'incomplete') {
+    const controller = new AbortController();
+    try {
+      const stream = model.streamEvents(messages, { ...options, signal: controller.signal });
+      let source = '';
+      let completed = false;
+      for await (const event of stream) {
+        if (event.event === 'content-block-delta' && event.delta.type === 'text-delta') {
+          source += event.delta.text;
+          try { input.onText(source); } catch { /* Preview observers must not fail inference. */ }
+        } else if (event.event === 'provider' && (event.name === 'response.failed' || event.name === 'error')) {
           throw new Error('openai_stream_failed');
+        } else if (event.event === 'message-finish') {
+          // LangChain also emits message-finish at EOF without a provider terminal event.
+          if (event.reason === 'length' || event.responseMetadata?.status === 'incomplete') {
+            throw new Error('openai_stream_failed');
+          }
+          completed = event.responseMetadata?.status === 'completed';
         }
-        completed = event.responseMetadata?.status === 'completed';
       }
+      if (!completed) throw new Error('openai_stream_incomplete');
+      message = await stream;
+    } finally {
+      // Closing the event iterator alone leaves LangChain's background reader running.
+      controller.abort();
     }
-    if (!completed) throw new Error('openai_stream_incomplete');
-    message = await stream;
   } else {
     message = await model.invoke(messages, {
       ...options,

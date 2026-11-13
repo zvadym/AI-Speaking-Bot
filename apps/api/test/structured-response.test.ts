@@ -245,6 +245,30 @@ test('structured streaming does not accept valid accumulated JSON without succes
   }
 });
 
+test('structured streaming aborts and cancels an open provider body after a failed event', async () => {
+  let requestSignal: AbortSignal | null | undefined;
+  let cancelled = false;
+  const fetchImpl: typeof fetch = async (_url, init) => {
+    requestSignal = init?.signal;
+    return new Response(new ReadableStream({
+      start(controller) {
+        const events = streamEvents({
+          type: 'response.failed',
+          response: response(outputText, { status: 'failed', error: { code: 'server_error', message: 'failed' } })
+        });
+        controller.enqueue(new TextEncoder().encode(events.map(event =>
+          `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`
+        ).join('')));
+        // Keep the body open: rejecting must stop LangChain's eager background reader.
+      },
+      cancel() { cancelled = true; }
+    }), { headers: { 'content-type': 'text/event-stream' } });
+  };
+  await assert.rejects(requestStructuredResponse(input(fetchImpl, { onText() {} })), /openai_stream_failed/);
+  assert.equal(requestSignal?.aborted, true);
+  assert.equal(cancelled, true);
+});
+
 test('structured streaming rejects malformed final JSON even with a completed terminal event', async () => {
   const http = fixture([() => sseResponse([
     { type: 'response.output_text.delta', output_index: 0, content_index: 0, delta: '{"answer":' },
