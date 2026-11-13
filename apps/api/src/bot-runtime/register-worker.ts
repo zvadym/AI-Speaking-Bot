@@ -1,3 +1,5 @@
+import type { ConversationTelegramClient } from './conversation.js';
+import type { VoiceTelegramClient } from '../ai/graphs/conversation.js';
 import { createSettingsHandlers } from './handlers/settings.js';
 import type { Pool } from 'pg';
 import { parsePreparedUpdateContract, PreparedUpdateContractError } from './contract-validation.js';
@@ -38,14 +40,10 @@ import {
 import { createProgressIndicatorMiddleware } from './progress-middleware.js';
 import { createProgressService, type ProgressTelegramClient } from './progress-service.js';
 import { createMessagePresentationService, type PresentationClient } from './message-presentation.js';
-import {
-  createTextConversationHandler,
-  type ConversationTelegramClient
-} from './handlers/conversation.js';
+import { createTextConversationHandler } from './handlers/conversation.js';
 import {
   createVoiceConversationHandler,
-  createVoiceFeedbackHandler,
-  type VoiceTelegramClient
+  createVoiceFeedbackHandler
 } from './handlers/voice.js';
 
 interface WorkerJob {

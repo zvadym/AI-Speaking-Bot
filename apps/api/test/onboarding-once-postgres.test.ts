@@ -6,7 +6,13 @@ import { createOnboardingStartHandler } from '../src/bot-runtime/handlers/onboar
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import { loadBotConfigs } from '../src/bot-configs.js';
-import { messageUpdate } from './fixtures/telegram-updates.js';
+import { messageUpdate, voice } from './fixtures/telegram-updates.js';
+import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
+import { createVoiceConversationHandler } from '../src/bot-runtime/handlers/voice.js';
+import { claimBotUpdateExecution } from '../src/bot-runtime/execution-repository.js';
+import { getOnboardingLocale } from '../src/bot-runtime/onboarding.js';
+import type { BotAiClient } from '../src/bot-runtime/bot-ai.js';
+import type { EntitlementContext } from '../src/bot-runtime/entitlement-context.js';
 
 const connectionString=process.env.BOT_RUNTIME_TEST_DATABASE_URL;
 test('Postgres: start resumes onboarding once and preserves completed and legacy profiles',{
@@ -61,3 +67,95 @@ test('Postgres: start resumes onboarding once and preserves completed and legacy
     await pool.end();
   }
 });
+
+for (const mode of ['text', 'voice'] as const) {
+  test(`Postgres: ${mode} graph retries after onboarding completion without repeating history, usage or delivered messages`, {
+    skip: connectionString ? false : 'BOT_RUNTIME_TEST_DATABASE_URL is not configured'
+  }, async () => {
+    const pool = new pg.Pool({ connectionString });
+    const chatId = mode === 'text' ? 9900181 : 9900182;
+    const botKey = 'uk-en';
+    const locale = (loadBotConfigs() as Record<string, { locale: unknown }>)[botKey].locale;
+    const onboardingLocale = getOnboardingLocale(locale)!;
+    const input = normalizeTelegramUpdate(messageUpdate({
+      chatId, updateId: chatId,
+      ...(mode === 'text' ? { text: 'I went home.' } : { voice })
+    }));
+    const update = buildPreparedUpdate({ botKey, input });
+    let generations = 0;
+    let transcriptions = 0;
+    let failSuccess = true;
+    const delivered: string[] = [];
+    const ai: BotAiClient = {
+      async respond(input) {
+        generations++;
+        assert.equal(input.onboarding?.scenario, 'freeform');
+        return {
+          detected_language: 'en', is_target_language: true, has_mistakes: true,
+          reply_text: 'Where did you go?', explanation_html: '<b>Correction</b>',
+          suggested_level: 'a2', suggested_level_confidence: 'high'
+        };
+      },
+      async transcribe() { transcriptions++; return 'I went home.'; },
+      async speech() { throw new Error('onboarding must stay text-only'); },
+      async translate() { throw new Error('unexpected translation'); },
+      async hints() { throw new Error('unexpected hints'); },
+      async vocabulary() { throw new Error('unexpected vocabulary'); }
+    };
+    const dependencies = {
+      pool, ai, getBotLocale: () => locale, webappUrl: 'https://example.test/app',
+      quotaGuard: async () => ({ allowed: true as const, context: {} as EntitlementContext }),
+      telegramClient: {
+        async sendTelegramTextMessage(_chat: number, text: string) {
+          if (text === onboardingLocale.success && failSuccess) {
+            failSuccess = false;
+            throw Object.assign(new Error('known server failure'), { telegramStatus: 500 });
+          }
+          delivered.push(text);
+          return { message_id: delivered.length + 100 };
+        },
+        async sendTelegramVoiceMessage() { throw new Error('unexpected voice delivery'); },
+        async downloadTelegramFile() { return Buffer.from('voice'); },
+        async callTelegramApi() { return {}; }
+      }
+    };
+    const handler = mode === 'text'
+      ? createTextConversationHandler(dependencies)
+      : createVoiceConversationHandler(dependencies);
+    try {
+      await bootstrapTelegramUser(pool, {
+        botKey, onboardingEnabledBotKeys: new Set([botKey]),
+        input: normalizeTelegramUpdate(messageUpdate({ chatId, updateId: chatId - 1, text: '/start' }))
+      });
+      await pool.query("UPDATE user_bots SET reply_mode='voice' WHERE chat_id=$1 AND bot_key=$2", [chatId, botKey]);
+      await claimBotUpdateExecution(pool, {
+        contract: update, handlerVersion: handler.version, jobId: '00000000-0000-4000-8000-000000000041'
+      });
+      await assert.rejects(handler.execute(update as never), /telegram_server_error/);
+      const completed = (await pool.query('SELECT * FROM bot_onboarding_sessions WHERE chat_id=$1 AND bot_key=$2', [chatId, botKey])).rows[0];
+      assert.equal(completed.state, 'completed');
+      assert.equal(completed.completion_decision_id, update.decisionId);
+      await handler.execute(update as never);
+      await handler.execute(update as never);
+      assert.equal(generations, 1);
+      assert.equal(transcriptions, mode === 'voice' ? 1 : 0);
+      assert.equal(delivered.length, 4);
+      assert.equal(delivered[0], `${mode === 'text' ? onboardingLocale.text_input_header : onboardingLocale.voice_input_header}\nI went home.`);
+      assert.equal(delivered[1], '<b>Correction</b>');
+      assert.ok(delivered[2].startsWith('Where did you go?'));
+      assert.equal(delivered[3], onboardingLocale.success);
+      assert.equal((await pool.query('SELECT count(*)::int AS n FROM messages WHERE chat_id=$1 AND bot_key=$2', [chatId, botKey])).rows[0].n, 2);
+      assert.equal((await pool.query("SELECT count(*)::int AS n FROM action_events WHERE chat_id=$1 AND action_type='onboarding_completed'", [chatId])).rows[0].n, 1);
+      const usage = (await pool.query('SELECT direction FROM voice_usage_events WHERE chat_id=$1', [chatId])).rows;
+      assert.deepEqual(usage.map((row) => row.direction), mode === 'voice' ? ['in'] : []);
+      const afterRetry = (await pool.query('SELECT * FROM bot_onboarding_sessions WHERE chat_id=$1 AND bot_key=$2', [chatId, botKey])).rows[0];
+      assert.deepEqual(afterRetry, completed);
+    } finally {
+      await pool.query('DELETE FROM bot_update_executions WHERE decision_id=$1', [update.decisionId]);
+      for (const table of ['action_events', 'voice_usage_events', 'usage_hourly', 'bot_onboarding_sessions', 'messages', 'user_bots', 'users']) {
+        await pool.query(`DELETE FROM ${table} WHERE chat_id=$1`, [chatId]);
+      }
+      await pool.end();
+    }
+  });
+}

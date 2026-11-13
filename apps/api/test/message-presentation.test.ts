@@ -4,7 +4,7 @@ import pg from 'pg';
 import type { Pool } from 'pg';
 import { createTelegramClient } from '../src/shared/telegram-delivery.js';
 import { createMessagePresentationService, type PresentationClient, type PresentationKey } from '../src/bot-runtime/message-presentation.js';
-import { conversationReplyMarkup } from '../src/bot-runtime/handlers/conversation.js';
+import { conversationReplyMarkup } from '../src/bot-runtime/conversation.js';
 import { createSupportCallbackHandlers } from '../src/bot-runtime/handlers/support-callbacks.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';

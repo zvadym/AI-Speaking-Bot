@@ -14,7 +14,7 @@ import {
   classifyOnboardingResponseStyle,
   onboardingReplyText,
   suggestedOnboardingLevel
-} from '../src/bot-runtime/handlers/conversation.js';
+} from '../src/bot-runtime/conversation.js';
 import { createOnboardingStartHandler } from '../src/bot-runtime/handlers/onboarding.js';
 import { bootstrapTelegramUser } from '../src/bot-runtime/user-bootstrap.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';

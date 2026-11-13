@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import type { Pool, PoolClient } from 'pg';
 import type { BotAiClient, ConversationAiResult } from '../src/bot-runtime/bot-ai.js';
 import type { PreparedUpdate } from '../src/bot-runtime/contracts.js';
-import type { BotHandlerOutcome } from '../src/bot-runtime/handler-registry.js';
+import { BotRuntimeHandlerError, type BotHandlerOutcome } from '../src/bot-runtime/handler-registry.js';
+import { createBotPipelineRunner } from '../src/bot-runtime/pipeline.js';
+import { createProgressIndicatorMiddleware } from '../src/bot-runtime/progress-middleware.js';
 import type { runBotUpdateEffect } from '../src/bot-runtime/effect-repository.js';
 import type { EntitlementContext } from '../src/bot-runtime/entitlement-context.js';
 import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
@@ -103,7 +105,7 @@ function harness({
   const update = buildPreparedUpdate({
     botKey: 'uk-en', input: normalizeTelegramUpdate(messageUpdate({ voice }))
   }) as PreparedUpdate & { route: 'message.voice' };
-  return { dependencies, update, events, signals, effects, deliveries };
+  return { dependencies, update, events, signals, effects, deliveries, client };
 }
 
 for (const inputMode of ['text', 'voice'] as const) {
@@ -289,4 +291,142 @@ for (const mode of ['text', 'voice'] as const) {
       }
     });
   }
+}
+
+for (const mode of ['text', 'voice'] as const) {
+  test(`${mode} language mismatch stops before reply delivery and TTS`, async () => {
+    const h = harness({ replyMode: 'voice', respond: async () => ({
+      ...response, is_target_language: false, reply_text: '', explanation_html: '<b>Try English.</b>'
+    }) });
+    const handler = mode === 'text'
+      ? createTextConversationHandler(h.dependencies)
+      : createVoiceConversationHandler(h.dependencies);
+    const update = mode === 'text'
+      ? buildPreparedUpdate({ botKey: 'uk-en', input: normalizeTelegramUpdate(messageUpdate({ text: 'Привіт' })) })
+      : h.update;
+    await handler.execute(update as never);
+    assert.ok(h.deliveries.has(`message.${mode}:language-mismatch:v1`));
+    assert.ok(!h.deliveries.has(`message.${mode}:reply:v1`));
+    assert.ok(!h.events.includes('speech'));
+    assert.ok(!h.events.includes('save-assistant'));
+  });
+
+  test(`${mode} graph preserves typed generation errors and stops draft before progress cleanup`, async () => {
+    const failure = new BotRuntimeHandlerError('invalid_tutor_state', { retryable: false });
+    const h = harness({ respond: async (input) => {
+      input.onReplyText?.('Disposable preview');
+      await Promise.resolve();
+      throw failure;
+    } });
+    let draftSignal: AbortSignal | undefined;
+    let draftUpdate: ((text: string) => void) | undefined;
+    let draftCalls = 0;
+    let progressStopped = false;
+    const dependencies = {
+      ...h.dependencies,
+      ai: { ...h.dependencies.ai, async respond(input: Parameters<BotAiClient['respond']>[0]) {
+        draftUpdate = input.onReplyText;
+        return h.dependencies.ai.respond(input);
+      } },
+      telegramClient: { ...h.dependencies.telegramClient,
+        async callTelegramApi(_bot: string, method: string, _body: unknown, options?: { signal?: AbortSignal }) {
+          if (method === 'sendMessageDraft') {
+            draftCalls++;
+            draftSignal = options?.signal;
+            // Model a preview request that finishes only when the draft stops.
+            await new Promise<void>((resolve) => options?.signal?.addEventListener('abort', () => resolve(), { once: true }));
+          }
+          return {};
+        }
+      }
+    };
+    const runner = createBotPipelineRunner([createProgressIndicatorMiddleware({
+      getBotLocale: dependencies.getBotLocale,
+      enabledBotKeys: new Set(['uk-en']),
+      progressService: {
+        async start() { return { sessionId: 'test-session', messageId: 999 }; },
+        async stop() { assert.equal(draftSignal?.aborted, true); progressStopped = true; return true; },
+        async rotate() { throw new Error('unexpected rotation'); },
+        async timeout() { throw new Error('unexpected timeout'); }
+      }
+    })]);
+    const handler = mode === 'text'
+      ? createTextConversationHandler(dependencies)
+      : createVoiceConversationHandler(dependencies);
+    const update = mode === 'text'
+      ? buildPreparedUpdate({ botKey: 'uk-en', input: normalizeTelegramUpdate(messageUpdate({ text: 'Hello' })) })
+      : h.update;
+    await assert.rejects(runner.execute({ handler, update, jobId: 'test-job', attempt: 1 }), (error: unknown) => {
+      assert.equal(error, failure);
+      assert.equal((error as BotRuntimeHandlerError).retryable, false);
+      return true;
+    });
+    assert.equal(progressStopped, true);
+    assert.equal(draftCalls, 1);
+    draftUpdate?.('Must stay stopped');
+    await Promise.resolve();
+    assert.equal(draftCalls, 1);
+    assert.ok(!h.deliveries.has(`message.${mode}:reply:v1`));
+  });
+
+  test(`${mode} shared graph isolates parallel updates, pipeline contexts and draft callbacks`, async () => {
+    let started = 0;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => { release = resolve; });
+    const h = harness({ respond: async (input) => {
+      assert.equal(input.trace?.chatId, input.text === 'first' ? 101 : 102);
+      input.onReplyText?.(`preview ${input.text}`);
+      if (++started === 2) release();
+      await barrier;
+      return { ...response, reply_text: `reply ${input.text}` };
+    } });
+    const previews: Array<Record<string, unknown>> = [];
+    const deliveries: Array<{ chatId: number | null; text: string }> = [];
+    const dependencies = {
+      ...h.dependencies,
+      ai: { ...h.dependencies.ai, async transcribe(_bot: string, audio: Buffer) { return audio.toString(); } },
+      telegramClient: { ...h.dependencies.telegramClient,
+        async downloadTelegramFile(fileId: string) { return Buffer.from(fileId); },
+        async callTelegramApi(_bot: string, method: string, body: Record<string, unknown>) {
+          if (method === 'sendMessageDraft') previews.push(body);
+          return {};
+        }
+      },
+      effectRunner: (async (_pool, input) => ({ duplicate: false, result: await input.execute(h.client) })) as typeof runBotUpdateEffect,
+      async textDeliverer(input: { update: PreparedUpdate; stepKey: string; text: string }) {
+        if (input.stepKey.endsWith(':reply:v1')) deliveries.push({ chatId: input.update.input.chatId, text: input.text });
+        return { status: 'delivered' as const, telegramMessageId: input.update.updateId };
+      }
+    };
+    const contexts: number[] = [];
+    const runner = createBotPipelineRunner([{
+      name: 'isolation-check',
+      async aroundStage(context, stage, next) {
+        assert.equal(stage, 'conversation.generate');
+        assert.equal(context.state.size, 0);
+        context.state.set('chat', context.update.input.chatId);
+        contexts.push(context.update.input.chatId as number);
+        const result = await next();
+        assert.equal(context.state.get('chat'), context.update.input.chatId);
+        return result;
+      }
+    }]);
+    const handler = mode === 'text'
+      ? createTextConversationHandler(dependencies)
+      : createVoiceConversationHandler(dependencies);
+    const updates = ['first', 'second'].map((text, index) => buildPreparedUpdate({
+      botKey: 'uk-en', input: normalizeTelegramUpdate(messageUpdate({
+        updateId: 7000 + index, chatId: 101 + index,
+        ...(mode === 'text' ? { text } : { voice: { ...voice, file_id: text } })
+      }))
+    }));
+    await Promise.all(updates.map((update) => runner.execute({ handler, update, jobId: String(update.updateId), attempt: 1 })));
+    assert.deepEqual(contexts.sort(), [101, 102]);
+    assert.deepEqual(deliveries.sort((a, b) => Number(a.chatId) - Number(b.chatId)), [
+      { chatId: 101, text: 'reply first' }, { chatId: 102, text: 'reply second' }
+    ]);
+    assert.deepEqual(previews.map(({ chat_id, text }) => ({ chat_id, text })).sort((a, b) => Number(a.chat_id) - Number(b.chat_id)), [
+      { chat_id: 101, text: 'preview first' }, { chat_id: 102, text: 'preview second' }
+    ]);
+  });
 }
