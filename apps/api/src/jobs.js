@@ -4,6 +4,7 @@ import { pool } from './db.js';
 import { loadBotConfigs } from './bot-configs.js';
 import { renderLlmPrompt } from './ai/prompts/index.js';
 import { requestStructuredResponse } from './ai/models/structured-response.js';
+import { createNotificationGraph } from './ai/graphs/notifications.js';
 import { captureMessage } from './sentry.js';
 import { sendDiscordEventNotification } from './discord-events.js';
 import { createPublicBotCatalogLookup } from './shared/bot-catalog.js';
@@ -1175,14 +1176,9 @@ function buildWeeklyDigestFallbackMessage(context, taskType) {
     practice_days: context.practiceDays,
     reply_cta_label: context.replyCtaLabel
   }).replace(/\s+/g, ' ').trim();
-  const validation = validateWeeklyDigestMessageText(messageText, context);
-  if (!validation.ok) {
-    return { ok: false, error: validation.error };
-  }
-
   return {
     ok: true,
-    messageText: validation.messageText,
+    messageText,
     source: 'fallback_template',
     templateFamily: family,
     variantIndex
@@ -1303,13 +1299,8 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
 
   const parsed = payloadJson.value;
 
-  const validation = validateWeeklyDigestMessageText(String(parsed?.message_text || '').trim(), context);
-  if (!validation.ok) {
-    throw createAppError('weekly_digest_invalid_llm_output', 502, validation.error, { retryable: false });
-  }
-
   return {
-    messageText: validation.messageText,
+    messageText: String(parsed?.message_text || '').trim(),
     source: 'llm',
     outputSource: 'output_content.output_text',
     model: String(payloadJson?.model || env.reminderLlmModel || '').trim() || env.reminderLlmModel,
@@ -1318,6 +1309,12 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
     taskType
   };
 }
+
+const weeklyDigestGraph = createNotificationGraph({
+  generate: generateWeeklyDigestMessageWithLlm,
+  validate: validateWeeklyDigestMessageText,
+  fallback: buildWeeklyDigestFallbackMessage
+});
 
 async function evaluateWeeklyDigestEligibility({
   chatId,
@@ -1430,36 +1427,21 @@ export async function sendWeeklyDigestReminderCore({
     digest_schedule_key: context.digestScheduleKey
   });
 
-  let generation = null;
-  let generationError = null;
-  try {
-    generation = await generateWeeklyDigestMessageWithLlm(context, taskType);
-  } catch (error) {
-    generationError = sanitizeErrorText(error?.detail || error?.message || String(error)) || 'llm_generation_failed';
-    generation = null;
-  }
-
+  const { generation, generationError, fallbackError } = await weeklyDigestGraph.invoke(
+    { usesLlm: true, generationError: null, fallbackError: null, failure: null },
+    { context: { notification: context, taskType } }
+  );
   if (!generation) {
-    const fallback = buildWeeklyDigestFallbackMessage(context, taskType);
-    if (!fallback.ok) {
-      await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
-        status: 'failed',
-        lastError: generationError || fallback.error || 'weekly_digest_build_failed',
-        payloadJson: {
-          origin,
-          reminder_type: WEEKLY_DIGEST_TASK_TYPE,
-          generation_error: generationError || fallback.error || 'weekly_digest_build_failed'
-        }
-      });
-      throw createAppError(
-        'weekly_digest_build_failed',
-        502,
-        generationError || fallback.error || 'weekly_digest_build_failed',
-        { retryable: false }
-      );
-    }
-    reportWeeklyDigestFallback(context, generationError, fallback, origin);
-    generation = fallback;
+    const error = generationError || fallbackError || 'weekly_digest_build_failed';
+    await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      status: 'failed',
+      lastError: error,
+      payloadJson: { origin, reminder_type: WEEKLY_DIGEST_TASK_TYPE, generation_error: error }
+    });
+    throw createAppError('weekly_digest_build_failed', 502, error, { retryable: false });
+  }
+  if (generation.source !== 'llm') {
+    reportWeeklyDigestFallback(context, generationError, generation, origin);
   }
 
   try {
@@ -3781,6 +3763,12 @@ async function generateWinbackMessageWithLlm(context, taskType) {
   };
 }
 
+const winbackGraph = createNotificationGraph({
+  generate: generateWinbackMessageWithLlm,
+  validate: validateWinbackMessageText,
+  fallback: buildWinbackFallbackMessage
+});
+
 async function evaluateWinbackEligibility({
   chatId,
   botKey,
@@ -3903,62 +3891,23 @@ async function sendWinbackReminderCore({
     reminder_type: reminderType
   });
 
-  let generation = null;
-  let generationError = null;
-  if (stageConfig.usesLlm) {
-    try {
-      generation = await generateWinbackMessageWithLlm(context, taskType);
-      const validation = validateWinbackMessageText(generation.messageText, context);
-      if (!validation.ok) {
-        generationError = validation.error;
-        generation = null;
-      } else {
-        generation.messageText = validation.messageText;
-      }
-    } catch (error) {
-      generationError = sanitizeErrorText(error?.detail || error?.message || String(error)) || 'llm_generation_failed';
-      generation = null;
-    }
-  }
-
+  const { generation, generationError, fallbackError, failure } = await winbackGraph.invoke(
+    { usesLlm: stageConfig.usesLlm, generationError: null, fallbackError: null, failure: null },
+    { context: { notification: context, taskType } }
+  );
   if (!generation) {
-    const fallback = buildWinbackFallbackMessage(context, taskType);
-    if (!fallback.ok) {
-      await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
-        status: 'failed',
-        lastError: generationError || fallback.error || 'llm_generation_failed',
-        payloadJson: {
-          origin,
-          reminder_type: reminderType,
-          generation_error: generationError || fallback.error || 'llm_generation_failed'
-        }
-      });
-      throw createAppError(
-        'llm_generation_failed',
-        502,
-        generationError || fallback.error || 'llm_generation_failed',
-        { retryable: false }
-      );
-    }
-
-    const validation = validateWinbackMessageText(fallback.messageText, context);
-    if (!validation.ok) {
-      await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
-        status: 'failed',
-        lastError: validation.error,
-        payloadJson: {
-          origin,
-          reminder_type: reminderType,
-          generation_error: generationError || validation.error
-        }
-      });
-      throw createAppError('llm_generation_failed', 502, validation.error, { retryable: false });
-    }
-
-    generation = {
-      ...fallback,
-      messageText: validation.messageText
-    };
+    const error = failure === 'validation'
+      ? fallbackError
+      : generationError || fallbackError || 'llm_generation_failed';
+    await finalizeScheduledDispatchAttempt(taskType, normalizedChatId, normalizedBotKey, effectiveScheduleKey, {
+      status: 'failed',
+      lastError: error,
+      payloadJson: {
+        origin, reminder_type: reminderType,
+        generation_error: generationError || error
+      }
+    });
+    throw createAppError('llm_generation_failed', 502, error, { retryable: false });
   }
 
   try {

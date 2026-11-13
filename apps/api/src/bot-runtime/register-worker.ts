@@ -27,10 +27,8 @@ import {
   createOnboardingCallbackHandler,
   createOnboardingStartHandler
 } from './handlers/onboarding.js';
-import {
-  createSupportCallbackHandlers,
-  type SupportTelegramClient
-} from './handlers/support-callbacks.js';
+import { createSupportCallbackHandlers } from './handlers/support-callbacks.js';
+import type { SupportTelegramClient } from './support.js';
 import type { BotAiClient } from './bot-ai.js';
 import {
   createBotPipelineRunner,

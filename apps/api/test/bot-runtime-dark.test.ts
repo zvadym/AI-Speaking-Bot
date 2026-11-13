@@ -677,3 +677,97 @@ test('pre-rollout command and preference jobs are retired without database write
     assert.equal(result,'retired_job',route);
   }
 });
+
+for (const [route, data, stepKey] of [
+  ['callback.translate', 'tr:123:001', 'callback.translate:state:v1'],
+  ['callback.hints', 'hint:123:100', 'callback.hints:state:v1']
+] as const) {
+  test(`support ${route} acknowledges first and reads owned cached content without AI`, async () => {
+    const update = preparedCallback(route, data, 9490);
+    const calls: string[] = [];
+    const markups: unknown[] = [];
+    const client = { async query(sql: string, params: unknown[]) {
+      calls.push('owned-cache');
+      assert.match(sql, /m\.chat_id = \$1/);
+      assert.match(sql, /m\.bot_key = \$2/);
+      assert.match(sql, /m\.role = 'assistant'/);
+      assert.match(sql, /m\.id = \$3/);
+      assert.deepEqual(params, [42, 'uk-en', 123]);
+      return { rows: [{ content: 'Hello', translation_base: 'Привіт',
+        follow_up_hints: JSON.stringify({ question: 'How are you?', useful_phrases: [] }) }] };
+    } } as unknown as PoolClient;
+    const handlers = createSupportCallbackHandlers({
+      pool: unusedPool, getBotLocale: () => ({}), ai: unusedAi,
+      effectRunner: async (_pool, { execute, stepKey: actual }) => {
+        assert.equal(actual, stepKey);
+        return { duplicate: false, result: await execute(client) };
+      },
+      telegramClient: {
+        async callTelegramApi() { throw new Error('unexpected API call'); },
+        async sendTelegramTextMessage() { throw new Error('unexpected direct send'); },
+        async answerTelegramCallbackQuery() { calls.push('ack'); throw new Error('expired callback'); },
+        async editTelegramMessageText(_chat, _id, text, options) {
+          calls.push('edit'); assert.match(text, /Привіт/); markups.push(options?.replyMarkup);
+        },
+        async editTelegramMessageReplyMarkup(_chat, _id, markup) { calls.push('mark'); markups.push(markup); }
+      },
+      textDeliverer: async ({ text, stepKey }) => {
+        calls.push('deliver'); assert.equal(stepKey, 'callback.hints:message:v1');
+        assert.match(text, /How are you/); return { status: 'delivered', telegramMessageId: 10 };
+      }
+    });
+    await handlers.find(handler => handler.route === route)!.execute(update);
+    assert.deepEqual(calls, route === 'callback.translate' ? ['ack', 'owned-cache', 'edit'] : ['ack', 'owned-cache', 'deliver', 'mark']);
+    const buttons = (markups[0] as { inline_keyboard: Array<Array<{ callback_data: string }>> }).inline_keyboard.flat();
+    assert.equal(buttons[0].callback_data, 'busy:1');
+    assert.equal(buttons[route === 'callback.translate' ? 1 : 2].callback_data, 'busy:1');
+  });
+}
+
+test('support acknowledges an unowned assistant callback then rejects permanently before AI or presentation', async () => {
+  const update = preparedCallback('callback.translate', 'tr:123:000', 9491);
+  const calls: string[] = [];
+  const handler = createSupportCallbackHandlers({
+    pool: unusedPool, ai: unusedAi, getBotLocale: () => ({}),
+    effectRunner: async (_pool, { execute }) => ({ duplicate: false, result: await execute({
+      async query() { calls.push('ownership'); return { rows: [] }; }
+    } as unknown as PoolClient) }),
+    telegramClient: {
+      async callTelegramApi() { throw new Error('unexpected API call'); },
+      async sendTelegramTextMessage() { throw new Error('unexpected send'); },
+      async answerTelegramCallbackQuery() { calls.push('ack'); },
+      async editTelegramMessageText() { throw new Error('unowned message must not be edited'); }
+    }
+  }).find(handler => handler.route === update.route)!;
+  await assert.rejects(handler.execute(update), error => error instanceof BotRuntimeHandlerError
+    && error.code === 'assistant_message_not_found' && !error.retryable);
+  assert.deepEqual(calls, ['ack', 'ownership']);
+});
+
+test('transcript translation retains its text-only effect without assistant ownership or presentation', async () => {
+  const update = preparedCallback('callback.transcript_translate', 'trv:not-an-assistant-id', 9492);
+  update.input.callbackQuery!.messageText = 'You said:\nI work here.';
+  const calls: string[] = [];
+  const handler = createSupportCallbackHandlers({
+    pool: unusedPool, getBotLocale: () => ({ user_text_prefix_multiline: 'You said:\n' }),
+    ai: { async translate(botKey, text, trace) {
+      calls.push('translate'); assert.equal(botKey, 'uk-en'); assert.equal(text, 'I work here.');
+      assert.equal(trace?.decisionId, update.decisionId); return 'Я тут працюю.';
+    } } as BotAiClient,
+    effectRunner: async (_pool, { stepKey, execute }) => {
+      assert.equal(stepKey, 'callback.transcript_translate:ai:v1');
+      return { duplicate: false, result: await execute(null as unknown as PoolClient) };
+    },
+    telegramClient: {
+      async callTelegramApi() { throw new Error('unexpected API call'); },
+      async sendTelegramTextMessage() { throw new Error('unexpected send'); },
+      async answerTelegramCallbackQuery() { calls.push('ack'); },
+      async editTelegramMessageText(_chat, _id, text, options) {
+        calls.push('edit'); assert.match(text, /You said:\nI work here\./); assert.match(text, /Я тут працюю/);
+        assert.equal((options?.replyMarkup as any).inline_keyboard[0][0].callback_data, 'busy:1');
+      }
+    }
+  }).find(handler => handler.route === update.route)!;
+  assert.deepEqual(await handler.execute(update), { status: 'noop' });
+  assert.deepEqual(calls, ['ack', 'translate', 'edit']);
+});

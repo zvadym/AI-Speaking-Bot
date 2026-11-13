@@ -30,6 +30,7 @@ const {
   sendAdminTestIdiomPracticeReminder,
   sendIdiomPracticeMorePhrase,
   sendAdminTestWeeklyDigestReminder,
+  sendAdminTestWinbackReminder,
   sendDay1ReturnReminderCore,
   sendIdiomPracticeReminderCore,
   sendWeeklyDigestReminderCore
@@ -1003,13 +1004,13 @@ test('admin weekly digest reminder falls back to localized templates when LLM is
   assert.doesNotMatch(telegramBodies[0].text, /XP|118/);
   assert.match(telegramBodies[0].text, /\b4\b/);
   const events = __getCapturedEventsForTests();
-  assert.ok(events.some((event) =>
+  assert.equal(events.filter((event) =>
     event?.message === 'weekly_digest_llm_fallback'
     && event?.extra?.chat_id === 55
     && event?.tags?.subsystem === 'weekly-digest'
     && event?.tags?.reminder_type === 'weekly_digest'
     && event?.tags?.generation_error === 'missing_openai_api_key'
-  ));
+  ).length, 1);
 });
 
 test('automated weekly digest skips users active in the last 8 hours', async () => {
@@ -1064,7 +1065,7 @@ test('automated weekly digest skips users active in the last 8 hours', async () 
   assert.equal(telegramCalled, false);
 });
 
-for (const providerCase of ['success', 'rate_limit', 'server_error', 'malformed']) {
+for (const providerCase of ['success', 'rate_limit', 'server_error', 'malformed', 'invalid_output']) {
   test(`admin weekly digest handles provider ${providerCase} without retries or duplicate sends`, async () => {
     const originalOpenAiKey = env.openaiApiKey;
     const telegramBodies = [];
@@ -1152,7 +1153,7 @@ for (const providerCase of ['success', 'rate_limit', 'server_error', 'malformed'
                         type: 'output_text',
                         annotations: [],
                         text: JSON.stringify({
-                          message_text: 'Last week: 4 practice days. Write one short sentence and let\'s continue.'
+                          message_text: providerCase === 'invalid_output' ? '<b>4 days</b>' : 'Last week: 4 practice days. Write one short sentence and let\'s continue.'
                         })
                       }
                     ]
@@ -1182,7 +1183,8 @@ for (const providerCase of ['success', 'rate_limit', 'server_error', 'malformed'
           assert.equal(result.telegram_message_id, 906);
           assert.equal(result.message_source, providerCase === 'success' ? 'llm' : 'fallback_template', result.generation_error);
           assert.equal(result.generation_error, providerCase === 'success' ? null
-            : providerCase === 'malformed' ? 'openai_invalid_json' : 'fixture provider failure');
+            : providerCase === 'malformed' ? 'openai_invalid_json'
+            : providerCase === 'invalid_output' ? 'html_not_allowed' : 'fixture provider failure');
           if (providerCase === 'success') assert.equal(result.llm_response_id, 'resp_test_1');
           assert.doesNotMatch(result.message_text, /XP|118/);
           assert.match(result.message_text, /\b4\b/);
@@ -1198,6 +1200,79 @@ for (const providerCase of ['success', 'rate_limit', 'server_error', 'malformed'
       assert.match(telegramBodies[0].text, /\b4\b/);
     } finally {
       env.openaiApiKey = originalOpenAiKey;
+    }
+  });
+}
+
+for (const [reminderType, providerCase] of [['d3', 'success'], ['d3', 'invalid_output'], ['d7', 'rate_limit'], ['d14', 'template_only']]) {
+  test(`winback ${reminderType} ${providerCase} preserves dispatch metadata and sends once`, async () => {
+    const originalOpenAiKey = env.openaiApiKey;
+    const originalFetch = globalThis.fetch;
+    env.openaiApiKey = 'test-openai-key';
+    let providerRequests = 0;
+    let persisted = 0;
+    const telegramBodies = [];
+    const dispatches = [];
+    try {
+      await withMockedQuery(async (source, params = []) => {
+        if (source.includes("last_user.content AS last_user_message_text")) {
+          return { rows: [{ chat_id: 57, bot_key: 'en-de', first_name: 'Mira', is_active: true,
+            level: 'a2', reply_mode: reminderType === 'd14' ? 'voice' : 'text', inactive_reason: null,
+            last_seen_at: '2026-03-01T09:00:00.000Z', last_user_message_at: '2026-03-01T08:00:00.000Z',
+            last_user_message_text: 'I enjoy walking', last_assistant_message_at: '2026-03-01T08:01:00.000Z',
+            last_assistant_message_text: 'Where do you like to walk?' }] };
+        }
+        if (source.includes('SELECT role, content, created_at')) return { rows: [{ role: 'user', content: 'I enjoy walking' }] };
+        if (source.includes('INSERT INTO scheduled_task_dispatches')) return { rows: [], rowCount: 1 };
+        if (source.includes('UPDATE scheduled_task_dispatches')) {
+          dispatches.push({ taskType: params[0], status: params[4], payload: JSON.parse(params[7]) });
+          return { rows: [], rowCount: 1 };
+        }
+        if (source.includes('INSERT INTO llm_call_events')) return { rows: [], rowCount: 1 };
+        if (source.includes('INSERT INTO messages')) {
+          persisted++; assert.equal(params[0], 57); assert.equal(params[2], 'en-de');
+          return { rows: [{ id: 100 }], rowCount: 1 };
+        }
+        if (source.includes('UPDATE user_bots') || source.includes('UPDATE users')) return { rows: [], rowCount: 1 };
+        throw new Error(`Unexpected winback query: ${source.slice(0, 180)}`);
+      }, async () => {
+        globalThis.fetch = async (input, init) => {
+          const url = typeof input === 'string' ? input : input?.url || '';
+          if (url.startsWith('https://api.openai.com/')) {
+            providerRequests++;
+            const body = await requestBody(input, init);
+            assert.equal(body.text.format.name, 'winback_message');
+            if (providerCase === 'rate_limit') return new Response(JSON.stringify({ error: { message: 'fixture provider failure' } }),
+              { status: 429, headers: { 'content-type': 'application/json' } });
+            return new Response(JSON.stringify({ id: 'resp_winback', model: env.reminderLlmModel,
+              output: [{ type: 'message', content: [{ type: 'output_text', annotations: [],
+                text: JSON.stringify({ message_text: providerCase === 'invalid_output' ? '<b>Hello</b>' : '  Ready for a short chat?  ' }) }] }] }),
+              { headers: { 'content-type': 'application/json' } });
+          }
+          if (url.startsWith('https://api.telegram.org/')) {
+            telegramBodies.push(JSON.parse(init.body)); return okTelegramResponse(907);
+          }
+          return originalFetch(input, init);
+        };
+        const result = await sendAdminTestWinbackReminder({ chatId: 57, botKey: 'en-de', reminderType });
+        assert.equal(result.telegram_message_id, 907);
+        assert.equal(result.persisted_to_messages, reminderType === 'd3');
+        assert.equal(result.task_type, `winback_${reminderType}_test`);
+        if (providerCase === 'success') assert.equal(result.message_text, 'Ready for a short chat?');
+        else assert.doesNotMatch(result.message_text, /<b>|fixture provider failure/);
+      });
+      assert.equal(providerRequests, reminderType === 'd14' ? 0 : 1);
+      assert.equal(telegramBodies.length, 1);
+      assert.equal(persisted, reminderType === 'd3' ? 1 : 0);
+      assert.equal(dispatches.length, 1);
+      assert.equal(dispatches[0].status, 'sent');
+      assert.equal(dispatches[0].taskType, `winback_${reminderType}_test`);
+      assert.equal(dispatches[0].payload.message_source, providerCase === 'success' ? 'llm' : 'fallback_template');
+      assert.equal(dispatches[0].payload.llm_response_id, providerCase === 'success' ? 'resp_winback' : null);
+      assert.equal(dispatches[0].payload.persisted_to_messages, reminderType === 'd3');
+    } finally {
+      env.openaiApiKey = originalOpenAiKey;
+      globalThis.fetch = originalFetch;
     }
   });
 }
