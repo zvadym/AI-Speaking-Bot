@@ -6,7 +6,7 @@ import {
   observeLlmCall,
   type LlmCallRecorder,
   type LlmTraceContext
-} from '../../bot-runtime/llm-telemetry.js';
+} from '../../ai/llm-telemetry.js';
 import { transcribeWithScribe } from './scribe-transcription.js';
 
 function transcriptionPrompt(language: string): string {

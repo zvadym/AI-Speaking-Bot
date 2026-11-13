@@ -20,12 +20,12 @@ import {
   resetOnboardingScenario,
   selectOnboardingScenario,
   type OnboardingScenario
-} from '../onboarding.js';
+} from '../onboarding/onboarding.js';
 import { BOT_RUNTIME_HANDLER_VERSIONS } from '../route-flags.js';
 import {
   deliverTelegramText,
   type TelegramTextClient
-} from '../telegram-text-delivery.js';
+} from '../delivery/telegram-text-delivery.js';
 import { buildStaticRouteMessage } from './static-routes.js';
 
 interface OnboardingTelegramClient extends TelegramTextClient {

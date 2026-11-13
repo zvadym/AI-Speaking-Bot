@@ -1,10 +1,10 @@
 import test from 'node:test';
-import { deleteSettingsMessage } from '../src/bot-runtime/settings-message.js';
+import { deleteSettingsMessage } from '../src/bot-runtime/settings/settings-message.js';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import type { Pool, PoolClient } from 'pg';
-import { parseSettingsAction, settingsView, applySettingsAction } from '../src/bot-runtime/settings-model.js';
-import { renderSettingsRich, settingsLabels } from '../src/bot-runtime/settings-views.js';
+import { parseSettingsAction, settingsView, applySettingsAction } from '../src/bot-runtime/settings/settings-model.js';
+import { renderSettingsRich, settingsLabels } from '../src/bot-runtime/settings/settings-views.js';
 import { createSettingsHandlers, withSettingsLock } from '../src/bot-runtime/handlers/settings.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
@@ -149,7 +149,7 @@ test('Postgres: real settings effects and delivery records survive retries for d
   skip: process.env.BOT_RUNTIME_TEST_DATABASE_URL ? false : 'BOT_RUNTIME_TEST_DATABASE_URL is not configured'
 }, async()=>{
   const {default:pg}=await import('pg');
-  const {claimBotUpdateExecution}=await import('../src/bot-runtime/execution-repository.js');
+  const {claimBotUpdateExecution}=await import('../src/bot-runtime/execution/execution-repository.js');
   const pool=new pg.Pool({connectionString:process.env.BOT_RUNTIME_TEST_DATABASE_URL,application_name:'settings-card-test'});
   const chatId=9900088,botKey='uk-en';let id=9800000;const decisions:string[]=[];const sent:string[]=[];
   let failEdit=false;

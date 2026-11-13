@@ -1,11 +1,12 @@
 import './instrument-worker.js';
-import { registerWorkerHandlers, sendIdiomPracticeMorePhrase } from './jobs.js';
+import { registerWorkerHandlers } from './jobs.js';
+import { sendIdiomPracticeMorePhrase } from './idioms/practice.js';
 import { registerBotRuntimeWorker } from './bot-runtime/register-worker.js';
 import { startWorkerBoss, stopWorkerBoss } from './queue.js';
 import { createRuntimeDeps } from './runtime.js';
-import { registerFeedbackNotifications } from './feedback-notifications.js';
-import { createBotAiClient } from './bot-runtime/bot-ai.js';
-import { createLlmCallRecorder } from './bot-runtime/llm-telemetry.js';
+import { registerFeedbackNotifications } from './feedback/notifications.js';
+import { createBotAiClient } from './ai/client.js';
+import { createLlmCallRecorder } from './ai/llm-telemetry.js';
 import { captureException, flushSentry } from './sentry.js';
 
 let stopping = false;

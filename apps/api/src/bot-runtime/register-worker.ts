@@ -1,4 +1,4 @@
-import type { ConversationTelegramClient } from './conversation.js';
+import type { ConversationTelegramClient } from './conversation/conversation.js';
 import type { VoiceTelegramClient } from '../ai/graphs/conversation.js';
 import { createSettingsHandlers } from './handlers/settings.js';
 import type { Pool } from 'pg';
@@ -10,14 +10,14 @@ import {
   markBotUpdateExecutionSucceeded,
   type ExecutionClaimInput,
   type ExecutionClaimResult
-} from './execution-repository.js';
+} from './execution/execution-repository.js';
 import {
   createBotHandlerRegistry,
   normalizeBotRuntimeHandlerError,
   type BotHandlerRegistry
 } from './handler-registry.js';
 import { createFeedbackHandlers } from './handlers/feedback.js';
-import { wakeFeedbackNotifications } from '../feedback-notifications.js';
+import { wakeFeedbackNotifications } from '../feedback/notifications.js';
 import {
   createCallbackActionHandlers,
   type IdiomMoreSender
@@ -29,15 +29,15 @@ import {
 } from './handlers/onboarding.js';
 import { createSupportCallbackHandlers } from './handlers/support-callbacks.js';
 import type { SupportTelegramClient } from './support.js';
-import type { BotAiClient } from './bot-ai.js';
+import type { BotAiClient } from '../ai/client.js';
 import {
   createBotPipelineRunner,
   defaultBotPipelineRunner,
   type BotPipelineRunner
-} from './pipeline.js';
-import { createProgressIndicatorMiddleware } from './progress-middleware.js';
-import { createProgressService, type ProgressTelegramClient } from './progress-service.js';
-import { createMessagePresentationService, type PresentationClient } from './message-presentation.js';
+} from './middleware/pipeline.js';
+import { createProgressIndicatorMiddleware } from './middleware/progress-middleware.js';
+import { createProgressService, type ProgressTelegramClient } from './middleware/progress-service.js';
+import { createMessagePresentationService, type PresentationClient } from './delivery/message-presentation.js';
 import { createTextConversationHandler } from './handlers/conversation.js';
 import {
   createVoiceConversationHandler,

@@ -9,7 +9,7 @@ import {
 import {
   deliverTelegramText,
   type TelegramTextClient
-} from '../telegram-text-delivery.js';
+} from '../delivery/telegram-text-delivery.js';
 
 type Locale = Record<string, unknown>;
 

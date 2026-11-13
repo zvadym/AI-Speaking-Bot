@@ -10,7 +10,7 @@ import {
   validateConversationEvalFixture,
   validateConversationEvalResult,
   type ConversationEvalFixture
-} from '../src/bot-runtime/model-eval.js';
+} from '../src/ai/model-eval.js';
 
 const fixture = JSON.parse(fs.readFileSync(
   path.resolve(import.meta.dirname, '../evals/conversation-balanced-v1.json'),

@@ -1,13 +1,13 @@
 import type { Pool, PoolClient } from 'pg';
 import { escapeTelegramHtmlText } from '../shared/telegram-delivery.js';
-import type { FollowUpHints, VocabularyItem } from './bot-ai.js';
+import type { FollowUpHints, VocabularyItem } from '../ai/client.js';
 import type { PreparedUpdate } from './contracts.js';
 import { BotRuntimeHandlerError } from './handler-registry.js';
-import type { MessagePresentationService } from './message-presentation.js';
+import type { MessagePresentationService } from './delivery/message-presentation.js';
 import {
   classifyTelegramDeliveryError,
   type TelegramTextClient
-} from './telegram-text-delivery.js';
+} from './delivery/telegram-text-delivery.js';
 
 export type Locale = Record<string, unknown>;
 export type SupportRoute =

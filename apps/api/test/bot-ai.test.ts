@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createBotAiClient } from '../src/bot-runtime/bot-ai.js';
-import type { LlmCallEvent } from '../src/bot-runtime/llm-telemetry.js';
+import { createBotAiClient } from '../src/ai/client.js';
+import type { LlmCallEvent } from '../src/ai/llm-telemetry.js';
 
 test('bot AI renders configured prompts and parses structured Responses output', async () => {
   const calls: Array<Record<string, unknown>> = [];

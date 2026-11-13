@@ -6,15 +6,15 @@ import '../src/private-env.js';
 import { requestStructuredResponse } from '../src/ai/models/structured-response.js';
 import { renderLlmPrompt } from '../src/ai/prompts/index.js';
 import { loadBotConfigs } from '../src/bot-configs.js';
-import { createBotAiClient, type ConversationAiResult } from '../src/bot-runtime/bot-ai.js';
-import type { LlmCallEvent } from '../src/bot-runtime/llm-telemetry.js';
+import { createBotAiClient, type ConversationAiResult } from '../src/ai/client.js';
+import type { LlmCallEvent } from '../src/ai/llm-telemetry.js';
 import {
   percentile,
   validateConversationEvalFixture,
   validateConversationEvalResult,
   type ConversationEvalCase,
   type ConversationEvalFixture
-} from '../src/bot-runtime/model-eval.js';
+} from '../src/ai/model-eval.js';
 
 type VariantId = 'baseline' | 'luna_none' | 'luna_low';
 type BlindLabel = 'A' | 'B' | 'C';

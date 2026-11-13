@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
 import {deflateSync} from 'node:zlib';
-import {renderSettingsWidget,encodeWidgetSettings} from '../src/bot-runtime/settings-widget.js';
-import {settingsLabels} from '../src/bot-runtime/settings-views.js';
+import {renderSettingsWidget,encodeWidgetSettings} from '../src/bot-runtime/settings/settings-widget.js';
+import {settingsLabels} from '../src/bot-runtime/settings/settings-views.js';
 
 test('all localized widgets fit Telegram HTML and compressed size limits',()=>{
   const dir=new URL('../../../deploy/bots/',import.meta.url);

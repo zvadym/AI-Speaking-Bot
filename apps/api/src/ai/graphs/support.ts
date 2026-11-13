@@ -1,16 +1,16 @@
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 import type { Pool } from 'pg';
-import type { BotAiClient, FollowUpHints, VocabularyItem } from '../../bot-runtime/bot-ai.js';
+import type { BotAiClient, FollowUpHints, VocabularyItem } from '../client.js';
 import type { PreparedUpdate } from '../../bot-runtime/contracts.js';
-import { runBotUpdateEffect } from '../../bot-runtime/effect-repository.js';
+import { runBotUpdateEffect } from '../../bot-runtime/execution/effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandlerOutcome } from '../../bot-runtime/handler-registry.js';
-import type { MessagePresentationService } from '../../bot-runtime/message-presentation.js';
+import type { MessagePresentationService } from '../../bot-runtime/delivery/message-presentation.js';
 import {
   editMessage, fetchAssistant, formatHints, formatVocabulary, localeRecord, localeText,
   markSupportUsed, messageId, mutateSupportPresentation, parseHints, supportMarkup,
   translatedMessage, type Locale, type SupportTelegramClient
 } from '../../bot-runtime/support.js';
-import { deliverTelegramText } from '../../bot-runtime/telegram-text-delivery.js';
+import { deliverTelegramText } from '../../bot-runtime/delivery/telegram-text-delivery.js';
 
 const SupportState = Annotation.Root({
   update: Annotation<PreparedUpdate>(),

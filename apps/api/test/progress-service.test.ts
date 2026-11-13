@@ -5,7 +5,7 @@ import {
   createProgressService,
   normalizeProgressMessages,
   normalizeProgressText
-} from '../src/bot-runtime/progress-service.js';
+} from '../src/bot-runtime/middleware/progress-service.js';
 
 interface MemoryState {
   chat_id: number;

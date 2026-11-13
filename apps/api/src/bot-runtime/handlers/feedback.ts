@@ -1,15 +1,15 @@
 import type { Pool } from 'pg';
-import { saveFeedback } from '../../feedback-service.js';
+import { saveFeedback } from '../../feedback/service.js';
 import type { PreparedUpdate } from '../contracts.js';
-import { runBotUpdateEffect } from '../effect-repository.js';
+import { runBotUpdateEffect } from '../execution/effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler } from '../handler-registry.js';
 import { BOT_RUNTIME_HANDLER_VERSIONS } from '../route-flags.js';
-import { deliverTelegramText, type TelegramTextClient } from '../telegram-text-delivery.js';
-import { lockFeedbackReply,feedbackExitReplyMarkup } from '../feedback-session.js';
+import { deliverTelegramText, type TelegramTextClient } from '../delivery/telegram-text-delivery.js';
+import { lockFeedbackReply,feedbackExitReplyMarkup } from '../../feedback/session.js';
 import { withSettingsLock } from './settings.js';
 import { fetchKeyboardState } from '../context-loader.js';
-import { settingsView } from '../settings-model.js';
-import { completeFeedbackCard } from '../settings-card-update.js';
+import { settingsView } from '../settings/settings-model.js';
+import { completeFeedbackCard } from '../settings/settings-card-update.js';
 
 type FeedbackRoute='pending_feedback.text'|'pending_feedback.voice'|'pending_feedback.unsupported'|'feedback.expired';
 interface FeedbackClient extends TelegramTextClient {

@@ -5,7 +5,7 @@ import { loadBotConfigs } from './bot-configs.js';
 import { createPublicBotCatalogLookup } from './shared/bot-catalog.js';
 import { createTelegramClient, createTelegramDeliveryState } from './shared/telegram-delivery.js';
 import { createActionEventService } from './shared/action-events.js';
-import { validateOnboardingLocale } from './bot-runtime/onboarding.js';
+import { validateOnboardingLocale } from './bot-runtime/onboarding/onboarding.js';
 
 export function createRuntimeDeps(overrides = {}) {
   const nextEnv = overrides.env || env;

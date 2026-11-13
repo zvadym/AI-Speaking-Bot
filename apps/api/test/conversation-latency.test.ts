@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Pool, PoolClient } from 'pg';
-import type { BotAiClient, ConversationAiResult } from '../src/bot-runtime/bot-ai.js';
+import type { BotAiClient, ConversationAiResult } from '../src/ai/client.js';
 import type { PreparedUpdate } from '../src/bot-runtime/contracts.js';
 import { BotRuntimeHandlerError, type BotHandlerOutcome } from '../src/bot-runtime/handler-registry.js';
-import { createBotPipelineRunner } from '../src/bot-runtime/pipeline.js';
-import { createProgressIndicatorMiddleware } from '../src/bot-runtime/progress-middleware.js';
-import type { runBotUpdateEffect } from '../src/bot-runtime/effect-repository.js';
+import { createBotPipelineRunner } from '../src/bot-runtime/middleware/pipeline.js';
+import { createProgressIndicatorMiddleware } from '../src/bot-runtime/middleware/progress-middleware.js';
+import type { runBotUpdateEffect } from '../src/bot-runtime/execution/effect-repository.js';
 import type { EntitlementContext } from '../src/bot-runtime/entitlement-context.js';
 import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
 import { createVoiceConversationHandler } from '../src/bot-runtime/handlers/voice.js';

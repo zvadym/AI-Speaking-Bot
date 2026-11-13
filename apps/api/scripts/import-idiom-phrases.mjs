@@ -10,9 +10,9 @@ import {
   collectIdiomPracticeBaseLanguages,
   loadIdiomPhraseFiles,
   translateIdiomPhraseEntry
-} from '../dist/idiom-phrases.js';
-import { createLlmCallRecorder } from '../dist/bot-runtime/llm-telemetry.js';
-import { parseModelReasoningEffort } from '../dist/bot-runtime/model-policy.js';
+} from '../dist/idioms/phrases.js';
+import { createLlmCallRecorder } from '../dist/ai/llm-telemetry.js';
+import { parseModelReasoningEffort } from '../dist/ai/models/model-policy.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '../../..');

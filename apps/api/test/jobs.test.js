@@ -14,10 +14,7 @@ process.env.INTERNAL_API_SECRET ??= 'internal-secret';
 process.env.SENTRY_DSN ??= 'https://public@example.ingest.sentry.io/1';
 process.env.SENTRY_TEST_MODE ??= '1';
 
-const [{ pool }, jobsModule] = await Promise.all([
-  import('../src/db.js'),
-  import('../src/jobs.js')
-]);
+const { pool } = await import('../src/db.js');
 const {
   __getCapturedEventsForTests,
   __resetCapturedEventsForTests,
@@ -27,16 +24,10 @@ const { env } = await import('../src/env.js');
 
 ensureSentryInitialized({ processName: 'worker' });
 
-const {
-  sendAdminTestDay1ReturnReminder,
-  sendAdminTestIdiomPracticeReminder,
-  sendIdiomPracticeMorePhrase,
-  sendAdminTestWeeklyDigestReminder,
-  sendAdminTestWinbackReminder,
-  sendDay1ReturnReminderCore,
-  sendIdiomPracticeReminderCore,
-  sendWeeklyDigestReminderCore
-} = jobsModule;
+const { sendAdminTestDay1ReturnReminder, sendDay1ReturnReminderCore } = await import('../src/notifications/day1-return.js');
+const { sendAdminTestIdiomPracticeReminder, sendIdiomPracticeMorePhrase, sendIdiomPracticeReminderCore } = await import('../src/idioms/practice.js');
+const { sendAdminTestWeeklyDigestReminder, sendWeeklyDigestReminderCore } = await import('../src/notifications/weekly-digest.js');
+const { sendAdminTestWinbackReminder } = await import('../src/notifications/winback.js');
 
 async function withMockedQuery(handler, run) {
   const originalQuery = pool.query.bind(pool);

@@ -11,23 +11,23 @@ import {
 import {
   BotUpdateIngestionError,
   ingestBotUpdate
-} from '../src/bot-runtime/ingestion-service.js';
-import { classifyTelegramDeliveryError, deliverTelegramText } from '../src/bot-runtime/telegram-text-delivery.js';
+} from '../src/bot-runtime/execution/ingestion-service.js';
+import { classifyTelegramDeliveryError, deliverTelegramText } from '../src/bot-runtime/delivery/telegram-text-delivery.js';
 import { createCallbackActionHandlers } from '../src/bot-runtime/handlers/callback-actions.js';
 import { createSupportCallbackHandlers } from '../src/bot-runtime/handlers/support-callbacks.js';
 import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
 import { createVoiceConversationHandler } from '../src/bot-runtime/handlers/voice.js';
-import type { BotAiClient } from '../src/bot-runtime/bot-ai.js';
+import type { BotAiClient } from '../src/ai/client.js';
 import { buildStaticRouteMessage } from '../src/bot-runtime/handlers/static-routes.js';
 import { processBotUpdateJob } from '../src/bot-runtime/register-worker.js';
-import type { BotPipelineContext } from '../src/bot-runtime/pipeline.js';
+import type { BotPipelineContext } from '../src/bot-runtime/middleware/pipeline.js';
 import {
   BOT_RUNTIME_HANDLER_VERSIONS,
   parseBotRuntimeRouteFlags
 } from '../src/bot-runtime/route-flags.js';
 import { ROUTES } from '../src/bot-runtime/contracts.js';
-import type { StatsContext } from '../src/bot-runtime/stats-context.js';
-import { buildStatsMessage } from '../src/bot-runtime/stats-message.js';
+import type { StatsContext } from '../src/bot-runtime/settings/stats-context.js';
+import { buildStatsMessage } from '../src/bot-runtime/settings/stats-message.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import { callbackUpdate, messageUpdate, voice } from './fixtures/telegram-updates.js';

@@ -1,5 +1,5 @@
 import { renderLlmPrompt } from './index.js';
-import type { ConversationAiInput } from '../../bot-runtime/bot-ai.js';
+import type { ConversationAiInput } from '../client.js';
 
 type UnknownRecord = Record<string, unknown>;
 

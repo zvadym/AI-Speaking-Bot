@@ -4,7 +4,7 @@ import {
   parseBotModelPolicyOverrides,
   parseModelReasoningEffort,
   resolveBotModelPolicy
-} from '../src/bot-runtime/model-policy.js';
+} from '../src/ai/models/model-policy.js';
 
 test('model policy is dark by default and parses a scoped canary', () => {
   assert.deepEqual(parseBotModelPolicyOverrides('', ['uk-de']), {});

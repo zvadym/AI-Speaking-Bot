@@ -1,7 +1,7 @@
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 import type { Pool } from 'pg';
 import { sanitizeTelegramHtml } from '../../shared/telegram-delivery.js';
-import type { BotAiClient, ConversationAiInput } from '../../bot-runtime/bot-ai.js';
+import type { BotAiClient, ConversationAiInput } from '../client.js';
 import type { PreparedUpdate } from '../../bot-runtime/contracts.js';
 import {
   conversationLocaleText,
@@ -14,18 +14,18 @@ import {
   type ConversationEffectResult,
   type ConversationOnboardingContext,
   type ConversationTelegramClient
-} from '../../bot-runtime/conversation.js';
-import { attachConversationAudio, recordVoiceUsage } from '../../bot-runtime/conversation-audio.js';
-import { findCompletedBotUpdateEffect, runBotUpdateEffect } from '../../bot-runtime/effect-repository.js';
+} from '../../bot-runtime/conversation/conversation.js';
+import { attachConversationAudio, recordVoiceUsage } from '../../bot-runtime/conversation/conversation-audio.js';
+import { findCompletedBotUpdateEffect, runBotUpdateEffect } from '../../bot-runtime/execution/effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandlerOutcome } from '../../bot-runtime/handler-registry.js';
-import { startTelegramTyping } from '../../bot-runtime/immediate-telegram-ack.js';
-import type { MessagePresentationService, PresentationKey } from '../../bot-runtime/message-presentation.js';
-import { buildOnboardingCompletionMarkup } from '../../bot-runtime/onboarding.js';
-import { runBotPipelineStage, type BotPipelineContext } from '../../bot-runtime/pipeline.js';
-import { enforcePracticeQuota, type PracticeQuotaGuard } from '../../bot-runtime/practice-quota.js';
-import { createTelegramDraft } from '../../bot-runtime/telegram-draft.js';
-import { deliverTelegramText } from '../../bot-runtime/telegram-text-delivery.js';
-import type { TelegramVoiceClient } from '../../bot-runtime/telegram-voice-delivery.js';
+import { startTelegramTyping } from '../../bot-runtime/delivery/immediate-telegram-ack.js';
+import type { MessagePresentationService, PresentationKey } from '../../bot-runtime/delivery/message-presentation.js';
+import { buildOnboardingCompletionMarkup } from '../../bot-runtime/onboarding/onboarding.js';
+import { runBotPipelineStage, type BotPipelineContext } from '../../bot-runtime/middleware/pipeline.js';
+import { enforcePracticeQuota, type PracticeQuotaGuard } from '../../bot-runtime/conversation/practice-quota.js';
+import { createTelegramDraft } from '../../bot-runtime/delivery/telegram-draft.js';
+import { deliverTelegramText } from '../../bot-runtime/delivery/telegram-text-delivery.js';
+import type { TelegramVoiceClient } from '../../bot-runtime/delivery/telegram-voice-delivery.js';
 
 export interface VoiceTelegramClient extends ConversationTelegramClient, TelegramVoiceClient {
   downloadTelegramFile(fileId: string, options: { botKey: string }): Promise<Buffer>;

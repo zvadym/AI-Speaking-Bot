@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { sendIdiomPracticeMorePhrase } from '../jobs.js';
-import { createProgressService } from '../bot-runtime/progress-service.js';
+import { sendIdiomPracticeMorePhrase } from '../idioms/practice.js';
+import { createProgressService } from '../bot-runtime/middleware/progress-service.js';
 import {
   BotRuntimeInputError,
   PREPARED_UPDATE_CONTRACT_VERSION
@@ -9,7 +9,7 @@ import { prepareBotUpdate } from '../bot-runtime/prepare-update-service.js';
 import {
   BotUpdateIngestionError,
   ingestBotUpdate
-} from '../bot-runtime/ingestion-service.js';
+} from '../bot-runtime/execution/ingestion-service.js';
 import { normalizeBotKey } from '../shared/normalization.js';
 import { createRequireInternalApi } from '../middleware/internal-api.js';
 import { captureException } from '../sentry.js';

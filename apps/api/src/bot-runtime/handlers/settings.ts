@@ -1,14 +1,14 @@
-import { prepareSettingsScreen } from '../settings-screens.js';
+import { prepareSettingsScreen } from '../settings/settings-screens.js';
 import type { Pool } from 'pg';
 import type { PreparedUpdate } from '../contracts.js';
 import { fetchKeyboardState } from '../context-loader.js';
-import { runBotUpdateEffect } from '../effect-repository.js';
+import { runBotUpdateEffect } from '../execution/effect-repository.js';
 import { BotRuntimeHandlerError, type BotHandler, type BotHandlerOutcome } from '../handler-registry.js';
-import { deliverTelegramText, classifyTelegramDeliveryError } from '../telegram-text-delivery.js';
-import { applySettingsAction, parseSettingsAction, SettingsInputError, settingsView, type SettingsAction } from '../settings-model.js';
-import { renderSettingsRich, settingsLabels } from '../settings-views.js';
-import { deleteSettingsMessage } from '../settings-message.js';
-import type { TelegramTextClient } from '../telegram-text-delivery.js';
+import { deliverTelegramText, classifyTelegramDeliveryError } from '../delivery/telegram-text-delivery.js';
+import { applySettingsAction, parseSettingsAction, SettingsInputError, settingsView, type SettingsAction } from '../settings/settings-model.js';
+import { renderSettingsRich, settingsLabels } from '../settings/settings-views.js';
+import { deleteSettingsMessage } from '../settings/settings-message.js';
+import type { TelegramTextClient } from '../delivery/telegram-text-delivery.js';
 
 export interface SettingsTelegramClient extends TelegramTextClient {
   answerTelegramCallbackQuery(id: string, text?: string, options?: {botKey?: string | null; showAlert?: boolean}): Promise<unknown>;

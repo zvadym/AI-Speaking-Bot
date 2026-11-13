@@ -4,19 +4,19 @@ import pg from 'pg';
 import {
   beginBotUpdateDelivery,
   markBotUpdateDeliveryDelivered
-} from '../src/bot-runtime/delivery-repository.js';
+} from '../src/bot-runtime/delivery/delivery-repository.js';
 import {
   claimBotUpdateExecution,
   markBotUpdateExecutionSucceeded
-} from '../src/bot-runtime/execution-repository.js';
-import { runBotUpdateEffect } from '../src/bot-runtime/effect-repository.js';
+} from '../src/bot-runtime/execution/execution-repository.js';
+import { runBotUpdateEffect } from '../src/bot-runtime/execution/effect-repository.js';
 import type { PreparedUpdate } from '../src/bot-runtime/contracts.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import { callbackUpdate, messageUpdate } from './fixtures/telegram-updates.js';
 import { createSupportCallbackHandlers } from '../src/bot-runtime/handlers/support-callbacks.js';
 import { BotRuntimeHandlerError } from '../src/bot-runtime/handler-registry.js';
-import type { BotAiClient } from '../src/bot-runtime/bot-ai.js';
+import type { BotAiClient } from '../src/ai/client.js';
 
 const databaseUrl = process.env.BOT_RUNTIME_TEST_DATABASE_URL || '';
 

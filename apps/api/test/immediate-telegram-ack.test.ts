@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseImmediateAckEnabledBotKeys } from '../src/bot-runtime/immediate-ack-config.js';
+import { parseImmediateAckEnabledBotKeys } from '../src/bot-runtime/delivery/immediate-ack-config.js';
 import {
   immediateAckInputKind,
   startImmediateTelegramAck,
   type ImmediateAckEvent
-} from '../src/bot-runtime/immediate-telegram-ack.js';
+} from '../src/bot-runtime/delivery/immediate-telegram-ack.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { callbackUpdate, messageUpdate, voice } from './fixtures/telegram-updates.js';
 

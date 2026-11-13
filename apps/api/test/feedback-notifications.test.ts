@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
-import { saveFeedback } from '../src/feedback-service.js';
-import { MAX_FEEDBACK_AUDIO_BYTES, processFeedbackNotifications, type FeedbackNotificationDependencies } from '../src/feedback-notifications.js';
+import { saveFeedback } from '../src/feedback/service.js';
+import { MAX_FEEDBACK_AUDIO_BYTES, processFeedbackNotifications, type FeedbackNotificationDependencies } from '../src/feedback/notifications.js';
 import { DiscordFeedbackDeliveryError, sendDiscordFeedbackNotification } from '../src/discord-events.js';
 
 const databaseUrl=process.env.BOT_RUNTIME_TEST_DATABASE_URL;

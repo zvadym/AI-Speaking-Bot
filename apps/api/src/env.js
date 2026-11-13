@@ -1,13 +1,13 @@
 import './private-env.js';
 import { extractBotTokens } from './bot-configs.js';
 import { parseBotRuntimeRouteFlags } from './bot-runtime/route-flags.js';
-import { parseProgressEnabledBotKeys } from './bot-runtime/progress-config.js';
-import { parseImmediateAckEnabledBotKeys } from './bot-runtime/immediate-ack-config.js';
-import { parseOnboardingEnabledBotKeys } from './bot-runtime/onboarding-config.js';
+import { parseProgressEnabledBotKeys } from './bot-runtime/middleware/progress-config.js';
+import { parseImmediateAckEnabledBotKeys } from './bot-runtime/delivery/immediate-ack-config.js';
+import { parseOnboardingEnabledBotKeys } from './bot-runtime/onboarding/onboarding-config.js';
 import {
   parseBotModelPolicyOverrides,
   parseModelReasoningEffort
-} from './bot-runtime/model-policy.js';
+} from './ai/models/model-policy.js';
 
 function requireEnv(name) {
   const value = process.env[name];

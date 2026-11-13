@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { PreparedUpdate } from '../src/bot-runtime/contracts.js';
 import type { BotHandler } from '../src/bot-runtime/handler-registry.js';
-import { createBotPipelineRunner } from '../src/bot-runtime/pipeline.js';
-import { parseProgressEnabledBotKeys } from '../src/bot-runtime/progress-config.js';
-import { createProgressIndicatorMiddleware } from '../src/bot-runtime/progress-middleware.js';
-import type { ProgressService } from '../src/bot-runtime/progress-service.js';
+import { createBotPipelineRunner } from '../src/bot-runtime/middleware/pipeline.js';
+import { parseProgressEnabledBotKeys } from '../src/bot-runtime/middleware/progress-config.js';
+import { createProgressIndicatorMiddleware } from '../src/bot-runtime/middleware/progress-middleware.js';
+import type { ProgressService } from '../src/bot-runtime/middleware/progress-service.js';
 
 function update(route: 'message.text' | 'message.voice' | 'command.unknown' = 'message.text') {
   return {

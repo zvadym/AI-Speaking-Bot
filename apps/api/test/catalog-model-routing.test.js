@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { structuredResponseFetch } from './fixtures/openai-http.js';
-import { translateIdiomPhraseEntry } from '../src/idiom-phrases.js';
+import { translateIdiomPhraseEntry } from '../src/idioms/phrases.js';
 
 test('idiom translation preserves structured output and the reasoning override', async () => {
   const requests = [];

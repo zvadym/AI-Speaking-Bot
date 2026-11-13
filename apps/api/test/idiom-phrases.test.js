@@ -5,7 +5,7 @@ import {
   buildHourlyIdiomPracticeScheduleKey,
   buildIdiomPracticeScheduleKey,
   isCurrentIdiomPracticeScheduleKey
-} from '../src/idiom-phrases.js';
+} from '../src/idioms/phrases.js';
 
 test('idiom practice schedule keys distinguish daily UTC delivery slots', () => {
   const morning = new Date('2026-07-14T07:15:00.000Z');

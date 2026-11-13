@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Pool } from 'pg';
-import { createDirectSettingsHandler, saveDirectSettings } from '../src/bot-runtime/direct-settings.js';
+import { createDirectSettingsHandler, saveDirectSettings } from '../src/bot-runtime/settings/direct-settings.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { callbackUpdate } from './fixtures/telegram-updates.js';
 import http from 'node:http';

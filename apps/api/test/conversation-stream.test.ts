@@ -1,9 +1,9 @@
 import { requestBody, responsePayload, sseResponse } from './fixtures/openai-http.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { partialConversationReply } from '../src/bot-runtime/conversation-stream.js';
-import { createTelegramDraft } from '../src/bot-runtime/telegram-draft.js';
-import { createBotAiClient } from '../src/bot-runtime/bot-ai.js';
+import { partialConversationReply } from '../src/ai/conversation-stream.js';
+import { createTelegramDraft } from '../src/bot-runtime/delivery/telegram-draft.js';
+import { createBotAiClient } from '../src/ai/client.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { messageUpdate } from './fixtures/telegram-updates.js';

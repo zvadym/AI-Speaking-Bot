@@ -1,5 +1,5 @@
 import type { PreparedUpdate, Route } from './contracts.js';
-import type { BotPipelineContext } from './pipeline.js';
+import type { BotPipelineContext } from './middleware/pipeline.js';
 
 export interface BotHandlerOutcome {
   status: 'delivered' | 'duplicate' | 'noop';

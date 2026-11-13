@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { createRequireAuth } from '../auth.js';
 import { randomUUID } from 'node:crypto';
-import { saveFeedback } from '../feedback-service.js';
-import { wakeFeedbackNotifications } from '../feedback-notifications.js';
+import { saveFeedback } from '../feedback/service.js';
+import { wakeFeedbackNotifications } from '../feedback/notifications.js';
 import {
   normalizeBotKey,
   normalizeFeedbackCategory

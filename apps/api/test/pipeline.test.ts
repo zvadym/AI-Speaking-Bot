@@ -9,7 +9,7 @@ import {
   createBotPipelineRunner,
   runBotPipelineStage,
   type BotPipelineMiddleware
-} from '../src/bot-runtime/pipeline.js';
+} from '../src/bot-runtime/middleware/pipeline.js';
 
 function preparedText(): PreparedUpdate & { route: 'message.text' } {
   return {

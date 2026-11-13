@@ -7,6 +7,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Project home: [LanguageBot](https://app.notion.com/p/2ffe327632fc8006bfaceacf80061304).
 - Current product documentation: [документація](https://app.notion.com/p/410e327632fc81409826f1692953aeaf).
 - Requirements and future work: [план розвитку](https://app.notion.com/p/410e327632fc8171a8bffe625189b661).
+- [LangChain / LangGraph migration design](https://app.notion.com/p/417e327632fc817b8db3d86510142c87) and [implementation plan / handoffs](https://app.notion.com/p/417e327632fc8170ab4dd746e344cf23).
 - Relaunch execution references:
   - [Master plan and agent handoff](https://app.notion.com/p/410e327632fc813cad06f39e7a30b1e9).
   - [Relaunch specification](https://app.notion.com/p/410e327632fc81f8b82afc94080bf8b5).
@@ -109,8 +110,10 @@ This file orients automated agents working in this repo. Keep it accurate as the
 ## Bot Runtime
 - Telegram sends each bot update to `/telegram/webhook/:botKey`.
 - The API validates the per-bot webhook secret, persists ingestion state, and enqueues a pg-boss job.
-- `apps/api/src/bot-runtime` owns route preparation, typed handlers, AI calls, durable effects, and Telegram delivery.
-- Settings UI uses `settings-model.ts`, `settings-widget.ts`, `settings-views.ts`, and `handlers/settings.ts`;
+- `apps/api/src/bot-runtime` owns route preparation, typed handlers, conversation/onboarding/settings helpers, durable execution/effects, middleware, and Telegram delivery.
+- `apps/api/src/ai` owns `client.ts` (the current `BotAiClient`), models, telemetry, prompt helpers, schemas, and explicit LangGraph workflows.
+- `apps/api/src/jobs.js` explicitly registers workers; background feature flows live in `notifications/`, `idioms/`, and `broadcasts/`. Shared feedback services live in `apps/api/src/feedback/` for Telegram and HTTP callers.
+- Settings UI uses `settings/settings-model.ts`, `settings/settings-widget.ts`, `settings/settings-views.ts`, and `handlers/settings.ts`;
   the reply button opens an HTML widget directly. Level/reply changes save immediately;
   Stats and feedback actions live in the same card. Slash menus are empty; only
   technical `/start` remains for first contact and deep links, without resetting onboarding.
@@ -121,11 +124,11 @@ This file orients automated agents working in this repo. Keep it accurate as the
   `level_descriptions` and `reply_descriptions` provide the per-option explanations;
   keep them outside button labels because Telegram truncates multiline button text.
 - Settings cards open and update directly in the authenticated webhook through
-  `direct-settings.ts`; keep preference/effect writes and send reservations atomic,
+  `settings/direct-settings.ts`; keep preference/effect writes and send reservations atomic,
   and serialize rendering with the shared settings lock. Do not retry ambiguous
   sends: retain the delivery ledger to prevent duplicate cards. Legacy queued jobs
   still use `bot-settings-process`; keep long AI work off this queue.
-- `apps/api/src/bot-runtime/pipeline.ts` is the universal middleware runner;
+- `apps/api/src/bot-runtime/middleware/pipeline.ts` is the universal middleware runner;
   cross-cutting behavior wraps complete handlers or explicit named stages.
 - Progress messages are enabled per bot with `BOT_PROGRESS_ENABLED_BOT_KEYS`;
   use `*` only after canary verification.
@@ -134,7 +137,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
   durable ingestion state.
 - Feedback replies bind to a 10-minute request by chat/bot/prompt ID in `pending_feedback`;
   cancelled/completed requests remain identifiable so old replies never reach tutor AI.
-  `feedback-service.ts` saves feedback/thread/outbox atomically; `feedback-notifications.ts`
+  `feedback/service.ts` saves feedback/thread/outbox atomically; `feedback/notifications.ts`
   delivers text or original audio plus transcript to Discord outside DB transactions.
   Unknown Discord sends require inspection and are never blindly retried.
 - Conversation history is scoped by `chat_id + bot_key`; settings contain level and reply mode.

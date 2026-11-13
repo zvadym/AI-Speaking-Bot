@@ -2,19 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Pool } from 'pg';
 import { loadBotConfigs } from '../src/bot-configs.js';
-import { parseOnboardingEnabledBotKeys } from '../src/bot-runtime/onboarding-config.js';
+import { parseOnboardingEnabledBotKeys } from '../src/bot-runtime/onboarding/onboarding-config.js';
 import {
   buildOnboardingCompletionMarkup,
   buildOnboardingPracticeCard,
   buildOnboardingScenarioPicker,
   getOnboardingLocale,
   validateOnboardingLocale
-} from '../src/bot-runtime/onboarding.js';
+} from '../src/bot-runtime/onboarding/onboarding.js';
 import {
   classifyOnboardingResponseStyle,
   onboardingReplyText,
   suggestedOnboardingLevel
-} from '../src/bot-runtime/conversation.js';
+} from '../src/bot-runtime/conversation/conversation.js';
 import { createOnboardingStartHandler } from '../src/bot-runtime/handlers/onboarding.js';
 import { bootstrapTelegramUser } from '../src/bot-runtime/user-bootstrap.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';

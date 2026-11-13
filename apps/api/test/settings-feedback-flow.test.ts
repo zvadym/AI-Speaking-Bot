@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
-import { createDirectSettingsHandler } from '../src/bot-runtime/direct-settings.js';
+import { createDirectSettingsHandler } from '../src/bot-runtime/settings/direct-settings.js';
 import { createFeedbackHandlers } from '../src/bot-runtime/handlers/feedback.js';
 import { createVoiceFeedbackHandler } from '../src/bot-runtime/handlers/voice.js';
 import { prepareBotUpdate } from '../src/bot-runtime/prepare-update-service.js';
-import { claimBotUpdateExecution } from '../src/bot-runtime/execution-repository.js';
+import { claimBotUpdateExecution } from '../src/bot-runtime/execution/execution-repository.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { callbackUpdate,messageUpdate } from './fixtures/telegram-updates.js';
 

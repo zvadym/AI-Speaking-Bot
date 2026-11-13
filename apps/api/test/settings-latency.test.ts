@@ -4,7 +4,7 @@ import type { Pool } from 'pg';
 import { prepareBotUpdate } from '../src/bot-runtime/prepare-update-service.js';
 import { bootstrapTelegramUser } from '../src/bot-runtime/user-bootstrap.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
-import { ingestBotUpdate } from '../src/bot-runtime/ingestion-service.js';
+import { ingestBotUpdate } from '../src/bot-runtime/execution/ingestion-service.js';
 import { registerBotRuntimeWorker } from '../src/bot-runtime/register-worker.js';
 import { parseBotRuntimeRouteFlags } from '../src/bot-runtime/route-flags.js';
 import { callbackUpdate, messageUpdate } from './fixtures/telegram-updates.js';

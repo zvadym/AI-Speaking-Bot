@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import http from 'node:http';
 import { once } from 'node:events';
 import express from 'express';
-import { createDirectSettingsHandler, saveDirectSettings } from '../src/bot-runtime/direct-settings.js';
+import { createDirectSettingsHandler, saveDirectSettings } from '../src/bot-runtime/settings/direct-settings.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { messageUpdate, callbackUpdate } from './fixtures/telegram-updates.js';
 import { createTelegramWebhookRouter } from '../src/routes/telegram-webhook.js';

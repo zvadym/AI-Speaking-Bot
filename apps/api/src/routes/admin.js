@@ -7,15 +7,13 @@ import {
   normalizeCurrencyCode,
   normalizeRuntimeCurrencyCode
 } from '../shared/normalization.js';
-import {
-  enqueueBroadcastCampaign as enqueueBroadcastCampaignJob,
-  getAutomatedMessageTestState,
-  sendAdminTestDay1ReturnReminder,
-  sendAdminTestIdiomPracticeReminder,
-  sendAdminTestFreeLimitHalfReminder,
-  sendAdminTestWeeklyDigestReminder,
-  sendAdminTestWinbackReminder
-} from '../jobs.js';
+import { enqueueBroadcastCampaign as enqueueBroadcastCampaignJob } from '../broadcasts/campaigns.js';
+import { getAutomatedMessageTestState } from '../notifications/policy.js';
+import { sendAdminTestDay1ReturnReminder } from '../notifications/day1-return.js';
+import { sendAdminTestIdiomPracticeReminder } from '../idioms/practice.js';
+import { sendAdminTestFreeLimitHalfReminder } from '../notifications/free-limit-half.js';
+import { sendAdminTestWeeklyDigestReminder } from '../notifications/weekly-digest.js';
+import { sendAdminTestWinbackReminder } from '../notifications/winback.js';
 import { billingRouteErrorResponse } from '../core/errors.js';
 
 const ACTION_EVENT_TYPES = [

@@ -3,7 +3,7 @@ import { performance } from 'node:perf_hooks';
 import type { Pool } from 'pg';
 import { normalizeBotKey } from '../shared/normalization.js';
 import { captureException } from '../sentry.js';
-import { ingestBotUpdate, BotUpdateIngestionError } from '../bot-runtime/ingestion-service.js';
+import { ingestBotUpdate, BotUpdateIngestionError } from '../bot-runtime/execution/ingestion-service.js';
 import { prepareBotUpdate } from '../bot-runtime/prepare-update-service.js';
 import { normalizeTelegramUpdate } from '../bot-runtime/telegram-update.js';
 import { bootstrapTelegramUser } from '../bot-runtime/user-bootstrap.js';
@@ -12,9 +12,9 @@ import {
   verifyTelegramWebhookSecret
 } from '../bot-runtime/webhook-secret.js';
 import { isBotRuntimeRouteEnabled, type BotRuntimeRouteFlags } from '../bot-runtime/route-flags.js';
-import { createDirectSettingsHandler } from '../bot-runtime/direct-settings.js';
+import { createDirectSettingsHandler } from '../bot-runtime/settings/direct-settings.js';
 import { buildPreparedUpdate } from '../bot-runtime/update-router.js';
-import { startImmediateTelegramAck } from '../bot-runtime/immediate-telegram-ack.js';
+import { startImmediateTelegramAck } from '../bot-runtime/delivery/immediate-telegram-ack.js';
 
 interface TelegramWebhookContext {
   pool: Pool;

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { transcribeWithScribe } from '../src/infrastructure/speech/scribe-transcription.js';
-import { createBotAiClient } from '../src/bot-runtime/bot-ai.js';
-import type { LlmCallEvent } from '../src/bot-runtime/llm-telemetry.js';
+import { createBotAiClient } from '../src/ai/client.js';
+import type { LlmCallEvent } from '../src/ai/llm-telemetry.js';
 
 test('runtime requires the Scribe key only when Scribe is selected', () => {
   for (const [model, key, expectedStatus] of [

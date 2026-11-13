@@ -9,9 +9,9 @@ import { loadBotConfigs } from '../src/bot-configs.js';
 import { messageUpdate, voice } from './fixtures/telegram-updates.js';
 import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
 import { createVoiceConversationHandler } from '../src/bot-runtime/handlers/voice.js';
-import { claimBotUpdateExecution } from '../src/bot-runtime/execution-repository.js';
-import { getOnboardingLocale } from '../src/bot-runtime/onboarding.js';
-import type { BotAiClient } from '../src/bot-runtime/bot-ai.js';
+import { claimBotUpdateExecution } from '../src/bot-runtime/execution/execution-repository.js';
+import { getOnboardingLocale } from '../src/bot-runtime/onboarding/onboarding.js';
+import type { BotAiClient } from '../src/ai/client.js';
 import type { EntitlementContext } from '../src/bot-runtime/entitlement-context.js';
 
 const connectionString=process.env.BOT_RUNTIME_TEST_DATABASE_URL;

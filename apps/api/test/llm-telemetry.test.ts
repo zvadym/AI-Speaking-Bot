@@ -7,7 +7,7 @@ import {
   extractLlmUsage,
   observeLlmCall,
   type LlmCallEvent
-} from '../src/bot-runtime/llm-telemetry.js';
+} from '../src/ai/llm-telemetry.js';
 
 test('LLM usage extraction supports Responses token details', () => {
   assert.deepEqual(extractLlmUsage({

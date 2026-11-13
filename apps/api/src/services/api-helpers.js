@@ -22,7 +22,7 @@ import {
   classifyPermanentTelegramFailure,
   sanitizeErrorText
 } from '../shared/telegram-delivery.js';
-import { enqueueDiscordEventNotificationJob } from '../jobs.js';
+import { enqueueDiscordEventNotificationJob } from '../notifications/discord-events.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MINIAPP_FEEDBACK_MESSAGE_MAX_LEN = 1000;

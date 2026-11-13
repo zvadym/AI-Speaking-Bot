@@ -5,12 +5,12 @@ import { BOT_UPDATE_QUEUE_NAME, BOT_SETTINGS_QUEUE_NAME } from './bot-runtime/co
 import {
   QUEUE_LOADER_ROTATE,
   QUEUE_LOADER_TIMEOUT_CLEANUP
-} from './bot-runtime/progress-queue.js';
+} from './bot-runtime/middleware/progress-queue.js';
 
 export {
   QUEUE_LOADER_ROTATE,
   QUEUE_LOADER_TIMEOUT_CLEANUP
-} from './bot-runtime/progress-queue.js';
+} from './bot-runtime/middleware/progress-queue.js';
 
 export const QUEUE_ONBOARDING_COMPLETE_SCAN = 'onboarding-complete-scan';
 export const QUEUE_ONBOARDING_COMPLETE_SEND = 'onboarding-complete-send';

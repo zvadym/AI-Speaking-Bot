@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import pg from 'pg';
 import type { Pool } from 'pg';
 import { createTelegramClient } from '../src/shared/telegram-delivery.js';
-import { createMessagePresentationService, type PresentationClient, type PresentationKey } from '../src/bot-runtime/message-presentation.js';
-import { conversationReplyMarkup } from '../src/bot-runtime/conversation.js';
+import { createMessagePresentationService, type PresentationClient, type PresentationKey } from '../src/bot-runtime/delivery/message-presentation.js';
+import { conversationReplyMarkup } from '../src/bot-runtime/conversation/conversation.js';
 import { createSupportCallbackHandlers } from '../src/bot-runtime/handlers/support-callbacks.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
-import type { BotAiClient } from '../src/bot-runtime/bot-ai.js';
-import type { runBotUpdateEffect } from '../src/bot-runtime/effect-repository.js';
+import type { BotAiClient } from '../src/ai/client.js';
+import type { runBotUpdateEffect } from '../src/bot-runtime/execution/effect-repository.js';
 import { callbackUpdate } from './fixtures/telegram-updates.js';
 
 test('rich voice edit uploads multipart to the existing message and preserves its keyboard', async () => {

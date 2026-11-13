@@ -9,7 +9,7 @@ import {
   enforcePracticeQuota,
   PRACTICE_QUOTA_DELIVERY_STEP_KEY,
   PRACTICE_QUOTA_EFFECT_STEP_KEY
-} from '../src/bot-runtime/practice-quota.js';
+} from '../src/bot-runtime/conversation/practice-quota.js';
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { buildPreparedUpdate } from '../src/bot-runtime/update-router.js';
 import { messageUpdate } from './fixtures/telegram-updates.js';
