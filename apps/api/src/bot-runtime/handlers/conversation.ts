@@ -9,8 +9,8 @@ export function createTextConversationHandler(
   return {
     route: 'message.text',
     version: BOT_RUNTIME_HANDLER_VERSIONS['message.text'],
-    async execute(update, pipeline) {
-      const result = await graph.invoke({ update }, { context: { pipeline } });
+    async execute(update) {
+      const result = await graph.invoke({ update });
       return result.outcome;
     }
   };

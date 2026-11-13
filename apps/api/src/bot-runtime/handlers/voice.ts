@@ -10,8 +10,8 @@ export function createVoiceConversationHandler(
   return {
     route: 'message.voice',
     version: BOT_RUNTIME_HANDLER_VERSIONS['message.voice'],
-    async execute(update, pipeline) {
-      const result = await graph.invoke({ update }, { context: { pipeline } });
+    async execute(update) {
+      const result = await graph.invoke({ update });
       return result.outcome;
     }
   };

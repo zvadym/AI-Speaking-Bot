@@ -21,7 +21,7 @@ import { BotRuntimeHandlerError, type BotHandlerOutcome } from '../../bot-runtim
 import { startTelegramTyping } from '../../bot-runtime/delivery/immediate-telegram-ack.js';
 import type { MessagePresentationService, PresentationKey } from '../../bot-runtime/delivery/message-presentation.js';
 import { buildOnboardingCompletionMarkup } from '../../bot-runtime/onboarding/onboarding.js';
-import { runBotPipelineStage, type BotPipelineContext } from '../../bot-runtime/middleware/pipeline.js';
+import type { ConversationProgress } from '../../bot-runtime/middleware/progress.js';
 import { enforcePracticeQuota, type PracticeQuotaGuard } from '../../bot-runtime/conversation/practice-quota.js';
 import { createTelegramDraft } from '../../bot-runtime/delivery/telegram-draft.js';
 import { deliverTelegramText } from '../../bot-runtime/delivery/telegram-text-delivery.js';
@@ -39,6 +39,7 @@ interface TextConversationDependencies {
   webappUrl: string;
   presentation?: MessagePresentationService;
   quotaGuard?: PracticeQuotaGuard;
+  withProgress?: ConversationProgress;
   effectRunner?: typeof runBotUpdateEffect;
   textDeliverer?: typeof deliverTelegramText;
 }
@@ -60,12 +61,6 @@ const ConversationState = Annotation.Root({
   outcome: Annotation<BotHandlerOutcome>()
 });
 
-// Callbacks and the transport middleware context belong to this invocation,
-// never to graph state or the shared compiled graph's closure.
-const ConversationContext = Annotation.Root({
-  pipeline: Annotation<BotPipelineContext | undefined>()
-});
-
 const VoiceGenerationContext = Annotation.Root({
   onReplyText: Annotation<ConversationAiInput['onReplyText']>()
 });
@@ -84,7 +79,7 @@ function conversationDeliveryGraph({
   effectRunner = runBotUpdateEffect,
   textDeliverer = deliverTelegramText
 }: TextConversationDependencies) {
-  return new StateGraph(ConversationState, { context: ConversationContext })
+  return new StateGraph(ConversationState)
     .addNode('checkQuota', async ({ update }) => {
       const quota = await quotaGuard({ pool, update, getBotLocale, telegramClient, webappUrl });
       return quota.allowed ? {} : { outcome: quota.outcome };
@@ -169,7 +164,8 @@ export function createTextConversationGraph(dependencies: TextConversationDepend
   const {
     pool, telegramClient, ai,
     effectRunner = runBotUpdateEffect,
-    textDeliverer = deliverTelegramText
+    textDeliverer = deliverTelegramText,
+    withProgress = async (_update, operation) => operation()
   } = dependencies;
   return conversationDeliveryGraph(dependencies)
     .addNode('validateInput', ({ update }) => {
@@ -180,8 +176,8 @@ export function createTextConversationGraph(dependencies: TextConversationDepend
       }
       return { text };
     })
-    .addNode('generateTurn', async ({ update, text, onboarding }, runtime) => ({
-      result: await runBotPipelineStage(runtime.context?.pipeline, 'conversation.generate', async () => {
+    .addNode('generateTurn', async ({ update, text, onboarding }) => ({
+      result: await withProgress(update, async () => {
         startTelegramTyping({ telegramClient, botKey: update.botKey, input: update.input });
         const draft = createTelegramDraft(telegramClient, update);
         try {
@@ -221,7 +217,8 @@ export function createVoiceConversationGraph(dependencies: VoiceConversationDepe
   const {
     pool, getBotLocale, telegramClient, ai,
     effectRunner = runBotUpdateEffect,
-    textDeliverer = deliverTelegramText
+    textDeliverer = deliverTelegramText,
+    withProgress = async (_update, operation) => operation()
   } = dependencies;
   const generation = new StateGraph(ConversationState, { context: VoiceGenerationContext })
     .addNode('transcribe', async ({ update, fileId }) => {
@@ -318,8 +315,8 @@ export function createVoiceConversationGraph(dependencies: VoiceConversationDepe
       }
       return {};
     })
-    .addNode('generateTurn', async (state, runtime) => ({
-      result: await runBotPipelineStage(runtime.context?.pipeline, 'conversation.generate', async () => {
+    .addNode('generateTurn', async (state) => ({
+      result: await withProgress(state.update, async () => {
         const { update } = state;
         startTelegramTyping({ telegramClient, botKey: update.botKey, input: update.input });
         const draft = createTelegramDraft(telegramClient, update);

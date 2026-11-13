@@ -20,7 +20,6 @@ import { createVoiceConversationHandler } from '../src/bot-runtime/handlers/voic
 import type { BotAiClient } from '../src/ai/client.js';
 import { buildStaticRouteMessage } from '../src/bot-runtime/handlers/static-routes.js';
 import { processBotUpdateJob } from '../src/bot-runtime/register-worker.js';
-import type { BotPipelineContext } from '../src/bot-runtime/middleware/pipeline.js';
 import {
   BOT_RUNTIME_HANDLER_VERSIONS,
   parseBotRuntimeRouteFlags
@@ -283,9 +282,13 @@ test('support translation callback reuses cached AI effect and edits the source 
 test('text conversation reuses generated state and delivers correction before reply', async () => {
   const update = preparedText();
   const methods: string[] = [];
-  const stages: string[] = [];
+  const progress: string[] = [];
   const deliveries: Array<Record<string, unknown>> = [];
   const handler = createTextConversationHandler({
+    async withProgress(_update, operation) {
+      progress.push('start');
+      try { return await operation(); } finally { progress.push('stop'); }
+    },
     pool: unusedPool,
     webappUrl: 'https://example.test/app',
     quotaGuard: allowPracticeQuota,
@@ -320,18 +323,12 @@ test('text conversation reuses generated state and delivers correction before re
       return { status: 'delivered', telegramMessageId: deliveries.length };
     }
   });
-  const pipeline = {
-    async runStage<T>(stage: string, operation: () => Promise<T>) {
-      stages.push(stage);
-      return operation();
-    }
-  } as BotPipelineContext;
-  assert.deepEqual(await handler.execute(update, pipeline), {
+  assert.deepEqual(await handler.execute(update), {
     status: 'delivered',
     telegramMessageId: 2
   });
   assert.deepEqual(methods, ['sendChatAction']);
-  assert.deepEqual(stages, ['conversation.generate']);
+  assert.deepEqual(progress, ['start', 'stop']);
   assert.deepEqual(deliveries.map((item) => item.stepKey), [
     'message.text:correction:v1',
     'message.text:reply:v1'
@@ -342,8 +339,12 @@ test('text conversation reuses generated state and delivers correction before re
 test('text conversation blocks before typing and AI when global quota is exhausted', async () => {
   const methods: string[] = [];
   let conversationEffects = 0;
-  let stages = 0;
+  let progressCalls = 0;
   const handler = createTextConversationHandler({
+    async withProgress(_update, operation) {
+      progressCalls += 1;
+      return operation();
+    },
     pool: unusedPool,
     webappUrl: 'https://example.test/app',
     getBotLocale: () => ({}),
@@ -366,31 +367,29 @@ test('text conversation blocks before typing and AI when global quota is exhaust
     }
   });
 
-  const pipeline = {
-    async runStage<T>(_stage: string, operation: () => Promise<T>) {
-      stages += 1;
-      return operation();
-    }
-  } as BotPipelineContext;
-  assert.deepEqual(await handler.execute(preparedText(9353), pipeline), {
+  assert.deepEqual(await handler.execute(preparedText(9353)), {
     status: 'delivered',
     telegramMessageId: 91
   });
   assert.deepEqual(methods, []);
   assert.equal(conversationEffects, 0);
-  assert.equal(stages, 0);
+  assert.equal(progressCalls, 0);
 });
 
 test('voice conversation reuses STT state and delivers transcript before text reply', async () => {
   const update = preparedVoice();
   const deliveries: Array<Record<string, unknown>> = [];
-  const stages: string[] = [];
+  const progress: string[] = [];
   const pool = {
     async query() {
       return { rows: [{ limit_seconds: 0, used_seconds: 0 }] };
     }
   } as unknown as Pool;
   const handler = createVoiceConversationHandler({
+    async withProgress(_update, operation) {
+      progress.push('start');
+      try { return await operation(); } finally { progress.push('stop'); }
+    },
     pool,
     webappUrl: 'https://example.test/app',
     quotaGuard: allowPracticeQuota,
@@ -422,13 +421,7 @@ test('voice conversation reuses STT state and delivers transcript before text re
       return { status: 'delivered', telegramMessageId: deliveries.length };
     }
   });
-  const pipeline = {
-    async runStage<T>(stage: string, operation: () => Promise<T>) {
-      stages.push(stage);
-      return operation();
-    }
-  } as BotPipelineContext;
-  assert.deepEqual(await handler.execute(update, pipeline), {
+  assert.deepEqual(await handler.execute(update), {
     status: 'delivered',
     telegramMessageId: 2
   });
@@ -436,15 +429,19 @@ test('voice conversation reuses STT state and delivers transcript before text re
     'message.voice:transcript:v1',
     'message.voice:reply:v1'
   ]);
-  assert.deepEqual(stages, ['conversation.generate']);
+  assert.deepEqual(progress, ['start', 'stop']);
   assert.match(String(deliveries[0].text), /I went home/);
 });
 
 test('voice conversation blocks before Telegram file download and AI', async () => {
   let downloads = 0;
   let effects = 0;
-  let stages = 0;
+  let progressCalls = 0;
   const handler = createVoiceConversationHandler({
+    async withProgress(_update, operation) {
+      progressCalls += 1;
+      return operation();
+    },
     pool: unusedPool,
     webappUrl: 'https://example.test/app',
     getBotLocale: () => ({}),
@@ -469,27 +466,25 @@ test('voice conversation blocks before Telegram file download and AI', async () 
     }
   });
 
-  const pipeline = {
-    async runStage<T>(_stage: string, operation: () => Promise<T>) {
-      stages += 1;
-      return operation();
-    }
-  } as BotPipelineContext;
-  assert.deepEqual(await handler.execute(preparedVoice(9354), pipeline), {
+  assert.deepEqual(await handler.execute(preparedVoice(9354)), {
     status: 'delivered',
     telegramMessageId: 92
   });
   assert.equal(downloads, 0);
   assert.equal(effects, 0);
-  assert.equal(stages, 0);
+  assert.equal(progressCalls, 0);
 });
 
-test('invalid voice duration is delivered before entering the conversation stage', async () => {
+test('invalid voice duration is delivered before starting progress', async () => {
   const update = preparedVoice(9355);
   update.input.message.voiceDuration = 0;
-  let stages = 0;
+  let progressCalls = 0;
   let quotaCalls = 0;
   const handler = createVoiceConversationHandler({
+    async withProgress(_update, operation) {
+      progressCalls += 1;
+      return operation();
+    },
     pool: unusedPool,
     webappUrl: 'https://example.test/app',
     getBotLocale: () => ({ msg_too_short: 'Too short' }),
@@ -506,19 +501,13 @@ test('invalid voice duration is delivered before entering the conversation stage
     },
     textDeliverer: async () => ({ status: 'delivered', telegramMessageId: 93 })
   });
-  const pipeline = {
-    async runStage<T>(_stage: string, operation: () => Promise<T>) {
-      stages += 1;
-      return operation();
-    }
-  } as BotPipelineContext;
 
-  assert.deepEqual(await handler.execute(update, pipeline), {
+  assert.deepEqual(await handler.execute(update), {
     status: 'delivered',
     telegramMessageId: 93
   });
   assert.equal(quotaCalls, 0);
-  assert.equal(stages, 0);
+  assert.equal(progressCalls, 0);
 });
 
 test('voice conversation skips TTS when inbound usage consumes final quota', async () => {

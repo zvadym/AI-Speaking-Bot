@@ -30,12 +30,7 @@ import {
 import { createSupportCallbackHandlers } from './handlers/support-callbacks.js';
 import type { SupportTelegramClient } from './support.js';
 import type { BotAiClient } from '../ai/client.js';
-import {
-  createBotPipelineRunner,
-  defaultBotPipelineRunner,
-  type BotPipelineRunner
-} from './middleware/pipeline.js';
-import { createProgressIndicatorMiddleware } from './middleware/progress-middleware.js';
+import { createConversationProgress } from './middleware/progress.js';
 import { createProgressService, type ProgressTelegramClient } from './middleware/progress-service.js';
 import { createMessagePresentationService, type PresentationClient } from './delivery/message-presentation.js';
 import { createTextConversationHandler } from './handlers/conversation.js';
@@ -79,7 +74,6 @@ export interface BotRuntimeWorkerDependencies {
   pool: Pool;
   registry: BotHandlerRegistry;
   executionRepository?: ExecutionRepository;
-  pipelineRunner?: BotPipelineRunner;
 }
 
 export type BotRuntimeJobOutcome =
@@ -110,8 +104,7 @@ export async function processBotUpdateJob(
   {
     pool,
     registry,
-    executionRepository = defaultExecutionRepository,
-    pipelineRunner = defaultBotPipelineRunner()
+    executionRepository = defaultExecutionRepository
   }: BotRuntimeWorkerDependencies
 ): Promise<BotRuntimeJobOutcome> {
   const data = asRecord(job.data);
@@ -171,12 +164,7 @@ export async function processBotUpdateJob(
   }
 
   try {
-    const result = await pipelineRunner.execute({
-      handler,
-      update: contract,
-      jobId: job.id,
-      attempt: claim.attempts
-    });
+    const result = await handler.execute(contract);
     await executionRepository.markSucceeded(pool, contract.decisionId, job.id);
     console.info('bot-update-process:succeeded', {
       jobId: job.id,
@@ -243,14 +231,12 @@ export async function registerBotRuntimeWorker(
 ): Promise<void> {
   const progressService = createProgressService({ pool, boss, telegramClient });
   const presentation = createMessagePresentationService(pool, telegramClient);
-  const pipelineRunner = createBotPipelineRunner([
-    createProgressIndicatorMiddleware({
-      progressService,
-      getBotLocale,
-      enabledBotKeys: progressEnabledBotKeys,
-      reportError: reportProgressError
-    })
-  ]);
+  const withProgress = createConversationProgress({
+    progressService,
+    getBotLocale,
+    enabledBotKeys: progressEnabledBotKeys,
+    reportError: reportProgressError
+  });
   const registry = createBotHandlerRegistry([
     ...createStaticRouteHandlers({ pool, getBotLocale, telegramClient }),
     createOnboardingStartHandler({ pool, getBotLocale, telegramClient }),
@@ -271,6 +257,7 @@ export async function registerBotRuntimeWorker(
       ai
     }),
     createTextConversationHandler({
+      withProgress,
       presentation,
       pool,
       getBotLocale,
@@ -279,6 +266,7 @@ export async function registerBotRuntimeWorker(
       webappUrl
     }),
     createVoiceConversationHandler({
+      withProgress,
       presentation,
       pool,
       getBotLocale,
@@ -302,7 +290,7 @@ export async function registerBotRuntimeWorker(
       { batchSize: 1, includeMetadata: true, pollingIntervalSeconds: queue === BOT_SETTINGS_QUEUE_NAME ? 0.5 : 1 },
       async (jobs) => {
         for (const job of jobs) {
-          await processBotUpdateJob(job, { pool, registry, pipelineRunner });
+          await processBotUpdateJob(job, { pool, registry });
         }
       }
     );

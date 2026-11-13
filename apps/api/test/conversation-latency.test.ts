@@ -4,8 +4,7 @@ import type { Pool, PoolClient } from 'pg';
 import type { BotAiClient, ConversationAiResult } from '../src/ai/client.js';
 import type { PreparedUpdate } from '../src/bot-runtime/contracts.js';
 import { BotRuntimeHandlerError, type BotHandlerOutcome } from '../src/bot-runtime/handler-registry.js';
-import { createBotPipelineRunner } from '../src/bot-runtime/middleware/pipeline.js';
-import { createProgressIndicatorMiddleware } from '../src/bot-runtime/middleware/progress-middleware.js';
+import { createConversationProgress } from '../src/bot-runtime/middleware/progress.js';
 import type { runBotUpdateEffect } from '../src/bot-runtime/execution/effect-repository.js';
 import type { EntitlementContext } from '../src/bot-runtime/entitlement-context.js';
 import { createTextConversationHandler } from '../src/bot-runtime/handlers/conversation.js';
@@ -114,18 +113,42 @@ for (const inputMode of ['text', 'voice'] as const) {
     let speechStarted!: () => void;
     const started = new Promise<void>((resolve) => { speechStarted = resolve; });
     const speech = new Promise<Buffer>((resolve) => { finishSpeech = resolve; });
-    const h = harness({ replyMode: 'voice', speech: async () => { speechStarted(); return speech; } });
+    const h = harness({
+      replyMode: 'voice', speech: async () => { speechStarted(); return speech; },
+      respond: async () => ({ ...response, has_mistakes: true, explanation_html: '<b>Correction</b>' })
+    });
+    const withProgress = createConversationProgress({
+      getBotLocale: () => ({ waiting_text: 'Waiting', loader_messages: ['Still working'] }),
+      enabledBotKeys: new Set(['uk-en']),
+      progressService: {
+        async start(input) {
+          assert.ok(h.events.includes('quota'));
+          assert.equal(input.waitingText, 'Waiting');
+          assert.deepEqual(input.messages, ['Still working']);
+          h.events.push('progress:start');
+          return { sessionId: 'generation', messageId: 999 };
+        },
+        async stop() { h.events.push('progress:stop'); return true; },
+        async rotate() { throw new Error('unexpected rotation'); },
+        async timeout() { throw new Error('unexpected timeout'); }
+      }
+    });
     let initialized: { telegramMessageId: number } | undefined;
     const attached: Array<{ telegramMessageId: number }> = [];
     let ready = false;
-    const dependencies = { ...h.dependencies, presentation: {
-      async initialize(key: { telegramMessageId: number }) { initialized = key; },
-      async hasVoice() { return ready; },
-      async mutate(key: { telegramMessageId: number }, mutation: { audio?: Buffer }) {
-        if (!ready) assert.equal(mutation.audio?.toString(), 'ogg');
-        attached.push(key); ready = true; return true;
+    const dependencies = {
+      ...h.dependencies,
+      withProgress,
+      quotaGuard: async () => { h.events.push('quota'); return h.dependencies.quotaGuard(); },
+      presentation: {
+        async initialize(key: { telegramMessageId: number }) { initialized = key; },
+        async hasVoice() { return ready; },
+        async mutate(key: { telegramMessageId: number }, mutation: { audio?: Buffer }) {
+          if (!ready) assert.equal(mutation.audio?.toString(), 'ogg');
+          attached.push(key); ready = true; return true;
+        }
       }
-    } };
+    };
     const execution = inputMode === 'voice'
       ? createVoiceConversationHandler(dependencies).execute(h.update)
       : createTextConversationHandler(dependencies).execute(buildPreparedUpdate({
@@ -139,6 +162,17 @@ for (const inputMode of ['text', 'voice'] as const) {
     finishSpeech(Buffer.from('ogg'));
     await execution;
     assert.equal(attached[0]?.telegramMessageId, delivery.telegramMessageId);
+    const progressStart = h.events.indexOf('progress:start');
+    const progressStop = h.events.indexOf('progress:stop');
+    assert.ok(progressStart >= 0 && progressStart < h.events.indexOf('respond'));
+    if (inputMode === 'voice') {
+      assert.ok(progressStart < h.events.indexOf('transcribe'));
+      assert.ok(h.events.indexOf('transcribe') < h.events.indexOf('message.voice:transcript:v1'));
+      assert.ok(h.events.indexOf('message.voice:transcript:v1') < h.events.indexOf('respond'));
+    }
+    assert.ok(h.events.indexOf('respond') < progressStop);
+    assert.ok(progressStop < h.events.indexOf(`message.${inputMode}:correction:v1`));
+    assert.ok(h.events.indexOf(`message.${inputMode}:correction:v1`) < h.events.indexOf(`message.${inputMode}:reply:v1`));
     assert.ok(h.events.indexOf(`message.${inputMode}:reply:v1`) < h.events.indexOf('speech'));
   });
 }
@@ -340,7 +374,7 @@ for (const mode of ['text', 'voice'] as const) {
         }
       }
     };
-    const runner = createBotPipelineRunner([createProgressIndicatorMiddleware({
+    const withProgress = createConversationProgress({
       getBotLocale: dependencies.getBotLocale,
       enabledBotKeys: new Set(['uk-en']),
       progressService: {
@@ -349,14 +383,14 @@ for (const mode of ['text', 'voice'] as const) {
         async rotate() { throw new Error('unexpected rotation'); },
         async timeout() { throw new Error('unexpected timeout'); }
       }
-    })]);
+    });
     const handler = mode === 'text'
-      ? createTextConversationHandler(dependencies)
-      : createVoiceConversationHandler(dependencies);
+      ? createTextConversationHandler({ ...dependencies, withProgress })
+      : createVoiceConversationHandler({ ...dependencies, withProgress });
     const update = mode === 'text'
       ? buildPreparedUpdate({ botKey: 'uk-en', input: normalizeTelegramUpdate(messageUpdate({ text: 'Hello' })) })
       : h.update;
-    await assert.rejects(runner.execute({ handler, update, jobId: 'test-job', attempt: 1 }), (error: unknown) => {
+    await assert.rejects(handler.execute(update as never), (error: unknown) => {
       assert.equal(error, failure);
       assert.equal((error as BotRuntimeHandlerError).retryable, false);
       return true;
@@ -369,7 +403,7 @@ for (const mode of ['text', 'voice'] as const) {
     assert.ok(!h.deliveries.has(`message.${mode}:reply:v1`));
   });
 
-  test(`${mode} shared graph isolates parallel updates, pipeline contexts and draft callbacks`, async () => {
+  test(`${mode} shared graph isolates parallel updates, progress sessions and draft callbacks`, async () => {
     let started = 0;
     let release!: () => void;
     const barrier = new Promise<void>((resolve) => { release = resolve; });
@@ -398,30 +432,35 @@ for (const mode of ['text', 'voice'] as const) {
         return { status: 'delivered' as const, telegramMessageId: input.update.updateId };
       }
     };
-    const contexts: number[] = [];
-    const runner = createBotPipelineRunner([{
-      name: 'isolation-check',
-      async aroundStage(context, stage, next) {
-        assert.equal(stage, 'conversation.generate');
-        assert.equal(context.state.size, 0);
-        context.state.set('chat', context.update.input.chatId);
-        contexts.push(context.update.input.chatId as number);
-        const result = await next();
-        assert.equal(context.state.get('chat'), context.update.input.chatId);
-        return result;
+    const startedSessions: number[] = [];
+    const stoppedSessions: Array<{ chatId: number; sessionId?: string | null }> = [];
+    const withProgress = createConversationProgress({
+      getBotLocale: dependencies.getBotLocale,
+      enabledBotKeys: new Set(['uk-en']),
+      progressService: {
+        async start({ chatId }) {
+          startedSessions.push(chatId);
+          return { sessionId: `session-${chatId}`, messageId: chatId };
+        },
+        async stop({ chatId, sessionId }) { stoppedSessions.push({ chatId, sessionId }); return true; },
+        async rotate() { throw new Error('unexpected rotation'); },
+        async timeout() { throw new Error('unexpected timeout'); }
       }
-    }]);
+    });
     const handler = mode === 'text'
-      ? createTextConversationHandler(dependencies)
-      : createVoiceConversationHandler(dependencies);
+      ? createTextConversationHandler({ ...dependencies, withProgress })
+      : createVoiceConversationHandler({ ...dependencies, withProgress });
     const updates = ['first', 'second'].map((text, index) => buildPreparedUpdate({
       botKey: 'uk-en', input: normalizeTelegramUpdate(messageUpdate({
         updateId: 7000 + index, chatId: 101 + index,
         ...(mode === 'text' ? { text } : { voice: { ...voice, file_id: text } })
       }))
     }));
-    await Promise.all(updates.map((update) => runner.execute({ handler, update, jobId: String(update.updateId), attempt: 1 })));
-    assert.deepEqual(contexts.sort(), [101, 102]);
+    await Promise.all(updates.map((update) => handler.execute(update as never)));
+    assert.deepEqual(startedSessions.sort(), [101, 102]);
+    assert.deepEqual(stoppedSessions.sort((a, b) => a.chatId - b.chatId), [
+      { chatId: 101, sessionId: 'session-101' }, { chatId: 102, sessionId: 'session-102' }
+    ]);
     assert.deepEqual(deliveries.sort((a, b) => Number(a.chatId) - Number(b.chatId)), [
       { chatId: 101, text: 'reply first' }, { chatId: 102, text: 'reply second' }
     ]);

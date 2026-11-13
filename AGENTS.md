@@ -23,7 +23,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 
 ## Project Overview
 - Multi-bot Telegram language-learning product with voice transcription, corrections, feedback threads, broadcasts, admin metrics, and paid plans.
-- The API accepts Telegram webhooks directly and pg-boss workers execute the typed bot pipelines backed by Postgres, OpenAI, and Stripe.
+- The API accepts Telegram webhooks directly and pg-boss workers execute typed bot handlers backed by Postgres, OpenAI, and Stripe.
 - `deploy/bots/*.json` is the runtime source of truth for bot/language-pair configuration and also feeds landing-page generation.
 - The app stack (`api` + `worker` + `miniapp` + `caddy`) deploys via Docker Compose; the marketing landing site in `apps/landing` deploys separately to Vercel.
 
@@ -110,7 +110,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
 ## Bot Runtime
 - Telegram sends each bot update to `/telegram/webhook/:botKey`.
 - The API validates the per-bot webhook secret, persists ingestion state, and enqueues a pg-boss job.
-- `apps/api/src/bot-runtime` owns route preparation, typed handlers, conversation/onboarding/settings helpers, durable execution/effects, middleware, and Telegram delivery.
+- `apps/api/src/bot-runtime` owns route preparation, typed handlers, conversation/onboarding/settings helpers, durable execution/effects, progress indicators, and Telegram delivery.
 - `apps/api/src/ai` owns `client.ts` (the current `BotAiClient`), models, telemetry, prompt helpers, schemas, and explicit LangGraph workflows.
 - `apps/api/src/jobs.js` explicitly registers workers; background feature flows live in `notifications/`, `idioms/`, and `broadcasts/`. Shared feedback services live in `apps/api/src/feedback/` for Telegram and HTTP callers.
 - Settings UI uses `settings/settings-model.ts`, `settings/settings-widget.ts`, `settings/settings-views.ts`, and `handlers/settings.ts`;
@@ -128,8 +128,9 @@ This file orients automated agents working in this repo. Keep it accurate as the
   and serialize rendering with the shared settings lock. Do not retry ambiguous
   sends: retain the delivery ledger to prevent duplicate cards. Legacy queued jobs
   still use `bot-settings-process`; keep long AI work off this queue.
-- `apps/api/src/bot-runtime/middleware/pipeline.ts` is the universal middleware runner;
-  cross-cutting behavior wraps complete handlers or explicit named stages.
+- Workers call typed handlers directly; conversation graphs use
+  `apps/api/src/bot-runtime/middleware/progress.ts` around text generation and
+  voice transcription through generation, with cleanup before reply delivery.
 - Progress messages are enabled per bot with `BOT_PROGRESS_ENABLED_BOT_KEYS`;
   use `*` only after canary verification.
 - Immediate Telegram typing acknowledgements are enabled per bot with

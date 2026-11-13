@@ -1,5 +1,4 @@
 import type { PreparedUpdate, Route } from './contracts.js';
-import type { BotPipelineContext } from './middleware/pipeline.js';
 
 export interface BotHandlerOutcome {
   status: 'delivered' | 'duplicate' | 'noop';
@@ -9,10 +8,7 @@ export interface BotHandlerOutcome {
 export interface BotHandler<R extends Route = Route> {
   route: R;
   version: number;
-  execute(
-    update: PreparedUpdate & { route: R },
-    pipeline?: BotPipelineContext
-  ): Promise<BotHandlerOutcome>;
+  execute(update: PreparedUpdate & { route: R }): Promise<BotHandlerOutcome>;
 }
 
 export class BotRuntimeHandlerError extends Error {
