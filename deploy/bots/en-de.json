@@ -121,7 +121,7 @@
         ],
         "d14": {
           "default": [
-            "No pressure. We can start again anytime. {{reply_cta_label}} when you want.",
+            "No pressure. We can start again anytime; {{reply_cta_label}} when you want.",
             "Whenever you’re ready, we can start again. {{reply_cta_label}}."
           ],
           "streak": [

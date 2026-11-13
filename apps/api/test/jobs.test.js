@@ -1,6 +1,8 @@
 import { requestBody } from './fixtures/openai-http.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import { syncBuiltinESMExports } from 'node:module';
 
 process.env.DATABASE_URL ??= 'postgres://postgres:postgres@127.0.0.1:5432/test_db';
 process.env.WEBAPP_URL ??= 'https://example.test/app';
@@ -1208,16 +1210,24 @@ for (const [reminderType, providerCase] of [['d3', 'success'], ['d3', 'invalid_o
   test(`winback ${reminderType} ${providerCase} preserves dispatch metadata and sends once`, async () => {
     const originalOpenAiKey = env.openaiApiKey;
     const originalFetch = globalThis.fetch;
+    const originalRandomUuid = crypto.randomUUID;
+    const originalDateNow = Date.now;
     env.openaiApiKey = 'test-openai-key';
     let providerRequests = 0;
     let persisted = 0;
     const telegramBodies = [];
     const dispatches = [];
     try {
+      if (reminderType === 'd14') {
+        // This manual schedule deterministically selects default variant 0.
+        Date.now = () => 1_800_000_000_000;
+        crypto.randomUUID = () => '00000000-0000-4000-8000-000000000000';
+        syncBuiltinESMExports();
+      }
       await withMockedQuery(async (source, params = []) => {
         if (source.includes("last_user.content AS last_user_message_text")) {
           return { rows: [{ chat_id: 57, bot_key: 'en-de', first_name: 'Mira', is_active: true,
-            level: 'a2', reply_mode: reminderType === 'd14' ? 'voice' : 'text', inactive_reason: null,
+            level: 'a2', reply_mode: 'text', inactive_reason: null,
             last_seen_at: '2026-03-01T09:00:00.000Z', last_user_message_at: '2026-03-01T08:00:00.000Z',
             last_user_message_text: 'I enjoy walking', last_assistant_message_at: '2026-03-01T08:01:00.000Z',
             last_assistant_message_text: 'Where do you like to walk?' }] };
@@ -1270,9 +1280,18 @@ for (const [reminderType, providerCase] of [['d3', 'success'], ['d3', 'invalid_o
       assert.equal(dispatches[0].payload.message_source, providerCase === 'success' ? 'llm' : 'fallback_template');
       assert.equal(dispatches[0].payload.llm_response_id, providerCase === 'success' ? 'resp_winback' : null);
       assert.equal(dispatches[0].payload.persisted_to_messages, reminderType === 'd3');
+      if (reminderType === 'd14') {
+        assert.equal(dispatches[0].payload.template_family, 'd14.default');
+        assert.equal(dispatches[0].payload.variant_index, 0);
+        assert.equal(telegramBodies[0].text,
+          'No pressure. We can start again anytime; write one short sentence when you want.');
+      }
     } finally {
       env.openaiApiKey = originalOpenAiKey;
       globalThis.fetch = originalFetch;
+      crypto.randomUUID = originalRandomUuid;
+      Date.now = originalDateNow;
+      syncBuiltinESMExports();
     }
   });
 }
