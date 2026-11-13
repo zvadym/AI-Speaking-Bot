@@ -114,7 +114,6 @@ for (const mode of ['text', 'voice'] as const) {
           delivered.push(text);
           return { message_id: delivered.length + 100 };
         },
-        async sendTelegramVoiceMessage() { throw new Error('unexpected voice delivery'); },
         async downloadTelegramFile() { return Buffer.from('voice'); },
         async callTelegramApi() { return {}; }
       }

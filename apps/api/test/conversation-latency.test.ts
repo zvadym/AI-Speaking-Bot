@@ -70,7 +70,6 @@ function harness({
     quotaGuard: async () => ({ allowed: true as const, context: {} as EntitlementContext }),
     telegramClient: {
       async sendTelegramTextMessage() { throw new Error('unexpected direct delivery'); },
-      async sendTelegramVoiceMessage() { throw new Error('unexpected voice delivery'); },
       async downloadTelegramFile() { events.push('download'); return Buffer.from('voice'); },
       callTelegramApi(_bot: string, _method: string, _body: unknown, options?: { signal?: AbortSignal }) {
         if (options?.signal) signals.push(options.signal);

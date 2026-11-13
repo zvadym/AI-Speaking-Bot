@@ -396,7 +396,6 @@ test('voice conversation reuses STT state and delivers transcript before text re
     getBotLocale: () => ({ user_text_prefix_multiline: 'You said:\n' }),
     telegramClient: {
       async sendTelegramTextMessage() { return { message_id: 1 }; },
-      async sendTelegramVoiceMessage() { return { message_id: 2 }; },
       async downloadTelegramFile() { return Buffer.from('voice'); },
       async callTelegramApi() { return {}; }
     },
@@ -447,7 +446,6 @@ test('voice conversation blocks before Telegram file download and AI', async () 
     getBotLocale: () => ({}),
     telegramClient: {
       async sendTelegramTextMessage() { return { message_id: 1 }; },
-      async sendTelegramVoiceMessage() { return { message_id: 2 }; },
       async downloadTelegramFile() {
         downloads += 1;
         return Buffer.from('voice');
@@ -490,7 +488,6 @@ test('invalid voice duration is delivered before starting progress', async () =>
     getBotLocale: () => ({ msg_too_short: 'Too short' }),
     telegramClient: {
       async sendTelegramTextMessage() { return { message_id: 1 }; },
-      async sendTelegramVoiceMessage() { return { message_id: 2 }; },
       async downloadTelegramFile() { return Buffer.from('voice'); },
       async callTelegramApi() { return {}; }
     },
@@ -525,7 +522,6 @@ test('voice conversation skips TTS when inbound usage consumes final quota', asy
     getBotLocale: () => ({ user_text_prefix_multiline: 'You said:\n' }),
     telegramClient: {
       async sendTelegramTextMessage() { return { message_id: 1 }; },
-      async sendTelegramVoiceMessage() { return { message_id: 2 }; },
       async downloadTelegramFile() { return Buffer.from('voice'); },
       async callTelegramApi() { return {}; }
     },

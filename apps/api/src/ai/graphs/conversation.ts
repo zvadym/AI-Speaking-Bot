@@ -25,9 +25,8 @@ import type { ConversationProgress } from '../../bot-runtime/middleware/progress
 import { enforcePracticeQuota, type PracticeQuotaGuard } from '../../bot-runtime/conversation/practice-quota.js';
 import { createTelegramDraft } from '../../bot-runtime/delivery/telegram-draft.js';
 import { deliverTelegramText } from '../../bot-runtime/delivery/telegram-text-delivery.js';
-import type { TelegramVoiceClient } from '../../bot-runtime/delivery/telegram-voice-delivery.js';
 
-export interface VoiceTelegramClient extends ConversationTelegramClient, TelegramVoiceClient {
+export interface VoiceTelegramClient extends ConversationTelegramClient {
   downloadTelegramFile(fileId: string, options: { botKey: string }): Promise<Buffer>;
 }
 

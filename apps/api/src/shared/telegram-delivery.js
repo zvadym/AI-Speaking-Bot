@@ -271,35 +271,6 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     return Buffer.from(await response.arrayBuffer());
   }
 
-  async function sendTelegramVoiceMessage(chatId, buffer, {
-    botKey = null,
-    filename = 'reply.ogg'
-  } = {}) {
-    const normalizedBotKey = normalizeBotKey(botKey);
-    const token = resolveTelegramBotToken(normalizedBotKey);
-    if (!token) {
-      const err = new Error('missing_telegram_bot_token');
-      err.code = 'missing_telegram_bot_token';
-      throw err;
-    }
-    const formData = new FormData();
-    formData.set('chat_id', String(Number(chatId)));
-    formData.set('voice', new Blob([buffer], { type: 'audio/ogg' }), filename);
-    const response = await fetchImpl(`https://api.telegram.org/bot${token}/sendVoice`, {
-      method: 'POST',
-      body: formData
-    });
-    let payload = null;
-    try { payload = await response.json(); } catch { payload = null; }
-    if (!response.ok || !payload?.ok) {
-      const err = new Error(payload?.description || `telegram_http_${response.status}`);
-      err.telegramStatus = response.status;
-      err.telegramDescription = payload?.description || null;
-      throw err;
-    }
-    return payload.result || null;
-  }
-
   async function editTelegramMessageText(chatId, messageId, text, {
     botKey = null,
     parseMode = null,
@@ -377,7 +348,6 @@ export function createTelegramClient({ env, fetchImpl = fetch }) {
     sendTelegramVideoMessage,
     uploadTelegramMediaToChat,
     downloadTelegramFile,
-    sendTelegramVoiceMessage,
     editTelegramMessageText,
     editTelegramMessageReplyMarkup,
     editTelegramMessageRich,
