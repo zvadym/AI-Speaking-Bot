@@ -16,6 +16,8 @@
     "eval:conversation": "tsx scripts/evaluate-conversation-models.ts"
   },
   "dependencies": {
+    "@langchain/core": "1.4.0",
+    "@langchain/openai": "1.8.4",
     "@sentry/node": "^10.43.0",
     "@sentry/profiling-node": "^10.43.0",
     "cors": "^2.8.5",
