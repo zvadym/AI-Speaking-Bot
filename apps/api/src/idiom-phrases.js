@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { createHash } from 'crypto';
 import OpenAI from 'openai';
-import { renderLlmPrompt } from './llm-prompts/index.js';
+import { renderLlmPrompt } from './ai/prompts/index.js';
 import { normalizeLanguageCode } from './shared/normalization.js';
 import { observeLlmCall } from './bot-runtime/llm-telemetry.js';
 
@@ -234,7 +234,7 @@ export async function translateIdiomPhraseEntry({
       input: [
         {
           role: 'system',
-          content: renderLlmPrompt('idiom-translation-system')
+          content: renderLlmPrompt('idioms/idiom-translation-system')
         },
         {
           role: 'user',

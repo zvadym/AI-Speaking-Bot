@@ -32,9 +32,9 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - `apps/landing`: Nuxt 3 marketing site for `ai-language-school.online`; prerenders teacher/blog pages and generates static output for Vercel.
 - `db/migrations`: Forward-only SQL migrations (dbmate).
 - `db/schema.sql`: Canonical Postgres schema snapshot generated from migrations.
-- `deploy`: Docker Compose stack, Caddy config, env files, prompts, phrases, and bot configs.
+- `deploy`: Docker Compose stack, Caddy config, env files, phrases, and bot configs.
 - `deploy/bots`: Production bot configs consumed by the API and landing generators.
-- `deploy/prompts`: Template source of truth for the typed multi-bot runtime's LLM prompts.
+- `apps/api/resources/prompts`: Template source of truth for conversation, support, notifications, idioms, transcription, and shared tone; loaded through `apps/api/src/ai/prompts`.
 - `deploy/phrases`: Curated idiomatic phrase JSON files imported into the DB for daily idiom-practice notifications.
 - `scripts`: Local dev, migration, deploy, webhook management, and bot provisioning helpers.
 
@@ -139,7 +139,7 @@ This file orients automated agents working in this repo. Keep it accurate as the
   Unknown Discord sends require inspection and are never blindly retried.
 - Conversation history is scoped by `chat_id + bot_key`; settings contain level and reply mode.
 - `apps/api/src/bot-runtime/entitlement-context.ts` is the single source of truth for effective plan and practice quota; usage is global by `chat_id` across all bots.
-- `deploy/prompts/*.md` and `shared/llm-prompts/*.md` are loaded directly by the API and worker.
+- `apps/api/resources/prompts/**/*.md` are loaded by the API and worker from source and build. `BOT_RUNTIME_PROMPTS_DIR` overrides this resource root and must use the same grouped directory layout.
 - `apps/api/scripts/telegram-webhooks.mjs set|inspect|delete` manages all configured Telegram webhooks.
 
 ## Bot Configs

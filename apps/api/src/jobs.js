@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'crypto';
 import { env } from './env.js';
 import { pool } from './db.js';
 import { loadBotConfigs } from './bot-configs.js';
-import { renderLlmPrompt } from './llm-prompts/index.js';
+import { renderLlmPrompt } from './ai/prompts/index.js';
 import { captureMessage } from './sentry.js';
 import { sendDiscordEventNotification } from './discord-events.js';
 import { createPublicBotCatalogLookup } from './shared/bot-catalog.js';
@@ -1322,7 +1322,7 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
     throw createAppError('missing_openai_api_key', 502, 'missing_openai_api_key', { retryable: false });
   }
 
-  const systemPrompt = renderLlmPrompt('weekly-digest-system', {
+  const systemPrompt = renderLlmPrompt('notifications/weekly-digest-system', {
     base_language_label: context.baseLanguageLabel,
     target_language_label: context.targetLanguageLabel,
     message_max_len: WEEKLY_DIGEST_MESSAGE_MAX_LEN,
@@ -1351,7 +1351,7 @@ async function generateWeeklyDigestMessageWithLlm(context, taskType) {
       label: context.replyCtaLabel
     }
   };
-  const userPrompt = renderLlmPrompt('weekly-digest-user', {
+  const userPrompt = renderLlmPrompt('notifications/weekly-digest-user', {
     context_json: JSON.stringify(payload, null, 2)
   });
 
@@ -3804,7 +3804,7 @@ async function generateWinbackMessageWithLlm(context, taskType) {
   const reminderGoal = context.reminderType === 'd3'
     ? 'resume the practice naturally'
     : 'offer an easy restart, not a continuation';
-  const systemPrompt = renderLlmPrompt('winback-system', {
+  const systemPrompt = renderLlmPrompt('notifications/winback-system', {
     base_language_label: context.baseLanguageLabel,
     target_language_label: context.targetLanguageLabel,
     reminder_goal: reminderGoal,
@@ -3833,7 +3833,7 @@ async function generateWinbackMessageWithLlm(context, taskType) {
       recent_turns: context.reminderType === 'd3' ? context.recentTurns : []
     }
   };
-  const userPrompt = renderLlmPrompt('winback-user', {
+  const userPrompt = renderLlmPrompt('notifications/winback-user', {
     context_json: JSON.stringify(payload, null, 2)
   });
 

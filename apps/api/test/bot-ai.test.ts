@@ -268,7 +268,7 @@ test('bot AI loads transcription prompts by audio language and falls back to Eng
   ]);
 });
 
-test('bot AI fails clearly when the English transcription fallback is missing', async () => {
+test('bot AI uses the grouped resource override and fails clearly when the English transcription fallback is missing', async () => {
   const promptRoot = await mkdtemp(path.join(os.tmpdir(), 'bot-runtime-prompts-'));
   await mkdir(path.join(promptRoot, 'transcription'));
   const previousPromptDir = process.env.BOT_RUNTIME_PROMPTS_DIR;
