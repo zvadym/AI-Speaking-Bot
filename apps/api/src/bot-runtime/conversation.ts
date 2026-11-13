@@ -282,4 +282,3 @@ export function conversationReplyMarkup(messageId: number, locale: Locale) {
     ]
   };
 }
-
