@@ -208,7 +208,17 @@
       "reply_descriptions": {
         "text": "Sohbette yazılı yanıtlar. Düzeltmeleri hızlıca okumak istediğinde daha iyi.",
         "voice": "Mümkün olduğunda sesli yanıtlar. Dinleme ritmi ve konuşma akışı için daha iyi."
-      }
+      },
+      "vocabulary": "Sözlük",
+      "vocabulary_empty": "Sözlüğün boş. Öğretmenin yanıtının altındaki Vocabulary düğmesine dokun ve kelime ekle.",
+      "vocabulary_word": "Kelime",
+      "vocabulary_meaning": "Çeviri / anlam",
+      "vocabulary_progress": "İlerleme",
+      "vocabulary_learned": "Öğrenildi",
+      "vocabulary_page": "Sayfa",
+      "vocabulary_total": "Kelime",
+      "previous": "Önceki",
+      "next": "Sonraki"
     },
     "vocab_column_original": "Orijinal",
     "vocab_column_translation": "Çeviri",

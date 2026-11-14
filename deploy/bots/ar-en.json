@@ -208,7 +208,17 @@
       "reply_descriptions": {
         "text": "ردود نصية داخل الدردشة. أفضل عندما تريد قراءة التصحيحات بسرعة.",
         "voice": "ردود صوتية عند التوفّر. أفضل للإيقاع السمعي وانسياب الكلام."
-      }
+      },
+      "vocabulary": "المفردات",
+      "vocabulary_empty": "قاموسك فارغ. اضغط على Vocabulary أسفل رد المعلّم وأضف كلمات.",
+      "vocabulary_word": "الكلمة",
+      "vocabulary_meaning": "الترجمة / المعنى",
+      "vocabulary_progress": "التقدم",
+      "vocabulary_learned": "تم التعلم",
+      "vocabulary_page": "الصفحة",
+      "vocabulary_total": "الكلمات",
+      "previous": "السابق",
+      "next": "التالي"
     },
     "vocab_column_original": "الأصل",
     "vocab_column_translation": "الترجمة",

@@ -208,7 +208,17 @@
       "reply_descriptions": {
         "text": "Text replies in chat. Better when you want to read corrections quickly.",
         "voice": "Voice replies when available. Better for listening rhythm and speaking flow."
-      }
+      },
+      "vocabulary": "Vocabulary",
+      "vocabulary_empty": "Your vocabulary is empty. Tap Vocabulary below a tutor reply and add words.",
+      "vocabulary_word": "Word",
+      "vocabulary_meaning": "Translation / meaning",
+      "vocabulary_progress": "Progress",
+      "vocabulary_learned": "Learned",
+      "vocabulary_page": "Page",
+      "vocabulary_total": "Words",
+      "previous": "Previous",
+      "next": "Next"
     },
     "vocab_column_original": "Original",
     "vocab_column_translation": "Translation",

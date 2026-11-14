@@ -6,6 +6,7 @@ import { settingsLabels } from './settings-views.js';
 import { deliverTelegramText } from '../delivery/telegram-text-delivery.js';
 import { loadStatsContext } from './stats-context.js';
 import type { SettingsAction, SettingsView } from './settings-model.js';
+import { loadVocabularyPage } from '../../vocabulary/list.js';
 
 type Api = (method:string,body:Record<string,unknown>)=>Promise<unknown>;
 
@@ -51,6 +52,10 @@ export async function prepareSettingsScreen({pool,update,action,view,locale,api}
   if(action.kind==='stats'){
     view.screen='stats';
     view.stats=await loadStatsContext(pool,update.input.chatId!);
+  }
+  if(action.kind==='vocabulary'){
+    view.screen='vocabulary';
+    view.vocabulary=await loadVocabularyPage(pool,update.input.chatId!,update.botKey,Number(action.value));
   }
 }
 

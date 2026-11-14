@@ -208,7 +208,17 @@
       "reply_descriptions": {
         "text": "Textantworten im Chat. Praktisch, wenn du Korrekturen schnell lesen willst.",
         "voice": "Sprachantworten, wenn verfuegbar. Besser fuer Hoerrhythmus und Sprechfluss."
-      }
+      },
+      "vocabulary": "Wörterbuch",
+      "vocabulary_empty": "Dein Wörterbuch ist leer. Tippe unter einer Antwort auf Vocabulary und füge Wörter hinzu.",
+      "vocabulary_word": "Wort",
+      "vocabulary_meaning": "Übersetzung / Bedeutung",
+      "vocabulary_progress": "Fortschritt",
+      "vocabulary_learned": "Gelernt",
+      "vocabulary_page": "Seite",
+      "vocabulary_total": "Wörter",
+      "previous": "Zurück",
+      "next": "Weiter"
     },
     "vocab_column_original": "Original",
     "vocab_column_translation": "Übersetzung",

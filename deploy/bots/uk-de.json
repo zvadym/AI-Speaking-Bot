@@ -207,7 +207,17 @@
       "reply_descriptions": {
         "text": "Текстові відповіді в чаті. Зручніше, коли хочеться швидко читати виправлення.",
         "voice": "Голосові відповіді, коли вони доступні. Краще для слухання й ритму мовлення."
-      }
+      },
+      "vocabulary": "Словник",
+      "vocabulary_empty": "Твій словник порожній. Натисни Vocabulary під відповіддю репетитора й додай слова.",
+      "vocabulary_word": "Слово",
+      "vocabulary_meaning": "Переклад / значення",
+      "vocabulary_progress": "Прогрес",
+      "vocabulary_learned": "Вивчене",
+      "vocabulary_page": "Сторінка",
+      "vocabulary_total": "Слів",
+      "previous": "Попередня",
+      "next": "Наступна"
     },
     "vocab_column_original": "Оригінал",
     "vocab_column_translation": "Переклад",

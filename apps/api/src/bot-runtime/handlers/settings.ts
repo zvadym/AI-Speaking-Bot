@@ -9,6 +9,7 @@ import { applySettingsAction, parseSettingsAction, SettingsInputError, settingsV
 import { renderSettingsRich, settingsLabels } from '../settings/settings-views.js';
 import { deleteSettingsMessage } from '../settings/settings-message.js';
 import type { TelegramTextClient } from '../delivery/telegram-text-delivery.js';
+import { vocabularyLanguage } from '../../vocabulary/types.js';
 
 export interface SettingsTelegramClient extends TelegramTextClient {
   answerTelegramCallbackQuery(id: string, text?: string, options?: {botKey?: string | null; showAlert?: boolean}): Promise<unknown>;
@@ -65,6 +66,7 @@ export function createSettingsHandlers({ pool, getBotLocale, telegramClient, web
       // Buttons in previously sent choosers now open the remaining card.
       if (action.variant === 'w' && action.kind !== 'open') throw new SettingsInputError('invalid');
       action.variant = 'r';
+      if(action.kind==='vocabulary'&&!vocabularyLanguage(update.botKey.split('-')[1]))throw new SettingsInputError('invalid');
     } catch { await answer(true);return {status:'noop'}; }
     return lock(pool, `settings:${update.botKey}:${chatId}`, async () => {
       try {

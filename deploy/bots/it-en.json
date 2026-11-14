@@ -208,7 +208,17 @@
       "reply_descriptions": {
         "text": "Risposte testuali in chat. Meglio se vuoi leggere subito le correzioni.",
         "voice": "Risposte vocali quando disponibili. Meglio per ascolto, ritmo e fluidita."
-      }
+      },
+      "vocabulary": "Vocabolario",
+      "vocabulary_empty": "Il tuo vocabolario è vuoto. Tocca Vocabulary sotto una risposta e aggiungi parole.",
+      "vocabulary_word": "Parola",
+      "vocabulary_meaning": "Traduzione / significato",
+      "vocabulary_progress": "Progressi",
+      "vocabulary_learned": "Imparata",
+      "vocabulary_page": "Pagina",
+      "vocabulary_total": "Parole",
+      "previous": "Precedente",
+      "next": "Successiva"
     },
     "vocab_column_original": "Originale",
     "vocab_column_translation": "Traduzione",

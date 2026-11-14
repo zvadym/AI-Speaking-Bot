@@ -116,7 +116,10 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - Settings UI uses `settings/settings-model.ts`, `settings/settings-widget.ts`, `settings/settings-views.ts`, and `handlers/settings.ts`;
   the reply button opens a native rich card directly, with separate two-column
   tables for level and reply controls beside their descriptions. Level/reply changes save immediately;
-  Stats and feedback actions live in the same card. Slash menus are empty; only
+  Stats, feedback and the personal vocabulary list live in the same card.
+  Native `settings:r:vocabulary:<page>` reads the user's non-archived words for
+  the current target language (de/en/es), 10 per page, without AI or progress writes.
+  Slash menus are empty; only
   technical `/start` remains for first contact and deep links, without resetting onboarding.
   Done deletes the card message. New opens reserve `settings:open:r:v1` /
   `sendRichMessage`; existing widget reservations retain their delivery identity.

@@ -208,7 +208,17 @@
       "reply_descriptions": {
         "text": "चैट में टेक्स्ट जवाब। जब आप सुधार जल्दी पढ़ना चाहते हैं, तब बेहतर।",
         "voice": "जहाँ उपलब्ध हो, वॉइस जवाब। सुनने की लय और बोलने के प्रवाह के लिए बेहतर।"
-      }
+      },
+      "vocabulary": "शब्दकोश",
+      "vocabulary_empty": "तुम्हारा शब्दकोश खाली है। शिक्षक के जवाब के नीचे Vocabulary दबाकर शब्द जोड़ो।",
+      "vocabulary_word": "शब्द",
+      "vocabulary_meaning": "अनुवाद / अर्थ",
+      "vocabulary_progress": "प्रगति",
+      "vocabulary_learned": "सीख लिया",
+      "vocabulary_page": "पृष्ठ",
+      "vocabulary_total": "शब्द",
+      "previous": "पिछला",
+      "next": "अगला"
     },
     "vocab_column_original": "मूल शब्द",
     "vocab_column_translation": "अनुवाद",

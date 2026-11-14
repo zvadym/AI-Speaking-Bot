@@ -50,6 +50,7 @@ test('all production cards separate the closing action and explain autosave',()=
     const bot=JSON.parse(readFileSync(new URL(file,dir),'utf8'));
     const l=settingsLabels(bot.locale);
     const view=settingsView({});
+    view.botKey=bot.bot_key;
     const blocks=renderSettingsRich(view,l).blocks;
     const tables=blocks.filter((b:any)=>b.type==='table') as Array<{cells:Array<Array<{text:unknown;align:string;valign:string}>>}>;
     assert.deepEqual(tables.map(t=>t.cells.length),[5,2],file);
@@ -61,9 +62,11 @@ test('all production cards separate the closing action and explain autosave',()=
       assert.equal((cells[0].text as {type:string}).type,'button',file);
       for(const cell of cells){assert.equal(cell.align,'left');assert.equal(cell.valign,'top');}
     }
-    assert.deepEqual(blocks.slice(-5),[
+    const supported=['de','en','es'].includes(bot.bot_key.split('-')[1]);
+    assert.deepEqual(blocks.slice(supported?-6:-5),[
       {type:'divider'},
       {type:'buttons',buttons:[{text:'📊 '+l.stats,callback_data:'settings:r:stats'}]},
+      ...(supported?[{type:'buttons',buttons:[{text:'📚 '+l.vocabulary,callback_data:'settings:r:vocabulary:0'}]}]:[]),
       {type:'buttons',buttons:[{text:'✉️ '+l.feedback,callback_data:'settings:r:feedback'}]},
       {type:'divider'},
       {type:'buttons',buttons:[{text:l.done,callback_data:'settings:r:close'}]}

@@ -14,6 +14,7 @@ import { sendReservedSettingsMessages, type ReservedSettingsDelivery, type Setti
 import { renderSettingsWidget,encodeWidgetSettings } from './settings-widget.js';
 import { loadWidgetCard,saveWidgetScreen } from './settings-widget-cards.js';
 import { editSettingsCard } from './settings-card-update.js';
+import { vocabularyLanguage } from '../../vocabulary/types.js';
 import { loadStatsContext } from './stats-context.js';
 
 interface TelegramApi {
@@ -112,6 +113,7 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,on
     }
     let action:SettingsAction;
     try{action=command?{variant:'r',kind:'open',value:''}:parseSettingsAction(cb!.data);}catch{await answer(true);return true;}
+    if(action.kind==='vocabulary'&&!vocabularyLanguage(botKey.split('-')[1])){await answer(true);return true;}
     if(widget?(action.variant!=='h'||action.kind==='open'):!command&&action.variant==='h'){await answer(true);return true;}
     if(action.kind==='open')action.variant='r'; // Old chooser buttons open the current card.
     if(!widget&&action.variant==='w'){await answer(true);return true;}
@@ -135,7 +137,7 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,on
       if(action.kind==='refresh'&&card){
         view.screen=card.screen;
         if(view.screen==='stats')view.stats=await loadStatsContext(pool,input.chatId!);
-      }else if(['stats','feedback','cancel'].includes(action.kind)||saved.feedback_active)
+      }else if(['stats','feedback','cancel','vocabulary'].includes(action.kind)||saved.feedback_active)
         await prepareSettingsScreen({pool,update:prepared,action,view,locale:getBotLocale(botKey),api});
       if(widget){
         const screen=action.kind==='close'&&view.screen!=='feedback'?'closed':view.screen||'home';
