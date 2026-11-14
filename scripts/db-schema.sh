@@ -101,6 +101,9 @@ dbmate_dump_to_file() {
     -v "$output_dir:/schema-output" \
     "$DBMATE_IMAGE" \
     --schema-file "/schema-output/$output_name" dump >/dev/null
+  # Internal attribute-version metadata is not migration DDL. Older pg_dump
+  # clients emit it when connected to newly patched PostgreSQL minors.
+  python3 "$ROOT_DIR/scripts/schema_normalization.py" "$output_file"
 }
 
 generate_schema_to_file() {
