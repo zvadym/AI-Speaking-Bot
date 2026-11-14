@@ -1,0 +1,1381 @@
+{
+  "version": 1,
+  "status": "future-eval-set",
+  "description": "Synthetic vocabulary extraction fixtures for a future iterative evaluation suite (German, English and Spanish).",
+  "todo": "Promote these fixtures into a repeatable model/prompt eval runner. This file currently preserves test data only.",
+  "sourceReportUrl": "https://app.notion.com/p/417e327632fc81ee9427e4377bcf8604",
+  "splits": {
+    "initial": "60 cases used in the original experiment and to refine its second prompt.",
+    "historical_holdout": "30 cases first evaluated after prompt refinement. Results have now been inspected; use as regression data, not as an unseen holdout for future iterations."
+  },
+  "expectationContract": {
+    "required": "Each string must occur as a dictionary headword. An array of strings represents alternatives: at least one must occur.",
+    "forbidden": "None of these strings should occur as a headword.",
+    "normalization": "Unicode NFC, lowercase and collapsed/trimmed whitespace before comparing.",
+    "coverage": "Targeted key headwords and traps, not an exhaustive gold vocabulary or full precision/recall annotation.",
+    "deduplication": "The extractor should return distinct headwords; required/forbidden checks alone do not validate deduplication.",
+    "learningProgress": "Extraction only. A word list or malformed learner sentence can contain extractable headwords without qualifying for a learning credit.",
+    "reviewStatus": "Author-annotated synthetic examples; not independently reviewed by native speakers."
+  },
+  "cases": [
+    {
+      "id": "de01",
+      "language": "de",
+      "text": "Ich rufe dich morgen an.",
+      "required": [
+        "anrufen"
+      ],
+      "forbidden": [
+        "rufen"
+      ],
+      "category": "separable",
+      "split": "initial"
+    },
+    {
+      "id": "de02",
+      "language": "de",
+      "text": "Ich rufe morgen nach der Arbeit meine Mutter an.",
+      "required": [
+        "anrufen",
+        "Arbeit",
+        "Mutter"
+      ],
+      "forbidden": [
+        "rufen"
+      ],
+      "category": "separable_long",
+      "split": "initial"
+    },
+    {
+      "id": "de03",
+      "language": "de",
+      "text": "Ich stehe jeden Morgen um sieben Uhr auf.",
+      "required": [
+        "aufstehen"
+      ],
+      "forbidden": [
+        "stehen"
+      ],
+      "category": "separable",
+      "split": "initial"
+    },
+    {
+      "id": "de04",
+      "language": "de",
+      "text": "Ich rufe dich an und stehe danach auf.",
+      "required": [
+        "anrufen",
+        "aufstehen"
+      ],
+      "forbidden": [
+        "rufen",
+        "stehen"
+      ],
+      "category": "two_particles",
+      "split": "initial"
+    },
+    {
+      "id": "de05",
+      "language": "de",
+      "text": "Ich habe dich gestern angerufen.",
+      "required": [
+        "anrufen"
+      ],
+      "forbidden": [
+        "rufen"
+      ],
+      "category": "participle",
+      "split": "initial"
+    },
+    {
+      "id": "de06",
+      "language": "de",
+      "text": "Ich freue mich, weil ich dich morgen anrufe.",
+      "required": [
+        "anrufen",
+        "sich freuen"
+      ],
+      "forbidden": [
+        "rufen"
+      ],
+      "category": "subordinate_reflexive",
+      "split": "initial"
+    },
+    {
+      "id": "de07",
+      "language": "de",
+      "text": "Ich versuche, dich morgen anzurufen.",
+      "required": [
+        "versuchen",
+        "anrufen"
+      ],
+      "forbidden": [
+        "rufen"
+      ],
+      "category": "zu_infinitive",
+      "split": "initial"
+    },
+    {
+      "id": "de08",
+      "language": "de",
+      "text": "Ich will dich morgen anrufen.",
+      "required": [
+        "anrufen"
+      ],
+      "forbidden": [
+        "rufen"
+      ],
+      "category": "modal",
+      "split": "initial"
+    },
+    {
+      "id": "de09",
+      "language": "de",
+      "text": "Gestern holte sie ihren Bruder am Bahnhof ab.",
+      "required": [
+        "abholen",
+        "Bruder",
+        "Bahnhof"
+      ],
+      "forbidden": [
+        "holen"
+      ],
+      "category": "past_separable",
+      "split": "initial"
+    },
+    {
+      "id": "de10",
+      "language": "de",
+      "text": "Er nimmt regelmäßig an unserem Kurs teil.",
+      "required": [
+        "teilnehmen",
+        "Kurs"
+      ],
+      "forbidden": [
+        "nehmen"
+      ],
+      "category": "irregular_separable",
+      "split": "initial"
+    },
+    {
+      "id": "de11",
+      "language": "de",
+      "text": "Bitte bring die Unterlagen zur Besprechung mit.",
+      "required": [
+        "mitbringen",
+        "Unterlage",
+        "Besprechung"
+      ],
+      "forbidden": [
+        "bringen"
+      ],
+      "category": "imperative_separable",
+      "split": "initial"
+    },
+    {
+      "id": "de12",
+      "language": "de",
+      "text": "Sie hat sich den neuen Kollegen vorgestellt.",
+      "required": [
+        "sich vorstellen",
+        "Kollege"
+      ],
+      "forbidden": [
+        "stellen"
+      ],
+      "category": "reflexive_participle",
+      "split": "initial"
+    },
+    {
+      "id": "de13",
+      "language": "de",
+      "text": "Ich warte auf den Bus.",
+      "required": [
+        "warten",
+        "Bus"
+      ],
+      "forbidden": [
+        "aufwarten"
+      ],
+      "category": "preposition_trap",
+      "split": "initial"
+    },
+    {
+      "id": "de14",
+      "language": "de",
+      "text": "Ich rufe laut an der Tür.",
+      "required": [
+        "rufen",
+        "Tür"
+      ],
+      "forbidden": [
+        "anrufen"
+      ],
+      "category": "preposition_trap",
+      "split": "initial"
+    },
+    {
+      "id": "de15",
+      "language": "de",
+      "text": "Die Kinder stehen auf der Brücke und warten.",
+      "required": [
+        "Kind",
+        "stehen",
+        "Brücke",
+        "warten"
+      ],
+      "forbidden": [
+        "aufstehen",
+        "aufwarten"
+      ],
+      "category": "preposition_trap",
+      "split": "initial"
+    },
+    {
+      "id": "de16",
+      "language": "de",
+      "text": "Ich rufe dich morgen.",
+      "required": [
+        "rufen"
+      ],
+      "forbidden": [
+        "anrufen"
+      ],
+      "category": "missing_particle",
+      "split": "initial"
+    },
+    {
+      "id": "de17",
+      "language": "de",
+      "text": "gestern habe ich meine mutter angerufen danach habe ich eingekauft und heute rufe ich meinen bruder an",
+      "required": [
+        "anrufen",
+        "einkaufen",
+        "Mutter",
+        "Bruder"
+      ],
+      "forbidden": [
+        "rufen",
+        "kaufen"
+      ],
+      "category": "transcript_like",
+      "split": "initial"
+    },
+    {
+      "id": "de18",
+      "language": "de",
+      "text": "Ich habe dich gestern anrufen.",
+      "required": [
+        "anrufen"
+      ],
+      "forbidden": [
+        "rufen"
+      ],
+      "category": "learner_error_extraction_only",
+      "split": "initial"
+    },
+    {
+      "id": "de19",
+      "language": "de",
+      "text": "Ich kaufe heute ein. Mein Bruder kauft morgen ein. Wir haben gestern eingekauft.",
+      "required": [
+        "einkaufen"
+      ],
+      "forbidden": [
+        "kaufen"
+      ],
+      "category": "deduplication",
+      "split": "initial"
+    },
+    {
+      "id": "de20",
+      "language": "de",
+      "text": "Wir machen das Fenster auf, obwohl wir früh aufstehen müssen.",
+      "required": [
+        "aufmachen",
+        "Fenster",
+        "aufstehen"
+      ],
+      "forbidden": [
+        "machen",
+        "stehen"
+      ],
+      "category": "multi_clause",
+      "split": "initial"
+    },
+    {
+      "id": "en01",
+      "language": "en",
+      "text": "Yesterday I went to the museum and bought two books.",
+      "required": [
+        "go",
+        "museum",
+        "buy",
+        "book"
+      ],
+      "forbidden": [
+        "went",
+        "bought"
+      ],
+      "category": "irregular",
+      "split": "initial"
+    },
+    {
+      "id": "en02",
+      "language": "en",
+      "text": "I picked the book up.",
+      "required": [
+        "pick up",
+        "book"
+      ],
+      "forbidden": [
+        "pick"
+      ],
+      "category": "split_phrasal",
+      "split": "initial"
+    },
+    {
+      "id": "en03",
+      "language": "en",
+      "text": "She gave smoking up last year.",
+      "required": [
+        "give up",
+        "smoke"
+      ],
+      "forbidden": [
+        "give"
+      ],
+      "category": "split_phrasal",
+      "split": "initial"
+    },
+    {
+      "id": "en04",
+      "language": "en",
+      "text": "We put the meeting off until Friday.",
+      "required": [
+        "put off",
+        "meeting"
+      ],
+      "forbidden": [
+        "put",
+        "Friday"
+      ],
+      "category": "split_phrasal",
+      "split": "initial"
+    },
+    {
+      "id": "en05",
+      "language": "en",
+      "text": "The plane took off late.",
+      "required": [
+        "take off",
+        "plane"
+      ],
+      "forbidden": [
+        "take"
+      ],
+      "category": "phrasal",
+      "split": "initial"
+    },
+    {
+      "id": "en06",
+      "language": "en",
+      "text": "I am looking forward to meeting your family.",
+      "required": [
+        "look forward to",
+        "meet",
+        "family"
+      ],
+      "forbidden": [
+        "look"
+      ],
+      "category": "three_word_expression",
+      "split": "initial"
+    },
+    {
+      "id": "en07",
+      "language": "en",
+      "text": "I cannot put up with this noise anymore.",
+      "required": [
+        "put up with",
+        "noise"
+      ],
+      "forbidden": [
+        "put",
+        "put up"
+      ],
+      "category": "three_word_expression",
+      "split": "initial"
+    },
+    {
+      "id": "en08",
+      "language": "en",
+      "text": "She looks after her younger brother.",
+      "required": [
+        "look after",
+        "young",
+        "brother"
+      ],
+      "forbidden": [
+        "look"
+      ],
+      "category": "prepositional_verb",
+      "split": "initial"
+    },
+    {
+      "id": "en09",
+      "language": "en",
+      "text": "They turned my application down.",
+      "required": [
+        "turn down",
+        "application"
+      ],
+      "forbidden": [
+        "turn"
+      ],
+      "category": "split_phrasal",
+      "split": "initial"
+    },
+    {
+      "id": "en10",
+      "language": "en",
+      "text": "Please pick it up and bring it back.",
+      "required": [
+        "pick up",
+        "bring back"
+      ],
+      "forbidden": [
+        "pick",
+        "bring"
+      ],
+      "category": "two_particles",
+      "split": "initial"
+    },
+    {
+      "id": "en11",
+      "language": "en",
+      "text": "She picked a book from the shelf.",
+      "required": [
+        "pick",
+        "book",
+        "shelf"
+      ],
+      "forbidden": [
+        "pick up"
+      ],
+      "category": "missing_particle",
+      "split": "initial"
+    },
+    {
+      "id": "en12",
+      "language": "en",
+      "text": "I looked at the word on the wall.",
+      "required": [
+        [
+          "look",
+          "look at"
+        ],
+        "word",
+        "wall"
+      ],
+      "forbidden": [
+        "look up"
+      ],
+      "category": "missing_particle",
+      "split": "initial"
+    },
+    {
+      "id": "en13",
+      "language": "en",
+      "text": "I looked up the word in a dictionary.",
+      "required": [
+        "look up",
+        "word",
+        "dictionary"
+      ],
+      "forbidden": [
+        "look"
+      ],
+      "category": "sense_dictionary",
+      "split": "initial"
+    },
+    {
+      "id": "en14",
+      "language": "en",
+      "text": "I looked up at the sky.",
+      "required": [
+        [
+          "look",
+          "look up"
+        ],
+        "sky"
+      ],
+      "forbidden": [],
+      "category": "sense_literal_diagnostic",
+      "split": "initial"
+    },
+    {
+      "id": "en15",
+      "language": "en",
+      "text": "I took care of my brother while our parents were away.",
+      "required": [
+        "take care of",
+        "brother",
+        "parent"
+      ],
+      "forbidden": [
+        "take"
+      ],
+      "category": "multiword_expression",
+      "split": "initial"
+    },
+    {
+      "id": "en16",
+      "language": "en",
+      "text": "We ran out of milk before breakfast.",
+      "required": [
+        "run out of",
+        "milk",
+        "breakfast"
+      ],
+      "forbidden": [
+        "run"
+      ],
+      "category": "three_word_expression",
+      "split": "initial"
+    },
+    {
+      "id": "en17",
+      "language": "en",
+      "text": "yesterday i picked my friend up then we went shopping and later she dropped me off",
+      "required": [
+        "pick up",
+        "drop off",
+        "go",
+        "friend"
+      ],
+      "forbidden": [
+        "pick",
+        "drop"
+      ],
+      "category": "transcript_like",
+      "split": "initial"
+    },
+    {
+      "id": "en18",
+      "language": "en",
+      "text": "Yesterday I go to the shop and buy a book.",
+      "required": [
+        "go",
+        "shop",
+        "buy",
+        "book"
+      ],
+      "forbidden": [],
+      "category": "learner_error_extraction_only",
+      "split": "initial"
+    },
+    {
+      "id": "en19",
+      "language": "en",
+      "text": "I gave up. She gives up easily. We have never given up.",
+      "required": [
+        "give up"
+      ],
+      "forbidden": [
+        "give"
+      ],
+      "category": "deduplication",
+      "split": "initial"
+    },
+    {
+      "id": "en20",
+      "language": "en",
+      "text": "museum, journey, reliable",
+      "required": [
+        "museum",
+        "journey",
+        "reliable"
+      ],
+      "forbidden": [],
+      "category": "list_not_progress",
+      "split": "initial"
+    },
+    {
+      "id": "es01",
+      "language": "es",
+      "text": "Quiero comprártelo mañana.",
+      "required": [
+        "querer",
+        "comprar"
+      ],
+      "forbidden": [
+        "comprártelo",
+        "comprartelo"
+      ],
+      "category": "infinitive_two_clitics",
+      "split": "initial"
+    },
+    {
+      "id": "es02",
+      "language": "es",
+      "text": "Dámelo, por favor.",
+      "required": [
+        "dar"
+      ],
+      "forbidden": [
+        "dámelo",
+        "damelo"
+      ],
+      "category": "imperative_two_clitics",
+      "split": "initial"
+    },
+    {
+      "id": "es03",
+      "language": "es",
+      "text": "Cuéntamelo después de la cena.",
+      "required": [
+        "contar",
+        "cena"
+      ],
+      "forbidden": [
+        "cuéntamelo"
+      ],
+      "category": "imperative_irregular_clitics",
+      "split": "initial"
+    },
+    {
+      "id": "es04",
+      "language": "es",
+      "text": "Estoy leyéndolo mientras espero el autobús.",
+      "required": [
+        "leer",
+        "esperar",
+        "autobús"
+      ],
+      "forbidden": [
+        "leyéndolo"
+      ],
+      "category": "gerund_clitic",
+      "split": "initial"
+    },
+    {
+      "id": "es05",
+      "language": "es",
+      "text": "Me lavo las manos antes de comer.",
+      "required": [
+        "lavarse",
+        "mano",
+        "comer"
+      ],
+      "forbidden": [],
+      "category": "reflexive_separate",
+      "split": "initial"
+    },
+    {
+      "id": "es06",
+      "language": "es",
+      "text": "Me voy a casa porque estoy cansado.",
+      "required": [
+        "irse",
+        "casa",
+        "cansado"
+      ],
+      "forbidden": [],
+      "category": "pronominal_irregular",
+      "split": "initial"
+    },
+    {
+      "id": "es07",
+      "language": "es",
+      "text": "No te arrepientas de tu decisión.",
+      "required": [
+        "arrepentirse",
+        "decisión"
+      ],
+      "forbidden": [
+        "arrepientas"
+      ],
+      "category": "pronominal_subjunctive",
+      "split": "initial"
+    },
+    {
+      "id": "es08",
+      "language": "es",
+      "text": "Ayer fui al museo y compré un libro.",
+      "required": [
+        "ir",
+        "museo",
+        "comprar",
+        "libro"
+      ],
+      "forbidden": [
+        "ser"
+      ],
+      "category": "fui_ir",
+      "split": "initial"
+    },
+    {
+      "id": "es09",
+      "language": "es",
+      "text": "Fui muy paciente durante la reunión.",
+      "required": [
+        "paciente",
+        "reunión"
+      ],
+      "forbidden": [
+        "ir"
+      ],
+      "category": "fui_ser_function_word",
+      "split": "initial"
+    },
+    {
+      "id": "es10",
+      "language": "es",
+      "text": "Puse las llaves sobre la mesa y después me senté.",
+      "required": [
+        "poner",
+        "llave",
+        "mesa",
+        "sentarse"
+      ],
+      "forbidden": [
+        "puse",
+        "senté"
+      ],
+      "category": "irregular_reflexive",
+      "split": "initial"
+    },
+    {
+      "id": "es11",
+      "language": "es",
+      "text": "Hazlo ahora y explícamelo mañana.",
+      "required": [
+        "hacer",
+        "explicar"
+      ],
+      "forbidden": [
+        "hazlo",
+        "explícamelo"
+      ],
+      "category": "two_imperatives",
+      "split": "initial"
+    },
+    {
+      "id": "es12",
+      "language": "es",
+      "text": "Siéntate aquí y ponte cómodo.",
+      "required": [
+        "sentarse",
+        "ponerse",
+        "cómodo"
+      ],
+      "forbidden": [
+        "siéntate"
+      ],
+      "category": "reflexive_imperative",
+      "split": "initial"
+    },
+    {
+      "id": "es13",
+      "language": "es",
+      "text": "Vámonos antes de que empiece a llover.",
+      "required": [
+        "irse",
+        "empezar",
+        "llover"
+      ],
+      "forbidden": [
+        "vámonos"
+      ],
+      "category": "fused_irregular",
+      "split": "initial"
+    },
+    {
+      "id": "es14",
+      "language": "es",
+      "text": "Voy a dárselo cuando termine de escribirlo.",
+      "required": [
+        "dar",
+        "terminar",
+        "escribir"
+      ],
+      "forbidden": [
+        "dárselo",
+        "escribirlo"
+      ],
+      "category": "two_infinitives",
+      "split": "initial"
+    },
+    {
+      "id": "es15",
+      "language": "es",
+      "text": "Me acuerdo de aquella conversación.",
+      "required": [
+        "acordarse",
+        "conversación"
+      ],
+      "forbidden": [],
+      "category": "pronominal_context",
+      "split": "initial"
+    },
+    {
+      "id": "es16",
+      "language": "es",
+      "text": "He comprado dos libros interesantes.",
+      "required": [
+        "comprar",
+        "libro",
+        "interesante"
+      ],
+      "forbidden": [
+        "comprado",
+        "libros"
+      ],
+      "category": "participle_plural",
+      "split": "initial"
+    },
+    {
+      "id": "es17",
+      "language": "es",
+      "text": "ayer me levanté temprano fui al trabajo y después quería comprártelo pero la tienda estaba cerrada",
+      "required": [
+        "levantarse",
+        "ir",
+        "trabajo",
+        "querer",
+        "comprar",
+        "tienda",
+        "cerrado"
+      ],
+      "forbidden": [
+        "comprártelo"
+      ],
+      "category": "transcript_like",
+      "split": "initial"
+    },
+    {
+      "id": "es18",
+      "language": "es",
+      "text": "Ayer yo compró libros en la tienda.",
+      "required": [
+        "comprar",
+        "libro",
+        "tienda"
+      ],
+      "forbidden": [],
+      "category": "learner_error_extraction_only",
+      "split": "initial"
+    },
+    {
+      "id": "es19",
+      "language": "es",
+      "text": "Lo compré ayer. Quiero comprarlo otra vez y estoy comprándolo ahora.",
+      "required": [
+        "comprar",
+        "querer"
+      ],
+      "forbidden": [
+        "comprarlo",
+        "comprándolo"
+      ],
+      "category": "deduplication",
+      "split": "initial"
+    },
+    {
+      "id": "es20",
+      "language": "es",
+      "text": "Me levanto temprano, pero levanto la caja lentamente.",
+      "required": [
+        "levantarse",
+        "levantar",
+        "caja"
+      ],
+      "forbidden": [],
+      "category": "reflexive_nonreflexive_contrast",
+      "split": "initial"
+    },
+    {
+      "id": "deh01",
+      "language": "de",
+      "text": "Heute räume ich nach dem Frühstück mein kleines Zimmer auf.",
+      "required": [
+        "aufräumen",
+        "Frühstück",
+        "klein",
+        "Zimmer"
+      ],
+      "forbidden": [
+        "räumen"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "deh02",
+      "language": "de",
+      "text": "Sie lädt am Wochenende ihre Freunde zum Abendessen ein.",
+      "required": [
+        "einladen",
+        "Freund",
+        "Abendessen"
+      ],
+      "forbidden": [
+        "laden"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "deh03",
+      "language": "de",
+      "text": "Der Zug fährt trotz des Schnees pünktlich ab.",
+      "required": [
+        "Zug",
+        "abfahren",
+        "Schnee",
+        "pünktlich"
+      ],
+      "forbidden": [
+        "fahren"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "deh04",
+      "language": "de",
+      "text": "Kannst du bitte das Licht ausschalten?",
+      "required": [
+        "Licht",
+        "ausschalten"
+      ],
+      "forbidden": [
+        "schalten"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "deh05",
+      "language": "de",
+      "text": "Ich habe vergessen, die Rechnung rechtzeitig zu bezahlen.",
+      "required": [
+        "vergessen",
+        "Rechnung",
+        "rechtzeitig",
+        "bezahlen"
+      ],
+      "forbidden": [],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "deh06",
+      "language": "de",
+      "text": "Wir fangen nach einer kurzen Pause wieder an.",
+      "required": [
+        "anfangen",
+        "kurz",
+        "Pause"
+      ],
+      "forbidden": [
+        "fangen"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "deh07",
+      "language": "de",
+      "text": "Ich stelle die Tasse auf den Tisch.",
+      "required": [
+        "stellen",
+        "Tasse",
+        "Tisch"
+      ],
+      "forbidden": [
+        "aufstellen"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "deh08",
+      "language": "de",
+      "text": "Er gibt mir das Buch.",
+      "required": [
+        "geben",
+        "Buch"
+      ],
+      "forbidden": [
+        "aufgeben",
+        "zurückgeben"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "deh09",
+      "language": "de",
+      "text": "Ich erinnere mich an unsere Reise und ziehe meine Jacke an.",
+      "required": [
+        "sich erinnern",
+        "Reise",
+        "anziehen",
+        "Jacke"
+      ],
+      "forbidden": [
+        "erinnern",
+        "ziehen"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "deh10",
+      "language": "de",
+      "text": "morgen steige ich früh aus dem bus aus dann kaufe ich ein und rufe meine schwester an",
+      "required": [
+        "aussteigen",
+        "Bus",
+        "einkaufen",
+        "anrufen",
+        "Schwester"
+      ],
+      "forbidden": [
+        "steigen",
+        "kaufen",
+        "rufen"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh01",
+      "language": "en",
+      "text": "Please turn the lights off before you leave.",
+      "required": [
+        "turn off",
+        "light",
+        "leave"
+      ],
+      "forbidden": [
+        "turn"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh02",
+      "language": "en",
+      "text": "I came across an interesting article while cleaning.",
+      "required": [
+        "come across",
+        "interesting",
+        "article",
+        "clean"
+      ],
+      "forbidden": [
+        "come"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh03",
+      "language": "en",
+      "text": "We broke down on a narrow road.",
+      "required": [
+        "break down",
+        "narrow",
+        "road"
+      ],
+      "forbidden": [
+        "break"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh04",
+      "language": "en",
+      "text": "She brought the difficult subject up during dinner.",
+      "required": [
+        "bring up",
+        "difficult",
+        "subject",
+        "dinner"
+      ],
+      "forbidden": [
+        "bring"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh05",
+      "language": "en",
+      "text": "The coat is warmer and the shoes are cheaper.",
+      "required": [
+        "coat",
+        "warm",
+        "shoe",
+        "cheap"
+      ],
+      "forbidden": [
+        "warmer",
+        "cheaper"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh06",
+      "language": "en",
+      "text": "I walked up the hill and sat under a tree.",
+      "required": [
+        "walk",
+        "hill",
+        "sit",
+        "tree"
+      ],
+      "forbidden": [
+        "walk up"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh07",
+      "language": "en",
+      "text": "He turned toward the door and smiled.",
+      "required": [
+        "turn",
+        "door",
+        "smile"
+      ],
+      "forbidden": [
+        "turn off",
+        "turn down"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh08",
+      "language": "en",
+      "text": "She got over the illness and caught up with her classmates.",
+      "required": [
+        "get over",
+        "illness",
+        "catch up with",
+        "classmate"
+      ],
+      "forbidden": [
+        "get",
+        "catch"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh09",
+      "language": "en",
+      "text": "We checked in late, then checked the address again.",
+      "required": [
+        "check in",
+        "late",
+        "check",
+        "address"
+      ],
+      "forbidden": [],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "enh10",
+      "language": "en",
+      "text": "yesterday i woke up early and worked out before i set off for the station",
+      "required": [
+        "wake up",
+        "early",
+        "work out",
+        "set off",
+        "station"
+      ],
+      "forbidden": [
+        "wake",
+        "work",
+        "set"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh01",
+      "language": "es",
+      "text": "Tráemelas cuando vuelvas de la oficina.",
+      "required": [
+        "traer",
+        "volver",
+        "oficina"
+      ],
+      "forbidden": [
+        "tráemelas"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh02",
+      "language": "es",
+      "text": "Explícaselo despacio porque no lo entiende.",
+      "required": [
+        "explicar",
+        "despacio",
+        "entender"
+      ],
+      "forbidden": [
+        "explícaselo"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh03",
+      "language": "es",
+      "text": "Estoy buscándote y quiero encontrarte antes de salir.",
+      "required": [
+        "buscar",
+        "querer",
+        "encontrar",
+        "salir"
+      ],
+      "forbidden": [
+        "buscándote",
+        "encontrarte"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh04",
+      "language": "es",
+      "text": "Llévatelo a casa y guárdalo en el armario.",
+      "required": [
+        "llevarse",
+        "casa",
+        "guardar",
+        "armario"
+      ],
+      "forbidden": [
+        "llévatelo",
+        "guárdalo"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh05",
+      "language": "es",
+      "text": "Nos acostamos tarde, pero acosté al niño temprano.",
+      "required": [
+        "acostarse",
+        "tarde",
+        "acostar",
+        "niño",
+        "temprano"
+      ],
+      "forbidden": [],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh06",
+      "language": "es",
+      "text": "No se lo digas todavía; prefiero decírselo mañana.",
+      "required": [
+        "decir",
+        "todavía",
+        "preferir",
+        "mañana"
+      ],
+      "forbidden": [
+        "decírselo"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh07",
+      "language": "es",
+      "text": "Ayer fuimos a la playa y después hicimos una sopa.",
+      "required": [
+        "ir",
+        "playa",
+        "hacer",
+        "sopa"
+      ],
+      "forbidden": [
+        "ser"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh08",
+      "language": "es",
+      "text": "Las habitaciones son más pequeñas y los jardines son bonitos.",
+      "required": [
+        "habitación",
+        "pequeño",
+        "jardín",
+        "bonito"
+      ],
+      "forbidden": [
+        "pequeñas",
+        "bonitos"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh09",
+      "language": "es",
+      "text": "Me quedé en casa porque se había roto la ventana.",
+      "required": [
+        "quedarse",
+        "casa",
+        [
+          "romper",
+          "romperse"
+        ],
+        "ventana"
+      ],
+      "forbidden": [],
+      "category": "holdout",
+      "split": "historical_holdout"
+    },
+    {
+      "id": "esh10",
+      "language": "es",
+      "text": "hoy voy al mercado quiero comprárselo a mi madre y después ducharme antes de cenar",
+      "required": [
+        "ir",
+        "mercado",
+        "querer",
+        "comprar",
+        "madre",
+        "ducharse",
+        "cenar"
+      ],
+      "forbidden": [
+        "comprárselo",
+        "ducharme"
+      ],
+      "category": "holdout",
+      "split": "historical_holdout"
+    }
+  ]
+}

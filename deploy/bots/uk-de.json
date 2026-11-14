@@ -216,7 +216,12 @@
     "msg_feedback_cancelled": "Відгук скасовано. Можемо продовжити розмову.",
     "msg_feedback_expired": "Час для цього відгуку минув. Відкрий налаштування, щоб надіслати новий.",
     "msg_feedback_unsupported": "Дай відповідь текстом або голосовим повідомленням.",
-    "msg_feedback_placeholder": "Відгук текстом або голосом"
+    "msg_feedback_placeholder": "Відгук текстом або голосом",
+    "vocab_column_dictionary": "Мій словник",
+    "vocab_add": "Додати",
+    "vocab_learned": "Вивчене",
+    "vocab_saved": "Збережено у вашому словнику.",
+    "vocab_unavailable": "Ця таблиця словника недоступна."
   },
   "telegram_presentation": {
     "name": "Romi 🇩🇪 | Твоя репетиторка з мови",

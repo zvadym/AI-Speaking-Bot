@@ -22,6 +22,8 @@ import {
   VOCAB_SCHEMA
 } from './schemas/bot-responses.js';
 import { partialConversationReply } from './conversation-stream.js';
+import { validateVocabularySenses, type VocabularySenseInput, type VocabularySense } from '../vocabulary/senses.js';
+import { loadLlmPrompt } from './prompts/index.js';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -76,6 +78,7 @@ export interface VocabularyItem extends UnknownRecord {
 }
 
 export interface BotAiClient {
+  resolveVocabularySenses?(input: VocabularySenseInput): Promise<VocabularySense[]>;
   respond(input: ConversationAiInput): Promise<ConversationAiResult>;
   translate(botKey: string, text: string, trace?: LlmTraceContext): Promise<string>;
   hints(input: {
@@ -160,7 +163,8 @@ export function createBotAiClient({
     user: string,
     name: string,
     schema: UnknownRecord,
-    onReplyText?: (text: string) => void
+    onReplyText?: (text: string) => void,
+    settings?: {strict:boolean;maxOutputTokens:number;timeoutMs:number}
   ): Promise<UnknownRecord> {
     const observed = await observeLlmCall({
       trace,
@@ -181,6 +185,7 @@ export function createBotAiClient({
           schema,
           verbosity: 'low',
           maxRetries: 2,
+          ...settings,
           fetchImpl,
           ...(onReplyText ? { onText(source: string) {
             const next = partialConversationReply(source);
@@ -205,6 +210,20 @@ export function createBotAiClient({
   });
 
   return {
+    async resolveVocabularySenses(input) {
+      const config = configFor(input.botKey);
+      const result = await structured('gpt-6-luna', 'none', 'vocabulary.senses',
+        input.trace || {botKey:input.botKey}, loadLlmPrompt('vocabulary/senses'),
+        JSON.stringify({base_language:config.base_language || input.botKey.split('-')[0],
+          target_language:config.learning_language || input.botKey.split('-')[1],
+          assistant_text:input.text,items:input.items,existing:input.existing}),
+        'vocabulary_senses', {type:'object',additionalProperties:false,required:['senses'],properties:{
+          senses:{type:'array',items:{type:'object',additionalProperties:false,required:['index','meaningKey','meaning'],properties:{
+            index:{type:'integer'},meaningKey:{anyOf:[{type:'string'},{type:'null'}]},meaning:{type:'string'}
+          }}}
+        }}, undefined, {strict:true,maxOutputTokens:2400,timeoutMs:60_000});
+      return validateVocabularySenses(result.senses,input);
+    },
     async respond(input) {
       const config = configFor(input.botKey);
       const policy = policyFor(input.botKey);

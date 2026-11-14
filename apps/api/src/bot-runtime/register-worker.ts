@@ -217,6 +217,7 @@ export async function registerBotRuntimeWorker(
     progressEnabledBotKeys,
     reportProgressError = () => {},
     sendIdiomMore,
+    vocabularyAddEnabled,
     ai
   }: {
     pool: Pool;
@@ -226,6 +227,7 @@ export async function registerBotRuntimeWorker(
     progressEnabledBotKeys: ReadonlySet<string>;
     reportProgressError?: (error: unknown, event: string, botKey: string) => void;
     sendIdiomMore: IdiomMoreSender;
+    vocabularyAddEnabled?: (botKey:string)=>boolean;
     ai: BotAiClient;
   }
 ): Promise<void> {
@@ -250,6 +252,7 @@ export async function registerBotRuntimeWorker(
       sendIdiomMore
     }),
     ...createSupportCallbackHandlers({
+      vocabularyAddEnabled,
       presentation,
       pool,
       getBotLocale,

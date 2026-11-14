@@ -217,7 +217,12 @@
     "msg_feedback_cancelled": "प्रतिक्रिया रद्द कर दी गई। हम बातचीत जारी रख सकते हैं।",
     "msg_feedback_expired": "इस प्रतिक्रिया अनुरोध का समय समाप्त हो गया है। नया अनुरोध भेजने के लिए सेटिंग्स खोलें।",
     "msg_feedback_unsupported": "कृपया टेक्स्ट या वॉइस संदेश से जवाब दें।",
-    "msg_feedback_placeholder": "आपकी प्रतिक्रिया: टेक्स्ट या वॉइस"
+    "msg_feedback_placeholder": "आपकी प्रतिक्रिया: टेक्स्ट या वॉइस",
+    "vocab_column_dictionary": "मेरी शब्दावली",
+    "vocab_add": "जोड़ें",
+    "vocab_learned": "सीख लिया",
+    "vocab_saved": "आपकी शब्दावली में सहेजा गया।",
+    "vocab_unavailable": "यह शब्दावली तालिका उपलब्ध नहीं है।"
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | आपकी भाषा ट्यूटर",

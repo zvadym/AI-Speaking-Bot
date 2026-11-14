@@ -11,6 +11,8 @@ import {
   translatedMessage, type Locale, type SupportTelegramClient
 } from '../../bot-runtime/support.js';
 import { deliverTelegramText } from '../../bot-runtime/delivery/telegram-text-delivery.js';
+import { vocabularyLanguage } from '../../vocabulary/types.js';
+import { createVocabularySnapshot, loadVocabularySnapshot, bindVocabularySnapshot, type VocabularySnapshot } from '../../vocabulary/snapshots.js';
 
 const SupportState = Annotation.Root({
   update: Annotation<PreparedUpdate>(),
@@ -19,11 +21,12 @@ const SupportState = Annotation.Root({
   translation: Annotation<string>(),
   hints: Annotation<FollowUpHints>(),
   items: Annotation<VocabularyItem[]>(),
+  snapshot: Annotation<VocabularySnapshot|null>(),
   outcome: Annotation<BotHandlerOutcome>()
 });
 
 export function createSupportGraph({
-  pool, getBotLocale, telegramClient, ai, presentation,
+  pool, getBotLocale, telegramClient, ai, presentation, vocabularyAddEnabled = () => true,
   effectRunner = runBotUpdateEffect, textDeliverer = deliverTelegramText
 }: {
   pool: Pool;
@@ -31,6 +34,7 @@ export function createSupportGraph({
   telegramClient: SupportTelegramClient;
   ai: BotAiClient;
   presentation?: MessagePresentationService;
+  vocabularyAddEnabled?(botKey:string):boolean;
   effectRunner?: typeof runBotUpdateEffect;
   textDeliverer?: typeof deliverTelegramText;
 }) {
@@ -152,13 +156,26 @@ export function createSupportGraph({
       });
       return { items: effect.result.items as VocabularyItem[] };
     })
-    .addNode('deliverVocabulary', async ({ update, items, locale }) => ({
-      outcome: await textDeliverer({ pool, update,
+    .addNode('prepareVocabularySnapshot', async ({update,items,id}) => {
+      const language=vocabularyLanguage(update.botKey.split('-')[1]);
+      if(!language||!items.length||!vocabularyAddEnabled(update.botKey))return {snapshot:null};
+      const effect=await effectRunner(pool,{decisionId:update.decisionId,stepKey:'callback.vocab:snapshot:v1',execute:async client=>{
+        const source=await fetchAssistant(client,update,id);
+        return {snapshotId:await createVocabularySnapshot(client,update,language,id,source.content,items,ai)};
+      }});
+      if(!effect.result.snapshotId)throw new Error('vocabulary_snapshot_missing');
+      return {snapshot:await loadVocabularySnapshot(pool,String(effect.result.snapshotId),update.input.chatId!,update.botKey)};
+    })
+    .addNode('deliverVocabulary', async ({ update, items, locale, snapshot }) => {
+      const outcome=await textDeliverer({ pool, update,
         telegramClient: { sendTelegramTextMessage: async (chatId) => telegramClient.callTelegramApi(
-          update.botKey, 'sendRichMessage', { chat_id: chatId, rich_message: formatVocabulary(items, locale) }
+          update.botKey, 'sendRichMessage', { chat_id: chatId, rich_message: snapshot
+            ? formatVocabulary(snapshot.rows.map(r=>r.item),locale,snapshot.rows) : formatVocabulary(items, locale) }
         ) as Promise<{ message_id?: unknown }> },
-        stepKey: 'callback.vocab:message:v1', telegramMethod: 'sendRichMessage', text: '' })
-    }))
+        stepKey: 'callback.vocab:message:v1', telegramMethod: 'sendRichMessage', text: '' });
+      if(snapshot&&outcome.telegramMessageId)await bindVocabularySnapshot(pool,snapshot.id,update.input.chatId!,update.botKey,outcome.telegramMessageId);
+      return {outcome};
+    })
     .addNode('markUsed', async ({ update, id, locale }) => {
       await markSupportUsed(presentation, telegramClient, update, id, locale,
         update.route === 'callback.hints' ? 'hint' : 'voc', update.route === 'callback.hints' ? 1 : 2);
@@ -180,7 +197,8 @@ export function createSupportGraph({
     .addEdge('presentAssistantTranslation', END)
     .addEdge('cacheOrGenerateHints', 'deliverHints')
     .addEdge('deliverHints', 'markUsed')
-    .addEdge('generateVocabulary', 'deliverVocabulary')
+    .addEdge('generateVocabulary', 'prepareVocabularySnapshot')
+    .addEdge('prepareVocabularySnapshot', 'deliverVocabulary')
     .addEdge('deliverVocabulary', 'markUsed')
     .addEdge('markUsed', END)
     .compile();

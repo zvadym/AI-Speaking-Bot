@@ -217,7 +217,12 @@
     "msg_feedback_cancelled": "Feedback cancelled. We can continue our conversation.",
     "msg_feedback_expired": "This feedback request has expired. Open Settings to send a new one.",
     "msg_feedback_unsupported": "Please reply with text or a voice note.",
-    "msg_feedback_placeholder": "Your feedback: text or voice"
+    "msg_feedback_placeholder": "Your feedback: text or voice",
+    "vocab_column_dictionary": "My vocabulary",
+    "vocab_add": "Add",
+    "vocab_learned": "Learned",
+    "vocab_saved": "Saved to your vocabulary.",
+    "vocab_unavailable": "This vocabulary table is unavailable."
   },
   "telegram_presentation": {
     "name": "Romi 🇩🇪 | Your language tutor",

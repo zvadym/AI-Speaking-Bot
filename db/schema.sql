@@ -1413,6 +1413,198 @@ CREATE TABLE public.user_summaries (
 
 
 --
+-- Name: vocabulary_analyses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vocabulary_analyses (
+    id bigint NOT NULL,
+    source_message_id bigint,
+    chat_id bigint NOT NULL,
+    bot_key text NOT NULL,
+    decision_id text NOT NULL,
+    target_language text NOT NULL,
+    source_text text NOT NULL,
+    context_text text DEFAULT ''::text NOT NULL,
+    source_at timestamp with time zone NOT NULL,
+    input_mode text NOT NULL,
+    eligible_word_ids bigint[] NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    extracted jsonb,
+    judgments jsonb DEFAULT '[]'::jsonb NOT NULL,
+    evaluator_version text DEFAULT 'vocabulary-v1'::text NOT NULL,
+    attempts integer DEFAULT 0 NOT NULL,
+    next_attempt_at timestamp with time zone DEFAULT now() NOT NULL,
+    lease_token uuid,
+    lease_expires_at timestamp with time zone,
+    last_error_code text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    completed_at timestamp with time zone,
+    CONSTRAINT vocabulary_analyses_attempts_check CHECK ((attempts >= 0)),
+    CONSTRAINT vocabulary_analyses_check CHECK (((status = 'processing'::text) = ((lease_token IS NOT NULL) AND (lease_expires_at IS NOT NULL)))),
+    CONSTRAINT vocabulary_analyses_extracted_check CHECK (((extracted IS NULL) OR (jsonb_typeof(extracted) = 'array'::text))),
+    CONSTRAINT vocabulary_analyses_input_mode_check CHECK ((input_mode = ANY (ARRAY['text'::text, 'voice'::text]))),
+    CONSTRAINT vocabulary_analyses_judgments_check CHECK ((jsonb_typeof(judgments) = 'array'::text)),
+    CONSTRAINT vocabulary_analyses_source_text_check CHECK (((length(source_text) >= 1) AND (length(source_text) <= 20000))),
+    CONSTRAINT vocabulary_analyses_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'processing'::text, 'completed'::text, 'failed'::text]))),
+    CONSTRAINT vocabulary_analyses_target_language_check CHECK ((target_language = ANY (ARRAY['de'::text, 'en'::text, 'es'::text])))
+);
+
+
+--
+-- Name: vocabulary_analyses_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.vocabulary_analyses_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: vocabulary_analyses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.vocabulary_analyses_id_seq OWNED BY public.vocabulary_analyses.id;
+
+
+--
+-- Name: vocabulary_daily_credits; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vocabulary_daily_credits (
+    word_id bigint NOT NULL,
+    utc_day date NOT NULL,
+    usage_id bigint NOT NULL
+);
+
+
+--
+-- Name: vocabulary_snapshot_rows; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vocabulary_snapshot_rows (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    snapshot_id uuid NOT NULL,
+    row_index smallint NOT NULL,
+    item jsonb NOT NULL,
+    lemma text NOT NULL,
+    lemma_key text NOT NULL,
+    pos text NOT NULL,
+    meaning_key text NOT NULL,
+    meaning text NOT NULL,
+    CONSTRAINT vocabulary_snapshot_rows_item_check CHECK ((jsonb_typeof(item) = 'object'::text)),
+    CONSTRAINT vocabulary_snapshot_rows_lemma_check CHECK (((length(TRIM(BOTH FROM lemma)) >= 1) AND (length(TRIM(BOTH FROM lemma)) <= 160))),
+    CONSTRAINT vocabulary_snapshot_rows_lemma_key_check CHECK (((length(lemma_key) >= 1) AND (length(lemma_key) <= 160))),
+    CONSTRAINT vocabulary_snapshot_rows_meaning_check CHECK (((length(TRIM(BOTH FROM meaning)) >= 1) AND (length(TRIM(BOTH FROM meaning)) <= 1000))),
+    CONSTRAINT vocabulary_snapshot_rows_meaning_key_check CHECK (((length(TRIM(BOTH FROM meaning_key)) >= 1) AND (length(TRIM(BOTH FROM meaning_key)) <= 200))),
+    CONSTRAINT vocabulary_snapshot_rows_pos_check CHECK ((pos = ANY (ARRAY['noun'::text, 'verb'::text, 'adjective'::text, 'adverb'::text, 'other'::text]))),
+    CONSTRAINT vocabulary_snapshot_rows_row_index_check CHECK (((row_index >= 0) AND (row_index <= 14)))
+);
+
+
+--
+-- Name: vocabulary_snapshots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vocabulary_snapshots (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    chat_id bigint NOT NULL,
+    bot_key text NOT NULL,
+    target_language text NOT NULL,
+    source_message_id bigint,
+    decision_id text NOT NULL,
+    telegram_message_id bigint,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT vocabulary_snapshots_target_language_check CHECK ((target_language = ANY (ARRAY['de'::text, 'en'::text, 'es'::text])))
+);
+
+
+--
+-- Name: vocabulary_usages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vocabulary_usages (
+    id bigint NOT NULL,
+    word_id bigint NOT NULL,
+    analysis_id bigint NOT NULL,
+    verdict text NOT NULL,
+    evidence jsonb NOT NULL,
+    CONSTRAINT vocabulary_usages_evidence_check CHECK ((jsonb_typeof(evidence) = 'array'::text)),
+    CONSTRAINT vocabulary_usages_verdict_check CHECK ((verdict = ANY (ARRAY['correct'::text, 'incorrect'::text, 'uncertain'::text])))
+);
+
+
+--
+-- Name: vocabulary_usages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.vocabulary_usages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: vocabulary_usages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.vocabulary_usages_id_seq OWNED BY public.vocabulary_usages.id;
+
+
+--
+-- Name: vocabulary_words; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.vocabulary_words (
+    id bigint NOT NULL,
+    chat_id bigint NOT NULL,
+    target_language text NOT NULL,
+    lemma text NOT NULL,
+    lemma_key text NOT NULL,
+    pos text NOT NULL,
+    meaning_key text NOT NULL,
+    meaning text NOT NULL,
+    added_at timestamp with time zone DEFAULT now() NOT NULL,
+    active_since timestamp with time zone DEFAULT now() NOT NULL,
+    archived_at timestamp with time zone,
+    progress smallint DEFAULT 0 NOT NULL,
+    learned_at timestamp with time zone,
+    CONSTRAINT vocabulary_words_check CHECK (((progress = 5) = (learned_at IS NOT NULL))),
+    CONSTRAINT vocabulary_words_check1 CHECK ((active_since >= added_at)),
+    CONSTRAINT vocabulary_words_lemma_check CHECK (((length(TRIM(BOTH FROM lemma)) >= 1) AND (length(TRIM(BOTH FROM lemma)) <= 160))),
+    CONSTRAINT vocabulary_words_lemma_key_check CHECK (((length(lemma_key) >= 1) AND (length(lemma_key) <= 160))),
+    CONSTRAINT vocabulary_words_meaning_check CHECK (((length(TRIM(BOTH FROM meaning)) >= 1) AND (length(TRIM(BOTH FROM meaning)) <= 1000))),
+    CONSTRAINT vocabulary_words_meaning_key_check CHECK (((length(TRIM(BOTH FROM meaning_key)) >= 1) AND (length(TRIM(BOTH FROM meaning_key)) <= 200))),
+    CONSTRAINT vocabulary_words_pos_check CHECK ((pos = ANY (ARRAY['noun'::text, 'verb'::text, 'adjective'::text, 'adverb'::text, 'other'::text]))),
+    CONSTRAINT vocabulary_words_progress_check CHECK (((progress >= 0) AND (progress <= 5))),
+    CONSTRAINT vocabulary_words_target_language_check CHECK ((target_language = ANY (ARRAY['de'::text, 'en'::text, 'es'::text])))
+);
+
+
+--
+-- Name: vocabulary_words_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.vocabulary_words_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: vocabulary_words_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.vocabulary_words_id_seq OWNED BY public.vocabulary_words.id;
+
+
+--
 -- Name: voice_usage_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1470,6 +1662,27 @@ ALTER TABLE ONLY public.messages ALTER COLUMN id SET DEFAULT nextval('public.mes
 --
 
 ALTER TABLE ONLY public.payments ALTER COLUMN id SET DEFAULT nextval('public.payments_id_seq'::regclass);
+
+
+--
+-- Name: vocabulary_analyses id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_analyses ALTER COLUMN id SET DEFAULT nextval('public.vocabulary_analyses_id_seq'::regclass);
+
+
+--
+-- Name: vocabulary_usages id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_usages ALTER COLUMN id SET DEFAULT nextval('public.vocabulary_usages_id_seq'::regclass);
+
+
+--
+-- Name: vocabulary_words id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_words ALTER COLUMN id SET DEFAULT nextval('public.vocabulary_words_id_seq'::regclass);
 
 
 --
@@ -1782,6 +1995,126 @@ ALTER TABLE ONLY public.user_summaries
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (chat_id);
+
+
+--
+-- Name: vocabulary_analyses vocabulary_analyses_decision_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_analyses
+    ADD CONSTRAINT vocabulary_analyses_decision_id_key UNIQUE (decision_id);
+
+
+--
+-- Name: vocabulary_analyses vocabulary_analyses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_analyses
+    ADD CONSTRAINT vocabulary_analyses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: vocabulary_analyses vocabulary_analyses_source_message_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_analyses
+    ADD CONSTRAINT vocabulary_analyses_source_message_id_key UNIQUE (source_message_id);
+
+
+--
+-- Name: vocabulary_daily_credits vocabulary_daily_credits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_daily_credits
+    ADD CONSTRAINT vocabulary_daily_credits_pkey PRIMARY KEY (word_id, utc_day);
+
+
+--
+-- Name: vocabulary_daily_credits vocabulary_daily_credits_usage_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_daily_credits
+    ADD CONSTRAINT vocabulary_daily_credits_usage_id_key UNIQUE (usage_id);
+
+
+--
+-- Name: vocabulary_snapshot_rows vocabulary_snapshot_rows_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_snapshot_rows
+    ADD CONSTRAINT vocabulary_snapshot_rows_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: vocabulary_snapshot_rows vocabulary_snapshot_rows_snapshot_id_row_index_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_snapshot_rows
+    ADD CONSTRAINT vocabulary_snapshot_rows_snapshot_id_row_index_key UNIQUE (snapshot_id, row_index);
+
+
+--
+-- Name: vocabulary_snapshots vocabulary_snapshots_chat_id_bot_key_telegram_message_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_snapshots
+    ADD CONSTRAINT vocabulary_snapshots_chat_id_bot_key_telegram_message_id_key UNIQUE (chat_id, bot_key, telegram_message_id);
+
+
+--
+-- Name: vocabulary_snapshots vocabulary_snapshots_decision_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_snapshots
+    ADD CONSTRAINT vocabulary_snapshots_decision_id_key UNIQUE (decision_id);
+
+
+--
+-- Name: vocabulary_snapshots vocabulary_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_snapshots
+    ADD CONSTRAINT vocabulary_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: vocabulary_usages vocabulary_usages_id_word_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_usages
+    ADD CONSTRAINT vocabulary_usages_id_word_id_key UNIQUE (id, word_id);
+
+
+--
+-- Name: vocabulary_usages vocabulary_usages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_usages
+    ADD CONSTRAINT vocabulary_usages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: vocabulary_usages vocabulary_usages_word_id_analysis_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_usages
+    ADD CONSTRAINT vocabulary_usages_word_id_analysis_id_key UNIQUE (word_id, analysis_id);
+
+
+--
+-- Name: vocabulary_words vocabulary_words_chat_id_target_language_lemma_key_pos_mean_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_words
+    ADD CONSTRAINT vocabulary_words_chat_id_target_language_lemma_key_pos_mean_key UNIQUE (chat_id, target_language, lemma_key, pos, meaning_key);
+
+
+--
+-- Name: vocabulary_words vocabulary_words_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_words
+    ADD CONSTRAINT vocabulary_words_pkey PRIMARY KEY (id);
 
 
 --
@@ -2257,6 +2590,34 @@ CREATE UNIQUE INDEX plan_prices_unique ON public.plan_prices USING btree (tier, 
 
 
 --
+-- Name: vocabulary_analyses_pending_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX vocabulary_analyses_pending_idx ON public.vocabulary_analyses USING btree (next_attempt_at, id) WHERE (status = 'pending'::text);
+
+
+--
+-- Name: vocabulary_snapshot_rows_senses_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX vocabulary_snapshot_rows_senses_idx ON public.vocabulary_snapshot_rows USING btree (lemma_key, pos);
+
+
+--
+-- Name: vocabulary_snapshots_owner_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX vocabulary_snapshots_owner_idx ON public.vocabulary_snapshots USING btree (chat_id, target_language);
+
+
+--
+-- Name: vocabulary_words_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX vocabulary_words_active_idx ON public.vocabulary_words USING btree (chat_id, target_language, lemma_key) WHERE ((archived_at IS NULL) AND (progress < 5));
+
+
+--
 -- Name: user_bots trg_action_day1_return; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -2435,6 +2796,86 @@ ALTER TABLE ONLY public.user_summaries
 
 
 --
+-- Name: vocabulary_analyses vocabulary_analyses_chat_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_analyses
+    ADD CONSTRAINT vocabulary_analyses_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.users(chat_id) ON DELETE CASCADE;
+
+
+--
+-- Name: vocabulary_analyses vocabulary_analyses_source_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_analyses
+    ADD CONSTRAINT vocabulary_analyses_source_message_id_fkey FOREIGN KEY (source_message_id) REFERENCES public.messages(id) ON DELETE SET NULL;
+
+
+--
+-- Name: vocabulary_daily_credits vocabulary_daily_credits_usage_id_word_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_daily_credits
+    ADD CONSTRAINT vocabulary_daily_credits_usage_id_word_id_fkey FOREIGN KEY (usage_id, word_id) REFERENCES public.vocabulary_usages(id, word_id) ON DELETE CASCADE;
+
+
+--
+-- Name: vocabulary_daily_credits vocabulary_daily_credits_word_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_daily_credits
+    ADD CONSTRAINT vocabulary_daily_credits_word_id_fkey FOREIGN KEY (word_id) REFERENCES public.vocabulary_words(id) ON DELETE CASCADE;
+
+
+--
+-- Name: vocabulary_snapshot_rows vocabulary_snapshot_rows_snapshot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_snapshot_rows
+    ADD CONSTRAINT vocabulary_snapshot_rows_snapshot_id_fkey FOREIGN KEY (snapshot_id) REFERENCES public.vocabulary_snapshots(id) ON DELETE CASCADE;
+
+
+--
+-- Name: vocabulary_snapshots vocabulary_snapshots_chat_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_snapshots
+    ADD CONSTRAINT vocabulary_snapshots_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.users(chat_id) ON DELETE CASCADE;
+
+
+--
+-- Name: vocabulary_snapshots vocabulary_snapshots_source_message_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_snapshots
+    ADD CONSTRAINT vocabulary_snapshots_source_message_id_fkey FOREIGN KEY (source_message_id) REFERENCES public.messages(id) ON DELETE SET NULL;
+
+
+--
+-- Name: vocabulary_usages vocabulary_usages_analysis_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_usages
+    ADD CONSTRAINT vocabulary_usages_analysis_id_fkey FOREIGN KEY (analysis_id) REFERENCES public.vocabulary_analyses(id) ON DELETE CASCADE;
+
+
+--
+-- Name: vocabulary_usages vocabulary_usages_word_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_usages
+    ADD CONSTRAINT vocabulary_usages_word_id_fkey FOREIGN KEY (word_id) REFERENCES public.vocabulary_words(id) ON DELETE CASCADE;
+
+
+--
+-- Name: vocabulary_words vocabulary_words_chat_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vocabulary_words
+    ADD CONSTRAINT vocabulary_words_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.users(chat_id) ON DELETE CASCADE;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -2510,4 +2951,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20261112190000'),
     ('20261112200000'),
     ('20261112201000'),
-    ('20261112210000');
+    ('20261112210000'),
+    ('20261113220000'),
+    ('20261114090000');

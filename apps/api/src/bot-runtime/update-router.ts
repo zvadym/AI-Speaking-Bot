@@ -21,6 +21,7 @@ const CALLBACK_ROUTES: Readonly<Record<string, Route>> = {
   tr: 'callback.translate',
   hint: 'callback.hints',
   voc: 'callback.vocab',
+  vadd: 'callback.vocab_add',
   onb: 'callback.onboarding'
 };
 

@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
 import { escapeTelegramHtmlText } from '../shared/telegram-delivery.js';
 import type { FollowUpHints, VocabularyItem } from '../ai/client.js';
+import type { VocabularySnapshotRow } from '../vocabulary/snapshots.js';
 import type { PreparedUpdate } from './contracts.js';
 import { BotRuntimeHandlerError } from './handler-registry.js';
 import type { MessagePresentationService } from './delivery/message-presentation.js';
@@ -177,22 +178,30 @@ export function formatHints(hints: FollowUpHints, locale: Locale): string {
   return blocks.join('\n\n').slice(0, 3900);
 }
 
-export function formatVocabulary(items: VocabularyItem[], locale: Locale) {
+export function formatVocabulary(items: VocabularyItem[], locale: Locale, rows?:VocabularySnapshotRow[]) {
   if (!items.length) return {blocks: [{type: 'paragraph', text: localeText(locale, 'vocab_empty', 'No vocabulary items found.')} ]};
   const headers = [
     localeText(locale, 'vocab_column_original', 'Original'),
     localeText(locale, 'vocab_column_translation', 'Translation'),
     localeText(locale, 'vocab_column_transcription', 'Transcription')
   ];
+  if(rows)headers.push(localeText(locale,'vocab_column_dictionary','My vocabulary'));
   const cells = [headers.map(text => ({text, is_header: true, align: 'left', valign: 'top'})),
-    ...items.slice(0, 15).map(item => {
+    ...items.slice(0, 15).map((item,index) => {
       const display = item.pos === 'noun'
         ? [item.article, item.lemma || item.surface].filter(Boolean).join(' ')
         : item.pos === 'verb'
           ? item.infinitive || item.lemma || item.surface
           : item.lemma || item.surface;
-      return [display, item.translation_base, item.transcription ? `[${item.transcription}]` : '—']
+      const cells:Array<{text:unknown;align:string;valign:string}>=[display, item.translation_base, item.transcription ? `[${item.transcription}]` : '—']
         .map(text => ({text, align: 'left', valign: 'top'}));
+      if(rows){
+        const row=rows[index];
+        const label=row.progress===null ? localeText(locale,'vocab_add','Add')
+          : row.progress>=5 ? `✓ ${localeText(locale,'vocab_learned','Learned')}` : `✓ ${row.progress}/5`;
+        cells.push({text:{type:'button',button:{text:label,callback_data:`vadd:${row.id}`}},align:'left',valign:'top'});
+      }
+      return cells;
     })];
   // Structured plain-text cells preserve IPA and literal markup without HTML parsing.
   return {blocks: [{type: 'table', is_compact: true, is_striped: true, cells}]};

@@ -12,6 +12,8 @@ export interface StructuredResponseInput {
   strict?: boolean;
   verbosity?: 'low';
   maxRetries: number;
+  timeoutMs?: number;
+  maxOutputTokens?: number;
   fetchImpl?: typeof fetch;
   onText?: (text: string) => void;
 }
@@ -46,8 +48,10 @@ export async function requestStructuredResponse<T>(input: StructuredResponseInpu
     useResponsesApi: true,
     // Keep SDK HTTP retries (including 409), without retrying JSON parsing in LangChain.
     maxRetries: 0,
+    ...(input.maxOutputTokens ? { maxTokens: input.maxOutputTokens } : {}),
     configuration: {
       maxRetries: input.maxRetries,
+      ...(input.timeoutMs ? { timeout: input.timeoutMs } : {}),
       ...(input.fetchImpl ? { fetch: input.fetchImpl } : {})
     }
   });
@@ -110,6 +114,9 @@ export async function requestStructuredResponse<T>(input: StructuredResponseInpu
     });
   }
 
+  if (message.response_metadata.status === 'incomplete' || message.response_metadata.status === 'failed') {
+    throw new Error('openai_incomplete_structured_output');
+  }
   let value: unknown;
   try { value = JSON.parse(message.text); } catch {
     throw new Error('openai_invalid_structured_output');

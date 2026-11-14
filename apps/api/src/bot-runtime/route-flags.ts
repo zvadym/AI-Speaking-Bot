@@ -11,6 +11,7 @@ export const BOT_RUNTIME_HANDLER_VERSIONS = {
   'callback.translate': 1,
   'callback.hints': 1,
   'callback.vocab': 1,
+  'callback.vocab_add': 1,
   'callback.onboarding': 2,
   'callback.settings': 1,
   'settings.open': 1,

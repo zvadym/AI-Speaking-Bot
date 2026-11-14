@@ -217,7 +217,12 @@
     "msg_feedback_cancelled": "Geri bildirim iptal edildi. Sohbete devam edebiliriz.",
     "msg_feedback_expired": "Bu geri bildirim isteğinin süresi doldu. Yeni bir istek için ayarları aç.",
     "msg_feedback_unsupported": "Lütfen metin veya sesli mesajla yanıtla.",
-    "msg_feedback_placeholder": "Geri bildirimin: metin veya ses"
+    "msg_feedback_placeholder": "Geri bildirimin: metin veya ses",
+    "vocab_column_dictionary": "Sözlüğüm",
+    "vocab_add": "Ekle",
+    "vocab_learned": "Öğrenildi",
+    "vocab_saved": "Sözlüğüne kaydedildi.",
+    "vocab_unavailable": "Bu kelime tablosu kullanılamıyor."
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | Dil öğretmenin",

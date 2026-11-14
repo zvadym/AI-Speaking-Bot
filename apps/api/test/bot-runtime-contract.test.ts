@@ -49,6 +49,7 @@ const callbackFixtures: RouteFixture[] = [
   ['tr', 'callback.translate'],
   ['hint', 'callback.hints'],
   ['voc', 'callback.vocab'],
+  ['vadd', 'callback.vocab_add'],
   ['onb', 'callback.onboarding'],
   ['settings', 'callback.settings'],
   ['unknown_group', 'callback.unknown']

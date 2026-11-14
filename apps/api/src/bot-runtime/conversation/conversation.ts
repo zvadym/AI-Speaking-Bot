@@ -1,6 +1,8 @@
 import type { Pool, PoolClient } from 'pg';
 import type { BotAiClient, ConversationAiInput, ConversationAiResult } from '../../ai/client.js';
 import type { PreparedUpdate } from '../contracts.js';
+import { enqueueVocabularyAnalysis } from '../../vocabulary/repository.js';
+import { vocabularyLanguage } from '../../vocabulary/types.js';
 import { fetchKeyboardState } from '../context-loader.js';
 import {
   buildPersistentKeyboardState,
@@ -112,15 +114,25 @@ export async function executeConversation(
       route: update.route
     }
   });
-  await client.query(
+  const userMessage = await client.query<{id:string}>(
     `INSERT INTO messages (chat_id, role, content, bot_key)
-     VALUES ($1, 'user', $2, $3)`,
+     VALUES ($1, 'user', $2, $3) RETURNING id::text`,
     [
       chatId,
       text,
       update.botKey
     ]
   );
+
+  const language = vocabularyLanguage(update.botKey.split('-')[1]);
+  const sourceAt = update.input.message.sentAtUnix;
+  if (response.is_target_language && language && sourceAt && userMessage.rows[0]?.id) {
+    await enqueueVocabularyAnalysis(client, {
+      messageId: userMessage.rows[0].id, chatId, botKey: update.botKey, decisionId: update.decisionId,
+      language, text, sourceAt: new Date(sourceAt * 1000), inputMode,
+      context: [historyResult.rows.filter(row=>row.role==='assistant').at(-1)?.content, onboarding?.example].filter(Boolean).join('\n')
+    });
+  }
 
   let assistantMessageId: number | null = null;
   const reply = String(response.reply_text || '').trim();

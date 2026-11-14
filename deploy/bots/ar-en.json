@@ -217,7 +217,12 @@
     "msg_feedback_cancelled": "تم إلغاء الملاحظات. يمكننا متابعة المحادثة.",
     "msg_feedback_expired": "انتهت مهلة هذا الطلب. افتح الإعدادات لإرسال ملاحظات جديدة.",
     "msg_feedback_unsupported": "يرجى الرد بنص أو رسالة صوتية.",
-    "msg_feedback_placeholder": "ملاحظاتك: نص أو رسالة صوتية"
+    "msg_feedback_placeholder": "ملاحظاتك: نص أو رسالة صوتية",
+    "vocab_column_dictionary": "مفرداتي",
+    "vocab_add": "إضافة",
+    "vocab_learned": "تم تعلمها",
+    "vocab_saved": "تم الحفظ في مفرداتك.",
+    "vocab_unavailable": "جدول المفردات هذا غير متاح."
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | معلّمتك اللغوية",

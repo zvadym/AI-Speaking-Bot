@@ -217,7 +217,12 @@
     "msg_feedback_cancelled": "Feedback annullato. Possiamo continuare la conversazione.",
     "msg_feedback_expired": "Questa richiesta di feedback è scaduta. Apri le impostazioni per inviarne uno nuovo.",
     "msg_feedback_unsupported": "Rispondi con un testo o un messaggio vocale.",
-    "msg_feedback_placeholder": "Il tuo feedback: testo o messaggio vocale"
+    "msg_feedback_placeholder": "Il tuo feedback: testo o messaggio vocale",
+    "vocab_column_dictionary": "Il mio vocabolario",
+    "vocab_add": "Aggiungi",
+    "vocab_learned": "Imparata",
+    "vocab_saved": "Salvata nel tuo vocabolario.",
+    "vocab_unavailable": "Questa tabella del vocabolario non è disponibile."
   },
   "telegram_presentation": {
     "name": "Romi 🇬🇧 | La tua tutor di lingua",

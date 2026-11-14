@@ -217,7 +217,12 @@
     "msg_feedback_cancelled": "Feedback abgebrochen. Wir können unser Gespräch fortsetzen.",
     "msg_feedback_expired": "Diese Feedback-Anfrage ist abgelaufen. Öffne die Einstellungen für eine neue Anfrage.",
     "msg_feedback_unsupported": "Bitte antworte mit Text oder einer Sprachnachricht.",
-    "msg_feedback_placeholder": "Dein Feedback als Text oder Sprachnachricht"
+    "msg_feedback_placeholder": "Dein Feedback als Text oder Sprachnachricht",
+    "vocab_column_dictionary": "Mein Wortschatz",
+    "vocab_add": "Hinzufügen",
+    "vocab_learned": "Gelernt",
+    "vocab_saved": "In deinem Wortschatz gespeichert.",
+    "vocab_unavailable": "Diese Wortschatztabelle ist nicht verfügbar."
   },
   "telegram_presentation": {
     "name": "Romi 🇪🇸 | Deine Sprachtrainerin",

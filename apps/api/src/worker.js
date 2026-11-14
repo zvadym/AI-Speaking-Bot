@@ -7,6 +7,9 @@ import { createRuntimeDeps } from './runtime.js';
 import { registerFeedbackNotifications } from './feedback/notifications.js';
 import { createBotAiClient } from './ai/client.js';
 import { createLlmCallRecorder } from './ai/llm-telemetry.js';
+import { createVocabularyAi } from './vocabulary/ai.js';
+import { registerVocabularyAnalysis } from './vocabulary/worker.js';
+import { isBotRuntimeRouteEnabled } from './bot-runtime/route-flags.js';
 import { captureException, flushSentry } from './sentry.js';
 
 let stopping = false;
@@ -63,6 +66,7 @@ try {
     getBotConfig: (botKey) => runtime.botConfigs[botKey] || null
   });
   await registerBotRuntimeWorker(boss, {
+    vocabularyAddEnabled: (botKey) => isBotRuntimeRouteEnabled(runtime.env.botRuntimeRouteFlags, botKey, 'callback.vocab_add'),
     pool: runtime.pool,
     getBotLocale: runtime.getBotLocale,
     telegramClient: runtime.telegramClient,
@@ -75,6 +79,7 @@ try {
     ai: botAi
   });
   await registerFeedbackNotifications(boss,{pool:runtime.pool,webhookUrl:runtime.env.discordEventsWebhookUrl,telegramClient:runtime.telegramClient,ai:botAi,botMetaForKey:runtime.publicBotMetaForKey});
+  await registerVocabularyAnalysis(boss, {pool:runtime.pool, ai:createVocabularyAi({apiKey:runtime.env.openaiApiKey,recordLlmCall})});
   console.log('Worker started');
 } catch (error) {
   console.error('Worker startup failed', error);

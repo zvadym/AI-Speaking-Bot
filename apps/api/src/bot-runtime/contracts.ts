@@ -12,6 +12,7 @@ export const ROUTES = [
   'callback.translate',
   'callback.hints',
   'callback.vocab',
+  'callback.vocab_add',
   'callback.onboarding',
   'callback.settings',
   'callback.unknown',
@@ -56,6 +57,8 @@ export interface NormalizedSender {
 
 export interface NormalizedMessage {
   id: number | null;
+  // Optional for queued contracts created before vocabulary tracking.
+  sentAtUnix?: number | null;
   text: string;
   hasText: boolean;
   hasVoice: boolean;
