@@ -89,6 +89,14 @@ test('Postgres: direct opening is durable without a queue, including duplicates,
     await pool.query('DELETE FROM bot_settings_widget_cards WHERE decision_id=$1',[`v1:${botKey}:${oldRich.update_id}`]);
     await run(oldRich);assert.equal(count('sendRichMessage'),1);assert.equal(count('sendWidget'),beforeResume);
 
+    // Telegram can disable widgets while rich messages remain available.
+    const fallback=raw();failure=Object.assign(new Error('Bad Request: INPUT_MEDIA_WIDGET_NOT_ALLOWED'),{telegramStatus:400});failMethod='sendWidget';
+    await run(fallback);
+    const fallbackDelivery=(await records(Number(fallback.update_id)))[0];
+    assert.equal(fallbackDelivery.telegram_method,'sendRichMessage');assert.equal(fallbackDelivery.status,'delivered');
+    assert.equal((await pool.query('SELECT message_id FROM bot_settings_widget_cards WHERE decision_id=$1',[`v1:${botKey}:${fallback.update_id}`])).rows[0].message_id,null);
+    const sentFallback=count('sendRichMessage');await run(fallback);assert.equal(count('sendRichMessage'),sentFallback);
+
     // HTTP ingress checks settings.open independently of callback.settings.
     let enqueued=0;
     const botToken='token',signingSecret='secret';

@@ -146,7 +146,14 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,on
       }
       if(action.kind==='open'){
         const sent=await sendReservedSettingsMessages({deliveries:saved.deliveries,chatId:input.chatId!,
-          richMessage:renderSettingsRich(view,labels),widget:{html:renderSettingsWidget(labels),chat_data:encodeWidgetSettings(view),allow_queries:true},api});
+          richMessage:renderSettingsRich(view,labels),widget:{html:renderSettingsWidget(labels),chat_data:encodeWidgetSettings(view),allow_queries:true},api,
+          reserveRichFallback:async delivery=>{
+            // Persist the transport before sending, so crash/replay cannot
+            // resend an ambiguous fallback or bind a rich card as a widget.
+            const reserved=await pool.query(`UPDATE bot_update_deliveries SET telegram_method='sendRichMessage',updated_at=NOW()
+              WHERE id=$1 AND decision_id=$2 AND telegram_method='sendWidget' AND status='pending' RETURNING id`,[delivery.id,decisionId]);
+            if(reserved.rowCount!==1)throw new Error('settings_fallback_reservation_lost');
+          }});
         status=sent.status;errorCode=sent.errorCode;deliveries=sent.deliveries;
       }else {
         if(action.kind==='close'&&view.screen!=='feedback')await deleteSettingsMessage(api,input.chatId!,cb!.messageId!);

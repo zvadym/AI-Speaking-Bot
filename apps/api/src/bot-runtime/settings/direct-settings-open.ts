@@ -18,12 +18,13 @@ export interface SettingsDeliveryResult {
 
 // Only explicitly reserved attempts may send. Pending/unknown attempts from a
 // previous request may already exist in Telegram, so replay must not resend them.
-export async function sendReservedSettingsMessages({ deliveries, chatId, richMessage, widget, api }: {
+export async function sendReservedSettingsMessages({ deliveries, chatId, richMessage, widget, api, reserveRichFallback }: {
   deliveries: ReservedSettingsDelivery[];
   chatId: number;
   richMessage: object;
   widget?: {html:string;chat_data:string;allow_queries:boolean};
   api(method: string, body: Record<string, unknown>): Promise<unknown>;
+  reserveRichFallback?(delivery: ReservedSettingsDelivery): Promise<void>;
 }) {
   const outcomes = await Promise.all(deliveries.map(async delivery => {
     const base = {id:delivery.id,message_id:delivery.telegram_message_id};
@@ -33,7 +34,18 @@ export async function sendReservedSettingsMessages({ deliveries, chatId, richMes
     }
     try {
       if(delivery.telegram_method==='sendWidget'&&!widget)throw new Error('widget_payload_missing');
-      const result = await api(delivery.telegram_method,{chat_id:chatId,...(delivery.telegram_method==='sendWidget'?widget:{rich_message:richMessage})}) as {message_id?:unknown} | null;
+      let result: {message_id?:unknown} | null;
+      try {
+        result = await api(delivery.telegram_method,{chat_id:chatId,...(delivery.telegram_method==='sendWidget'?widget:{rich_message:richMessage})}) as typeof result;
+      } catch (error) {
+        const failure=error as {telegramStatus?:unknown;telegramDescription?:unknown;message?:unknown};
+        // This explicit rejection proves no widget was sent. Never fall back
+        // after a timeout/ambiguous send, which could create duplicate cards.
+        if(delivery.telegram_method!=='sendWidget'||Number(failure.telegramStatus)!==400||
+          !String(failure.telegramDescription||failure.message||'').includes('INPUT_MEDIA_WIDGET_NOT_ALLOWED')||!reserveRichFallback)throw error;
+        await reserveRichFallback(delivery);
+        result=await api('sendRichMessage',{chat_id:chatId,rich_message:richMessage}) as typeof result;
+      }
       const messageId = Number(result?.message_id);
       if (!Number.isSafeInteger(messageId) || messageId <= 0) {
         return {...base,status:'unknown',error_code:'telegram_delivery_response_unknown',retryable:false};
