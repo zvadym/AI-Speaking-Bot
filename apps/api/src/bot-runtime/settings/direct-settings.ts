@@ -44,7 +44,7 @@ export async function saveDirectSettings(pool: Pool, botKey: string, input: Norm
       SELECT step_key,telegram_method FROM bot_update_deliveries WHERE decision_id=$3
         AND step_key IN ('settings:open:r:v1','settings:open:h:v1') AND $6='open'
       UNION ALL
-      SELECT 'settings:open:h:v1'::text,'sendWidget'::text WHERE $6='open'
+      SELECT 'settings:open:r:v1'::text,'sendRichMessage'::text WHERE $6='open'
         AND NOT EXISTS(SELECT 1 FROM bot_update_deliveries WHERE decision_id=$3 AND step_key IN ('settings:open:r:v1','settings:open:h:v1'))
     ), widget_card AS (
       INSERT INTO bot_settings_widget_cards(decision_id,chat_id,bot_key,action_at)
@@ -111,9 +111,9 @@ export function createDirectSettingsHandler({pool,telegramClient,getBotLocale,on
       await answer(true);return true;
     }
     let action:SettingsAction;
-    try{action=command?{variant:'h',kind:'open',value:''}:parseSettingsAction(cb!.data);}catch{await answer(true);return true;}
+    try{action=command?{variant:'r',kind:'open',value:''}:parseSettingsAction(cb!.data);}catch{await answer(true);return true;}
     if(widget?(action.variant!=='h'||action.kind==='open'):!command&&action.variant==='h'){await answer(true);return true;}
-    if(action.kind==='open')action.variant='h'; // Old chooser buttons open the current card.
+    if(action.kind==='open')action.variant='r'; // Old chooser buttons open the current card.
     if(!widget&&action.variant==='w'){await answer(true);return true;}
     const key=`settings:${botKey}:${input.chatId}`;
     const run=async()=>withSettingsLock(pool,key,async()=>{

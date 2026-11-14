@@ -114,10 +114,13 @@ This file orients automated agents working in this repo. Keep it accurate as the
 - `apps/api/src/ai` owns `client.ts` (the current `BotAiClient`), models, telemetry, prompt helpers, schemas, and explicit LangGraph workflows.
 - `apps/api/src/jobs.js` explicitly registers workers; background feature flows live in `notifications/`, `idioms/`, and `broadcasts/`. Shared feedback services live in `apps/api/src/feedback/` for Telegram and HTTP callers.
 - Settings UI uses `settings/settings-model.ts`, `settings/settings-widget.ts`, `settings/settings-views.ts`, and `handlers/settings.ts`;
-  the reply button opens an HTML widget directly. Level/reply changes save immediately;
+  the reply button opens a native rich card directly, with separate two-column
+  tables for level and reply controls beside their descriptions. Level/reply changes save immediately;
   Stats and feedback actions live in the same card. Slash menus are empty; only
   technical `/start` remains for first contact and deep links, without resetting onboarding.
-  Done deletes the card message. New `settings:h:*` widget requests use the
+  Done deletes the card message. New opens reserve `settings:open:r:v1` /
+  `sendRichMessage`; existing widget reservations retain their delivery identity.
+  Existing `settings:h:*` widget requests use the
   `bot_settings_widget_cards` ownership ledger; subscribe to `widget_query` in webhooks.
   Retired `settings:w:*` queries remain acknowledged without mutations; old rich cards retain their callbacks.
 - Settings UI labels live in `deploy/bots/*.json` under `locale.settings`.

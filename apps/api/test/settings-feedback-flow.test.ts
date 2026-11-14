@@ -9,7 +9,7 @@ import { claimBotUpdateExecution } from '../src/bot-runtime/execution/execution-
 import { normalizeTelegramUpdate } from '../src/bot-runtime/telegram-update.js';
 import { callbackUpdate,messageUpdate } from './fixtures/telegram-updates.js';
 
-test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellation, expiry and replay',{
+for(const widget of [false,true])test(`Postgres: ${widget?'existing widget':'native card'} Stats and prompt-bound text/voice feedback, cancellation, expiry and replay`,{
  skip:!process.env.BOT_RUNTIME_TEST_DATABASE_URL
 },async()=>{
  const pool=new pg.Pool({connectionString:process.env.BOT_RUNTIME_TEST_DATABASE_URL,application_name:'settings-feedback-flow'});
@@ -23,15 +23,16 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
    calls.push({method,body});
    if(method==='deleteMessage'&&failDelete){failDelete=false;throw new Error('timeout');}
    if((method==='editMessageText'||method==='editMessageWidgetData')&&failEdit){failEdit=false;throw new Error('timeout');}
-   return {message_id:method==='sendWidget'?777:++messageId};
+   return {message_id:method==='sendRichMessage'?777:++messageId};
   },
   sendTelegramTextMessage:async(_chat:number,text:string,options:object)=>{calls.push({method:'sendMessage',body:{text,...options}});return {message_id:++messageId};}
  };
  const locale={settings:{title:'Налаштування'},msg_feedback_prompt:'Reply with text or voice',msg_feedback_expired:'Expired',msg_feedback_thanks:'Received'};
  const ctx={pool,getBotLocale:()=>locale,publicBotMetaForKey:()=>({bot_key:botKey})};
  const direct=createDirectSettingsHandler({pool,telegramClient,getBotLocale:ctx.getBotLocale,webappUrl:'https://example.test'});
- const callback=(data:string)=>{
-  const raw={update_id:++id,widget_query:{id:'widget-'+id,from:{id:chatId,is_bot:false},chat:{id:chatId,type:'private'},message_id:777,type:{type:'data'},data:data.replace('settings:r:','settings:h:')}};
+ const callback=(data:string,asWidget=widget)=>{
+  ++id;const raw=asWidget?{update_id:id,widget_query:{id:'widget-'+id,from:{id:chatId,is_bot:false},chat:{id:chatId,type:'private'},message_id:777,type:{type:'data'},data:data.replace('settings:r:','settings:h:')}}:callbackUpdate({data,chatId,updateId:id});
+  if(!asWidget){(raw as Record<string,any>).callback_query.from.id=chatId;(raw as Record<string,any>).callback_query.message.message_id=777;}
   ids.push(`v1:${botKey}:${id}`);return normalizeTelegramUpdate(raw);
  };
  const button=()=>{
@@ -56,17 +57,26 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
  try{
   await pool.query('INSERT INTO users(chat_id) VALUES($1)',[chatId]);
   await pool.query("INSERT INTO user_bots(chat_id,bot_key,level,reply_mode) VALUES($1,$2,'b1','voice')",[chatId,botKey]);
-  const unregistered=callback('settings:r:level:c1');await direct(botKey,unregistered);
+  const unregistered=callback('settings:r:level:c1',true);await direct(botKey,unregistered);
   assert.equal((await pool.query('SELECT level FROM user_bots WHERE chat_id=$1 AND bot_key=$2',[chatId,botKey])).rows[0].level,'b1');
   assert.deepEqual(JSON.parse(String(calls.at(-1)!.body.data)),{error:true});
   calls.length=0;
   await direct(botKey,button());
-  assert.equal(calls.filter(c=>c.method==='sendWidget').length,1);
-  const home=String(calls.at(-1)!.body.html);
-  assert.ok(home.includes("L.stats,'stats'")&&home.includes("L.feedback,'feedback'"));
+  assert.equal(calls.filter(c=>c.method==='sendWidget').length,0);
+  assert.equal(calls.filter(c=>c.method==='sendRichMessage').length,1);
+  const home=JSON.stringify(calls.at(-1)!.body.rich_message);
+  assert.ok(home.includes('settings:r:stats')&&home.includes('settings:r:feedback'));
+  const bindLegacyWidget=async()=>{
+   const decisionId=ids.at(-1)!;
+   await pool.query("UPDATE bot_update_deliveries SET telegram_method='sendWidget' WHERE decision_id=$1",[decisionId]);
+   await pool.query("INSERT INTO bot_settings_widget_cards(decision_id,chat_id,bot_key,message_id) VALUES($1,$2,$3,777)",[decisionId,chatId,botKey]);
+  };
+  // A pre-rollout widget must retain the complete feedback flow after rich-only opening.
+  if(widget)await bindLegacyWidget();
   await direct(botKey,callback('settings:r:stats'));
-  const stats=JSON.stringify(calls.filter(c=>c.method==='editMessageReplyMarkup').at(-1)!.body.reply_markup);
-  assert.equal(JSON.parse(calls.filter(c=>c.method==='editMessageWidgetData').at(-1)!.body.chat_data).screen,'stats');assert.ok(stats.includes('/subscription?bot-key=uk-en'));
+  const stats=JSON.stringify(calls.filter(c=>c.method===(widget?'editMessageReplyMarkup':'editMessageText')).at(-1)!.body);
+  if(widget)assert.equal(JSON.parse(calls.filter(c=>c.method==='editMessageWidgetData').at(-1)!.body.chat_data).screen,'stats');
+  assert.ok(stats.includes('/subscription?bot-key=uk-en'));
   await direct(botKey,callback('settings:r:home'));
   const first=callback('settings:r:feedback');await direct(botKey,first);await direct(botKey,first);
   assert.equal(calls.filter(c=>c.method==='sendMessage'&&c.body.reply_markup?.force_reply).length,1);
@@ -120,8 +130,9 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
   assert.equal((await active()).session_id,newer.session_id);
   await pool.query("UPDATE bot_update_executions SET status='retryable_failed' WHERE decision_id=$1",[`v1:${botKey}:${olderFeedback.updateId}`]);
   await direct(botKey,olderFeedback);assert.equal((await active()).session_id,newer.session_id);
-  const edits=calls.filter(c=>c.method==='editMessageWidgetData');
-  assert.equal(JSON.parse(edits.at(-1)!.body.chat_data).screen,'feedback');
+  const edits=calls.filter(c=>c.method===(widget?'editMessageWidgetData':'editMessageText'));
+  if(widget)assert.equal(JSON.parse(edits.at(-1)!.body.chat_data).screen,'feedback');
+  else assert.ok(JSON.stringify(edits.at(-1)!.body.rich_message).includes('settings:r:cancel'));
   assert.equal((await message('Old request',Number(oldPrompt.prompt_message_id))).route,'feedback.expired');
   const oldReply=await message('Old cancelled request',Number(oldPrompt.prompt_message_id));
   const restoredBefore=keyboardRestorations().length;
@@ -139,10 +150,13 @@ test('Postgres: settings Stats and prompt-bound text/voice feedback, cancellatio
   assert.equal(await feedbackCount(),2);
   // Opening settings explicitly exits a pending feedback request.
   await direct(botKey,callback('settings:r:feedback'));await pool.query('DELETE FROM bot_settings_widget_cards WHERE chat_id=$1',[chatId]);await direct(botKey,button());assert.equal(await active(),undefined);
+  if(widget)await bindLegacyWidget();
   const closed=callback('settings:r:close');await direct(botKey,closed);
-  assert.equal((await pool.query('SELECT screen FROM bot_settings_widget_cards WHERE chat_id=$1',[chatId])).rows[0].screen,'closed');
-  await direct(botKey,callback('settings:r:level:c1'));
-  assert.equal((await pool.query('SELECT level FROM user_bots WHERE chat_id=$1 AND bot_key=$2',[chatId,botKey])).rows[0].level,'b2');
+  if(widget){
+   assert.equal((await pool.query('SELECT screen FROM bot_settings_widget_cards WHERE chat_id=$1',[chatId])).rows[0].screen,'closed');
+   await direct(botKey,callback('settings:r:level:c1'));
+   assert.equal((await pool.query('SELECT level FROM user_bots WHERE chat_id=$1 AND bot_key=$2',[chatId,botKey])).rows[0].level,'b2');
+  }else assert.equal((await pool.query('SELECT * FROM bot_settings_widget_cards WHERE chat_id=$1',[chatId])).rowCount,0);
  }finally{
   await pool.query('DELETE FROM pending_feedback WHERE chat_id=$1',[chatId]);
   await pool.query('DELETE FROM feedback WHERE chat_id=$1',[chatId]);

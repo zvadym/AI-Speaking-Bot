@@ -39,58 +39,67 @@ test('Postgres: direct opening is durable without a queue, including duplicates,
   try{
     // A first-time user also opens directly, with normal onboarding bootstrap.
     const first=raw();await run(first);
-    assert.equal(count('sendWidget'),1);assert.equal(count('sendMessage'),0);
+    assert.equal(count('sendRichMessage'),1);assert.equal(count('sendMessage'),0);
     assert.equal((await pool.query('SELECT state FROM bot_onboarding_sessions WHERE chat_id=$1 AND bot_key=$2',[chatId,botKey])).rows[0].state,'choose_scenario');
     assert.equal((await records(Number(first.update_id)))[0].status,'delivered');
-    assert.equal(calls.find(c=>c.method==='sendWidget')!.body.reply_markup,undefined);
-    const bound=(await pool.query('SELECT * FROM bot_settings_widget_cards WHERE decision_id=$1',[`v1:${botKey}:${first.update_id}`])).rows[0];
-    assert.equal(Number(bound.chat_id),chatId);assert.equal(bound.bot_key,botKey);assert.ok(Number(bound.message_id)>0);
-    await Promise.all([run(first),run(first)]);assert.equal(count('sendWidget'),1);
+    assert.equal(calls.find(c=>c.method==='sendRichMessage')!.body.reply_markup,undefined);
+    assert.equal((await pool.query('SELECT * FROM bot_settings_widget_cards WHERE decision_id=$1',[`v1:${botKey}:${first.update_id}`])).rowCount,0);
+    assert.equal(count('sendWidget'),0);
+    assert.equal((await records(Number(first.update_id)))[0].step_key,'settings:open:r:v1');
+    await Promise.all([run(first),run(first)]);assert.equal(count('sendRichMessage'),1);
     // Independent taps are distinct requests and may each open a new card.
-    await run(raw());assert.equal(count('sendWidget'),2);
+    await run(raw());assert.equal(count('sendRichMessage'),2);
     const slash=raw('/settings');assert.equal(await run(slash),false);assert.equal(await run(slash),false);
-    assert.equal(count('sendWidget'),2);assert.equal(count('sendMessage'),0);
+    assert.equal(count('sendRichMessage'),2);assert.equal(count('sendMessage'),0);
     assert.deepEqual(await records(Number(slash.update_id)),[]);
-    await run(raw('settings:w:open',true));assert.equal(count('sendWidget'),3);
+    await run(raw('settings:w:open',true));assert.equal(count('sendRichMessage'),3);
 
     // A definite Telegram rejection can retry the reserved card; no keyboard header is sent.
-    const limited=raw();failure=Object.assign(new Error('retry later'),{telegramStatus:429});failMethod='sendWidget';
-    await assert.rejects(run(limited));const cards=count('sendWidget');
-    await run(limited);assert.equal(count('sendWidget'),cards+1);assert.equal(count('sendMessage'),0);
+    const limited=raw();failure=Object.assign(new Error('retry later'),{telegramStatus:429});failMethod='sendRichMessage';
+    await assert.rejects(run(limited));const cards=count('sendRichMessage');
+    await run(limited);assert.equal(count('sendRichMessage'),cards+1);assert.equal(count('sendMessage'),0);
     assert.equal((await records(Number(limited.update_id)))[0].attempts,2);
     assert.equal((await records(Number(limited.update_id)))[0].status,'delivered');
-    const rejected=raw();failure=Object.assign(new Error('unavailable'),{telegramStatus:503});failMethod='sendWidget';
+    const rejected=raw();failure=Object.assign(new Error('unavailable'),{telegramStatus:503});failMethod='sendRichMessage';
     await assert.rejects(run(rejected));await run(rejected);
     assert.equal((await records(Number(rejected.update_id)))[0].attempts,2);
 
     // A timed-out send may have reached Telegram: never issue it twice.
-    const ambiguous=raw();failure=new Error('timeout');failMethod='sendWidget';
-    await run(ambiguous);const afterTimeout=count('sendWidget');await run(ambiguous);
-    assert.equal(count('sendWidget'),afterTimeout);
+    const ambiguous=raw();failure=new Error('timeout');failMethod='sendRichMessage';
+    await run(ambiguous);const afterTimeout=count('sendRichMessage');await run(ambiguous);
+    assert.equal(count('sendRichMessage'),afterTimeout);
     assert.equal((await records(Number(ambiguous.update_id)))[0].status,'unknown');
 
     // Simulate process loss after durable reservation, before acknowledgement.
     const interrupted=raw();
     await saveDirectSettings(pool,botKey,normalizeTelegramUpdate(interrupted),{variant:'r',kind:'open',value:''},randomUUID());
-    const beforeResume=count('sendWidget');await run(interrupted);
-    assert.equal(count('sendWidget'),beforeResume);
+    const beforeResume=count('sendRichMessage');await run(interrupted);
+    assert.equal(count('sendRichMessage'),beforeResume);
     assert.equal((await records(Number(interrupted.update_id)))[0].status,'unknown');
 
     // A legacy worker already delivered the card but did not finish its execution.
     const legacy=raw();
     await saveDirectSettings(pool,botKey,normalizeTelegramUpdate(legacy),{variant:'r',kind:'open',value:''},randomUUID());
     await pool.query("UPDATE bot_update_deliveries SET status='delivered',telegram_message_id=999 WHERE decision_id=$1",[`v1:${botKey}:${legacy.update_id}`]);
-    await run(legacy);assert.equal(count('sendWidget'),beforeResume);
+    await run(legacy);assert.equal(count('sendRichMessage'),beforeResume);
 
-    // Pre-rollout rich reservations retain their method and delivery identity.
-    const oldRich=raw();
-    await saveDirectSettings(pool,botKey,normalizeTelegramUpdate(oldRich),{variant:'r',kind:'open',value:''},randomUUID());
-    await pool.query("UPDATE bot_update_deliveries SET step_key='settings:open:r:v1',telegram_method='sendRichMessage',status='failed' WHERE decision_id=$1",[`v1:${botKey}:${oldRich.update_id}`]);
-    await pool.query('DELETE FROM bot_settings_widget_cards WHERE decision_id=$1',[`v1:${botKey}:${oldRich.update_id}`]);
-    await run(oldRich);assert.equal(count('sendRichMessage'),1);assert.equal(count('sendWidget'),beforeResume);
+    // Existing widget reservations retain their method and identity on retry.
+    const oldWidget=raw();
+    await saveDirectSettings(pool,botKey,normalizeTelegramUpdate(oldWidget),{variant:'r',kind:'open',value:''},randomUUID());
+    await pool.query("UPDATE bot_update_deliveries SET step_key='settings:open:h:v1',telegram_method='sendWidget',status='failed' WHERE decision_id=$1",[`v1:${botKey}:${oldWidget.update_id}`]);
+    const richBefore=count('sendRichMessage');
+    await run(oldWidget);assert.equal(count('sendWidget'),1);assert.equal(count('sendRichMessage'),richBefore);
+    const widgetDelivery=(await records(Number(oldWidget.update_id)))[0];
+    assert.equal(widgetDelivery.step_key,'settings:open:h:v1');assert.equal(widgetDelivery.status,'delivered');
+    const bound=(await pool.query('SELECT message_id FROM bot_settings_widget_cards WHERE decision_id=$1',[`v1:${botKey}:${oldWidget.update_id}`])).rows[0];
+    assert.equal(Number(bound.message_id),Number(widgetDelivery.telegram_message_id));
+    await run(oldWidget);assert.equal(count('sendWidget'),1);
 
-    // Telegram can disable widgets while rich messages remain available.
-    const fallback=raw();failure=Object.assign(new Error('Bad Request: INPUT_MEDIA_WIDGET_NOT_ALLOWED'),{telegramStatus:400});failMethod='sendWidget';
+    // A previously reserved widget can still fall back after an exact rejection.
+    const fallback=raw();
+    await saveDirectSettings(pool,botKey,normalizeTelegramUpdate(fallback),{variant:'r',kind:'open',value:''},randomUUID());
+    await pool.query("UPDATE bot_update_deliveries SET step_key='settings:open:h:v1',telegram_method='sendWidget',status='failed' WHERE decision_id=$1",[`v1:${botKey}:${fallback.update_id}`]);
+    failure=Object.assign(new Error('Bad Request: INPUT_MEDIA_WIDGET_NOT_ALLOWED'),{telegramStatus:400});failMethod='sendWidget';
     await run(fallback);
     const fallbackDelivery=(await records(Number(fallback.update_id)))[0];
     assert.equal(fallbackDelivery.telegram_method,'sendRichMessage');assert.equal(fallbackDelivery.status,'delivered');
@@ -110,12 +119,12 @@ test('Postgres: direct opening is durable without a queue, including duplicates,
       const button=raw(),secret=deriveTelegramWebhookSecret({botKey,botToken,signingSecret});
       const post=(token:string)=>fetch(`http://127.0.0.1:${(server.address() as {port:number}).port}/telegram/webhook/uk-en`,{
         method:'POST',headers:{'content-type':'application/json','x-telegram-bot-api-secret-token':token},body:JSON.stringify(button)});
-      const sentBefore=count('sendWidget');
-      assert.equal((await post('wrong')).status,401);assert.equal(count('sendWidget'),sentBefore);
-      assert.equal((await post(secret)).status,503);assert.equal(count('sendWidget'),sentBefore);
+      const sentBefore=count('sendRichMessage');
+      assert.equal((await post('wrong')).status,401);assert.equal(count('sendRichMessage'),sentBefore);
+      assert.equal((await post(secret)).status,503);assert.equal(count('sendRichMessage'),sentBefore);
       ctx.env.botRuntimeRouteFlags=parseBotRuntimeRouteFlags('{"uk-en":["settings.open"]}',[botKey]);
       assert.equal((await post(secret)).status,200);assert.equal((await post(secret)).status,200);
-      assert.equal(count('sendWidget'),sentBefore+1);assert.equal(enqueued,0);
+      assert.equal(count('sendRichMessage'),sentBefore+1);assert.equal(enqueued,0);
     }finally{server.close();await once(server,'close');}
   }finally{
     await pool.query('DELETE FROM bot_update_executions WHERE decision_id=ANY($1::text[])',[ids]);

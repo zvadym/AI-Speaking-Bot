@@ -11,9 +11,13 @@ export function renderSettingsRich(s: SettingsView, l: SettingsLabels): { blocks
   const heading = (text: string) => blocks.push({type:'paragraph',text:{type:'bold',text}});
   const button = (text:string,action:string,selected?:boolean) => ({text,callback_data:'settings:r:'+action,...(selected?{style:'primary'}:{})});
   const row = (buttons: Array<[string,string,boolean?]>) => blocks.push({type:'buttons',buttons:buttons.map(([text,action,selected]) => button(text,action,selected))});
-  const choice = (title:string,description:string|undefined,action:string,selected:boolean) => {
-    blocks.push({type:'paragraph',text:[{type:'button',button:button(title,action,selected)},...(description?[' '+description]:[])]});
-  };
+  const choices = (items:Array<[string,string|undefined,string,boolean]>) => blocks.push({
+    type:'table',is_compact:true,
+    cells:items.map(([title,description,action,selected])=>[
+      {text:{type:'button',button:button(title,action,selected)},align:'left',valign:'top'},
+      {text:description||'',align:'left',valign:'top'}
+    ])
+  });
   heading('⚙️ '+l.title);
   if (s.e) blocks.push({type:'paragraph',text:l.error});
   if(s.screen==='feedback') {
@@ -33,10 +37,12 @@ export function renderSettingsRich(s: SettingsView, l: SettingsLabels): { blocks
     return {blocks};
   }
   heading(l.level);
-  for(const x of SETTINGS_LEVELS)choice(x.toUpperCase(),l.level_descriptions?.[x],'level:'+x,s.l===x);
+  choices(SETTINGS_LEVELS.map(x=>[x.toUpperCase(),l.level_descriptions?.[x],'level:'+x,s.l===x]));
   heading(l.replies);
-  choice('🎤 '+l.voice,l.reply_descriptions?.voice,'reply:voice',s.r==='voice');
-  choice('💬 '+l.text,l.reply_descriptions?.text,'reply:text',s.r==='text');
+  choices([
+    ['🎤 '+l.voice,l.reply_descriptions?.voice,'reply:voice',s.r==='voice'],
+    ['💬 '+l.text,l.reply_descriptions?.text,'reply:text',s.r==='text']
+  ]);
   blocks.push({type:'footer',text:l.autosave},{type:'divider'});
   row([['📊 '+l.stats,'stats']]);
   row([['✉️ '+l.feedback,'feedback']]);

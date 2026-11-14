@@ -51,6 +51,16 @@ test('all production cards separate the closing action and explain autosave',()=
     const l=settingsLabels(bot.locale);
     const view=settingsView({});
     const blocks=renderSettingsRich(view,l).blocks;
+    const tables=blocks.filter((b:any)=>b.type==='table') as Array<{cells:Array<Array<{text:unknown;align:string;valign:string}>>}>;
+    assert.deepEqual(tables.map(t=>t.cells.length),[5,2],file);
+    const descriptions=[...['a1','a2','b1','b2','c1'].map(x=>bot.locale.settings.level_descriptions[x]),
+      bot.locale.settings.reply_descriptions.voice,bot.locale.settings.reply_descriptions.text];
+    assert.deepEqual(tables.flatMap(t=>t.cells.map(c=>c[1].text)),descriptions,file);
+    for(const table of tables)for(const cells of table.cells){
+      assert.equal(cells.length,2,file);
+      assert.equal((cells[0].text as {type:string}).type,'button',file);
+      for(const cell of cells){assert.equal(cell.align,'left');assert.equal(cell.valign,'top');}
+    }
     assert.deepEqual(blocks.slice(-5),[
       {type:'divider'},
       {type:'buttons',buttons:[{text:'📊 '+l.stats,callback_data:'settings:r:stats'}]},
